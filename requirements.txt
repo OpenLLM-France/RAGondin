@@ -1,0 +1,5 @@
+langchain_community>=0.0.32
+llama_index
+sentence_transformers>=2.6.1
+qdrant_client
+Flask
