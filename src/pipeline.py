@@ -1,6 +1,7 @@
 import configparser
-from vector_db_connector import Qdrant_Connector
+from vector_store import Qdrant_Connector
 from embeddings import Embeddings
+from LLM import LLM
 from flask import Flask, request
 from openai import OpenAI
 from reranker import Reranker
@@ -54,5 +55,14 @@ def inference():
         print(e)
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', debug=True, port=80)
+    #app.run(host='0.0.0.0', debug=True, port=80)
+    from huggingface_hub import InferenceClient
 
+    repo_id = "mistralai/Mixtral-7B-Instruct-v0.1"
+
+    llm_client = InferenceClient(
+        model=repo_id,
+        timeout=120,
+    )
+    llm = LLM(llm_client)
+    print(llm.generate_output('Bonjour, qui est le plus grand roi de France?'))
