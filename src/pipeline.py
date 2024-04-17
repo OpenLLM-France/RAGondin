@@ -1,5 +1,5 @@
 import configparser
-from vector_db_connector import Qdrant_Connector
+from vector_store import Qdrant_Connector
 from embeddings import Embeddings
 from flask import Flask, request
 from openai import OpenAI
@@ -55,4 +55,5 @@ def inference():
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', debug=True, port=80)
+    inference()
 
