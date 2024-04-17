@@ -1,4 +1,4 @@
-# RAG 
+# RAGondin 
 
 ![](RAG_architecture.png)
 
