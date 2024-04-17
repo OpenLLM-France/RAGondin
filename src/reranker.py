@@ -11,7 +11,7 @@ class Reranker:
         Initialize Reranker.
 
         Args:
-            model_name (str): Name of pretrained RAG model to use.
+            model_name (str): Name of pretrained RAGondin model to use.
         """
         self.model = RAGPretrainedModel.from_pretrained(model_name)
 

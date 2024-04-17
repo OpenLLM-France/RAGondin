@@ -1,4 +1,4 @@
-from langchain_community.embeddings import HuggingFaceBgeEmbeddings
+from langchain_community.embeddings import HuggingFaceBgeEmbeddings, HuggingFaceEmbeddings
 
 
 class Embeddings:
@@ -6,7 +6,8 @@ class Embeddings:
     Factory class to generate embeddings using different backend models.
     """
 
-    def __init__(self, model_type, model_name, model_kwargs, encode_kwargs) -> None:
+    def __init__(self, model_type: str = 'huggingface', model_name: str = "thenlper/gte-small", model_kwargs=None,
+                 encode_kwargs=None) -> None:
         """
         Initialize Embeddings.
 
@@ -19,8 +20,18 @@ class Embeddings:
         Raises:
             ValueError: If invalid model_type passed.
         """
+        if model_kwargs is None:
+            model_kwargs = {"device": "cuda"}
+        if encode_kwargs is None:
+            encode_kwargs = {"normalize_embeddings": True}
         if model_type == "huggingface_bge":
             self.embeddings = HuggingFaceBgeEmbeddings(
+                model_name=model_name,
+                model_kwargs=model_kwargs,
+                encode_kwargs=encode_kwargs
+            )
+        elif model_type == "huggingface":
+            self.embeddings = HuggingFaceEmbeddings(
                 model_name=model_name,
                 model_kwargs=model_kwargs,
                 encode_kwargs=encode_kwargs
@@ -33,4 +44,3 @@ class Embeddings:
         Return the generated embeddings.
         """
         return self.embeddings
-

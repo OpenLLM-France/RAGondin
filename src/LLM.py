@@ -6,7 +6,7 @@ import json
 class LLM:
     """
     A class to represent a Language Model (LLM).
-
+    It abstracts away the model type and provides a unified interface for the user.
     ...
 
     Attributes

@@ -2,13 +2,12 @@ import os
 
 from langchain_core.documents.base import Document
 from langchain.text_splitter import RecursiveCharacterTextSplitter
-from langchain.document_loaders import DirectoryLoader
-from langchain.document_loaders.pdf import PDFMinerLoader
-from langchain.document_loaders.xml import UnstructuredXMLLoader
-from langchain.document_loaders.csv_loader import CSVLoader
+from langchain_community.document_loaders import DirectoryLoader
+from langchain_community.document_loaders.pdf import PDFMinerLoader
+from langchain_community.document_loaders import UnstructuredXMLLoader
+from langchain_community.document_loaders.csv_loader import CSVLoader
 from langchain_community.document_loaders.text import TextLoader
 from langchain_community.document_loaders import UnstructuredHTMLLoader
-from langchain_community.document_loaders.merge import MergedDataLoader
 
 # Define a dictionary to map file extensions to their respective loaders
 
@@ -20,6 +19,12 @@ DEFAULT_LOADERS = {
     '.html': UnstructuredHTMLLoader,
 }
 
+def create_directory_loader(file_type, directory_path):
+    return DirectoryLoader(
+        path=directory_path,
+        glob=f"**/*{file_type}",
+        loader_cls=DEFAULT_LOADERS[file_type],
+    )
 
 class Chunker:
     """
@@ -66,7 +71,7 @@ class Chunker:
         return self.text_splitter.split_documents(docs)
 
 
-class Documents:
+class Docs:
     """
     Class to represent and manage a collection of documents.
 
@@ -120,11 +125,11 @@ class Documents:
             raise FileNotFoundError(f"Directory not found: {dir_path}")
 
         # Create loader for each file type
-        pdf_loader = DirectoryLoader('.pdf', dir_path)
-        xml_loader = DirectoryLoader('.xml', dir_path)
-        csv_loader = DirectoryLoader('.csv', dir_path)
-        txt_loader = DirectoryLoader('.txt', dir_path)
-        html_loader = DirectoryLoader('.html', dir_path)
+        pdf_loader = create_directory_loader('.pdf', dir_path)
+        xml_loader = create_directory_loader('.xml', dir_path)
+        csv_loader = create_directory_loader('.csv', dir_path)
+        txt_loader = create_directory_loader('.txt', dir_path)
+        html_loader = create_directory_loader('.html', dir_path)
 
         # Load documents with each loader
         pdf_docs = pdf_loader.load()
@@ -140,7 +145,7 @@ class Documents:
         self.docs.extend(txt_docs)
         self.docs.extend(html_docs)
 
-    def chunk(self, chunker) -> None:
+    def chunk(self, chunker: Chunker) -> None:
         """
         Split loaded documents into chunks.
 
@@ -161,10 +166,8 @@ class Documents:
             raise ValueError("No documents loaded")
 
         # Perform splitting with Chunker
-        chunker.split(self.docs)
-
         # Store chunked docs
-        self.chunked_docs = chunker.chunked_docs
+        self.chunked_docs = chunker.split(self.docs)
 
     def get_docs(self) -> list:
         """

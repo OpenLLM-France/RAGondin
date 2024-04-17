@@ -1,10 +1,14 @@
 import configparser
 from vector_store import Qdrant_Connector
 from embeddings import Embeddings
-from LLM import LLM
+from llm import LLM
 from flask import Flask, request
 from openai import OpenAI
+from chunker import Chunker
+from chunker import Docs
 from reranker import Reranker
+from prompt import Prompt
+access_token = "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"
 
 app=Flask(__name__)
 @app.route('/inference', methods=['POST'])
@@ -58,11 +62,38 @@ if __name__ == '__main__':
     #app.run(host='0.0.0.0', debug=True, port=80)
     from huggingface_hub import InferenceClient
 
-    repo_id = "mistralai/Mixtral-7B-Instruct-v0.1"
+    repo_id = "mistralai/Mixtral-8x7B-Instruct-v0.1"
+    model_kwargs = {"device": "mps"}
+    emb = Embeddings(model_kwargs= model_kwargs)
+    connector = Qdrant_Connector(host=None,port=0, embeddings=emb.get_embeddings(),collection_name="my_collection")
+
+    print("Loading documents...")
+    docs = Docs()
+    dir_path = "../experiments/test_data"
+    docs.load(dir_path)
+
+    print("Chunking...")
+    chunker = Chunker(chunk_size=1000, chunk_overlap=200)
+    docs.chunk(chunker)
+    connector.build_index(chuncked_docs=docs.get_chunks())
+    question = "Qu'elle sont les 5 phases du jeu MESBG?"
+    retrived_chunks = connector.similarity_search(query="Bonjour, qui est le plus grand roi de France?", top_k=10)
+    retrived_chunks_txt = [chunk.page_content for chunk in retrived_chunks]
+
+    print("Reranking...")
+    reranker = Reranker()
+    reranked_docs_txt = reranker.rerank(query=question,docs=retrived_chunks_txt,k=5)
+
+    prompt = Prompt()
+    prompt_txt = prompt.get_prompt(docs = reranked_docs_txt, question=question)
 
     llm_client = InferenceClient(
         model=repo_id,
         timeout=120,
+        token=access_token
     )
     llm = LLM(llm_client)
-    print(llm.generate_output('Bonjour, qui est le plus grand roi de France?'))
+    print(llm.generate_output(prompt_txt))
+
+
+
