@@ -8,7 +8,6 @@ from chunker import Chunker
 from chunker import Docs
 from reranker import Reranker
 from prompt import Prompt
-access_token = "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"
 
 app=Flask(__name__)
 @app.route('/inference', methods=['POST'])
