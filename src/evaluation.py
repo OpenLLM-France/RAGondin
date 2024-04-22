@@ -1,10 +1,13 @@
 import random
+from typing import Union, List
 
 from src.chunker import Docs
 from src.llm import LLM
 
 import pandas as pd
 import datasets
+
+from src.pipeline import RAG
 
 EVALUATION_PROMPT = """
 ###Context:
@@ -125,6 +128,9 @@ class Evaluator:
         self.save_path = save_path
         self.llm = llm
         self.docs = docs
+        self.questions: Union[List[str], None] = None
+        self.filtered_questions: Union[pd.DataFrame, None] = None
+        self.eval_dataset : Union[datasets.Dataset,None] = None
 
     def generate_questions(self, nb_questions:int):
         """
@@ -219,9 +225,53 @@ class Evaluator:
             response=answer,
             reference_answer=true_answer,
         )
-        eval_result = self.llm.generate_output(eval_prompt)
+        eval_result = self.llm.generate_output(eval_prompt).split("###Feedback")[-1]
 
         feedback, score = [item.strip() for item in eval_result.split("[RESULT]")]
         return feedback, score
 
-    def eval(self):
+    def evaluate(self, rag : RAG):
+        """
+        Evaluates the RAG model based on the filtered questions.
+
+        This method generates answers for the filtered questions using the RAG model,
+        then evaluates the quality of these answers compared to the reference answers.
+        The evaluation is based on the feedback and score obtained from the `eval_question_answer` method.
+        The results are saved in a dataset and stored in the specified save path.
+
+        Parameters:
+            rag (RAG): The RAG model to be evaluated.
+
+        Returns:
+            datasets.Dataset: The dataset containing the questions, context, reference answers, generated answers, feedback, and scores.
+        """
+        eval_dataset = self.eval_dataset
+        eval_dataset = eval_dataset.map(
+            lambda example: {
+                "question": example["question"],
+                "context": example["context"],
+                "answer": example["answer"],
+                "source_doc": example["source_doc"],
+                "generated_output": rag.call_RAG(example["question"]),
+            }
+        )
+        eval_dataset = eval_dataset.map(
+            lambda example: {
+                "question": example["question"],
+                "context": example["context"],
+                "answer": example["answer"],
+                "source_doc": example["source_doc"],
+                "generated_output": example["generated_output"],
+                "feedback": self.eval_question_answer(
+                    example["question"], example["generated_output"], example["answer"]
+                )[0],
+                "score": self.eval_question_answer(
+                    example["question"], example["generated_output"], example["answer"]
+                )[1],
+            }
+        )
+        eval_dataset.save_to_disk(self.save_path)
+        return eval_dataset
+
+
+

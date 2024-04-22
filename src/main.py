@@ -1,4 +1,5 @@
 from src.evaluation import Evaluator
+from src.pipeline import RAG
 from vector_store import Qdrant_Connector
 from embeddings import Embeddings
 from llm import LLM
@@ -52,18 +53,22 @@ if __name__ == '__main__':
     print(Eval.filtered_questions)
 
     connector.build_index(chuncked_docs=docs.get_chunks())
-    question = "Qu'elle sont les 5 phases du jeu MESBG?"
-    retrived_chunks = connector.similarity_search(query="Bonjour, qui est le plus grand roi de France?", top_k=10)
-    retrived_chunks_txt = [chunk.page_content for chunk in retrived_chunks]
 
-    print("Reranking...")
-    reranker = Reranker()
-    reranked_docs_txt = reranker.rerank(query=question, docs=retrived_chunks_txt, k=5)
 
     prompt = Prompt()
-    prompt_txt = prompt.get_prompt(docs=reranked_docs_txt, question=question)
+    reranker = Reranker()
 
-    print(llm.generate_output(prompt_txt))
+    rag = RAG(llm, connector, reranker, prompt)
+
+    question = "Qu'elle sont les 5 phases du jeu MESBG?"
+
+    print("Answering question...")
+
+    print(rag.call_RAG(question))
+
+    print("Evaluating...")
+
+    print(Eval.evaluate(rag)[0])
 
 
 
