@@ -7,7 +7,7 @@ from langchain_community.embeddings import HuggingFaceBgeEmbeddings, HuggingFace
 from langchain_core.documents.base import Document
 
 
-class VectorDB_Connector:
+class VectorDdConnector:
     """
     Abstract base class for a Vector Database Connector.
     This class defines the interface for a vector database connector.
@@ -58,13 +58,14 @@ class VectorDB_Connector:
         pass
 
 
-class Qdrant_Connector(VectorDB_Connector):
+class Qdrant_Connector(VectorDdConnector):
     """
     Concrete class for a Qdrant Vector Database Connector.
     This class implements the VectorDB_Connector interface for a Qdrant database.
     """
 
-    def __init__(self, host, port, embeddings: Union[HuggingFaceBgeEmbeddings,HuggingFaceEmbeddings], collection_name: str = "my_documents"):
+    def __init__(self, host, port, embeddings: Union[HuggingFaceBgeEmbeddings, HuggingFaceEmbeddings],
+                 collection_name: str = "my_documents"):
         """
         Initialize Qdrant_Connector.
 
@@ -94,25 +95,25 @@ class Qdrant_Connector(VectorDB_Connector):
         """
         pass
 
-    def build_index(self, chuncked_docs : list[Document]) -> None:
+    def build_index(self, chuncked_docs: list[Document]) -> None:
         """
         Build an index in the Qdrant database.
 
         Args:
             chuncked_docs (list): The chunks of data to be indexed.
         """
-        try :
+        try:
             self.db.from_documents(
-                documents= chuncked_docs,
-                embedding = self.embeddings,
+                documents=chuncked_docs,
+                embedding=self.embeddings,
                 collection_name=self.collection_name
             )
         except:
             self.db = self.db.from_documents(
-                documents= chuncked_docs,
-                embedding = self.embeddings,
+                documents=chuncked_docs,
+                embedding=self.embeddings,
                 collection_name=self.collection_name,
-                location = ":memory:"
+                location=":memory:"
             )
 
     def insert_vector(self, vector, payload):
@@ -126,7 +127,7 @@ class Qdrant_Connector(VectorDB_Connector):
         # Implement the method to insert a vector into Qdrant
         pass
 
-    def similarity_search_with_score(self, query: str, top_k: int = 5):
+    def similarity_search_with_score(self, query: str, top_k: int = 5) -> list[tuple[Document, float]]:
         """
         Perform a similarity search in the Qdrant database.
 
@@ -139,7 +140,7 @@ class Qdrant_Connector(VectorDB_Connector):
         """
         return self.db.similarity_search_with_score(query=query, k=top_k)
 
-    def similarity_search(self, query: str, top_k: int = 5):
+    def similarity_search(self, query: str, top_k: int = 5) -> list[Document]:
         """
         Perform a similarity search in the Qdrant database.
 
@@ -151,3 +152,22 @@ class Qdrant_Connector(VectorDB_Connector):
             list: The top_k similar vectors.
         """
         return self.db.similarity_search(query=query, k=top_k)
+
+    def multy_query_similarity_search(self, queries: list[str], top_k: int = 5) -> list[Document]:
+        """
+        Perform a similarity search in the Qdrant database for multiple queries.
+
+        This method takes a list of queries and performs a similarity search for each query.
+        The results of all searches are combined into a set to remove duplicates, and then returned as a list.
+
+        Args:
+            queries (list[str]): The list of query vectors.
+            top_k (int): The number of top similar vectors to return for each query.
+
+        Returns:
+            list: The combined results of the similarity searches for all queries.
+        """
+        retrieved_chunks = set()
+        for query in queries:
+            retrieved_chunks = retrieved_chunks.union(set(self.db.similarity_search(query=query, k=top_k)))
+        return list(retrieved_chunks)

@@ -143,7 +143,7 @@ class Evaluator:
         sample_docs = random.sample(self.docs.get_chunks(), nb_questions)
 
         for sampled_context in sample_docs:
-            output_QA_couple = self.llm.generate_output(QA_generation_prompt.format(context=sampled_context.page_content))
+            output_QA_couple = self.llm.run(QA_generation_prompt.format(context=sampled_context.page_content))
             try:
                 question = output_QA_couple.split("Factoid question: ")[-1].split("Answer: ")[0]
                 answer = output_QA_couple.split("Answer: ")[-1]
@@ -164,12 +164,12 @@ class Evaluator:
         """
         for question in self.questions:
             evaluations = {
-                "groundedness": self.llm.generate_output(question_groundedness_critique_prompt.format(context=question["context"], question=question["question"]),
-                ),
-                "relevance": self.llm.generate_output(
+                "groundedness": self.llm.run(question_groundedness_critique_prompt.format(context=question["context"], question=question["question"]),
+                                             ),
+                "relevance": self.llm.run(
                     question_relevance_critique_prompt.format(question=question["question"]),
                 ),
-                "standalone": self.llm.generate_output(
+                "standalone": self.llm.run(
                     question_standalone_critique_prompt.format(question=question["question"]),
                 ),
             }
@@ -188,7 +188,7 @@ class Evaluator:
             except Exception as e:
                 continue
 
-    def filter_questions(self, groundness_trsh:int = 1, relevance_trsh:int = 1, standalone_trsh:int =1):
+    def filter_questions(self, groundness_trsh:int = 1, relevance_trsh:int = 1, standalone_trsh:int =1) -> None:
         """
         Filters the critiqued questions based on the specified thresholds for groundedness, relevance, and standalone scores.
 
@@ -225,7 +225,7 @@ class Evaluator:
             response=answer,
             reference_answer=true_answer,
         )
-        eval_result = self.llm.generate_output(eval_prompt).split("###Feedback")[-1]
+        eval_result = self.llm.run(eval_prompt).split("###Feedback")[-1]
 
         feedback, score = [item.strip() for item in eval_result.split("[RESULT]")]
         return feedback, score
@@ -252,7 +252,7 @@ class Evaluator:
                 "context": example["context"],
                 "answer": example["answer"],
                 "source_doc": example["source_doc"],
-                "generated_output": rag.call_RAG(example["question"]),
+                "generated_output": rag.run(example["question"]),
             }
         )
         eval_dataset = eval_dataset.map(
@@ -272,6 +272,3 @@ class Evaluator:
         )
         eval_dataset.save_to_disk(self.save_path)
         return eval_dataset
-
-
-

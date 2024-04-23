@@ -87,7 +87,7 @@ class RAG:
         self.reranker = reranker
         self.prompt = prompt
 
-    def call_RAG(self, question: str, top_k: int = 10, top_k_rerank: int = 5) -> str:
+    def run(self, question: str, top_k: int = 10, top_k_rerank: int = 5) -> str:
         """
         This method retrieves relevant chunks of data, reranks them, generates a prompt from the reranked chunks,
         and generates an output from the prompt.
@@ -104,4 +104,4 @@ class RAG:
         retrieved_chunks_txt = [chunk.page_content for chunk in retrieved_chunks]
         reranked_docs_txt = self.reranker.rerank(query=question, docs=retrieved_chunks_txt, k=top_k_rerank)
         prompt_txt = self.prompt.get_prompt(docs=reranked_docs_txt, question=question)
-        return self.llm.generate_output(prompt_txt)
+        return self.llm.run(prompt_txt)

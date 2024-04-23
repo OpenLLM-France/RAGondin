@@ -96,6 +96,15 @@ class Docs:
         self.docs : list[Document] = []
         self.chunked_docs : list[Document] = []
 
+    def __getitem__(self, item):
+        return self.chunked_docs[item]
+
+    def __len__(self):
+        return len(self.chunked_docs)
+
+    def __iter__(self):
+        return iter(self.chunked_docs)
+
     def load(self, dir_path) -> None:
         """
         Load documents from the given directory.
@@ -186,4 +195,6 @@ class Docs:
             list: The documents split into chunks.
         """
         return self.chunked_docs
+
+
 
