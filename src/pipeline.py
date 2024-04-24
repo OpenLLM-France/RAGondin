@@ -73,7 +73,7 @@ class RAG:
         reranker (Reranker): An instance of the Reranker class.
         prompt (Prompt): An instance of the Prompt class.
     """
-    def __init__(self, llm: LLM, connector: Qdrant_Connector, retriever : Retriever, prompt: Prompt):
+    def __init__(self, llm: LLM, connector: Qdrant_Connector, retriever : Retriever, prompt: Prompt, reranker: Reranker= None):
         """
         The constructor for the RAG class.
 
@@ -82,11 +82,13 @@ class RAG:
             connector (Qdrant_Connector): An instance of the Qdrant_Connector class.
             retriever (Retriever): An instance of the Retriever class.
             prompt (Prompt): An instance of the Prompt class.
+            reranker (Reranker): An instance of the Reranker class.
         """
         self.llm = llm
         self.connector = connector
         self.prompt = prompt
         self.retriever = retriever
+        self.reranker = reranker
 
     def run(self, question: str) -> str:
         """
@@ -102,5 +104,7 @@ class RAG:
             str: The generated output from the LLM.
         """
         docs_txt = self.retriever.retrieve(question, self.connector)
+        if self.reranker is not None:
+            docs_txt = self.reranker.rerank(question=question, docs=docs_txt)
         prompt_txt = self.prompt.get_prompt(docs=docs_txt, question=question)
         return self.llm.run(prompt_txt)

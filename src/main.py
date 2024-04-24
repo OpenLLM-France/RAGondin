@@ -76,11 +76,11 @@ if __name__ == '__main__':
 
     # Initialize prompt and reranker
     reranker = Reranker()
-    retriever = MultiQueryRetriever(params={"top_k": 15,'top_k_rerank':5}, reranker=reranker, llm=llm_multi_queries, prompt_multi_queries=Prompt(type_template='multi_query'))
+    retriever = MultiQueryRetriever(params={"top_k": 15,'top_k_rerank':5}, llm=llm_multi_queries, prompt_multi_queries=Prompt(type_template='multi_query'))
 
     # Initialize RAG
     prompt = Prompt(type_template='basic')
-    rag = RAG(llm=llm, connector=connector, retriever=retriever, prompt=prompt)
+    rag = RAG(llm=llm, connector=connector, retriever=retriever, prompt=prompt, reranker=reranker)
 
 
 
