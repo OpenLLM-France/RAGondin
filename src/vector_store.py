@@ -78,7 +78,7 @@ class Qdrant_Connector(VectorDdConnector):
         self.collection_name = collection_name
         self.embeddings: Union[HuggingFaceBgeEmbeddings, HuggingFaceEmbeddings] = embeddings
         if host is None:
-            self.db = Qdrant
+            self.db= Qdrant
         else:
             self.host = host
             self.port = port
@@ -153,7 +153,7 @@ class Qdrant_Connector(VectorDdConnector):
         """
         return self.db.similarity_search(query=query, k=top_k)
 
-    def multy_query_similarity_search(self, queries: list[str], top_k: int = 5) -> list[Document]:
+    def multy_query_similarity_search(self, queries: list[str], top_k_per_queries: int = 5) -> list[Document]:
         """
         Perform a similarity search in the Qdrant database for multiple queries.
 
@@ -162,12 +162,14 @@ class Qdrant_Connector(VectorDdConnector):
 
         Args:
             queries (list[str]): The list of query vectors.
-            top_k (int): The number of top similar vectors to return for each query.
+            top_k_per_queries (int): The number of top similar vectors to return for each query.
 
         Returns:
             list: The combined results of the similarity searches for all queries.
         """
-        retrieved_chunks = set()
+        retrieved_chunks = {}
         for query in queries:
-            retrieved_chunks = retrieved_chunks.union(set(self.db.similarity_search(query=query, k=top_k)))
-        return list(retrieved_chunks)
+            retrieved = self.db.similarity_search(query=query, k=top_k_per_queries)
+            for document in retrieved:
+                retrieved_chunks[id(document)] = document
+        return list(retrieved_chunks.values())

@@ -1,6 +1,7 @@
 # Import necessary modules and classes
 from src.evaluation import Evaluator
 from src.pipeline import RAG
+from src.retriever import Retriever, MultiQueryRetriever
 from vector_store import Qdrant_Connector
 from embeddings import Embeddings
 from llm import LLM
@@ -42,6 +43,9 @@ if __name__ == '__main__':
         token=access_token
     )
     llm = LLM(llm_client)
+    llm_multi_queries = LLM(llm_client)
+
+
 
     # Initialize evaluator
     Eval: Evaluator = Evaluator(save_path="eval", llm=llm, docs=docs)
@@ -66,15 +70,21 @@ if __name__ == '__main__':
     # Build index
     connector.build_index(chuncked_docs=docs.get_chunks())
 
-    # Initialize prompt and reranker
-    prompt = Prompt()
-    reranker = Reranker()
-
-    # Initialize RAG
-    rag = RAG(llm, connector, reranker, prompt)
-
     # Define question
     question = "Qu'elle sont les 5 phases du jeu MESBG?"
+
+
+    # Initialize prompt and reranker
+    reranker = Reranker()
+    retriever = MultiQueryRetriever(params={"top_k": 15,'top_k_rerank':5}, reranker=reranker, llm=llm_multi_queries, prompt_multi_queries=Prompt(type_template='multi_query'))
+
+    # Initialize RAG
+    prompt = Prompt(type_template='basic')
+    rag = RAG(llm=llm, connector=connector, retriever=retriever, prompt=prompt)
+
+
+
+
 
     print("Answering question...")
     # Answer question

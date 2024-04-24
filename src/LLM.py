@@ -36,7 +36,7 @@ class LLM:
         else:
             raise ValueError("Model should be either a transformers pipeline or a Hugging Face InferenceClient")
 
-    def generate_output(self, prompt: str) -> str:
+    def run(self, prompt: str) -> str:
         """
         Generates output from the given prompt using the model.
 
@@ -54,6 +54,8 @@ class LLM:
             return self.model(prompt)[0]["generated_text"]
         elif isinstance(self.model, InferenceClient):
             return call_llm(self.model, prompt)
+
+
 
 def call_llm(inference_client: InferenceClient, prompt: str):
     """

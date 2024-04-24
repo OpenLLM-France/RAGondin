@@ -4,6 +4,7 @@ from src.chunker import Docs, Chunker
 from src.llm import LLM
 from src.prompt import Prompt
 from src.reranker import Reranker
+from src.retriever import Retriever
 from vector_store import Qdrant_Connector
 from embeddings import Embeddings
 from flask import Flask, request
@@ -72,22 +73,22 @@ class RAG:
         reranker (Reranker): An instance of the Reranker class.
         prompt (Prompt): An instance of the Prompt class.
     """
-    def __init__(self, llm: LLM, connector: Qdrant_Connector, reranker: Reranker, prompt: Prompt):
+    def __init__(self, llm: LLM, connector: Qdrant_Connector, retriever : Retriever, prompt: Prompt):
         """
         The constructor for the RAG class.
 
         Args:
             llm (LLM): An instance of the LLM class.
             connector (Qdrant_Connector): An instance of the Qdrant_Connector class.
-            reranker (Reranker): An instance of the Reranker class.
+            retriever (Retriever): An instance of the Retriever class.
             prompt (Prompt): An instance of the Prompt class.
         """
         self.llm = llm
         self.connector = connector
-        self.reranker = reranker
         self.prompt = prompt
+        self.retriever = retriever
 
-    def run(self, question: str, top_k: int = 10, top_k_rerank: int = 5) -> str:
+    def run(self, question: str) -> str:
         """
         This method retrieves relevant chunks of data, reranks them, generates a prompt from the reranked chunks,
         and generates an output from the prompt.
@@ -100,8 +101,6 @@ class RAG:
         Returns:
             str: The generated output from the LLM.
         """
-        retrieved_chunks = self.connector.similarity_search(query=question, top_k=top_k)
-        retrieved_chunks_txt = [chunk.page_content for chunk in retrieved_chunks]
-        reranked_docs_txt = self.reranker.rerank(query=question, docs=retrieved_chunks_txt, k=top_k_rerank)
-        prompt_txt = self.prompt.get_prompt(docs=reranked_docs_txt, question=question)
+        docs_txt = self.retriever.retrieve(question, self.connector)
+        prompt_txt = self.prompt.get_prompt(docs=docs_txt, question=question)
         return self.llm.run(prompt_txt)
