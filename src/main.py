@@ -1,7 +1,7 @@
 # Import necessary modules and classes
 from src.evaluation import Evaluator
 from src.pipeline import RAG
-from src.retriever import Retriever, MultiQueryRetriever
+from src.retriever import Retriever, MultiQueryRetriever, HybridRetriever
 from vector_store import Qdrant_Connector
 from embeddings import Embeddings
 from llm import LLM
@@ -14,7 +14,6 @@ from huggingface_hub import InferenceClient
 
 # Main execution
 if __name__ == '__main__':
-
     # Define the model repository ID and model kwargs
     repo_id = "mistralai/Mixtral-8x7B-Instruct-v0.1"
     model_kwargs = {"device": "mps"}
@@ -45,8 +44,6 @@ if __name__ == '__main__':
     llm = LLM(llm_client)
     llm_multi_queries = LLM(llm_client)
 
-
-
     # Initialize evaluator
     Eval: Evaluator = Evaluator(save_path="eval", llm=llm, docs=docs)
     print("Generating questions...")
@@ -73,18 +70,16 @@ if __name__ == '__main__':
     # Define question
     question = "Qu'elle sont les 5 phases du jeu MESBG?"
 
-
     # Initialize prompt and reranker
     reranker = Reranker()
-    retriever = MultiQueryRetriever(params={"top_k": 15,'top_k_rerank':5}, llm=llm_multi_queries, prompt_multi_queries=Prompt(type_template='multi_query'))
+    retriever_multi = MultiQueryRetriever(params={"top_k": 15}, llm=llm_multi_queries,
+                                          prompt_multi_queries=Prompt(type_template='multi_query'))
+    retriever_basix = Retriever(params={"top_k": 15})
+    retriever_final = HybridRetriever(params={"top_k": 15}, retrievers=[(0.5, retriever_multi), (0.5, retriever_multi)])
 
     # Initialize RAG
     prompt = Prompt(type_template='basic')
-    rag = RAG(llm=llm, connector=connector, retriever=retriever, prompt=prompt, reranker=reranker)
-
-
-
-
+    rag = RAG(llm=llm, connector=connector, retriever=retriever_final, prompt=prompt, reranker=reranker)
 
     print("Answering question...")
     # Answer question

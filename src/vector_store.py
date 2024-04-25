@@ -173,3 +173,28 @@ class Qdrant_Connector(VectorDdConnector):
             for document in retrieved:
                 retrieved_chunks[id(document)] = document
         return list(retrieved_chunks.values())
+
+    def multy_query_similarity_search_with_scores(self, queries: list[str], top_k_per_queries: int = 5) -> list[tuple[Document, float]]:
+        """
+        Perform a similarity search in the Qdrant database for multiple queries.
+
+        This method takes a list of queries and performs a similarity search for each query.
+        The results of all searches are combined into a set to remove duplicates, and then returned as a list.
+
+        Args:
+            queries (list[str]): The list of query vectors.
+            top_k_per_queries (int): The number of top similar vectors to return for each query.
+
+        Returns:
+            list: The combined results of the similarity searches for all queries.
+        """
+        retrieved_chunks = {}
+        for query in queries:
+            retrieved = self.db.similarity_search_with_score(query=query, k=top_k_per_queries)
+            for document in retrieved:
+                if id(document) in retrieved_chunks:
+                    if retrieved_chunks[id(document)][1] < document[1]:
+                        retrieved_chunks[id(document)] = document
+                retrieved_chunks[id(document)] = document
+        print(list(retrieved_chunks.values()))
+        return list(retrieved_chunks.values())

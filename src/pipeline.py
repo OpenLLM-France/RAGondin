@@ -97,9 +97,6 @@ class RAG:
 
         Args:
             question (str): The question to be answered.
-            top_k (int): The number of top similar vectors to return from the similarity search.
-            top_k_rerank (int): The number of top documents to return after reranking.
-
         Returns:
             str: The generated output from the LLM.
         """
