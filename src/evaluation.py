@@ -1,14 +1,19 @@
+# Import necessary libraries and modules
 import random
 from typing import Union, List
 
+# Import local modules
 from src.chunker import Docs
 from src.llm import LLM
 
+# Import external libraries
 import pandas as pd
 import datasets
 
+# Import local modules
 from src.pipeline import RAG
 
+# Define prompts for evaluation
 EVALUATION_PROMPT = """
 ###Context:
 You are a fair evaluator language model for french documentation.
@@ -38,6 +43,7 @@ Score 5: The response is completely correct, accurate, and factual.
 
 ###Feedback:"""
 
+# Define prompts for question critique
 question_groundedness_critique_prompt = """
 You will be given a context and a question both in french.
 Your task is to provide a 'total rating' scoring how well one can answer the given question unambiguously with the given context.
@@ -57,6 +63,7 @@ Question: {question}\n
 Context: {context}\n
 Answer::: """
 
+# Define prompts for question relevance critique
 question_relevance_critique_prompt = """
 You will be given a question both in french.
 Your task is to provide a 'total rating' representing how useful this question can be to machine learning developers building NLP applications with the Hugging Face ecosystem.
@@ -75,6 +82,7 @@ Now here is the question.
 Question: {question}\n
 Answer::: """
 
+# Define prompts for standalone question critique
 question_standalone_critique_prompt = """
 You will be given a question both in french
 Your task is to provide a 'total rating' representing how context-independant this question is.
@@ -97,7 +105,7 @@ Now here is the question.
 Question: {question}\n
 Answer::: """
 
-
+# Define prompts for QA generation
 QA_generation_prompt = """
 Your task is to write a factoid question in french and an answer in french given a context in french.
 Your factoid question should be answerable with a specific, concise piece of factual information from the context.
@@ -115,8 +123,9 @@ Now here is the context.
 Context: {context}\n
 Output:::"""
 
+# Define the Evaluator class
 class Evaluator:
-    def __init__(self,save_path:str, llm: LLM, docs: Docs):
+    def __init__(self, llm: LLM):
         """
             The constructor for the Evaluator class.
 
@@ -125,20 +134,20 @@ class Evaluator:
                 llm (LLM): An instance of the LLM class used for generating outputs.
                 docs (Docs): An instance of the Docs class containing the documents to be evaluated.
         """
-        self.save_path = save_path
         self.llm = llm
-        self.docs = docs
+        self.docs = None
         self.questions: Union[List[str], None] = None
         self.filtered_questions: Union[pd.DataFrame, None] = None
-        self.eval_dataset : Union[datasets.Dataset,None] = None
+        self.eval_dataset: Union[datasets.Dataset, None] = None
 
-    def generate_questions(self, nb_questions:int):
+    def generate_questions(self, nb_questions: int, docs: Docs):
         """
         Generates a specified number of questions based on the documents.
 
         Parameters:
             nb_questions (int): The number of questions to be generated.
         """
+        self.docs = docs
         self.questions = []
         sample_docs = random.sample(self.docs.get_chunks(), nb_questions)
 
@@ -158,13 +167,16 @@ class Evaluator:
                 )
             except:
                 continue
+
     def critique_questions(self):
         """
         Critiques the generated questions based on groundedness, relevance, and standalone criteria.
         """
         for question in self.questions:
             evaluations = {
-                "groundedness": self.llm.run(question_groundedness_critique_prompt.format(context=question["context"], question=question["question"]),
+                "groundedness": self.llm.run(question_groundedness_critique_prompt.format(context=question["context"],
+                                                                                          question=question[
+                                                                                              "question"]),
                                              ),
                 "relevance": self.llm.run(
                     question_relevance_critique_prompt.format(question=question["question"]),
@@ -187,15 +199,16 @@ class Evaluator:
                     )
             except Exception as e:
                 continue
-
-    def filter_questions(self, groundness_trsh:int = 1, relevance_trsh:int = 1, standalone_trsh:int =1) -> None:
+    def filter_questions(self, groundness_trsh: int = 1, relevance_trsh: int = 1, standalone_trsh: int = 1) -> None:
         """
-        Filters the critiqued questions based on the specified thresholds for groundedness, relevance, and standalone scores.
+        This method filters the generated questions based on the specified thresholds for groundedness, relevance, and standalone scores.
+        It creates a DataFrame from the generated questions and filters it based on the thresholds. The filtered questions are then stored in the instance variable 'filtered_questions'.
+        It also converts the filtered questions DataFrame into a Dataset and stores it in the instance variable 'eval_dataset'.
 
         Parameters:
-            groundness_trsh (int): The threshold for the groundedness score.
-            relevance_trsh (int): The threshold for the relevance score.
-            standalone_trsh (int): The threshold for the standalone score.
+            groundness_trsh (int): The minimum score a question must have in groundedness to be included in the filtered questions.
+            relevance_trsh (int): The minimum score a question must have in relevance to be included in the filtered questions.
+            standalone_trsh (int): The minimum score a question must have in standalone to be included in the filtered questions.
         """
         generated_questions: pd.DataFrame = pd.DataFrame.from_dict(self.questions)
 
@@ -204,13 +217,14 @@ class Evaluator:
             & (generated_questions["relevance_score"] >= relevance_trsh)
             & (generated_questions["standalone_score"] >= standalone_trsh)
             ]
-        self.filtered_questions : pd.DataFrame = generated_questions
-        self.eval_dataset : datasets.Dataset = datasets.Dataset.from_pandas(generated_questions, split="train", preserve_index=False)
+        self.filtered_questions: pd.DataFrame = generated_questions
+        self.eval_dataset: datasets.Dataset = datasets.Dataset.from_pandas(generated_questions, split="train",
+                                                                           preserve_index=False)
 
-
-    def eval_question_answer(self, question:str, answer:str, true_answer:str) -> tuple[str, int]:
+    def eval_question_answer(self, question: str, answer: str, true_answer: str) -> tuple[str, int]:
         """
-        Evaluates the quality of a given answer to a question, compared to a reference answer.
+        This method evaluates the quality of a given answer to a question, compared to a reference answer.
+        It uses the LLM model to generate an evaluation result, which is then parsed to extract the feedback and score.
 
         Parameters:
             question (str): The question for which the answer is provided.
@@ -230,14 +244,12 @@ class Evaluator:
         feedback, score = [item.strip() for item in eval_result.split("[RESULT]")]
         return feedback, score
 
-    def evaluate(self, rag : RAG):
+    def evaluate(self, rag: RAG):
         """
-        Evaluates the RAG model based on the filtered questions.
-
-        This method generates answers for the filtered questions using the RAG model,
-        then evaluates the quality of these answers compared to the reference answers.
+        This method evaluates the RAG model based on the filtered questions.
+        It generates answers for the filtered questions using the RAG model, then evaluates the quality of these answers compared to the reference answers.
         The evaluation is based on the feedback and score obtained from the `eval_question_answer` method.
-        The results are saved in a dataset and stored in the specified save path.
+        The results are saved in a dataset and returned.
 
         Parameters:
             rag (RAG): The RAG model to be evaluated.
@@ -270,5 +282,24 @@ class Evaluator:
                 )[1],
             }
         )
-        eval_dataset.save_to_disk(self.save_path)
         return eval_dataset
+
+    def save_dataset(self, path: str) -> None:
+        """
+        This method saves the evaluation dataset to disk at the specified path.
+
+        Parameters:
+            path (str): The path where the evaluation dataset will be saved.
+        """
+        self.eval_dataset.save_to_disk(path)
+        pass
+
+    def load_dataset(self, path: str) -> None:
+        """
+        This method loads the evaluation dataset from disk from the specified path.
+
+        Parameters:
+            path (str): The path where the evaluation dataset is stored.
+        """
+        self.eval_dataset = datasets.load_from_disk(path)
+        pass
