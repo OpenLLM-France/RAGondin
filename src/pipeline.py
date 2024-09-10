@@ -1,12 +1,11 @@
 import configparser
-
-from src.chunker import Docs, Chunker
-from src.llm import LLM
-from src.prompt import Prompt
-from src.reranker import Reranker
-from src.retriever import Retriever
-from vector_store import Qdrant_Connector
-from embeddings import Embeddings
+from .chunker import Docs, RecursiveSplitter
+from .llm import LLM
+from .prompt import Prompt
+from .reranker import Reranker
+from .retriever import SingleRetriever
+from .vector_store import Qdrant_Connector
+from .embeddings import HFEmbedder
 from flask import Flask, request
 from openai import OpenAI
 
@@ -28,7 +27,7 @@ def inference():
         model_kwargs = dict(config.items("EMBEDDINGS.MODEL_KWARGS"))
         encode_kwargs = dict(config.items("EMBEDDINGS.ENCODE_KWARGS"))
 
-        embeddings = Embeddings(model_type, model_name, model_kwargs, encode_kwargs).get_embeddings()
+        embeddings = HFEmbedder(model_type, model_name, model_kwargs, encode_kwargs).get_embeddings()
 
         connector = Qdrant_Connector(host, port, collection, embeddings)
 
@@ -73,7 +72,7 @@ class RAG:
         reranker (Reranker): An instance of the Reranker class.
         prompt (Prompt): An instance of the Prompt class.
     """
-    def __init__(self, llm: LLM, connector: Qdrant_Connector, retriever : Retriever, prompt: Prompt, reranker: Reranker= None):
+    def __init__(self, llm: LLM, connector: Qdrant_Connector, retriever : SingleRetriever, prompt: Prompt, reranker: Reranker= None):
         """
         The constructor for the RAG class.
 

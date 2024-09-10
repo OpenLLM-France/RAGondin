@@ -8,7 +8,7 @@ from vector_store import Qdrant_Connector
 
 
 #from langchain.document_loaders import PyPDFLoader
-from embeddings import Embeddings
+from embeddings import HFEmbedder
 
 
 # Read config file
@@ -34,11 +34,11 @@ text_splitter = RecursiveCharacterTextSplitter(chunk_size=500, chunk_overlap=50)
 chunks = text_splitter.split_documents(documents)
 
 # Load the embedding model 
-embeddings = Embeddings(model_type, model_name, model_kwargs, encode_kwargs).get_embeddings()
+embeddings = HFEmbedder(model_type, model_name, model_kwargs, encode_kwargs).get_embeddings()
 
 url = f"http://{host}:{port}"
 connector = Qdrant_Connector(host, port, collection, embeddings)
-connector.build_index(chunks)
+connector.add_documents(chunks)
 
 
 #TODO: use loguru library for logging

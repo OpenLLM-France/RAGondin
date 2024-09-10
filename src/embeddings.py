@@ -1,13 +1,30 @@
+from abc import ABCMeta, abstractmethod
 from langchain_community.embeddings import HuggingFaceBgeEmbeddings, HuggingFaceEmbeddings
 
 
-class Embeddings:
+class BaseEmbedder(metaclass=ABCMeta):
+    """_Abstract
     """
-    Factory class to generate embeddings using different backend models.
-    """
+    @abstractmethod
+    def get_embeddings(self):
+        pass
 
-    def __init__(self, model_type: str = 'huggingface', model_name: str = "thenlper/gte-small", model_kwargs=None,
-                 encode_kwargs=None) -> None:
+
+HG_EMBEDDER_TYPE = {
+    "huggingface_bge": HuggingFaceBgeEmbeddings,
+    "huggingface": HuggingFaceEmbeddings
+}
+
+class HFEmbedder(BaseEmbedder):
+    """Factory class to generate embeddings using different backend models.
+    """
+    def __init__(
+            self, 
+            model_type: str = 'huggingface', 
+            model_name: str = "thenlper/gte-small", 
+            model_kwargs = {"device": "cpu"},
+            encode_kwargs = {"normalize_embeddings": True}
+        ) -> None:
         """
         Initialize Embeddings.
 
@@ -20,27 +37,23 @@ class Embeddings:
         Raises:
             ValueError: If invalid model_type passed.
         """
-        if model_kwargs is None:
-            model_kwargs = {"device": "cuda"}
-        if encode_kwargs is None:
-            encode_kwargs = {"normalize_embeddings": True}
-        if model_type == "huggingface_bge":
-            self.embeddings = HuggingFaceBgeEmbeddings(
-                model_name=model_name,
-                model_kwargs=model_kwargs,
-                encode_kwargs=encode_kwargs
-            )
-        elif model_type == "huggingface":
-            self.embeddings = HuggingFaceEmbeddings(
-                model_name=model_name,
-                model_kwargs=model_kwargs,
-                encode_kwargs=encode_kwargs
-            )
+
+        # cach_folder
+        if model_type in HG_EMBEDDER_TYPE:
+            try:
+                self.embedding = HG_EMBEDDER_TYPE[model_type](
+                    model_name=model_name,
+                    model_kwargs=model_kwargs,
+                    encode_kwargs=encode_kwargs
+                )
+
+            except Exception as e:
+                raise ValueError(f"An error occured: {e}")
         else:
-            raise ValueError(f"{model_type} is not a valid model_type")
+            raise ValueError(f"{model_type} is not a valid `model_type`")
 
     def get_embeddings(self) -> HuggingFaceBgeEmbeddings:
         """
         Return the generated embeddings.
         """
-        return self.embeddings
+        return self.embedding

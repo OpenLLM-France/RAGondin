@@ -1,27 +1,36 @@
 # Import necessary libraries and modules
+from operator import itemgetter
 import random
 from typing import Union, List
 
 # Import local modules
-from src.chunker import Docs
-from src.llm import LLM
+from .chunker import Docs
+from .llm import LLM
 
 # Import external libraries
 import pandas as pd
 import datasets
+import logging
+import pprint as pp
+from tqdm import tqdm
 
 # Import local modules
-from src.pipeline import RAG
+from .pipeline import RAG
+
+logging.basicConfig()
+logger = logging.getLogger(__name__)
+logger.setLevel(level=logging.DEBUG)
 
 # Define prompts for evaluation
 EVALUATION_PROMPT = """
-###Context:
-You are a fair evaluator language model for french documentation.
+<|begin_of_text|><|start_header_id|>system<|end_header_id|>
+
+###Context: You are a fair evaluator language model for french documents.
 ###Task Description:
-An instruction (might include an Input inside it), a response to evaluate, a reference answer that gets a score of 5, and a score rubric representing a evaluation criteria are given.
-1. Write a detailed feedback that assess the quality of the response strictly based on the given score rubric, not evaluating in general.
+An instruction (might include an Input inside it), a response to evaluate, a reference answer that gets a score of 5, and a score rubric representing an evaluation criteria are given.
+1. Write a detailed feedback that assesses the quality of the response strictly based on the given score rubric, not evaluating in general.
 2. After writing a feedback, write a score that is an integer between 1 and 5. You should refer to the score rubric.
-3. The output format should look as follows: \"Feedback: {{write a feedback for criteria}} [RESULT] {{an integer number between 1 and 5}}\"
+3. The output format should look as follows: \"Feedback: (write a feedback for criteria) [RESULT] (an integer number between 1 and 5)\"
 4. Please do not generate any other opening, closing, and explanations. Be sure to include [RESULT] in your output.
 
 ###The instruction to evaluate:
@@ -41,12 +50,17 @@ Score 3: The response is somewhat correct, accurate, and/or factual.
 Score 4: The response is mostly correct, accurate, and factual.
 Score 5: The response is completely correct, accurate, and factual.
 
-###Feedback:"""
+You MUST provide a 'Feedback' and '[RESULT]'.Here is the format to follow
+Feedback: sentence for feedback.[RESULT]: 2<|eot_id|>
+<|start_header_id|>assistant<|end_header_id|>
+
+Feedback: """
 
 # Define prompts for question critique
-question_groundedness_critique_prompt = """
+question_groundedness_critique_prompt = """<|begin_of_text|>|start_header_id|>system<|end_header_id|>
+
 You will be given a context and a question both in french.
-Your task is to provide a 'total rating' scoring how well one can answer the given question unambiguously with the given context.
+Your task is to provide a 'Total rating' scoring how well one can answer the given question unambiguously with the given context.
 Give your answer on a scale of 1 to 5, where 1 means that the question is not answerable at all given the context, and 5 means that the question is clearly and unambiguously answerable with the context.
 
 Provide your answer as follows:
@@ -55,18 +69,18 @@ Answer:::
 Evaluation: (your rationale for the rating, as a text)
 Total rating: (your rating, as a number between 1 and 5)
 
-You MUST provide values for 'Evaluation:' and 'Total rating:' in your answer.
-
-Now here are the question and context.
+You MUST provide values for 'Evaluation:' and 'Total rating:' in your answer.<|eot_id|>
+<|start_header_id|>assistant<|end_header_id|>
 
 Question: {question}\n
 Context: {context}\n
-Answer::: """
+Answer:::"""
 
 # Define prompts for question relevance critique
-question_relevance_critique_prompt = """
-You will be given a question both in french.
-Your task is to provide a 'total rating' representing how useful this question can be to machine learning developers building NLP applications with the Hugging Face ecosystem.
+question_relevance_critique_prompt = """<|begin_of_text|>|start_header_id|>system<|end_header_id|>
+
+You will be given a question in french.
+Your task is to provide a 'Total rating' representing how useful this question can be to machine learning developers building NLP applications with the Hugging Face ecosystem<.
 Give your answer on a scale of 1 to 5, where 1 means that the question is not useful at all, and 5 means that the question is extremely useful.
 
 Provide your answer as follows:
@@ -75,17 +89,17 @@ Answer:::
 Evaluation: (your rationale for the rating, as a text)
 Total rating: (your rating, as a number between 1 and 5)
 
-You MUST provide values for 'Evaluation:' and 'Total rating:' in your answer.
-
-Now here is the question.
+You MUST absolutely provide values for 'Evaluation:' and 'Total rating:' in your answer.<|eot_id|>
+<|start_header_id|>assistant<|end_header_id|>
 
 Question: {question}\n
-Answer::: """
+Answer:::"""
 
 # Define prompts for standalone question critique
-question_standalone_critique_prompt = """
-You will be given a question both in french
-Your task is to provide a 'total rating' representing how context-independant this question is.
+question_standalone_critique_prompt = """<|begin_of_text|>|start_header_id|>system<|end_header_id|>
+
+You will be given a question in french.
+Your task is to provide a 'Total rating' representing how context-independant this question is.
 Give your answer on a scale of 1 to 5, where 1 means that the question depends on additional information to be understood, and 5 means that the question makes sense by itself.
 For instance, if the question refers to a particular setting, like 'in the context' or 'in the document', the rating must be 1.
 The questions can contain obscure technical nouns or acronyms like Gradio, Hub, Hugging Face or Space and still be a 5: it must simply be clear to an operator with access to documentation what the question is about.
@@ -98,15 +112,14 @@ Answer:::
 Evaluation: (your rationale for the rating, as a text)
 Total rating: (your rating, as a number between 1 and 5)
 
-You MUST provide values for 'Evaluation:' and 'Total rating:' in your answer.
-
-Now here is the question.
+You MUST absolutely provide values for 'Evaluation:' and 'Total rating:' in your answer<|eot_id|>
+<|start_header_id|>assistant<|end_header_id|>
 
 Question: {question}\n
-Answer::: """
+Answer:::"""
 
 # Define prompts for QA generation
-QA_generation_prompt = """
+QA_generation_prompt = """<|begin_of_text|>|start_header_id|>system<|end_header_id|>
 Your task is to write a factoid question in french and an answer in french given a context in french.
 Your factoid question should be answerable with a specific, concise piece of factual information from the context.
 Your factoid question should be formulated in the same style as questions users could ask in a search engine.
@@ -115,17 +128,16 @@ This means that your factoid question MUST NOT mention something like "according
 Provide your answer as follows:
 
 Output:::
-Factoid question: (your factoid question)
-Answer: (your answer to the factoid question)
-
-Now here is the context.
+Factoid question: (your factoid question. It should be concise)
+Answer: (your answer to the factoid question)<|eot_id|>
+<|start_header_id|>assistant<|end_header_id|>
 
 Context: {context}\n
 Output:::"""
 
 # Define the Evaluator class
 class Evaluator:
-    def __init__(self, llm: LLM):
+    def __init__(self, llm: LLM, save_path="./"):
         """
             The constructor for the Evaluator class.
 
@@ -136,9 +148,10 @@ class Evaluator:
         """
         self.llm = llm
         self.docs = None
-        self.questions: Union[List[str], None] = None
-        self.filtered_questions: Union[pd.DataFrame, None] = None
-        self.eval_dataset: Union[datasets.Dataset, None] = None
+        self.save_path = save_path # "/home/linagora/workspace/Mahamadou/RAGondin-1/src/"
+        self.questions: list[dict] | None = None
+        self.filtered_questions: pd.DataFrame | None = None
+        self.eval_dataset: datasets.Dataset | None = None
 
     def generate_questions(self, nb_questions: int, docs: Docs):
         """
@@ -149,14 +162,17 @@ class Evaluator:
         """
         self.docs = docs
         self.questions = []
+
+        random.seed(2000)
         sample_docs = random.sample(self.docs.get_chunks(), nb_questions)
 
-        for sampled_context in sample_docs:
-            output_QA_couple = self.llm.run(QA_generation_prompt.format(context=sampled_context.page_content))
+        for sampled_context in tqdm(sample_docs, desc="Generating questions..."):
+            output_QA_couple = self.llm.run(QA_generation_prompt.format(context=sampled_context.page_content)) # generate (question, answer) pairs
             try:
-                question = output_QA_couple.split("Factoid question: ")[-1].split("Answer: ")[0]
-                answer = output_QA_couple.split("Answer: ")[-1]
-                assert len(answer) < 300, "Answer is too long"
+                # question = output_QA_couple.split("Factoid question: ")[-1].split("Answer: ")[0]
+                # answer = output_QA_couple.split("Answer: ")[-1]
+                question, answer = output_QA_couple.split("Factoid question: ")[-1].split("Answer: ")
+                assert len(answer) < 200, "Answer is too long"
                 self.questions.append(
                     {
                         "context": sampled_context.page_content,
@@ -172,12 +188,11 @@ class Evaluator:
         """
         Critiques the generated questions based on groundedness, relevance, and standalone criteria.
         """
-        for question in self.questions:
+        for question in tqdm(self.questions, desc="generate critiques..."):
             evaluations = {
-                "groundedness": self.llm.run(question_groundedness_critique_prompt.format(context=question["context"],
-                                                                                          question=question[
-                                                                                              "question"]),
-                                             ),
+                "groundedness": self.llm.run(
+                    question_groundedness_critique_prompt.format(context=question["context"], question=question["question"])
+                ),
                 "relevance": self.llm.run(
                     question_relevance_critique_prompt.format(question=question["question"]),
                 ),
@@ -185,20 +200,22 @@ class Evaluator:
                     question_standalone_critique_prompt.format(question=question["question"]),
                 ),
             }
-            try:
-                for criterion, evaluation in evaluations.items():
-                    score, eval = (
-                        int(evaluation.split("Total rating: ")[-1].strip()),
-                        evaluation.split("Total rating: ")[-2].split("Evaluation: ")[1],
-                    )
+            for criterion, evaluation in evaluations.items():
+                try:
+                    eval, score = evaluation.strip().split("Evaluation: ")[-1].split("Total rating: ")
+                    score = int(score.strip())
+                    # print(f"===>{criterion}", score, eval, sep=" # ")
                     question.update(
                         {
-                            f"{criterion}_score": score,
-                            f"{criterion}_eval": eval,
+                            f"{criterion}_score": score, 
+                            f"{criterion}_eval": eval.strip()
                         }
                     )
-            except Exception as e:
-                continue
+                except Exception as e:
+                    logger.info(f"An error occurred while performing evaluations: {e}")
+                    continue
+
+            
     def filter_questions(self, groundness_trsh: int = 1, relevance_trsh: int = 1, standalone_trsh: int = 1) -> None:
         """
         This method filters the generated questions based on the specified thresholds for groundedness, relevance, and standalone scores.
@@ -210,13 +227,22 @@ class Evaluator:
             relevance_trsh (int): The minimum score a question must have in relevance to be included in the filtered questions.
             standalone_trsh (int): The minimum score a question must have in standalone to be included in the filtered questions.
         """
-        generated_questions: pd.DataFrame = pd.DataFrame.from_dict(self.questions)
+        # print([len(q) for q in self.questions])
 
-        generated_questions = generated_questions.loc[
-            (generated_questions["groundedness_score"] >= groundness_trsh)
-            & (generated_questions["relevance_score"] >= relevance_trsh)
-            & (generated_questions["standalone_score"] >= standalone_trsh)
-            ]
+        # assert 1 == 2
+        values = {"groundedness_score":1, "relevance_score":1, "standalone_score":1}
+        generated_questions: pd.DataFrame = pd.DataFrame.from_dict(self.questions)
+        generated_questions.fillna(value=values, inplace=True)
+
+        # print(generated_questions)        
+        
+        c = (
+            (generated_questions["groundedness_score"] >= groundness_trsh) & 
+            (generated_questions["relevance_score"] >= relevance_trsh) & 
+            (generated_questions["standalone_score"] >= standalone_trsh)
+        )
+        
+        generated_questions = generated_questions.loc[c]
         self.filtered_questions: pd.DataFrame = generated_questions
         self.eval_dataset: datasets.Dataset = datasets.Dataset.from_pandas(generated_questions, split="train",
                                                                            preserve_index=False)
@@ -240,9 +266,15 @@ class Evaluator:
             reference_answer=true_answer,
         )
         eval_result = self.llm.run(eval_prompt).split("###Feedback")[-1]
-
-        feedback, score = [item.strip() for item in eval_result.split("[RESULT]")]
-        return feedback, score
+        # print(eval_prompt)
+        # assert 1 == 2
+        try:
+            feedback, score =  eval_result.split("[RESULT]: ") # [item.strip() for item in eval_result.split("[RESULT]")]
+            # print(f"==> {score}, {feedback}")
+            return {"feedback":feedback.strip(), "score": score.strip()}
+        except Exception as e:
+            logger.info(f"Error while evaluating: {e}")
+            return {"feedback":"", "score": ""}
 
     def evaluate(self, rag: RAG):
         """
@@ -258,6 +290,7 @@ class Evaluator:
             datasets.Dataset: The dataset containing the questions, context, reference answers, generated answers, feedback, and scores.
         """
         eval_dataset = self.eval_dataset
+
         eval_dataset = eval_dataset.map(
             lambda example: {
                 "question": example["question"],
@@ -267,6 +300,7 @@ class Evaluator:
                 "generated_output": rag.run(example["question"]),
             }
         )
+        
         eval_dataset = eval_dataset.map(
             lambda example: {
                 "question": example["question"],
@@ -274,12 +308,14 @@ class Evaluator:
                 "answer": example["answer"],
                 "source_doc": example["source_doc"],
                 "generated_output": example["generated_output"],
-                "feedback": self.eval_question_answer(
-                    example["question"], example["generated_output"], example["answer"]
-                )[0],
-                "score": self.eval_question_answer(
-                    example["question"], example["generated_output"], example["answer"]
-                )[1],
+                **self.eval_question_answer(example["question"], example["generated_output"], example["answer"])
+
+                # "feedback": self.eval_question_answer(
+                #     example["question"], example["generated_output"], example["answer"]
+                # )[0],
+                # "score": self.eval_question_answer(
+                #     example["question"], example["generated_output"], example["answer"]
+                # )[1],
             }
         )
         return eval_dataset

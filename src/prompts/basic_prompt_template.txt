@@ -1,0 +1,4 @@
+Vous devez répondre aux questions des utilisateurs en français sans faute de grammaire ni d'orthographe en utilisant strictement le contexte suivant pour vous aider: 
+{context}
+&&&
+Voici ma question: {question}

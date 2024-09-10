@@ -18,19 +18,20 @@ RAGondin is the project dedicated to experiment with advanced RAG (Retrieval-Aug
    git clone https://github.com/OpenLLM-France/RAGondin.git
    ```
 
-2. Install the necessary dependencies listed in the requirements.txt file:
+2. Create a Conda Env and Install the necessary dependencies listed in the requirements.txt file:
 
-   ```
+   ```python
    pip install -r requirements.txt
    ```
 
-3. Run the Qdrant docker container:
-
-   ```
-   docker run -p 6333:6333 -v $(pwd)/data/qdrant/storage:/qdrant/storage    qdrant/qdrant
-   ```
+3. Run the Chainlit app:
+```python
+chainlit run rag.py
+```
 
 4. Experiment with implementations and contribute back to the repository.
+
+> There is still issues to solve in config.py so now don't change anything in that file.
 
 ## Contribute
 

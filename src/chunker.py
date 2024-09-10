@@ -1,5 +1,6 @@
+from abc import ABCMeta, abstractmethod
 import os
-
+from pathlib import Path
 from langchain_core.documents.base import Document
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain_community.document_loaders import DirectoryLoader
@@ -19,14 +20,29 @@ DEFAULT_LOADERS = {
     '.html': UnstructuredHTMLLoader,
 }
 
-def create_directory_loader(file_type, directory_path):
+def create_file_type_loader(file_type, directory_path):
     return DirectoryLoader(
         path=directory_path,
         glob=f"**/*{file_type}",
         loader_cls=DEFAULT_LOADERS[file_type],
     )
 
-class Chunker:
+
+class BaseChunker(metaclass=ABCMeta):
+    @abstractmethod
+    def __init__(self, 
+            chunk_size: int=200, 
+            chunk_overlap: int=20, 
+            chunker_args: dict=None
+        ) -> None:
+        pass
+
+    @abstractmethod
+    def split(self, docs: list[Document]):
+        pass
+    
+
+class RecursiveSplitter(BaseChunker):
     """
     Class to chunk/split documents into smaller sections.
 
@@ -34,7 +50,7 @@ class Chunker:
     smaller chunks of text.
     """
 
-    def __init__(self, chunk_size: int = 500, chunk_overlap: int = 50):
+    def __init__(self, chunk_size: int=200, chunk_overlap: int=20, chunker_args: dict=None):
         """
         Initialize the Chunker object.
 
@@ -45,10 +61,11 @@ class Chunker:
 
         self.text_splitter = RecursiveCharacterTextSplitter(
             chunk_size=chunk_size,
-            chunk_overlap=chunk_overlap
+            chunk_overlap=chunk_overlap,
+            **chunker_args
         )
 
-    def split(self, docs: list[Document]):
+    def split(self, docs: list[Document]=[]):
         """
         Split a list of documents into chunks.
 
@@ -66,7 +83,10 @@ class Chunker:
         """
 
         if not isinstance(docs, list):
-            raise ValueError("docs must be a list")
+            raise TypeError("docs must be a list of documents.")
+        
+        if len(docs) == 0:
+            raise IndexError("Docs is empty.")
 
         return self.text_splitter.split_documents(docs)
 
@@ -86,15 +106,16 @@ class Docs:
         chunked_docs (list): The documents split into chunks.
     """
 
-    def __init__(self):
+    def __init__(self, data_path: str =None):
         """
         Initialize the Documents object.
 
         Sets up empty lists to store the original and chunked documents.
         """
-
+        self.data_path = data_path
         self.docs : list[Document] = []
-        self.chunked_docs : list[Document] = []
+        # self.chunked_docs : list[Document] = []
+        # self.load(dir_path=data_path)
 
     def __getitem__(self, item):
         return self.chunked_docs[item]
@@ -105,7 +126,8 @@ class Docs:
     def __iter__(self):
         return iter(self.chunked_docs)
 
-    def load(self, dir_path) -> None:
+
+    def load(self, dir_path: str | Path) -> None:
         """
         Load documents from the given directory.
 
@@ -132,51 +154,52 @@ class Docs:
         # Validate directory path
         if not os.path.isdir(dir_path):
             raise FileNotFoundError(f"Directory not found: {dir_path}")
+        
+        for file_type in DEFAULT_LOADERS.keys():
+            loader: DirectoryLoader = create_file_type_loader(file_type=file_type, directory_path=dir_path) # create loader specific to that type
+            docs = loader.load() # load document
+            self.docs.extend(docs) # add them to the list
 
-        # Create loader for each file type
-        pdf_loader = create_directory_loader('.pdf', dir_path)
-        xml_loader = create_directory_loader('.xml', dir_path)
-        csv_loader = create_directory_loader('.csv', dir_path)
-        txt_loader = create_directory_loader('.txt', dir_path)
-        html_loader = create_directory_loader('.html', dir_path)
+    def load_file(self, file_path: str | Path):
+        file_path = Path(file_path)
+        if not os.path.isfile(file_path):
+            raise FileNotFoundError(f"File not found: {file_path}")
 
-        # Load documents with each loader
-        pdf_docs = pdf_loader.load()
-        xml_docs = xml_loader.load()
-        csv_docs = csv_loader.load()
-        txt_docs = txt_loader.load()
-        html_docs = html_loader.load()
+        if file_path.suffix not in DEFAULT_LOADERS:
+            raise TypeError(f"File type {file_path.suffix} not supported")
+        
+        # get loader
+        file_loader = DEFAULT_LOADERS[file_path.suffix](file_path)
+        docs = file_loader.load()
+        self.docs.extend(docs)
+        
+        
 
-        # Add all docs to main list
-        self.docs.extend(pdf_docs)
-        self.docs.extend(xml_docs)
-        self.docs.extend(csv_docs)
-        self.docs.extend(txt_docs)
-        self.docs.extend(html_docs)
 
-    def chunk(self, chunker: Chunker) -> None:
-        """
-        Split loaded documents into chunks.
+    # def chunk(self, chunker: RecursiveSplitter) -> None:
+    #     """
+    #     Split loaded documents into chunks.
 
-        Uses the provided Chunker instance to split the loaded
-        documents into smaller chunks.
+    #     Uses the provided Chunker instance to split the loaded
+    #     documents into smaller chunks.
 
-        Args:
-            chunker (Chunker): The Chunker instance to use for splitting.
+    #     Args:
+    #         chunker (Chunker): The Chunker instance to use for splitting.
 
-        Returns:
-            None
+    #     Returns:
+    #         None
 
-        Raises:
-            ValueError: If no documents are loaded.
-        """
+    #     Raises:
+    #         ValueError: If no documents are loaded.
+    #     """
 
-        if len(self.docs) == 0:
-            raise ValueError("No documents loaded")
+    #     if len(self.docs) == 0:
+    #         raise ValueError("No documents loaded")
 
-        # Perform splitting with Chunker
-        # Store chunked docs
-        self.chunked_docs = chunker.split(self.docs)
+    #     # Perform splitting with Chunker
+    #     # Store chunked docs
+    #     self.chunked_docs = chunker.split(self.docs)
+
 
     def get_docs(self) -> list:
         """
@@ -187,14 +210,27 @@ class Docs:
         """
         return self.docs
 
-    def get_chunks(self) -> list:
-        """
-        Get the chunked documents.
+    # def get_chunks(self) -> list[Document]:
+    #     """
+    #     Get the chunked documents.
 
-        Returns:
-            list: The documents split into chunks.
-        """
-        return self.chunked_docs
+    #     Returns:
+    #         list: The documents split into chunks.
+    #     """
+    #     return self.chunked_docs
+
+
+CHUNKERS = {
+    "recursive_splitter": RecursiveSplitter
+}
+
+def get_chunker_cls(strategy_name: str) -> BaseChunker:
+    # Retrieve the chunker class from the map and instantiate it
+    chunker = CHUNKERS.get(strategy_name, None)
+    if chunker is None:
+        raise ValueError(f"Unknown chunking strategy: {strategy_name}")
+    return chunker
+
 
 
 

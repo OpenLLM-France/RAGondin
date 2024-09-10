@@ -1,0 +1,10 @@
+# Ignore environment files
+.env
+
+# generate folders
+.files/
+.chainlit/
+chainlit_tuto/
+
+# Ignore __pycache__ directories
+**/__pycache__/
