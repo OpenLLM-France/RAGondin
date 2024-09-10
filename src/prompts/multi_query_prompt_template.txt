@@ -3,8 +3,8 @@ Votre tâche consiste à générer {k} versions différentes de la question donn
 En générant plusieurs perspectives sur la question de l'utilisateur, votre objectif est d'aider l'utilisateur à surmonter certaines des limitations de la recherche de similarité basée sur la distance. 
 Fournissez ces questions alternatives séparées par [SEP].
 
-Vous devez absolument générer {k} questions, en français, sur la même ligne, séparées uniquement par [SEP]. Voici le format à suivre
+Vous devez absolument générer {k} questions, en français, sur la même ligne, séparées uniquement par [SEP]. 
+Voici le format à suivre:
 ####Generated Questions: "question 1"[SEP]"question 2"[SEP]"question 3"[SEP]..."question {k}"
 &&&
 #### Question originale: {question}
-####Generated Questions: 

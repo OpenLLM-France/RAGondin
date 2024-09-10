@@ -5,14 +5,14 @@ from typing import Union
 from .llm import LLM
 from .prompt import Prompt
 from .reranker import Reranker
-from .vector_store import Qdrant_Connector
+from .vector_store import Qdrant_Connector, BaseVectorDdConnector
 from enum import Enum
 
-# Define the types of retrievers
 CRITERIAS = ["similarity"]
 
-
 class BaseRetriever(metaclass=ABCMeta):
+    """Abstract class for the base retreiver.
+    """
     @abstractmethod
     def __init__(self, criteria: str = "similarity", top_k: int = 6, **extra_args) -> None:
         pass
@@ -28,34 +28,20 @@ class BaseRetriever(metaclass=ABCMeta):
 
 # Define the Retriever class
 class SingleRetriever(BaseRetriever):
-    """
-    The Retriever class is responsible for retrieving relevant documents based on the type of retrieval method specified.
-
-    Attributes
-    ----------
-    type : str
-        The type of retrieval method. It can be "similarity".
-    params : dict
-        The parameters for the retrieval method.
-    """
-
     def __init__(self, criteria: str = "similarity", top_k: int = 6, **extra_args) -> None:
-        """
-        Constructs all the necessary attributes for the Retriever object.
+        """Constructs all the necessary attributes for the Retriever object.
 
-        Parameters
-        ----------
-            params : dict
-                The parameters for the retrieval method.
-            reranker : Reranker, optional
-                An instance of the Reranker class used for reranking the retrieved documents.
-            type_retriever : str
-                The type of retrieval method. It can be "similarity".
+        Args:
+            criteria (str, optional): Retrieval criteria. Defaults to "similarity".
+            top_k (int, optional): top_k most similar documents to retreive. Defaults to 6.
         """
         self.top_k = top_k
+        if criteria not in CRITERIAS:
+            ValueError(f"Invalid type. Choose from {CRITERIAS}")
+
         self.criteria = criteria
 
-    def retrieve(self, question: str, db: Qdrant_Connector) -> list[str]:
+    def retrieve(self, question: str, db: BaseVectorDdConnector | Qdrant_Connector) -> list[str]:
         """
         Retrieves relevant documents based on the type of retrieval method specified.
 
@@ -101,40 +87,28 @@ class SingleRetriever(BaseRetriever):
         if self.criteria == "similarity":
             retrieved_chunks = db.similarity_search_with_score(query=question, top_k=self.params["top_k"])
         else:
-            raise ValueError(f"Invalid type. Choose from {CRITERIAS}")
+            raise ValueError(f"Invalid type. Choose from criteria from {CRITERIAS}")
         retrieved_chunks_with_score = [tuple((chunk.page_content, score)) for chunk, score in retrieved_chunks]
         return retrieved_chunks_with_score
 
 
 # Define the MultiQueryRetriever class
 class MultiQueryRetriever(SingleRetriever):
-    """
-    The MultiQueryRetriever class is a subclass of the Retriever class that retrieves relevant documents based on multiple queries.
-
-    Attributes
-    ----------
-    llm : LLM
-        An instance of the LLM class used for generating multiple queries.
-    prompt_multi_queries : Prompt
-        An instance of the Prompt class used for generating prompts for multiple queries.
-    """
-
     def __init__(
             self, 
             criteria: str = "similarity", top_k: int = 6,
             **extra_args
             ) -> None:
         """
-        Constructs all the necessary attributes for the MultiQueryRetriever object.
+        The MultiQueryRetriever class is a subclass of the Retriever class that retrieves relevant documents based on multiple queries.
+        Given a query, multiple similar are generated with an llm. Retreival is done with each one them and finally a subset is chosen.
 
-        Parameters
+        Attributes
         ----------
-            params : dict
-                The parameters for the retrieval method.
-            llm : LLM
-                An instance of the LLM class used for generating multiple queries.
-            prompt_multi_queries : Prompt
-                An instance of the Prompt class used for generating prompts for multiple queries.
+        Args:
+            criteria (str, optional): Retrieval criteria. Defaults to "similarity".
+            top_k (int, optional): top_k most similar documents to retreive. Defaults to 6.
+            extra_args (dict): contains additionals arguments for this type of retreiver.
         """
         super().__init__(criteria, top_k)
         
@@ -159,17 +133,18 @@ class MultiQueryRetriever(SingleRetriever):
             raise KeyError(f"An Error has occured: {e}")
 
 
-    def retrieve_with_scores(self, question: str, db: Qdrant_Connector):
+    def retrieve_with_scores(self, question: str, db: BaseVectorDdConnector | Qdrant_Connector):
         msg_prompts = self.prompt_multi_queries.get_prompt(
             question=question, 
             k_multi_queries=self.k_multi_queries
         )
+        # generate similar questions
         generated_questions = Prompt.generate_multi_query(self.llm, msg_prompts=msg_prompts)
 
         if self.criteria == "similarity":
             retrieved_chunks = db.multy_query_similarity_search_with_scores(queries=generated_questions, top_k_per_queries=self.top_k)
         else:
-            raise ValueError(f"Invalid {self.criteria} should be from {CRITERIAS}")
+            raise ValueError(f"Invalid, {self.criteria} should be from {CRITERIAS}")
         
         retrieved_chunks_with_score = [(chunk.page_content, score) for chunk, score in retrieved_chunks ]
         return retrieved_chunks_with_score
@@ -204,6 +179,7 @@ class MultiQueryRetriever(SingleRetriever):
 
 
 class HybridRetriever(SingleRetriever):
+    #TODO: This class has not been review yet in order to make it coherent with other retreivers
     """
     The HybridRetriever class is a subclass of the Retriever class that retrieves relevant documents
     based on multiple retrieval methods. It combines the results from multiple retrievers, each with

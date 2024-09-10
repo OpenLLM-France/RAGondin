@@ -1,24 +1,28 @@
+import asyncio
 import copy
 from pathlib import Path
 from .chunker import Docs, get_chunker_cls, CHUNKERS
 from .llm import LLM
 from .prompt import Prompt
 from .reranker import Reranker
-from .retriever import SingleRetriever, MultiQueryRetriever, get_retreiver_cls, BaseRetriever
-from .vector_store import CONNECTORS, BaseVectorDdConnector
-from .embeddings import HFEmbedder, BaseEmbedder
+from .retriever import get_retreiver_cls, BaseRetriever
+from .vector_store import CONNECTORS
+from .embeddings import HFEmbedder
 from .config import Config
 from openai import OpenAI, AsyncOpenAI
 
 class Doc2VdbPipe:
-    def __init__(self, config: Config) -> None: 
+    """This class bridges static files with the vector database.
+    """
+    def __init__(self, config: Config) -> None:
+        # get chunker 
         self.chunker = CHUNKERS[config.chunker_name](
             chunk_size=config.chunk_size, 
             chunk_overlap=config.chunk_overlap, 
             chunker_args=config.chunker_args
         )
 
-        # TODO: Is it necessary to save this?
+        # get the embedder model
         embedder = HFEmbedder(
             model_type=config.em_model_type,
             model_name=config.em_model_name, 
@@ -26,6 +30,7 @@ class Doc2VdbPipe:
             encode_kwargs=config.encode_kwargs
         )
 
+        # define the connector
         self.connector = CONNECTORS[config.db_connector](
             host=config.host,
             port=config.port,
@@ -33,8 +38,15 @@ class Doc2VdbPipe:
             embeddings=embedder.embedding
         )
 
-
     def load_files2db(self, data_path: Path = None):
+        """Add files from a `data_path`
+
+        Args:
+            data_path (Path, optional): Data Path. Defaults to None.
+
+        Raises:
+            Exception:
+        """
         # get the data
         docs = Docs()
         docs.load(dir_path=data_path) # populate docs object
@@ -46,6 +58,7 @@ class Doc2VdbPipe:
             raise Exception(f"An exception as occured: {e}")
       
     def load_file2db(self, file_path: str | Path):
+        """Add a file to the vector data base"""
         docs = Docs()
         docs.load_file(file_path=file_path) # populuate the docs object
 
@@ -58,6 +71,7 @@ class Doc2VdbPipe:
 class RagPipeline:
     def __init__(self, config: Config) -> None:
         print("Doc2VdbPipe...")
+
         docvdbPipe = Doc2VdbPipe(config=config)
         docvdbPipe.load_files2db(data_path=config.data_path)
         self.docvdbPipe = docvdbPipe

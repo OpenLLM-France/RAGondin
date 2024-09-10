@@ -3,7 +3,7 @@ from langchain_community.embeddings import HuggingFaceBgeEmbeddings, HuggingFace
 
 
 class BaseEmbedder(metaclass=ABCMeta):
-    """_Abstract
+    """Abstract class for embedders
     """
     @abstractmethod
     def get_embeddings(self):
@@ -25,20 +25,17 @@ class HFEmbedder(BaseEmbedder):
             model_kwargs = {"device": "cpu"},
             encode_kwargs = {"normalize_embeddings": True}
         ) -> None:
-        """
-        Initialize Embeddings.
+        """Initialize Embeddings.
 
         Args:
-            model_type (str): Type of embedding model to use.
-            model_name (str): Name of specific model.
-            model_kwargs (dict): kwargs to pass to model constructor.
-            encode_kwargs (dict): kwargs for encoding documents.
+            model_type (str, optional): Type of embedding model to use. Defaults to 'huggingface'.
+            model_name (str, optional): Name of specific model.. Defaults to "thenlper/gte-small".
+            model_kwargs (dict, optional): kwargs to pass to model constructor.. Defaults to {"device": "cpu"}.
+            encode_kwargs (dict, optional): kwargs for encoding documents.. Defaults to {"normalize_embeddings": True}.
 
         Raises:
-            ValueError: If invalid model_type passed.
+            ValueError: If invalid `model_type` passed or non-existant `model_name`.
         """
-
-        # cach_folder
         if model_type in HG_EMBEDDER_TYPE:
             try:
                 self.embedding = HG_EMBEDDER_TYPE[model_type](
@@ -54,6 +51,6 @@ class HFEmbedder(BaseEmbedder):
 
     def get_embeddings(self) -> HuggingFaceBgeEmbeddings:
         """
-        Return the generated embeddings.
+        Return the generated embeddings. This will be used in the Vector DB.
         """
         return self.embedding

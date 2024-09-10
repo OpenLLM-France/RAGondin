@@ -30,7 +30,6 @@ class Reranker:
         k = min(k, len(docs_cleaned)) # k must be <= the number of documents
         ranked_docs = self.model.rerank(question, docs_cleaned, k=k)
 
-        # drop d
         return [doc["content"] for doc in ranked_docs]
 
 
