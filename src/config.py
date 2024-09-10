@@ -47,7 +47,7 @@ class Config:
     reranker_top_k = 5 # number of docs to return after reranking
 
     # retriever
-    retreiver_type = "single"
+    retreiver_type = "multiQuery"
     criteria = "similarity"
     top_k = 5
     retriever_extra_params: dict = field(

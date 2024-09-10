@@ -18,23 +18,22 @@ class LLM:
         else:
             raise ValueError(f"Model should be of type {OpenAI}")
 
-    async def run(self, prompt_dict: dict, streaming=True) -> str:
-        if streaming:
-            stream = await self.client.chat.completions.create(
-                model=self.model_name,
-                messages=[
-                    {"role": "system", "content": prompt_dict["system"]},
-                    {"role": "user", "content": prompt_dict["user"]}
-                ],
-                stream=streaming,
-                max_tokens=self.max_tokens
-            )
-            return stream
+    async def async_run(self, prompt_dict: dict) -> str:
+        stream = await self.client.chat.completions.create(
+            model=self.model_name,
+            messages=[
+                {"role": "system", "content": prompt_dict["system"]},
+                {"role": "user", "content": prompt_dict["user"]}
+            ],
+            stream=True,
+            max_tokens=self.max_tokens
+        )
+        return stream
         
-    def run2(self, prompt_dict: dict, streaming=False):
+    def run(self, prompt_dict: dict):
         response = self.client.completions.create(
             model=self.model_name,
-            prompt=[
+            messages=[
                 {"role": "system", "content": prompt_dict["system"]},
                 {"role": "user", "content": prompt_dict["user"]}
             ],

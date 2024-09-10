@@ -167,7 +167,7 @@ class Evaluator:
         sample_docs = random.sample(self.docs.get_chunks(), nb_questions)
 
         for sampled_context in tqdm(sample_docs, desc="Generating questions..."):
-            output_QA_couple = self.llm.run(QA_generation_prompt.format(context=sampled_context.page_content)) # generate (question, answer) pairs
+            output_QA_couple = self.llm.async_run(QA_generation_prompt.format(context=sampled_context.page_content)) # generate (question, answer) pairs
             try:
                 # question = output_QA_couple.split("Factoid question: ")[-1].split("Answer: ")[0]
                 # answer = output_QA_couple.split("Answer: ")[-1]
@@ -190,13 +190,13 @@ class Evaluator:
         """
         for question in tqdm(self.questions, desc="generate critiques..."):
             evaluations = {
-                "groundedness": self.llm.run(
+                "groundedness": self.llm.async_run(
                     question_groundedness_critique_prompt.format(context=question["context"], question=question["question"])
                 ),
-                "relevance": self.llm.run(
+                "relevance": self.llm.async_run(
                     question_relevance_critique_prompt.format(question=question["question"]),
                 ),
-                "standalone": self.llm.run(
+                "standalone": self.llm.async_run(
                     question_standalone_critique_prompt.format(question=question["question"]),
                 ),
             }
@@ -265,7 +265,7 @@ class Evaluator:
             response=answer,
             reference_answer=true_answer,
         )
-        eval_result = self.llm.run(eval_prompt).split("###Feedback")[-1]
+        eval_result = self.llm.async_run(eval_prompt).split("###Feedback")[-1]
         # print(eval_prompt)
         # assert 1 == 2
         try:

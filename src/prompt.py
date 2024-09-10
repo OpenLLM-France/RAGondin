@@ -69,7 +69,6 @@ class Prompt:
         
         if self.typed_template == TemplateType.MULTI_QUERY:
             sys_template, user_template = self.msg_templates
-
             sys_prompt = PromptTemplate.from_template(sys_template)\
                 .format(k=str(k_multi_queries))
             user_prompt = PromptTemplate.from_template(user_template).format(question=question)
@@ -87,7 +86,7 @@ class Prompt:
  
     @staticmethod
     def generate_multi_query(llm: LLM, msg_prompts: dict) -> list[str]:
-        questions = llm.run2(msg_prompts, streaming=False)
+        questions = llm.run(msg_prompts)
         # q_l = questions[-1].split("[SEP]")
         print(questions)
         return questions

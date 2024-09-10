@@ -103,4 +103,4 @@ class RAG:
         if self.reranker is not None:
             docs_txt = self.reranker.rerank(question=question, docs=docs_txt)
         prompt_txt = self.prompt.get_prompt(docs=docs_txt, question=question)
-        return self.llm.run(prompt_txt)
+        return self.llm.async_run(prompt_txt)

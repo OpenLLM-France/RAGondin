@@ -117,5 +117,5 @@ class RagPipeline:
             docs_txt = self.reranker.rerank(question, docs=docs_txt, k=self.reranker_top_k)
 
         prompt_dict = self.prompt.get_prompt(question, docs=docs_txt)
-        answer = await self.llm_client.run(prompt_dict, streaming=True)
+        answer = await self.llm_client.async_run(prompt_dict)
         return answer
