@@ -1,6 +1,7 @@
 # Import necessary libraries and modules
 import asyncio
 from operator import itemgetter
+from pathlib import Path
 import random
 from typing import Union, List
 
@@ -141,24 +142,44 @@ Answer: (your answer to the factoid question)<|eot_id|>
 Context: {context}\n
 Output:::"""
 
+
+dir_path = Path(__file__).parent
+
+def get_msgs(file_path: Path):
+    with open(file_path, mode="r") as f:
+        txt = f.read()
+        sys_msg, user_msg = txt.split("&&&\n")
+        return sys_msg, user_msg
+
+
 # Define the Evaluator class
-class Evaluator:
-    def __init__(self, llm: LLM, save_path="./"):
-        """
-            The constructor for the Evaluator class.
+metrics = {
+    "groundness": dir_path / "prompts/eval/groundness_template.txt"
+}
 
-            Parameters:
-                save_path (str): The path where the evaluation data_set.csv will be saved.
-                llm (LLM): An instance of the LLM class used for generating outputs.
-                docs (Docs): An instance of the Docs class containing the documents to be evaluated.
-        """
-        self.llm = llm
-        self.docs = None
-        self.save_path = save_path
-        self.questions: list[dict] | None = None
-        self.filtered_questions: pd.DataFrame | None = None
-        self.eval_dataset: datasets.Dataset | None = None
+async def evaluate(llm: LLM, question, context):
+    for metric_name, path in metrics.items():
+        sys_msg, user_msg = get_msgs(path)
+        sys_prompt, user_prompt = sys_msg, user_msg.format(
+            question=question, 
+            context=context
+        )
+        d = {"system":sys_prompt, "user":user_prompt}
 
+        stream = await llm.async_run(d)
+        print(f"{metric_name}: ", end="")
+        async for chunk in stream:
+            if chunk.choices[0].delta.content is not None:
+                print(chunk.choices[0].delta.content, end="")
+
+
+
+
+
+
+
+
+        
     def generate_questions(self, nb_questions: int, docs: Docs):
         """
         Generates a specified number of questions based on the documents.
@@ -333,61 +354,3 @@ class Evaluator:
         """
         self.eval_dataset.save_to_disk(path)
         pass
-
-
-p = """Vous un modèle de langue chargé d'évaluer des documents en français.
-Un "Contexte" et une "Question" vous seront donnés.  
-Votre tâche consiste à fournir une 'Note totale' évaluant dans quelle mesure on peut répondre à la question de manière claire et sans ambiguïté avec le contexte fourni.  
-Donnez votre réponse sur une échelle de 1 à 5, où 1 signifie que la question n'est pas du tout répondable avec le contexte fourni, et 5 signifie que la question est clairement et sans ambiguïté répondable avec le contexte.
-
-Voici le format strict de réponse attendue de votre part:
-Évaluation: (une argumentation justifiant la note donnée, sous forme de texte)
-Note totale : (votre note, un chiffre entre 1 et 5)"""
-
-u = """Voici les éléments nécessaires
-Question: {question}
-Contexte: {context}  
-"""
-
-config = Config() 
-client = AsyncOpenAI(
-        base_url=config.base_url, 
-        api_key=config.api_key, 
-        timeout=config.timeout
-    )
-model_name=config.model_name
-max_tokens=config.max_tokens
-
-question = "Que fait un LLM"
-context = "Un LLM permet de résoudre des pbs de NLP"
-
-u = u.format(question=question, context=context)
-
-async def gi():
-    stream = await client.chat.completions.create(
-        model=model_name,
-        messages=[
-            {"role": "system", "content": p},
-            {"role": "user", "content": u}
-        ],
-        stream=True,
-        max_tokens=1000
-    )
-    async for chunk in stream:
-        if chunk.choices[0].delta.content is not None:
-            print(chunk.choices[0].delta.content, end="")
-
-
-
-if __name__ == "__main__":
-    asyncio.run(gi())
-        
-    
-
-    
-
-
-
-    
-
-

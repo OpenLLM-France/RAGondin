@@ -3,7 +3,7 @@ from abc import ABCMeta, abstractmethod
 from collections import defaultdict
 from typing import Union
 from .llm import LLM
-from .prompt import Prompt
+from .prompt import generate_multi_query, MultiQueryPrompt
 from .reranker import Reranker
 from .vector_store import Qdrant_Connector, BaseVectorDdConnector
 from enum import Enum
@@ -117,8 +117,8 @@ class MultiQueryRetriever(SingleRetriever):
         
         try:
             prompt_multi_queries = extra_args.get("prompt_multi_queries")
-            if not isinstance(prompt_multi_queries, Prompt):
-                raise TypeError(f"`prompt_multi_queries` should be of type {Prompt}")
+            if not isinstance(prompt_multi_queries, MultiQueryPrompt):
+                raise TypeError(f"`prompt_multi_queries` should be of type {MultiQueryPrompt}")
 
             llm = extra_args.get("llm")
             if not isinstance(llm, LLM):
@@ -128,7 +128,7 @@ class MultiQueryRetriever(SingleRetriever):
             if not isinstance(k_multi_queries, int):
                 raise TypeError(f"`k_multi_queries` should be of type {int}")
             
-            self.prompt_multi_queries: Prompt = prompt_multi_queries
+            self.prompt_multi_queries: MultiQueryPrompt = prompt_multi_queries
             self.llm: LLM = llm
             self.k_multi_queries: int = k_multi_queries
 
@@ -137,12 +137,12 @@ class MultiQueryRetriever(SingleRetriever):
 
 
     def retrieve_with_scores(self, question: str, db: BaseVectorDdConnector | Qdrant_Connector):
-        msg_prompts = self.prompt_multi_queries.get_prompt(
+        msg_prompts = self.prompt_multi_queries.get_multi_query_prompt(
             question=question, 
             k_multi_queries=self.k_multi_queries
         )
         # generate similar questions
-        generated_questions = Prompt.generate_multi_query(self.llm, msg_prompts=msg_prompts)
+        generated_questions = generate_multi_query(self.llm, msg_prompts=msg_prompts)
         if len(generated_questions) != self.k_multi_queries:
             logger.warning(f"{len(generated_questions)} questions are generated instead of what is asked ({self.k_multi_queries}). Tune your prompt")
 
@@ -170,8 +170,10 @@ class MultiQueryRetriever(SingleRetriever):
             list[str]
                 The list of retrieved documents.
         """
-        multi_prompt_dict = self.prompt_multi_queries.get_prompt(question=question, k_multi_queries=self.k_multi_queries)
-        generated_questions = Prompt.generate_multi_query(self.llm, msg_prompts=multi_prompt_dict)
+        multi_prompt_dict = self.prompt_multi_queries.get_multi_query_prompt(
+            question=question, k_queries=self.k_multi_queries
+        )
+        generated_questions = generate_multi_query(self.llm, msg_prompts=multi_prompt_dict)
       
         if len(generated_questions) != self.k_multi_queries:
             logger.warning(f"{len(generated_questions)} questions are generated instead of what is asked ({self.k_multi_queries}). Tune your prompt")

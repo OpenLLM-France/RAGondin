@@ -65,7 +65,7 @@ class RecursiveSplitter(BaseChunker):
             **chunker_args
         )
 
-    def split(self, docs: list[Document]=[]):
+    def split(self, docs: list[Document]=None):
         """
         Split a list of documents into chunks.
 

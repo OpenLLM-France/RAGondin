@@ -1,106 +1,136 @@
-import configparser
-from .chunker import Docs, RecursiveSplitter
+from pathlib import Path
+from .chunker import Docs, get_chunker_cls, CHUNKERS
 from .llm import LLM
-from .prompt import Prompt
+from .prompt import BasicPrompt, MultiQueryPrompt
 from .reranker import Reranker
-from .retriever import SingleRetriever
-from .vector_store import Qdrant_Connector
+from .retriever import get_retreiver_cls, BaseRetriever
+from .vector_store import CONNECTORS
 from .embeddings import HFEmbedder
-from flask import Flask, request
-from openai import OpenAI
+from .config import Config
+from openai import OpenAI, AsyncOpenAI
+from loguru import logger
 
-app = Flask(__name__)
-
-
-@app.route('/inference', methods=['POST'])
-def inference():
-    try:
-        query = request.form.get('query')
-        print(request)
-        config = configparser.ConfigParser()
-        config.read("src/config.ini")
-        host = config.get("VECTOR_DB", "host")
-        port = config.get("VECTOR_DB", "port")
-        collection = config.get("VECTOR_DB", "collection")
-        model_type = config.get("EMBEDDINGS", "model_type")
-        model_name = config.get("EMBEDDINGS", "model_name")
-        model_kwargs = dict(config.items("EMBEDDINGS.MODEL_KWARGS"))
-        encode_kwargs = dict(config.items("EMBEDDINGS.ENCODE_KWARGS"))
-
-        embeddings = HFEmbedder(model_type, model_name, model_kwargs, encode_kwargs).get_embeddings()
-
-        connector = Qdrant_Connector(host, port, collection, embeddings)
-
-        k = 5
-        print("Results:")
-        docs = connector.similarity_search_with_score(query, 5)
-        for i in docs:
-            doc, score = i
-            print({"score": score, "content": doc.page_content, "metadata": doc.metadata})
-
-        client = OpenAI(
-            base_url="http://localhost:8000/v1",
-            api_key="EMPTY",
+class Doc2VdbPipe:
+    """This class bridges static files with the vector database.
+    """
+    def __init__(self, config: Config) -> None:
+        # get chunker 
+        self.chunker = CHUNKERS[config.chunker_name](
+            chunk_size=config.chunk_size, 
+            chunk_overlap=config.chunk_overlap, 
+            chunker_args=config.chunker_args
         )
 
-        # TODO: create dynamic content for a query and retrieved chunks
-        content = ""
-
-        completion = client.chat.completions.create(
-            model="TheBloke/Vigostral-7B-Chat-AWQ",
-            messages=[
-                {"role": "user", "content": content}
-            ],
+        # get the embedder model
+        embedder = HFEmbedder(
+            model_type=config.em_model_type,
+            model_name=config.em_model_name, 
+            model_kwargs=config.model_kwargs, 
+            encode_kwargs=config.encode_kwargs
         )
 
-        return completion.choices[0].message
-    except Exception as e:
-        print(e)
+        # define the connector
+        self.connector = CONNECTORS[config.db_connector](
+            host=config.host,
+            port=config.port,
+            collection_name=config.collection_name,
+            embeddings=embedder.embedding
+        )
 
-
-class RAG:
-    """
-    This class represents a RAG (Retrieval-Augmented Generation) model.
-
-    It uses a Qdrant_Connector to retrieve relevant chunks of data, a Reranker to rerank these chunks,
-    a Prompt to generate a prompt from the reranked chunks, and a LLM (Language Model) to generate an output
-    from the prompt.
-
-    Attributes:
-        llm (LLM): An instance of the LLM class.
-        connector (Qdrant_Connector): An instance of the Qdrant_Connector class.
-        reranker (Reranker): An instance of the Reranker class.
-        prompt (Prompt): An instance of the Prompt class.
-    """
-    def __init__(self, llm: LLM, connector: Qdrant_Connector, retriever : SingleRetriever, prompt: Prompt, reranker: Reranker= None):
-        """
-        The constructor for the RAG class.
+    def load_files2db(self, data_path: Path = None):
+        """Add files from a `data_path`
 
         Args:
-            llm (LLM): An instance of the LLM class.
-            connector (Qdrant_Connector): An instance of the Qdrant_Connector class.
-            retriever (Retriever): An instance of the Retriever class.
-            prompt (Prompt): An instance of the Prompt class.
-            reranker (Reranker): An instance of the Reranker class.
-        """
-        self.llm = llm
-        self.connector = connector
-        self.prompt = prompt
-        self.retriever = retriever
-        self.reranker = reranker
+            data_path (Path, optional): Data Path. Defaults to None.
 
-    def run(self, question: str) -> str:
+        Raises:
+            Exception:
         """
-        This method retrieves relevant chunks of data, reranks them, generates a prompt from the reranked chunks,
-        and generates an output from the prompt.
+        # get the data
+        docs = Docs()
+        docs.load(dir_path=data_path) # populate docs object
+        docs_splited = self.chunker.split(docs=docs.get_docs())
+        
+        try:
+            self.connector.add_documents(docs_splited)
+        except Exception as e:
+            raise Exception(f"An exception as occured: {e}")
+      
+    def load_file2db(self, file_path: str | Path):
+        """Add a file to the vector data base"""
+        docs = Docs()
+        docs.load_file(file_path=file_path) # populuate the docs object
 
-        Args:
-            question (str): The question to be answered.
-        Returns:
-            str: The generated output from the LLM.
-        """
-        docs_txt = self.retriever.retrieve(question, self.connector)
+        # TODO: Think about chunking method with respect to file type
+        docs_splited = self.chunker.split(docs=docs.get_docs())
+        self.connector.add_documents(docs_splited)
+        logger.info(f"Documents from {file_path} added.")
+
+class RagPipeline:
+    def __init__(self, config: Config) -> None:
+        docvdbPipe = Doc2VdbPipe(config=config)
+        logger.info(f"Doc to Vector database initialised")
+        docvdbPipe.load_files2db(data_path=config.data_path)
+        self.docvdbPipe = docvdbPipe
+        
+        
+        print("Reranker...")
+        self.reranker = None
+        if config.reranker_model_name is not None:
+            self.reranker = Reranker(
+                model_name=config.reranker_model_name,
+            )
+        
+        print("Prompt...")
+        self.prompt: BasicPrompt = BasicPrompt()
+
+        self.llm_client = LLM(
+            client=AsyncOpenAI(
+                base_url=config.base_url, 
+                api_key=config.api_key, 
+                timeout=config.timeout
+            ),
+            model_name=config.model_name,
+            max_tokens=config.max_tokens
+        )
+
+        print("Retriever...")
+        retreiver_cls = get_retreiver_cls(retreiver_type=config.retreiver_type)
+        extra_params = config.retriever_extra_params
+
+        if config.retreiver_type == "multiQuery":
+            extra_params["llm"] = LLM(
+                client=OpenAI(
+                    base_url=config.base_url, 
+                    api_key=config.api_key, 
+                    timeout=config.timeout
+                ),
+                model_name=config.model_name,
+                max_tokens=config.max_tokens
+            )
+            extra_params["prompt_multi_queries"] = MultiQueryPrompt()
+            self.retriever: BaseRetriever = retreiver_cls(
+                criteria=config.criteria,
+                top_k=config.top_k,
+                **extra_params
+            )
+        if config.retreiver_type == "single":
+            self.retriever: BaseRetriever = retreiver_cls(
+                criteria=config.criteria,
+                top_k=config.top_k
+            )
+            if config.retriever_extra_params: logger.info(f"'retriever_extra_params' is not used in {config.retreiver_type} retreiver")
+
+        self.reranker_top_k = config.reranker_top_k
+
+    async def run(self, question: str=""):
+        docs_txt = self.retriever.retrieve(
+            question, 
+            db=self.docvdbPipe.connector
+        )
         if self.reranker is not None:
-            docs_txt = self.reranker.rerank(question=question, docs=docs_txt)
-        prompt_txt = self.prompt.get_prompt(docs=docs_txt, question=question)
-        return self.llm.async_run(prompt_txt)
+            docs_txt = self.reranker.rerank(question, docs=docs_txt, k=self.reranker_top_k)
+
+        prompt_dict, context = self.prompt.get_prompt(question, docs=docs_txt)
+        answer = await self.llm_client.async_run(prompt_dict)
+        return answer, context

@@ -5,14 +5,6 @@ from qdrant_client import QdrantClient
 from langchain_community.embeddings import HuggingFaceBgeEmbeddings, HuggingFaceEmbeddings
 from langchain_core.documents.base import Document
 from langchain_qdrant import QdrantVectorStore
-from langchain_community.vectorstores import Qdrant
-
-# import logging
-# logging.basicConfig()
-# logger = logging.getLogger(__name__)
-# logger.setLevel(level=logging.DEBUG)
-
-
 from loguru import logger
 
 # https://python-client.qdrant.tech/qdrant_client.qdrant_client

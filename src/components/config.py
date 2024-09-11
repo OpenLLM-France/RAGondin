@@ -1,4 +1,3 @@
-from enum import Enum
 import os
 from pathlib import Path
 from dotenv import load_dotenv
@@ -7,7 +6,6 @@ from dataclasses import dataclass, field
 
 # Load env variables from .env file
 load_dotenv(dotenv_path="../")
-
 
 @dataclass
 class Config:
@@ -46,7 +44,7 @@ class Config:
     reranker_top_k: int = 5 # number of docs to return after reranking
 
     # retriever
-    retreiver_type: str = "multiQuery"
+    retreiver_type: str = "single"
     criteria: str = "similarity"
     top_k: int = 5
     retriever_extra_params: dict = field( # multiQuery retreiver type

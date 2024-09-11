@@ -1,4 +1,4 @@
 from .config import Config
-from .pipeline2 import RagPipeline
-
+from .pipeline import RagPipeline
+# from .evaluation2 import evaluate
 __all__ = [Config, RagPipeline]
