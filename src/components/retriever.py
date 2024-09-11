@@ -7,6 +7,8 @@ from .prompt import Prompt
 from .reranker import Reranker
 from .vector_store import Qdrant_Connector, BaseVectorDdConnector
 from enum import Enum
+from loguru import logger
+
 
 CRITERIAS = ["similarity"]
 
@@ -62,6 +64,7 @@ class SingleRetriever(BaseRetriever):
                 query=question, 
                 top_k=self.top_k
             )
+            logger.info("Get relevant documents.")
         else:
             raise ValueError(f"Invalid type. Choose from {CRITERIAS}")
         retrieved_chunks_txt = [chunk.page_content for chunk in retrieved_chunks]
@@ -140,6 +143,8 @@ class MultiQueryRetriever(SingleRetriever):
         )
         # generate similar questions
         generated_questions = Prompt.generate_multi_query(self.llm, msg_prompts=msg_prompts)
+        if len(generated_questions) != self.k_multi_queries:
+            logger.warning(f"{len(generated_questions)} questions are generated instead of what is asked ({self.k_multi_queries}). Tune your prompt")
 
         if self.criteria == "similarity":
             retrieved_chunks = db.multy_query_similarity_search_with_scores(queries=generated_questions, top_k_per_queries=self.top_k)
@@ -167,6 +172,11 @@ class MultiQueryRetriever(SingleRetriever):
         """
         multi_prompt_dict = self.prompt_multi_queries.get_prompt(question=question, k_multi_queries=self.k_multi_queries)
         generated_questions = Prompt.generate_multi_query(self.llm, msg_prompts=multi_prompt_dict)
+      
+        if len(generated_questions) != self.k_multi_queries:
+            logger.warning(f"{len(generated_questions)} questions are generated instead of what is asked ({self.k_multi_queries}). Tune your prompt")
+
+
         if self.criteria == "similarity":
             retrieved_chunks = db.multy_query_similarity_search(
                 queries=generated_questions, 

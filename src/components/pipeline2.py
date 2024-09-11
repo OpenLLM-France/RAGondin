@@ -1,5 +1,3 @@
-import asyncio
-import copy
 from pathlib import Path
 from .chunker import Docs, get_chunker_cls, CHUNKERS
 from .llm import LLM
@@ -10,6 +8,7 @@ from .vector_store import CONNECTORS
 from .embeddings import HFEmbedder
 from .config import Config
 from openai import OpenAI, AsyncOpenAI
+from loguru import logger
 
 class Doc2VdbPipe:
     """This class bridges static files with the vector database.
@@ -65,16 +64,17 @@ class Doc2VdbPipe:
         # TODO: Think about chunking method with respect to file type
         docs_splited = self.chunker.split(docs=docs.get_docs())
         self.connector.add_documents(docs_splited)
+        logger.info(f"Documents from {file_path} added.")
 
 
 
 class RagPipeline:
     def __init__(self, config: Config) -> None:
-        print("Doc2VdbPipe...")
-
         docvdbPipe = Doc2VdbPipe(config=config)
+        logger.info(f"Doc to Vector database initialised")
         docvdbPipe.load_files2db(data_path=config.data_path)
         self.docvdbPipe = docvdbPipe
+        
         
         print("Reranker...")
         self.reranker = None
@@ -82,6 +82,7 @@ class RagPipeline:
             self.reranker = Reranker(
                 model_name=config.reranker_model_name,
             )
+            
         
         print("Prompt...")
         self.prompt = Prompt(type_template=config.prompt_template)        
@@ -119,6 +120,7 @@ class RagPipeline:
                 criteria=config.criteria,
                 top_k=config.top_k
             )
+            if config.retriever_extra_params: logger.info(f"'retriever_extra_params' is not used in {config.retreiver_type} retreiver")
 
         self.reranker_top_k = config.reranker_top_k
 

@@ -7,12 +7,13 @@ from langchain_core.documents.base import Document
 from langchain_qdrant import QdrantVectorStore
 from langchain_community.vectorstores import Qdrant
 
+# import logging
+# logging.basicConfig()
+# logger = logging.getLogger(__name__)
+# logger.setLevel(level=logging.DEBUG)
 
-import logging
 
-logging.basicConfig()
-logger = logging.getLogger(__name__)
-logger.setLevel(level=logging.DEBUG)
+from loguru import logger
 
 # https://python-client.qdrant.tech/qdrant_client.qdrant_client
 
@@ -110,7 +111,9 @@ class Qdrant_Connector(BaseVectorDdConnector):
                 collection_name=self.collection_name,
                 embedding=embeddings
             )  
-            logger.info(f"Collection {self.collection_name} loaded.")
+            logger.warning(f"A Collection named {self.collection_name} loaded.")
+        else:
+            logger.info(f"As the collectino '{self.collection_name}' is non-existant, it will created when `Qdrant_Connector.add_documents` is called ")
         
 
     def disconnect(self):

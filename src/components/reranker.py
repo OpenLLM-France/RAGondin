@@ -1,6 +1,7 @@
 """Module for document reranking using RAG models."""
 
 from ragatouille import RAGPretrainedModel
+from loguru import logger
 
 class Reranker:
     """Reranks documents for a query using a RAG model."""
@@ -26,20 +27,23 @@ class Reranker:
         Returns:
             list[str]: Top k reranked document strings.
         """
-        docs_cleaned = [doc for doc in drop_duplicate(docs)]
+        docs_cleaned = [doc for doc in drop_duplicates(docs)]
         k = min(k, len(docs_cleaned)) # k must be <= the number of documents
         ranked_docs = self.model.rerank(question, docs_cleaned, k=k)
 
         return [doc["content"] for doc in ranked_docs]
 
 
-def drop_duplicate(L: list[str], key=None):
+def drop_duplicates(L: list[str], key=None):
     seen = set()
     for s in L:
         val = s if key is None else key(s)
         if val not in seen:
             seen.add(val)
             yield s
+        else:
+            logger.info("Duplicata removed...")
+
 
 
 if __name__ == "__main__":

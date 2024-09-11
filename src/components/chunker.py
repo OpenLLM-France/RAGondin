@@ -87,7 +87,7 @@ class RecursiveSplitter(BaseChunker):
         
         if len(docs) == 0:
             raise IndexError("Docs is empty.")
-
+            
         return self.text_splitter.split_documents(docs)
 
 

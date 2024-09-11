@@ -28,7 +28,6 @@ class Config:
     encode_kwargs: dict = field(default_factory= lambda: {"normalize_embeddings": True})
 
     # Vector DB
-    # # embeddings=emb.get_embeddings()
     host: str = None
     port: int = 0
     collection_name: str = "my_docs"
@@ -47,7 +46,7 @@ class Config:
     reranker_top_k: int = 5 # number of docs to return after reranking
 
     # retriever
-    retreiver_type: str = "single"
+    retreiver_type: str = "multiQuery"
     criteria: str = "similarity"
     top_k: int = 5
     retriever_extra_params: dict = field( # multiQuery retreiver type
