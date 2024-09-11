@@ -44,13 +44,13 @@ class Config:
 
     # Reranker
     reranker_model_name: str | None = "colbert-ir/colbertv2.0"
-    reranker_top_k = 5 # number of docs to return after reranking
+    reranker_top_k: int = 5 # number of docs to return after reranking
 
     # retriever
-    retreiver_type = "multiQuery"
-    criteria = "similarity"
-    top_k = 5
-    retriever_extra_params: dict = field(
+    retreiver_type: str = "single"
+    criteria: str = "similarity"
+    top_k: int = 5
+    retriever_extra_params: dict = field( # multiQuery retreiver type
         default_factory=lambda: {
             "k_multi_queries": 3 # llm and the prompt template will be added
         }

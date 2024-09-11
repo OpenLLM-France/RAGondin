@@ -1,9 +1,9 @@
-from openai import AsyncOpenAI
 import chainlit as cl
-from src.pipeline2 import RagPipeline
-from src.config import Config
+import sys, os
 
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../')))
 
+from src.components import RagPipeline, Config
 config = Config()
 ragPipe = RagPipeline(config=config)
 
@@ -43,16 +43,16 @@ async def set_starters():
         cl.Starter(
             label="Hygiène numérique",
             message="Comment adopter une bonne hygiène numérique. Présente le résultat en un tableau simplissime.",
-            icon="/public/idea.svg",
+            icon="./public/idea.svg",
     ),
     cl.Starter(
             label="CLOUD ACT vs RGPD",
             message="Les conséquences du CLOUD ACT sous forme de tableau.",
-            icon="/public/learn.svg",
+            icon="./public/danger-triangle.svg",
             ),
     cl.Starter(
             label="Digital labor",
             message='Définition et effets de la notion de "Digital Labor".',
-            icon="/public/learn.svg",
+            icon="/public/labor-man-labor.svg",
             ),
     ]

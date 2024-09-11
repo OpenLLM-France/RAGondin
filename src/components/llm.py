@@ -51,7 +51,7 @@ class LLM:
         )
         return stream
     
-    def run(self, prompt_dict: dict):
+    def run(self, prompt_dict: dict) -> str:
         """This method Chat completion. To use when when the client is of type `OpenAI`.
 
         Args:

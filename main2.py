@@ -1,6 +1,6 @@
 import asyncio
-from src.pipeline2 import RagPipeline
-from src.config import Config
+from src.components import RagPipeline, Config
+
 import time
 
 config = Config()

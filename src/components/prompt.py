@@ -58,7 +58,6 @@ class Prompt:
 
             sys_prompt = PromptTemplate.from_template(sys_template).format(context=context)
             user_prompt = PromptTemplate.from_template(user_template).format(question=question)
-            print(user_prompt)
             return {"system":sys_prompt, "user":user_prompt}
         
         if self.typed_template == TemplateType.MULTI_QUERY:
