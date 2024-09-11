@@ -114,18 +114,6 @@ class Docs:
         """
         self.data_path = data_path
         self.docs : list[Document] = []
-        # self.chunked_docs : list[Document] = []
-        # self.load(dir_path=data_path)
-
-    def __getitem__(self, item):
-        return self.chunked_docs[item]
-
-    def __len__(self):
-        return len(self.chunked_docs)
-
-    def __iter__(self):
-        return iter(self.chunked_docs)
-
 
     def load(self, dir_path: str | Path) -> None:
         """
@@ -172,33 +160,6 @@ class Docs:
         file_loader = DEFAULT_LOADERS[file_path.suffix](file_path)
         docs = file_loader.load()
         self.docs.extend(docs)
-        
-        
-
-
-    # def chunk(self, chunker: RecursiveSplitter) -> None:
-    #     """
-    #     Split loaded documents into chunks.
-
-    #     Uses the provided Chunker instance to split the loaded
-    #     documents into smaller chunks.
-
-    #     Args:
-    #         chunker (Chunker): The Chunker instance to use for splitting.
-
-    #     Returns:
-    #         None
-
-    #     Raises:
-    #         ValueError: If no documents are loaded.
-    #     """
-
-    #     if len(self.docs) == 0:
-    #         raise ValueError("No documents loaded")
-
-    #     # Perform splitting with Chunker
-    #     # Store chunked docs
-    #     self.chunked_docs = chunker.split(self.docs)
 
 
     def get_docs(self) -> list:
@@ -209,16 +170,6 @@ class Docs:
             list: The original documents loaded from the directory.
         """
         return self.docs
-
-    # def get_chunks(self) -> list[Document]:
-    #     """
-    #     Get the chunked documents.
-
-    #     Returns:
-    #         list: The documents split into chunks.
-    #     """
-    #     return self.chunked_docs
-
 
 CHUNKERS = {
     "recursive_splitter": RecursiveSplitter
