@@ -26,7 +26,7 @@ RAGondin is the project dedicated to experiment with advanced RAG (Retrieval-Aug
 
 3. Run the Chainlit app:
 ```bash
-chainlit run chainlit_app/rag.py -w
+chainlit run chainlit_app.py -w
 ```
 This will launch the chainlit app, a chatbot style user interface for RAG.
 
