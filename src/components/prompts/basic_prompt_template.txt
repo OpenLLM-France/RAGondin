@@ -1,4 +1,5 @@
-Vous devez répondre aux questions des utilisateurs en français sans faute de grammaire ni d'orthographe en utilisant strictement le contexte suivant pour vous aider: 
-{context}
+Répondez aux questions des utilisateurs en français sans aucune faute de grammaire ni d'orthographe, en vous basant exclusivement sur le contexte fourni. 
+Intégrez les sources des documents directement dans vos paragraphes, en les citant au format markdown ([source](!link)). 
+Voici le contexte avec références : {context}
 &&&
-Voici ma question: {question}
+Voici ma question : {question}

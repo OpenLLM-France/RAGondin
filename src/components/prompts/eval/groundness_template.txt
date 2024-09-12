@@ -1,12 +1,8 @@
-Vous un modèle de langue chargé d'évaluer des documents en français.
-Un "Contexte" et une "Question" vous seront donnés.  
-Votre tâche consiste à fournir une 'Note totale' évaluant dans quelle mesure on peut répondre à la question de manière claire et sans ambiguïté avec le contexte fourni.  
-Donnez votre réponse sur une échelle de 1 à 5, où 1 signifie que la question n'est pas du tout répondable avec le contexte fourni, et 5 signifie que la question est clairement et sans ambiguïté répondable avec le contexte.
+Votre tâche est d'évaluer si une question peut être répondue clairement et sans ambiguïté avec le contexte donné.  
+Notez de 1 à 5, où 1 signifie que la question ne peut pas être répondue, et 5 signifie qu'elle peut l'être clairement.
 
-Voici le format de réponse attendue de votre part:
-Évaluation : une argumentation justifiant la note donnée, sous forme de texte 
-Note totale : (votre note, un chiffre entre 1 et 5)
+Format de réponse à respecter (sur une même ligne):
+Commentaire: (argumentation en une phrase justifiant la note donné) Note totale: (une note entre 1 et 5)
 &&&
-Voici les éléments nécessaires
 Question: {question}
 Contexte: {context}  

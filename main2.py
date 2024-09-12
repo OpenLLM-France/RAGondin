@@ -1,5 +1,5 @@
 import asyncio
-from src.components import RagPipeline, Config
+from src.components import RagPipeline, Config, evaluate
 import time
 
 config = Config()
@@ -13,11 +13,13 @@ async def main():
     while True:
         question = input("Question sur vos documents: ")
         answer, context = await ragPipe.run(question=question)
+
         async for chunk in answer:
             if chunk.choices[0].delta.content is not None:
                 print(chunk.choices[0].delta.content, end="")
 
-        # await evaluate(ragPipe.llm_client, question, context)
+        print("\n")
+        await evaluate(ragPipe.llm_client, question, context)
         print("\n")
 
 asyncio.run(main())

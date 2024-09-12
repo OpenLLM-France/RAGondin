@@ -5,7 +5,7 @@ from langchain_core.documents.base import Document
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain_community.document_loaders import DirectoryLoader
 from langchain_community.document_loaders.pdf import PDFMinerLoader
-from langchain_community.document_loaders import UnstructuredXMLLoader
+from langchain_community.document_loaders import UnstructuredXMLLoader, PyPDFLoader
 from langchain_community.document_loaders.csv_loader import CSVLoader
 from langchain_community.document_loaders.text import TextLoader
 from langchain_community.document_loaders import UnstructuredHTMLLoader
@@ -13,11 +13,11 @@ from langchain_community.document_loaders import UnstructuredHTMLLoader
 # Define a dictionary to map file extensions to their respective loaders
 
 DEFAULT_LOADERS = {
-    '.pdf': PDFMinerLoader,
-    '.xml': UnstructuredXMLLoader,
-    '.csv': CSVLoader,
-    '.txt': TextLoader,
-    '.html': UnstructuredHTMLLoader,
+    '.pdf': PyPDFLoader, # PDFMinerLoader
+    # '.xml': UnstructuredXMLLoader,
+    # '.csv': CSVLoader,
+    # '.txt': TextLoader,
+    # '.html': UnstructuredHTMLLoader,
 }
 
 def create_file_type_loader(file_type, directory_path):
@@ -87,8 +87,9 @@ class RecursiveSplitter(BaseChunker):
         
         if len(docs) == 0:
             raise IndexError("Docs is empty.")
-            
-        return self.text_splitter.split_documents(docs)
+        
+        s = self.text_splitter.split_documents(docs)
+        return s
 
 
 class Docs:

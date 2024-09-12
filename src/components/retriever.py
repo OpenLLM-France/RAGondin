@@ -67,7 +67,7 @@ class SingleRetriever(BaseRetriever):
             logger.info("Get relevant documents.")
         else:
             raise ValueError(f"Invalid type. Choose from {CRITERIAS}")
-        retrieved_chunks_txt = [chunk.page_content for chunk in retrieved_chunks]
+        retrieved_chunks_txt = [chunk for chunk in retrieved_chunks]
         return retrieved_chunks_txt
 
 

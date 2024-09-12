@@ -15,8 +15,8 @@ class Config:
     # Docs
     data_path: Path = "./experiments/test_data" # Put None
     chunker_name: str = "recursive_splitter"
-    chunk_size: int = 1000
-    chunk_overlap: int = 100 # TODO: Better express it with a percentage
+    chunk_size: int = 800
+    chunk_overlap: int = 80 # TODO: Better express it with a percentage
     chunker_args: dict = field(default_factory= dict) # additional attributes specific to chunker
     
     # Embedding Model
@@ -46,7 +46,7 @@ class Config:
     # retriever
     retreiver_type: str = "single"
     criteria: str = "similarity"
-    top_k: int = 5
+    top_k: int = 3
     retriever_extra_params: dict = field( # multiQuery retreiver type
         default_factory=lambda: {
             "k_multi_queries": 3 # llm and the prompt template will be added

@@ -2,6 +2,8 @@
 
 from ragatouille import RAGPretrainedModel
 from loguru import logger
+from langchain_core.documents.base import Document
+
 
 class Reranker:
     """Reranks documents for a query using a RAG model."""
@@ -15,7 +17,7 @@ class Reranker:
         """
         self.model = RAGPretrainedModel.from_pretrained(model_name)
 
-    def rerank(self, question: str, docs: list[str], k: int = 5) -> list[str]:
+    def rerank(self, question: str, docs: list[Document], k: int = 5) -> list[str]:
         """
         Rerank documents for a query.
 
@@ -27,17 +29,26 @@ class Reranker:
         Returns:
             list[str]: Top k reranked document strings.
         """
-        docs_cleaned = [doc for doc in drop_duplicates(docs)]
-        k = min(k, len(docs_cleaned)) # k must be <= the number of documents
-        ranked_docs = self.model.rerank(question, docs_cleaned, k=k)
+        docs_unique = [doc for doc in drop_duplicates(docs)]
+        k = min(k, len(docs_unique)) # k must be <= the number of documents
+        ranked_txt = self.model.rerank(question, [d.page_content for d in docs_unique], k=k)
+        ranked_docs = original_docs(ranked_txt, docs_unique)
+        return [doc for doc in ranked_docs]
+    
 
-        return [doc["content"] for doc in ranked_docs]
+def original_docs(ranked_txt, docs: list[Document]):
+    for doc_txt in ranked_txt:
+        for doc in docs:
+            if doc_txt["content"] == doc.page_content:
+                yield doc
+                docs.remove(doc)
+                break
 
 
-def drop_duplicates(L: list[str], key=None):
+def drop_duplicates(L: list[Document], key=None):
     seen = set()
     for s in L:
-        val = s if key is None else key(s)
+        val = s.page_content if key is None else key(s)
         if val not in seen:
             seen.add(val)
             yield s

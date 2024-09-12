@@ -1,11 +1,6 @@
 # Import necessary libraries and modules
-import asyncio
-from operator import itemgetter
 from pathlib import Path
 import random
-from typing import Union, List
-
-from openai import AsyncOpenAI
 
 # Import local modules
 from .chunker import Docs
@@ -16,11 +11,10 @@ import pandas as pd
 import datasets
 import logging
 import pprint as pp
+import pandas as pd
 from tqdm import tqdm
 
 # Import local modules
-from .pipeline import RAG
-
 from .config import Config
 from .pipeline import RagPipeline
 
@@ -143,8 +137,6 @@ Context: {context}\n
 Output:::"""
 
 
-dir_path = Path(__file__).parent
-
 def get_msgs(file_path: Path):
     with open(file_path, mode="r") as f:
         txt = f.read()
@@ -153,6 +145,8 @@ def get_msgs(file_path: Path):
 
 
 # Define the Evaluator class
+dir_path = Path(__file__).parent
+
 metrics = {
     "groundness": dir_path / "prompts/eval/groundness_template.txt"
 }
@@ -167,7 +161,7 @@ async def evaluate(llm: LLM, question, context):
         d = {"system":sys_prompt, "user":user_prompt}
 
         stream = await llm.async_run(d)
-        print(f"{metric_name}: ", end="")
+        print(f"{metric_name.title()}: ", end="")
         async for chunk in stream:
             if chunk.choices[0].delta.content is not None:
                 print(chunk.choices[0].delta.content, end="")
@@ -301,7 +295,7 @@ async def evaluate(llm: LLM, question, context):
             logger.info(f"Error while evaluating: {e}")
             return {"feedback":"", "score": ""}
 
-    def evaluate(self, rag: RAG):
+    def evaluate(self, rag):
         """
         This method evaluates the RAG model based on the filtered questions.
         It generates answers for the filtered questions using the RAG model, then evaluates the quality of these answers compared to the reference answers.
@@ -334,23 +328,6 @@ async def evaluate(llm: LLM, question, context):
                 "source_doc": example["source_doc"],
                 "generated_output": example["generated_output"],
                 **self.eval_question_answer(example["question"], example["generated_output"], example["answer"])
-
-                # "feedback": self.eval_question_answer(
-                #     example["question"], example["generated_output"], example["answer"]
-                # )[0],
-                # "score": self.eval_question_answer(
-                #     example["question"], example["generated_output"], example["answer"]
-                # )[1],
             }
         )
         return eval_dataset
-
-    def save_dataset(self, path: str) -> None:
-        """
-        This method saves the evaluation dataset to disk at the specified path.
-
-        Parameters:
-            path (str): The path where the evaluation dataset will be saved.
-        """
-        self.eval_dataset.save_to_disk(path)
-        pass

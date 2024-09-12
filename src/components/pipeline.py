@@ -73,7 +73,6 @@ class RagPipeline:
         docvdbPipe.load_files2db(data_path=config.data_path)
         self.docvdbPipe = docvdbPipe
         
-        
         print("Reranker...")
         self.reranker = None
         if config.reranker_model_name is not None:
