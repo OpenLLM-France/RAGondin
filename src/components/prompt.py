@@ -54,10 +54,10 @@ def _build_context(docs: list[Document]) -> str:
     """Build context string from list of documents."""
     #TODO: Add links to used document and specify to the model (in the prompt) to use them for referencing.
     context = "Extracted documents:"
-    for i, doc in enumerate(docs):
+    for i, doc in enumerate(docs, start=1):
         context += f"""
-        Document : {doc.page_content}
-        fichier source : {doc.metadata["source"]}#page={doc.metadata["page"]+1}
+        Source {i} : {doc.metadata["source"]}#page={doc.metadata["page"]+1}
+        Contenu : {doc.page_content}
         =======
         """
     return context

@@ -9,6 +9,8 @@ ragPipe = RagPipeline(config=config)
 end = time.time()
 print(f"Start Time: {end - start} s.")
 
+# TODO: Talk about evaluation with metrics with Andrej
+
 async def main():
     while True:
         question = input("Question sur vos documents: ")

@@ -1,5 +1,6 @@
-Répondez aux questions des utilisateurs en français sans aucune faute de grammaire ni d'orthographe, en vous basant exclusivement sur le contexte fourni. 
-Intégrez les sources des documents directement dans vos paragraphes, en les citant au format markdown ([source](!link)). 
-Voici le contexte avec références : {context}
+Répondez aux questions des utilisateurs en français, en vous basant exclusivement sur le contexte fourni.
+Ne citez que les numéros des sources dans vos paragraphes sans inclure les numéros de page. À la fin de votre réponse, listez la bibliographie en notation markdown ([source](chemin)).
+
+Voici le contexte : {context}
 &&&
 Voici ma question : {question}
