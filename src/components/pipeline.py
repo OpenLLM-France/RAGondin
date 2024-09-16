@@ -113,6 +113,23 @@ class RagPipeline:
                 top_k=config.top_k,
                 **extra_params
             )
+        if config.retreiver_type == "hyde":
+            extra_params["llm"] = LLM(
+                client=OpenAI(
+                    base_url=config.base_url, 
+                    api_key=config.api_key, 
+                    timeout=config.timeout
+                ),
+                model_name=config.model_name,
+                max_tokens=config.max_tokens
+            )
+            
+            self.retriever: BaseRetriever = retreiver_cls(
+                criteria=config.criteria,
+                top_k=config.top_k,
+                **extra_params
+            )
+
         if config.retreiver_type == "single":
             self.retriever: BaseRetriever = retreiver_cls(
                 criteria=config.criteria,
@@ -123,13 +140,13 @@ class RagPipeline:
         self.reranker_top_k = config.reranker_top_k
 
     async def run(self, question: str=""):
-        docs_txt = self.retriever.retrieve(
+        docs = self.retriever.retrieve(
             question, 
             db=self.docvdbPipe.connector
         )
         if self.reranker is not None:
-            docs_txt = self.reranker.rerank(question, docs=docs_txt, k=self.reranker_top_k)
+            docs = self.reranker.rerank(question, docs=docs, k=self.reranker_top_k)
 
-        prompt_dict, context = self.prompt.get_prompt(question, docs=docs_txt)
+        prompt_dict, context = self.prompt.get_prompt(question, docs=docs)
         answer = await self.llm_client.async_run(prompt_dict)
         return answer, context
