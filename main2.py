@@ -17,11 +17,10 @@ async def main():
         answer, context = await ragPipe.run(question=question)
 
         async for chunk in answer:
-            if chunk.choices[0].delta.content is not None:
-                print(chunk.choices[0].delta.content, end="")
+            print(chunk, end="")
 
-        print("\n")
-        await evaluate(ragPipe.llm_client, question, context)
+        # print("\n")
+        # await evaluate(ragPipe.llm_client, question, context)
         print("\n")
 
 asyncio.run(main())

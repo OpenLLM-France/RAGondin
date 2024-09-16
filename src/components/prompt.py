@@ -5,7 +5,6 @@ from pathlib import Path
 from langchain_core.documents.base import Document
 
 
-
 dir_path = Path(__file__).parent
 
 class BasicPrompt:
@@ -20,9 +19,18 @@ class BasicPrompt:
     def get_prompt(self, question: str, docs: list[Document] = None) -> tuple[dict, str]:
         context = _build_context(docs)
         sys_template, user_template = self.msg_templates
-        sys_prompt = sys_template.format(context=context)
-        user_prompt = user_template.format(question=question)
-        return {"system":sys_prompt, "user":user_prompt}, context
+
+        sys_prompt = sys_template
+        user_prompt = user_template.format(
+            question=question, 
+            context=context
+        )
+
+
+        return [
+            {"role": "system", "content": sys_prompt},
+            {"role": "user", "content": user_prompt}
+        ], context
         
 class MultiQueryPrompt(BasicPrompt):
     def __init__(
@@ -35,7 +43,10 @@ class MultiQueryPrompt(BasicPrompt):
         sys_template, user_template = self.msg_templates
         sys_prompt = sys_template.format(k=str(k_queries))
         user_prompt = user_template.format(question=question)
-        return {"system":sys_prompt, "user":user_prompt}
+        return [
+            {"role": "system", "content": sys_prompt},
+            {"role": "user", "content": user_prompt}
+        ]
     
 
 
@@ -57,8 +68,8 @@ def _build_context(docs: list[Document]) -> str:
     for i, doc in enumerate(docs, start=1):
         context += f"""
         Source {i} : {doc.metadata["source"]}#page={doc.metadata["page"]+1}
-        Contenu : {doc.page_content}
-        =======
+        Content : {doc.page_content}
+        =======\n
         """
     return context
 

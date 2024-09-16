@@ -90,7 +90,8 @@ class RagPipeline:
                 timeout=config.timeout
             ),
             model_name=config.model_name,
-            max_tokens=config.max_tokens
+            max_tokens=config.max_tokens,
+            chat_mode=config.rag_mode
         )
 
         print("Retriever...")
@@ -102,10 +103,11 @@ class RagPipeline:
                 client=OpenAI(
                     base_url=config.base_url, 
                     api_key=config.api_key, 
-                    timeout=config.timeout
+                    timeout=config.timeout,
                 ),
                 model_name=config.model_name,
-                max_tokens=config.max_tokens
+                max_tokens=config.max_tokens,
+                chat_mode="SimpleLLM"
             )
             extra_params["prompt_multi_queries"] = MultiQueryPrompt()
             self.retriever: BaseRetriever = retreiver_cls(
@@ -119,17 +121,17 @@ class RagPipeline:
                 top_k=config.top_k
             )
             if config.retriever_extra_params: logger.info(f"'retriever_extra_params' is not used in {config.retreiver_type} retreiver")
-
         self.reranker_top_k = config.reranker_top_k
 
     async def run(self, question: str=""):
-        docs_txt = self.retriever.retrieve(
+        docs = self.retriever.retrieve(
             question, 
             db=self.docvdbPipe.connector
         )
-        if self.reranker is not None:
-            docs_txt = self.reranker.rerank(question, docs=docs_txt, k=self.reranker_top_k)
 
-        prompt_dict, context = self.prompt.get_prompt(question, docs=docs_txt)
-        answer = await self.llm_client.async_run(prompt_dict)
+        if self.reranker is not None:
+            docs = self.reranker.rerank(question, docs=docs, k=self.reranker_top_k)
+
+        prompt_msgs, context = self.prompt.get_prompt(question, docs=docs)
+        answer = self.llm_client.async_run(prompt_msgs)
         return answer, context

@@ -1,6 +1,6 @@
-Répondez aux questions des utilisateurs en français, en vous basant exclusivement sur le contexte fourni.
-Ne citez que les numéros des sources dans vos paragraphes sans inclure les numéros de page. À la fin de votre réponse, listez la bibliographie en notation markdown ([source](chemin)).
-
-Voici le contexte : {context}
+Answer the users' questions in French, based exclusively on the provided context and document sources.
+Cite the sources using the format '[source {i}]', where {i} corresponds to the document number provided in the context. 
+Do not cite any links or other references that appear within the content itself. Sources should be cited as footnotes within the paragraphs, and at the end of the response, list a complete bibliography in the same 'Source {i}' format.
 &&&
-Voici ma question : {question}
+Here is the retreived sources for the question : {context}
+Here my question: {question}

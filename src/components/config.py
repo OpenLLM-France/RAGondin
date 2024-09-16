@@ -37,6 +37,7 @@ class Config:
     model_name: str = 'meta-llama-31-8b-it'
     timeout: int = 60
     prompt_template = "basic"
+    rag_mode: str = "SimpleRAG" # ChatBot, SimpleRAG
     max_tokens: int = 1000
 
     # Reranker
