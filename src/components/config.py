@@ -1,5 +1,6 @@
 import os
 from pathlib import Path
+from typing import Literal
 from dotenv import load_dotenv
 from dataclasses import dataclass, field
 
@@ -37,7 +38,7 @@ class Config:
     model_name: str = 'meta-llama-31-8b-it'
     timeout: int = 60
     prompt_template = "basic"
-    rag_mode: str = "SimpleRAG" # ChatBot, SimpleRAG
+    rag_mode: Literal["ChatBotRag", "SimpleRag"] = "SimpleRag"
     max_tokens: int = 1000
 
     # Reranker
@@ -47,7 +48,7 @@ class Config:
     # retriever
     retreiver_type: str = "single"
     criteria: str = "similarity"
-    top_k: int = 3
+    top_k: int = 5
     retriever_extra_params: dict = field( # multiQuery retreiver type
         default_factory=lambda: {
             "k_multi_queries": 3 # llm and the prompt template will be added

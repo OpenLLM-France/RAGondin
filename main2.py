@@ -14,10 +14,9 @@ print(f"Start Time: {end - start} s.")
 async def main():
     while True:
         question = input("Question sur vos documents: ")
-        answer, context = await ragPipe.run(question=question)
-
+        answer, context = ragPipe.run(question=question, chat_history=[])
         async for chunk in answer:
-            print(chunk, end="")
+            print(chunk.content, end="")
 
         # print("\n")
         # await evaluate(ragPipe.llm_client, question, context)

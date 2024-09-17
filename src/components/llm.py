@@ -1,8 +1,68 @@
 from typing import Literal, Union
 from transformers.pipelines.text_generation import TextGenerationPipeline
-from huggingface_hub import InferenceClient
-import json
 from openai import OpenAI, AsyncOpenAI, AsyncStream
+from langchain_openai import ChatOpenAI
+from langchain_core.prompts import MessagesPlaceholder
+from langchain_core.prompts import ChatPromptTemplate
+
+
+class LLM2:
+    def __init__(
+            self, 
+            model_name: str = 'meta-llama-31-8b-it',
+            base_url: str = "https://chat.ai.linagora.exaion.com/v1/", 
+            api_key: str = '',
+            timeout: int = 60,
+            max_tokens: int = 1000,
+            streaming=True
+        ):
+
+        self.client: ChatOpenAI = ChatOpenAI(
+            model=model_name,
+            base_url=base_url,
+            api_key=api_key,
+            timeout=timeout,
+            max_tokens=max_tokens, streaming=streaming
+        )    
+
+    def run(self, 
+            question: str, 
+            context: str, 
+            chat_history: list, 
+            sys_msg: str
+        ):
+
+        qa_prompt = template_from_sys_template(sys_msg)
+        rag_chain = (
+            qa_prompt
+            | self.client
+        )
+        input_ = {
+            "input": question, 
+            "context": context,
+            "chat_history": chat_history, 
+        }
+        answer = rag_chain.astream(input_)
+        return answer
+        
+
+
+def template_from_sys_template(sys_message) -> ChatPromptTemplate:
+    return ChatPromptTemplate.from_messages(
+            [
+                ("system", sys_message),
+                MessagesPlaceholder("chat_history"),
+                ("human", "{input}"),
+            ]
+        )
+
+            
+
+    
+
+
+
+
 
 class LLM:
     def __init__(
@@ -27,7 +87,7 @@ class LLM:
             self.model_name = model_name
             self.max_tokens = max_tokens
             self.chat_mode = chat_mode
-            self._messages: list = None
+            splf._messages: list = None
         else:
             raise ValueError(f"Model should be of type {OpenAI}")
     

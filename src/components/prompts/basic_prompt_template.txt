@@ -1,6 +1,0 @@
-Answer the users' questions in French, based exclusively on the provided context and document sources.
-Cite the sources using the format '[source {i}]', where {i} corresponds to the document number provided in the context. 
-Do not cite any links or other references that appear within the content itself. Sources should be cited as footnotes within the paragraphs, and at the end of the response, list a complete bibliography in the same 'Source {i}' format.
-&&&
-Here is the retreived sources for the question : {context}
-Here my question: {question}

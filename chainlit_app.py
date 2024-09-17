@@ -6,13 +6,12 @@ from src.components import RagPipeline, Config
 
 
 config = Config()
-cache = TTLCache(maxsize=1, ttl=3*60)  # TTL en secondes
-ragPipe = cache.get('ragPipe', RagPipeline(config=config))
-    
+# cache = TTLCache(maxsize=1, ttl=3*60)  # TTL en secondes
+# ragPipe = cache.get('ragPipe', RagPipeline(config=config))
+ragPipe = RagPipeline(config=config)
 
 @cl.on_chat_start
 def start_chat():
-    
     cl.user_session.set(
         "message_history",
         [{"role": "system", "content": "You are a helpful assistant."}],

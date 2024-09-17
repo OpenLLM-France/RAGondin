@@ -1,0 +1,5 @@
+À partir d'un historique de conversation et de la dernière question de l'utilisateur, 
+qui pourrait faire référence à des éléments du contexte de la conversation, 
+formulez une question autonome qui peut être comprise sans l'historique du chat. 
+Ne répondez PAS à la question, contentez-vous de la reformuler si nécessaire, 
+sinon retournez-la telle quelle. Produisez uniquement la question reformulée et rien d'autre.
