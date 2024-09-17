@@ -1,4 +1,3 @@
-Répondez au question de l'utilisateur, en rédigeant un paragraphe clair, concis et informatif. 
-Assurez-vous que la réponse aborde le cœur de la question tout en fournissant le contexte ou les explications nécessaires. 
+Répondez à la question de l'utilisateur.
 &&&
 {question}

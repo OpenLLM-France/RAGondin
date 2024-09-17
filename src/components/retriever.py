@@ -220,7 +220,7 @@ class HyDeRetreiver(SingleRetriever):
 
     def retrieve(self, question: str, db: BaseVectorDdConnector | Qdrant_Connector) -> list[str]:
         hyde = self.get_hyde(question)
-        return super().retrieve(hyde, db) + super().retrieve(question, db) # hyde + single retreiver for stronger results
+        return super().retrieve(hyde, db) # + super().retrieve(question, db) # hyde + single retreiver for stronger results
     
     def retrieve_with_scores(self, question: str, db: Qdrant_Connector) -> list[tuple[str, float]]:
         hyde = self.get_hyde(question)

@@ -53,6 +53,5 @@ async def main(message: cl.Message):
         if token := part.choices[0].delta.content or "":
             await msg.stream_token(token)
 
-    # message_history.append({"role": "assistant", "content": msg.content})
     await msg.update()
     
