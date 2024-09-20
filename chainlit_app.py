@@ -10,13 +10,6 @@ config = Config()
 # ragPipe = cache.get('ragPipe', RagPipeline(config=config))
 ragPipe = RagPipeline(config=config)
 
-@cl.on_chat_start
-def start_chat():
-    cl.user_session.set(
-        "message_history",
-        [{"role": "system", "content": "You are a helpful assistant."}],
-    )
-
 
 @cl.set_starters
 async def set_starters():
@@ -39,7 +32,6 @@ async def set_starters():
     ]
 
 
-
 @cl.on_message
 async def main(message: cl.Message):
     question = message.content
@@ -47,12 +39,15 @@ async def main(message: cl.Message):
     msg = cl.Message(content="")
     await msg.send()
 
-    stream, _ = await ragPipe.run(question)
+    stream, _ = ragPipe.run(question)
 
-    async for part in stream:
-        if token := part.choices[0].delta.content or "":
-            await msg.stream_token(token)
+    answer_txt = ""
+    async for token in stream:
+        await msg.stream_token(token.content)
+        answer_txt += token.content
+    
+    if ragPipe.rag_mode == "ChatBotRag":
+            ragPipe.update_history(question, answer_txt)
 
-    # message_history.append({"role": "assistant", "content": msg.content})
     await msg.update()
     
