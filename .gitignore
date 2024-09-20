@@ -10,6 +10,8 @@ chainlit_tuto/
 __pycache__/
 **/__pycache__/
 
+CR.md
+
 # Ignore Python bytecode files
 *.pyc
 *.pyo
