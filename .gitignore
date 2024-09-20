@@ -4,7 +4,12 @@
 # generate folders
 .files/
 .chainlit/
+
+# other files and folders
+
 chainlit_tuto/
+try.ipynb
+CR.md
 
 # Ignore __pycache__ directories
 __pycache__/
