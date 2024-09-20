@@ -1,4 +1,2 @@
 Répondez au question de l'utilisateur, en rédigeant un paragraphe clair, concis et informatif. 
-Assurez-vous que la réponse aborde le cœur de la question tout en fournissant le contexte ou les explications nécessaires. 
-&&&
-{question}
+Question : {question}

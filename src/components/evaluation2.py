@@ -4,7 +4,6 @@ import random
 
 # Import local modules
 from .chunker import Docs
-from .llm import LLM
 
 # Import external libraries
 import pandas as pd

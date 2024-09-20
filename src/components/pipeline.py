@@ -1,17 +1,23 @@
 from pathlib import Path
-from .chunker import Docs, get_chunker_cls, CHUNKERS
-from .llm import LLM, LLM2, template_from_sys_template
-from .prompt import BasicPrompt, MultiQueryPrompt, format_context, get_sys_template
+from .chunker import Docs, CHUNKERS
+from .llm import LLM2
+from .prompt import format_context, load_sys_template
 from .reranker import Reranker
 from .retriever import get_retreiver_cls, BaseRetriever
 from .vector_store import CONNECTORS
 from .embeddings import HFEmbedder
 from .config import Config
-from openai import OpenAI, AsyncOpenAI
 from loguru import logger
-from langchain_core.prompts import MessagesPlaceholder
+
+from langchain_core.prompts import (
+    MessagesPlaceholder, 
+    ChatPromptTemplate
+)
+
 from langchain_core.output_parsers import StrOutputParser
-from langchain_core.prompts import ChatPromptTemplate
+from collections import deque
+from langchain_core.messages import AIMessage, HumanMessage
+
 
 dir_path = Path(__file__).parent
 
@@ -76,45 +82,36 @@ class Doc2VdbPipe:
 class RagPipeline:
     def __init__(self, config: Config) -> None:
         docvdbPipe = Doc2VdbPipe(config=config)
-        logger.info(f"Doc to Vector database initialised")
+        logger.info(f"Adding Docs to VDB...")
         docvdbPipe.load_files2db(data_path=config.data_path)
         self.docvdbPipe = docvdbPipe
         
-        print("Reranker...")
         self.reranker = None
         if config.reranker_model_name is not None:
             self.reranker = Reranker(
                 model_name=config.reranker_model_name,
             )
+            logger.info("Reranker initialized...")
         
-        print("Prompt...")
-        self.prompt: ChatPromptTemplate = get_sys_template(
+        self.qa_sys_prompt: ChatPromptTemplate = load_sys_template(
             dir_path / "prompts/basic_sys_prompt_template.txt"
         )
 
-        self.llm_client = LLM2(
+        llm_client = LLM2(
             model_name=config.model_name, 
             base_url=config.base_url, api_key=config.api_key, timeout=config.timeout, 
-            max_tokens=config.max_tokens, 
-            streaming=True
+            max_tokens=config.max_tokens
         )
 
-        print("Retriever...")
+        self.llm_client = llm_client
+
+        logger.info("Init Retriever...")
         retreiver_cls = get_retreiver_cls(retreiver_type=config.retreiver_type)
         extra_params = config.retriever_extra_params
 
-        if config.retreiver_type == "multiQuery":
-            extra_params["llm"] = LLM(
-                client=OpenAI(
-                    base_url=config.base_url, 
-                    api_key=config.api_key, 
-                    timeout=config.timeout,
-                ),
-                model_name=config.model_name,
-                max_tokens=config.max_tokens,
-                chat_mode="SimpleLLM"
-            )
-            extra_params["prompt_multi_queries"] = MultiQueryPrompt()
+        if config.retreiver_type in ["hyde", "multiQuery"]:
+            extra_params["llm"] = llm_client.client
+
             self.retriever: BaseRetriever = retreiver_cls(
                 criteria=config.criteria,
                 top_k=config.top_k,
@@ -126,21 +123,26 @@ class RagPipeline:
                 top_k=config.top_k
             )
             if config.retriever_extra_params: 
-                logger.info(f"'retriever_extra_params' is not used in {config.retreiver_type} retreiver")
+                logger.info(f"'retriever_extra_params' is not used for the `{config.retreiver_type}` retreiver")
 
         self.reranker_top_k = config.reranker_top_k
         self.rag_mode = config.rag_mode
-        self._chat_history: list = []
+        self._chat_history: deque = deque(maxlen=config.chat_history_depth)
     
 
     def get_contextualize_docs(self, question: str, chat_history: list):
+        logger.info("Contextualizing the question")
+        
         if self.rag_mode == "SimpleRag":
+            logger.info("Documents retreived...")
+
             docs = self.retriever.retrieve(
                 question, 
                 db=self.docvdbPipe.connector
             )
+
         if self.rag_mode == "ChatBotRag":
-            sys_prompt = get_sys_template(
+            sys_prompt = load_sys_template(
                 dir_path / "prompts/contextualize_sys_prompt_template.txt"
             )
             contextualize_q_prompt = ChatPromptTemplate.from_messages(
@@ -154,26 +156,40 @@ class RagPipeline:
                 contextualize_q_prompt
                 | self.llm_client.client 
                 | StrOutputParser()
-                | (lambda x: self.retriever.retrieve(x, db=self.docvdbPipe.connector))
             )
 
             input_ = {"input": question, "chat_history": chat_history}
-            docs = history_aware_retriever.invoke(input_)
+            logger.info("Generating contextualized question for retreival...")
+            question_contextualized = history_aware_retriever.invoke(input_)            
 
-        return docs
+            logger.info("Documents retreived...")
 
-            
+            docs = self.retriever.retrieve(
+                question_contextualized, 
+                db=self.docvdbPipe.connector
+            )
 
-    def run(self, question: str="", chat_history: list = None):
+        return docs 
+
+    def run(self, question: str=""):
+        chat_history = list(self._chat_history)
         docs = self.get_contextualize_docs(question, chat_history)
-
         if self.reranker is not None:
             docs = self.reranker.rerank(question, docs=docs, k=self.reranker_top_k)
+            
         context = format_context(docs)
-
         answer = self.llm_client.run(
             question=question, 
             chat_history=chat_history,
-            context=context, sys_msg=self.prompt)
+            context=context, sys_prompt_template=self.qa_sys_prompt)
 
         return answer, context
+
+    
+    def update_history(self, question: str, answer: str):
+        self._chat_history.extend(
+            [
+                HumanMessage(content=question),
+                AIMessage(content=answer),
+            ]
+        )

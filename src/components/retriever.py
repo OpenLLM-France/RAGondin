@@ -1,17 +1,19 @@
 # Import necessary modules and classes
 from abc import ABCMeta, abstractmethod
-from collections import defaultdict
 from pathlib import Path
-from typing import Union
-from .llm import LLM
-from .prompt import generate_multi_query, MultiQueryPrompt
-from .reranker import Reranker
+from .llm import LLM2
+# from .prompt import generate_multi_query, MultiQueryPrompt
 from .vector_store import Qdrant_Connector, BaseVectorDdConnector
-from enum import Enum
 from loguru import logger
-from .utils import load_prompt
+# from .utils import load_prompt
+from langchain_core.prompts import ChatPromptTemplate
+from .prompt import load_sys_template
+from langchain_openai import ChatOpenAI
+from langchain_core.output_parsers import StrOutputParser
+from langchain.load import dumps, loads
 
 
+dir_path = Path(__file__).parent
 CRITERIAS = ["similarity"]
 
 class BaseRetriever(metaclass=ABCMeta):
@@ -118,36 +120,41 @@ class MultiQueryRetriever(SingleRetriever):
         super().__init__(criteria, top_k)
         
         try:
-            prompt_multi_queries = extra_args.get("prompt_multi_queries")
-            if not isinstance(prompt_multi_queries, MultiQueryPrompt):
-                raise TypeError(f"`prompt_multi_queries` should be of type {MultiQueryPrompt}")
-
-            llm = extra_args.get("llm")
-            if not isinstance(llm, LLM):
-                raise TypeError(f"`llm` should be of type {LLM}")
+            llm: ChatOpenAI = extra_args.get("llm")
+            if not isinstance(llm, ChatOpenAI):
+                raise TypeError(f"`llm` should be of type {LLM2}")
         
-            k_multi_queries = extra_args.get("k_multi_queries")
-            if not isinstance(k_multi_queries, int):
-                raise TypeError(f"`k_multi_queries` should be of type {int}")
+            k_queries = extra_args.get("k_queries")
+            if not isinstance(k_queries, int):
+                raise TypeError(f"`k_queries` should be of type {int}")
             
-            self.prompt_multi_queries: MultiQueryPrompt = prompt_multi_queries
-            self.llm: LLM = llm
-            self.k_multi_queries: int = k_multi_queries
+            multi_queries_template = load_sys_template(
+                dir_path / "prompts/multi_query_prompt_template.txt"
+            )
+            self.k_queries = k_queries
+            prompt_multi_queries: ChatPromptTemplate = ChatPromptTemplate.from_template(
+                multi_queries_template
+            )
+            self.generate_queries = (
+                prompt_multi_queries 
+                | llm
+                | StrOutputParser() 
+                | (lambda x: x.split("[SEP]"))
+            )
 
         except Exception as e:
             raise KeyError(f"An Error has occured: {e}")
 
 
     def retrieve_with_scores(self, question: str, db: BaseVectorDdConnector | Qdrant_Connector):
-        msg_prompts = self.prompt_multi_queries.get_multi_query_prompt(
-            question=question, 
-            k_multi_queries=self.k_multi_queries
+        logger.info("generate different perspectives of the question ...")
+        generated_questions = self.generate_queries.invoke(
+            {
+                "question": question, 
+                "k_queries": self.k_queries
+            }
         )
-        # generate similar questions
-        generated_questions = generate_multi_query(self.llm, msg_prompts=msg_prompts)
-        if len(generated_questions) != self.k_multi_queries:
-            logger.warning(f"{len(generated_questions)} questions are generated instead of what is asked ({self.k_multi_queries}). Tune your prompt")
-
+        
         if self.criteria == "similarity":
             retrieved_chunks = db.multy_query_similarity_search_with_scores(queries=generated_questions, top_k_per_queries=self.top_k)
         else:
@@ -172,14 +179,11 @@ class MultiQueryRetriever(SingleRetriever):
             list[str]
                 The list of retrieved documents.
         """
-        multi_prompt_dict = self.prompt_multi_queries.get_multi_query_prompt(
-            question=question, k_queries=self.k_multi_queries
-        )
-        generated_questions = generate_multi_query(self.llm, msg_prompts=multi_prompt_dict)
-      
-        if len(generated_questions) != self.k_multi_queries:
-            logger.warning(f"{len(generated_questions)} questions are generated instead of what is asked ({self.k_multi_queries}). Tune your prompt")
 
+        # generate different perspectives of the question
+        generated_questions = self.generate_queries.invoke(
+            {"question": question, "k_queries": self.k_queries}
+        )
 
         if self.criteria == "similarity":
             retrieved_chunks = db.multy_query_similarity_search(
@@ -188,108 +192,60 @@ class MultiQueryRetriever(SingleRetriever):
             )
         else:
             raise ValueError(f"Invalid type. Choose from {CRITERIAS}")
-        # retrieved_chunks_txt = [chunk.page_content for chunk in retrieved_chunks]
-        # return retrieved_chunks_txt
         return retrieved_chunks
 
 
 
-dir_path = Path(__file__).parent
 
 class HyDeRetreiver(SingleRetriever):
     def __init__(self, criteria: str = "similarity", top_k: int = 6, **extra_args) -> None:
         super().__init__(criteria, top_k, **extra_args)
         try:
             llm = extra_args.get("llm")
-            if not isinstance(llm, LLM):
-                raise TypeError(f"`llm` should be of type {LLM}")
+            if not isinstance(llm, ChatOpenAI):
+                raise TypeError(f"`llm` should be of type {ChatOpenAI}")
             
-            self.llm: LLM = llm
-            self.hyde_template: list[str] = load_prompt(
+            self.llm: ChatOpenAI = llm
+
+            hyde_template = load_sys_template(
                 dir_path / "prompts/hyde.txt"
             )
+
+            hyde_prompt: ChatPromptTemplate = ChatPromptTemplate.from_template(
+                hyde_template
+            )
+            self.generate_hyde = (
+                hyde_prompt 
+                | llm
+                | StrOutputParser() 
+            )
+
         except Exception as e:
             raise ArithmeticError(f"An error occured: {e}")
+        
 
-    def get_hyde(self, question):
-        sys_template, user_template = self.hyde_template
-        sys_prompt = sys_template
-        user_prompt = user_template.format(question=question)
-        prompt_dict = {"system":sys_prompt, "user":user_prompt}
-        return self.llm.run(prompt_dict)
+    def get_hyde(self, question: str):
+        generated_document = (self.generate_hyde
+                              .invoke({"question": question})
+                            )
+        return generated_document
 
     def retrieve(self, question: str, db: BaseVectorDdConnector | Qdrant_Connector) -> list[str]:
         hyde = self.get_hyde(question)
-        return super().retrieve(hyde, db) + super().retrieve(question, db) # hyde + single retreiver for stronger results
+        logger.info("generate hyde document...")
+        docs = super().retrieve(hyde, db)
+        return docs # + super().retrieve(question, db) # hyde + single retreiver for stronger results
     
     def retrieve_with_scores(self, question: str, db: Qdrant_Connector) -> list[tuple[str, float]]:
         hyde = self.get_hyde(question)
         return super().retrieve_with_scores(hyde, db)
 
 
-# class HybridRetriever(SingleRetriever):
-#     #TODO: This class has not been review yet in order to make it coherent with other retreivers
-#     """
-#     The HybridRetriever class is a subclass of the Retriever class that retrieves relevant documents
-#     based on multiple retrieval methods. It combines the results from multiple retrievers, each with
-#     a specified weight, to produce a final list of retrieved documents.
-
-#     Attributes
-#     ----------
-#     retrievers : list[tuple[float, Retriever]]
-#         A list of tuples, each containing a weight and an instance of a Retriever subclass. The weight
-#         determines the influence of the retriever's results on the final list of retrieved documents.
-#     """
-
-#     def __init__(self, params: dict, retrievers: list[tuple[float, SingleRetriever]]) -> None:
-#         """
-#         Constructs all the necessary attributes for the HybridRetriever object.
-
-#         Parameters
-#         ----------
-#         params : dict
-#             The parameters for the retrieval method.
-#         retrievers : list[tuple[float, Retriever]]
-#             A list of tuples, each containing a weight and an instance of a Retriever subclass.
-#         """
-#         super().__init__(params, criteria="hybrid")
-#         self.retrievers = retrievers
-
-#     def retrieve(self, question: str, db: Qdrant_Connector) -> list[str]:
-#         """
-#         Retrieves relevant documents based on the results of multiple retrievers. Each retriever's results
-#         are weighted according to the weight specified in the 'retrievers' attribute. The results are then
-#         combined and sorted by score to produce the final list of retrieved documents.
-
-#         Parameters
-#         ----------
-#         question : str
-#             The question to retrieve documents for.
-#         db : Qdrant_Connector
-#             The Qdrant_Connector instance to use for retrieving documents.
-
-#         Returns
-#         -------
-#         list[str]
-#             The list of retrieved documents, sorted by score.
-#         """
-#         retrieved_chunks_txt = defaultdict(float)
-#         for weight, retriever in self.retrievers:
-#             chunks_with_score = retriever.retrieve_with_scores(question, db)
-#             for chunk, score in chunks_with_score:
-#                 retrieved_chunks_txt[chunk] += weight * score
-                
-#         retrieved_chunks_txt = sorted(retrieved_chunks_txt.items(), key=lambda x: x[1], reverse=True)
-#         retrieved_chunks_txt = [chunk for chunk, weight in retrieved_chunks_txt]
-#         return retrieved_chunks_txt[:self.params["top_k"]]
-
-
 
 RETREIEVERS = {
     "single": SingleRetriever,
+    "multiQuery": MultiQueryRetriever,
     "hyde": HyDeRetreiver,
-    "multiQuery": MultiQueryRetriever
-
 }
 
 def get_retreiver_cls(retreiver_type: str) -> BaseRetriever:
@@ -298,3 +254,13 @@ def get_retreiver_cls(retreiver_type: str) -> BaseRetriever:
     if retreiver is None:
         raise ValueError(f"Unknown retreiver type: {retreiver_type}")
     return retreiver
+
+
+def get_unique_union(documents: list[list]):
+    """ Unique union of retrieved docs """
+    # Flatten list of lists, and convert each Document to string
+    flattened_docs = [dumps(doc) for sublist in documents for doc in sublist]
+    # Get unique documents
+    unique_docs = list(set(flattened_docs))
+    # Return
+    return [loads(doc) for doc in unique_docs]

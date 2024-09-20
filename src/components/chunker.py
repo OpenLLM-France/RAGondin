@@ -4,20 +4,19 @@ from pathlib import Path
 from langchain_core.documents.base import Document
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain_community.document_loaders import DirectoryLoader
-from langchain_community.document_loaders.pdf import PDFMinerLoader
+# from langchain_community.document_loaders.pdf import PDFMinerLoader
 from langchain_community.document_loaders import UnstructuredXMLLoader, PyPDFLoader
 from langchain_community.document_loaders.csv_loader import CSVLoader
 from langchain_community.document_loaders.text import TextLoader
 from langchain_community.document_loaders import UnstructuredHTMLLoader
 
 # Define a dictionary to map file extensions to their respective loaders
-
 DEFAULT_LOADERS = {
     '.pdf': PyPDFLoader, # PDFMinerLoader
-    # '.xml': UnstructuredXMLLoader,
-    # '.csv': CSVLoader,
-    # '.txt': TextLoader,
-    # '.html': UnstructuredHTMLLoader,
+    '.xml': UnstructuredXMLLoader,
+    '.csv': CSVLoader,
+    '.txt': TextLoader,
+    '.html': UnstructuredHTMLLoader,
 }
 
 def create_file_type_loader(file_type, directory_path):
@@ -65,23 +64,16 @@ class RecursiveSplitter(BaseChunker):
             **chunker_args
         )
 
-    def split(self, docs: list[Document]=None):
-        """
-        Split a list of documents into chunks.
 
-        Uses the langchain TextSplitter to divide the text
-        from the documents into smaller chunks.
+    def split(self, docs: list[Document]) -> list[Document]:
+        """Split a list of documents into chunks.
 
         Args:
-            docs: List of documents to split.
+            docs (list[Document]): List of documents to split.
 
         Returns:
-            None
-
-        Raises:
-            ValueError: If docs is not a list.
+            list[Document]: List of splitted documents
         """
-
         if not isinstance(docs, list):
             raise TypeError("docs must be a list of documents.")
         

@@ -1,9 +1,6 @@
 # Import necessary libraries and modules
 import asyncio
-from operator import itemgetter
 import random
-from typing import Union, List
-
 from openai import AsyncOpenAI
 
 # Import local modules
@@ -14,14 +11,11 @@ from .llm import LLM
 import pandas as pd
 import datasets
 import logging
-import pprint as pp
 from tqdm import tqdm
 
 # Import local modules
-from .pipeline import RAG
-
 from .config import Config
-from .pipeline import RagPipeline
+
 
 logging.basicConfig()
 logger = logging.getLogger(__name__)
