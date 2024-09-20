@@ -15,9 +15,11 @@ HG_EMBEDDER_TYPE = {
     "huggingface": HuggingFaceEmbeddings
 }
 
+
 class HFEmbedder(BaseEmbedder):
-    """Factory class to generate embeddings using different backend models.
+    """Factory class for loading HuggingFace embeddings models backend models.
     """
+
     def __init__(
             self, 
             model_type: str = 'huggingface', 
@@ -28,10 +30,10 @@ class HFEmbedder(BaseEmbedder):
         """Initialize Embeddings.
 
         Args:
-            model_type (str, optional): Type of embedding model to use. Defaults to 'huggingface'.
-            model_name (str, optional): Name of specific model.. Defaults to "thenlper/gte-small".
-            model_kwargs (dict, optional): kwargs to pass to model constructor.. Defaults to {"device": "cpu"}.
-            encode_kwargs (dict, optional): kwargs for encoding documents.. Defaults to {"normalize_embeddings": True}.
+            model_type (str): Type of embedding model to use. Defaults to 'huggingface'.
+            model_name (str): Name of specific model.. Defaults to "thenlper/gte-small".
+            model_kwargs (dict): kwargs to pass to model constructor.. Defaults to {"device": "cpu"}.
+            encode_kwargs (dict): kwargs for encoding documents.. Defaults to {"normalize_embeddings": True}.
 
         Raises:
             ValueError: If invalid `model_type` passed or non-existant `model_name`.

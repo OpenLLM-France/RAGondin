@@ -4,7 +4,6 @@ import random
 
 # Import local modules
 from .chunker import Docs
-from .llm import LLM
 
 # Import external libraries
 import pandas as pd
@@ -158,9 +157,13 @@ async def evaluate(llm: LLM, question, context):
             question=question, 
             context=context
         )
-        d = {"system":sys_prompt, "user":user_prompt}
+        d = [
+            {"role": "system", "content": sys_prompt},
+            {"role": "user", "content": user_prompt}
+        ]
 
         stream = await llm.async_run(d)
+
         print(f"{metric_name.title()}: ", end="")
         async for chunk in stream:
             if chunk.choices[0].delta.content is not None:

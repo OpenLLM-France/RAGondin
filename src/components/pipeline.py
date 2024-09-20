@@ -1,14 +1,26 @@
 from pathlib import Path
-from .chunker import Docs, get_chunker_cls, CHUNKERS
-from .llm import LLM
-from .prompt import BasicPrompt, MultiQueryPrompt
+from .chunker import Docs, CHUNKERS
+from .llm import LLM2
+from .prompt import format_context, load_sys_template
 from .reranker import Reranker
 from .retriever import get_retreiver_cls, BaseRetriever
 from .vector_store import CONNECTORS
 from .embeddings import HFEmbedder
 from .config import Config
-from openai import OpenAI, AsyncOpenAI
 from loguru import logger
+
+from langchain_core.prompts import (
+    MessagesPlaceholder, 
+    ChatPromptTemplate
+)
+
+from langchain_core.output_parsers import StrOutputParser
+from collections import deque
+from langchain_core.messages import AIMessage, HumanMessage
+
+
+dir_path = Path(__file__).parent
+
 
 class Doc2VdbPipe:
     """This class bridges static files with the vector database.
@@ -66,87 +78,118 @@ class Doc2VdbPipe:
         self.connector.add_documents(docs_splited)
         logger.info(f"Documents from {file_path} added.")
 
+
 class RagPipeline:
     def __init__(self, config: Config) -> None:
         docvdbPipe = Doc2VdbPipe(config=config)
-        logger.info(f"Doc to Vector database initialised")
+        logger.info(f"Adding Docs to VDB...")
         docvdbPipe.load_files2db(data_path=config.data_path)
         self.docvdbPipe = docvdbPipe
         
-        print("Reranker...")
         self.reranker = None
         if config.reranker_model_name is not None:
             self.reranker = Reranker(
                 model_name=config.reranker_model_name,
             )
+            logger.info("Reranker initialized...")
         
-        print("Prompt...")
-        self.prompt: BasicPrompt = BasicPrompt()
+        self.qa_sys_prompt: ChatPromptTemplate = load_sys_template(
+            dir_path / "prompts/basic_sys_prompt_template.txt"
+        )
 
-        self.llm_client = LLM(
-            client=AsyncOpenAI(
-                base_url=config.base_url, 
-                api_key=config.api_key, 
-                timeout=config.timeout
-            ),
-            model_name=config.model_name,
+        llm_client = LLM2(
+            model_name=config.model_name, 
+            base_url=config.base_url, api_key=config.api_key, timeout=config.timeout, 
             max_tokens=config.max_tokens
         )
 
-        print("Retriever...")
+        self.llm_client = llm_client
+
+        logger.info("Init Retriever...")
         retreiver_cls = get_retreiver_cls(retreiver_type=config.retreiver_type)
         extra_params = config.retriever_extra_params
 
-        if config.retreiver_type == "multiQuery":
-            extra_params["llm"] = LLM(
-                client=OpenAI(
-                    base_url=config.base_url, 
-                    api_key=config.api_key, 
-                    timeout=config.timeout
-                ),
-                model_name=config.model_name,
-                max_tokens=config.max_tokens
-            )
-            extra_params["prompt_multi_queries"] = MultiQueryPrompt()
-            self.retriever: BaseRetriever = retreiver_cls(
-                criteria=config.criteria,
-                top_k=config.top_k,
-                **extra_params
-            )
-        if config.retreiver_type == "hyde":
-            extra_params["llm"] = LLM(
-                client=OpenAI(
-                    base_url=config.base_url, 
-                    api_key=config.api_key, 
-                    timeout=config.timeout
-                ),
-                model_name=config.model_name,
-                max_tokens=config.max_tokens
-            )
-            
-            self.retriever: BaseRetriever = retreiver_cls(
-                criteria=config.criteria,
-                top_k=config.top_k,
-                **extra_params
-            )
+        if config.retreiver_type in ["hyde", "multiQuery"]:
+            extra_params["llm"] = llm_client.client
 
+            self.retriever: BaseRetriever = retreiver_cls(
+                criteria=config.criteria,
+                top_k=config.top_k,
+                **extra_params
+            )
         if config.retreiver_type == "single":
             self.retriever: BaseRetriever = retreiver_cls(
                 criteria=config.criteria,
                 top_k=config.top_k
             )
-            if config.retriever_extra_params: logger.info(f"'retriever_extra_params' is not used in {config.retreiver_type} retreiver")
+            if config.retriever_extra_params: 
+                logger.info(f"'retriever_extra_params' is not used for the `{config.retreiver_type}` retreiver")
 
         self.reranker_top_k = config.reranker_top_k
+        self.rag_mode = config.rag_mode
+        self._chat_history: deque = deque(maxlen=config.chat_history_depth)
+    
 
-    async def run(self, question: str=""):
-        docs = self.retriever.retrieve(
-            question, 
-            db=self.docvdbPipe.connector
-        )
+    def get_contextualize_docs(self, question: str, chat_history: list):
+        logger.info("Contextualizing the question")
+        
+        if self.rag_mode == "SimpleRag":
+            logger.info("Documents retreived...")
+
+            docs = self.retriever.retrieve(
+                question, 
+                db=self.docvdbPipe.connector
+            )
+
+        if self.rag_mode == "ChatBotRag":
+            sys_prompt = load_sys_template(
+                dir_path / "prompts/contextualize_sys_prompt_template.txt"
+            )
+            contextualize_q_prompt = ChatPromptTemplate.from_messages(
+                [
+                    ("system", sys_prompt),
+                    MessagesPlaceholder("chat_history"),
+                    ("human", "{input}"),
+                ]
+            )
+            history_aware_retriever = (
+                contextualize_q_prompt
+                | self.llm_client.client 
+                | StrOutputParser()
+            )
+
+            input_ = {"input": question, "chat_history": chat_history}
+            logger.info("Generating contextualized question for retreival...")
+            question_contextualized = history_aware_retriever.invoke(input_)            
+
+            logger.info("Documents retreived...")
+
+            docs = self.retriever.retrieve(
+                question_contextualized, 
+                db=self.docvdbPipe.connector
+            )
+
+        return docs 
+
+    def run(self, question: str=""):
+        chat_history = list(self._chat_history)
+        docs = self.get_contextualize_docs(question, chat_history)
         if self.reranker is not None:
             docs = self.reranker.rerank(question, docs=docs, k=self.reranker_top_k)
+            
+        context = format_context(docs)
+        answer = self.llm_client.run(
+            question=question, 
+            chat_history=chat_history,
+            context=context, sys_prompt_template=self.qa_sys_prompt)
 
-        prompt_dict, context = self.prompt.get_prompt(question, docs=docs)
-        answer = await self.llm_client.async_run(prompt_dict)
         return answer, context
+
+    
+    def update_history(self, question: str, answer: str):
+        self._chat_history.extend(
+            [
+                HumanMessage(content=question),
+                AIMessage(content=answer),
+            ]
+        )

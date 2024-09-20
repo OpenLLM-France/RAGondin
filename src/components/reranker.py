@@ -18,6 +18,7 @@ class Reranker:
         self.model = RAGPretrainedModel.from_pretrained(model_name)
 
     def rerank(self, question: str, docs: list[Document], k: int = 5) -> list[str]:
+        logger.info("Reranking documents ...")
         """
         Rerank documents for a query.
 
@@ -54,7 +55,6 @@ def drop_duplicates(L: list[Document], key=None):
             yield s
         else:
             logger.info("Duplicata removed...")
-
 
 
 if __name__ == "__main__":

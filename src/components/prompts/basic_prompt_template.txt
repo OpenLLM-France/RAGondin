@@ -1,5 +1,0 @@
-Répondez aux questions des utilisateurs en français, en vous basant exclusivement sur le contexte fourni. 
-
-Contexte : {context}
-&&&
-{question}

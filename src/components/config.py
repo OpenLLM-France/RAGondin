@@ -1,22 +1,23 @@
 import os
 from pathlib import Path
+from typing import Literal
 from dotenv import load_dotenv
 from dataclasses import dataclass, field
-
 
 # Load env variables from .env file
 load_dotenv(dotenv_path="../")
 
+
 @dataclass
 class Config:
     """This class encapsulates the configurations for the application, 
-    including settings for paths, directories, prompts, and LLM-specific parameters.
+    including settings for paths, directories, and LLM-specific parameters.
     """
     # Docs
-    data_path: Path = "./experiments/test_data" # Put None
+    data_path: Path = Path("experiments/test_data").absolute()
     chunker_name: str = "recursive_splitter"
-    chunk_size: int = 800
-    chunk_overlap: int = 80 # TODO: Better express it with a percentage
+    chunk_size: int = 1000
+    chunk_overlap: int = 100 # TODO: Better express it with a percentage
     chunker_args: dict = field(default_factory= dict) # additional attributes specific to chunker
     
     # Embedding Model
@@ -36,7 +37,8 @@ class Config:
     api_key: str = os.getenv('API_KEY', '')
     model_name: str = 'meta-llama-31-8b-it'
     timeout: int = 60
-    prompt_template = "basic"
+    rag_mode: Literal["ChatBotRag", "SimpleRag"] = "ChatBotRag"
+    chat_history_depth: int = 4
     max_tokens: int = 1000
 
     # Reranker
@@ -44,12 +46,12 @@ class Config:
     reranker_top_k: int = 5 # number of docs to return after reranking
 
     # retriever
-    retreiver_type: str = "hyde"
+    retreiver_type: Literal["hyde", "single", "multiQuery"] = "single"
     criteria: str = "similarity"
     top_k: int = 5
     retriever_extra_params: dict = field( # multiQuery retreiver type
         default_factory=lambda: {
-            "k_multi_queries": 3 # llm and the prompt template will be added
+            "k_queries": 3 # the llm will be added when creating the pipeline
         }
     )
     

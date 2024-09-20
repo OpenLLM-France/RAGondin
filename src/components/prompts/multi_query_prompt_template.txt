@@ -1,10 +1,7 @@
-Vous êtes un assistant de modèle de langage IA en français. 
-Votre tâche consiste à générer {k} versions différentes de la question donnée par l'utilisateur pour récupérer des documents pertinents à partir d'une base de données vectorielle. 
-En générant plusieurs perspectives sur la question de l'utilisateur, votre objectif est d'aider l'utilisateur à surmonter certaines des limitations de la recherche de similarité basée sur la distance. 
-Fournissez ces questions alternatives séparées par [SEP].
+Écris {k_queries} versions différentes de la question donnée. 
+Ces variantes aideront à trouver des documents pertinents dans une base de données vectorielles. 
+Écris ces questions alternatives sur une même ligne séparées par '[SEP]' sans rien d'autres. 
 
-Vous devez absolument générer {k} questions, en français, sur la même ligne, séparées uniquement par [SEP]. 
-Voici le format à suivre:
-####Generated Questions: "question 1"[SEP]"question 2"[SEP]"question 3"[SEP]..."question {k}"
-&&&
-#### Question originale: {question}
+Example : Question 1?[SEP]Question 2?[SEP]Question 3?
+
+Question originale : {question}
