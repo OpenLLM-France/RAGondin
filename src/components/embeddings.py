@@ -19,7 +19,6 @@ HG_EMBEDDER_TYPE = {
 class HFEmbedder(BaseEmbedder):
     """Factory class for loading HuggingFace embeddings models backend models.
     """
-
     def __init__(
             self, 
             model_type: str = 'huggingface', 

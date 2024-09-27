@@ -1,7 +1,7 @@
 # Import necessary modules and classes
 from abc import ABCMeta, abstractmethod
 from pathlib import Path
-from .llm import LLM2
+from .llm import LLM
 # from .prompt import generate_multi_query, MultiQueryPrompt
 from .vector_store import Qdrant_Connector, BaseVectorDdConnector
 from loguru import logger
@@ -122,7 +122,7 @@ class MultiQueryRetriever(SingleRetriever):
         try:
             llm: ChatOpenAI = extra_args.get("llm")
             if not isinstance(llm, ChatOpenAI):
-                raise TypeError(f"`llm` should be of type {LLM2}")
+                raise TypeError(f"`llm` should be of type {LLM}")
         
             k_queries = extra_args.get("k_queries")
             if not isinstance(k_queries, int):

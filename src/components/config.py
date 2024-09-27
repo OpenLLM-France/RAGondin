@@ -15,6 +15,7 @@ class Config:
     """
     # Docs
     data_path: Path = Path("experiments/test_data").absolute()
+    # temp_folder: Path = Path(__file__).parent.absolute() / "temp_files"
     chunker_name: str = "recursive_splitter"
     chunk_size: int = 1000
     chunk_overlap: int = 100 # TODO: Better express it with a percentage
@@ -27,9 +28,9 @@ class Config:
     encode_kwargs: dict = field(default_factory= lambda: {"normalize_embeddings": True})
 
     # Vector DB
-    host: str = None
-    port: int = 0
-    collection_name: str = "my_docs"
+    host: str = 'localhost'
+    port: int = 6333
+    collection_name: str = "docs_vdb"
     db_connector: int = "qdrant"
 
     # LLM Client    
@@ -48,7 +49,7 @@ class Config:
     # retriever
     retreiver_type: Literal["hyde", "single", "multiQuery"] = "single"
     criteria: str = "similarity"
-    top_k: int = 5
+    top_k: int = 6
     retriever_extra_params: dict = field( # multiQuery retreiver type
         default_factory=lambda: {
             "k_queries": 3 # the llm will be added when creating the pipeline

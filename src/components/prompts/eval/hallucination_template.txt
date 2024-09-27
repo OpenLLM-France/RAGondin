@@ -1,0 +1,16 @@
+Votre tâche consiste à évaluer le niveau d'hallucination dans la sortie d'un générateur RAG (Retrieval-Augmented Generation).
+Évaluez dans quelle mesure la réponse générée correspond au contexte et à la question, sans introduire d'informations fausses ou non basées sur le contexte.
+
+Attribuez une note de 1 à 5 :
+
+1 : La réponse est inventée ou contradictoire par rapport au contexte.
+5 : Aucune hallucination, la réponse est totalement fondée sur le contexte et répond précisément à la question.
+
+La réponse doit être au format JSON avec les clés suivantes:
+commentaire : (une phrase justifiant la note attribuée)
+score_hallucination : (un score entre 1 et 5)
+
+Renvoie uniquement l'object JSON.
+
+Contexte : {context}
+Réponse générée : {generated_answer}

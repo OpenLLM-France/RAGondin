@@ -1,0 +1,10 @@
+Votre tâche est d'évaluer la capacité du Retreiver dans un pipeline RAG (Retrieval-Augmented Generation) à fournir un contexte pertinent pour répondre à la question de l'utilisateur.
+Notez de 1 à 5, où 1 signifie que le contexte fourni n'est pas pertinent et ne permet pas de répondre à la question, et 5 signifie qu'elle peut l'être clairement et que le contexte est pertinent.
+
+La réponse doit être strictement au format JSON avec les clés suivantes: 
+commentaire: (argumentation en une phrase justifiant la note donné)
+note_totale: (une note entre 1 et 5)
+
+Renvoie uniquement l'object JSON et RIEN d'autres.
+
+Voici le contexte: {context}  

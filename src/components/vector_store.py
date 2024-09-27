@@ -70,9 +70,10 @@ class Qdrant_Connector(BaseVectorDdConnector):
     """
 
     def __init__(
-            self, host, port, 
+            self, 
+            host, port, 
             embeddings: HuggingFaceBgeEmbeddings | HuggingFaceEmbeddings=None,
-            collection_name: str = "my_documents"
+            collection_name: str = None
         ):
         """
         Initialize Qdrant_Connector.
@@ -83,31 +84,30 @@ class Qdrant_Connector(BaseVectorDdConnector):
             collection_name (str): The name of the collection in the Qdrant database.
             embeddings (list): The embeddings of the data.
         """
-        self.host = host
-        self.port = port
-        self.collection_name = collection_name
-
+        # self.collection_name = collection_name
         self.embeddings: Union[HuggingFaceBgeEmbeddings, HuggingFaceEmbeddings] = embeddings
-        
         self.client = QdrantClient(
             port=port,
             host=host, # if None, localhost will be used
             prefer_grpc=False,
-            location=":memory:"
         )
-        self.vector_store = None
+        # self.client.delete_collection(collection_name=collection_name)
 
         if self.client.collection_exists(collection_name=collection_name):
             self.vector_store = QdrantVectorStore(
                 client=self.client,
-                collection_name=self.collection_name,
+                collection_name=collection_name,
                 embedding=embeddings
-            )  
-            logger.warning(f"A Collection named {self.collection_name} loaded.")
+            ) 
+            logger.warning(f"The Collection named `{collection_name}` loaded.")
         else:
-            logger.info(f"As the collectino '{self.collection_name}' is non-existant, it will created when `Qdrant_Connector.add_documents` is called ")
+            self.vector_store = QdrantVectorStore.construct_instance(
+                embedding=embeddings,
+                collection_name=collection_name,
+                client_options={'port': port, 'host':host}
+            )
+            logger.info(f"As the collection `{collection_name}` is non-existant, it's created.")
         
-
     def disconnect(self):
         """
         Disconnect from the Qdrant database.
@@ -117,20 +117,15 @@ class Qdrant_Connector(BaseVectorDdConnector):
 
 
     def add_documents(self, chuncked_docs: list[Document]) -> None:
+        # TODO: consider making it async
         """
         Build an index in the Qdrant database.
 
         Args:
             chuncked_docs (list): The chunks of data to be indexed.
         """
-        if self.vector_store is None:
-            self.vector_store = QdrantVectorStore.from_documents(
-                documents=chuncked_docs, 
-                embedding=self.embeddings
-            )
-            logger.info(f"Collection {self.collection_name} created.")
-        else:
-            self.vector_store.add_documents(chuncked_docs)
+        self.vector_store.add_documents(chuncked_docs)
+
 
     def similarity_search_with_score(self, query: str, top_k: int = 5) -> list[tuple[Document, float]]:
         """
@@ -144,6 +139,7 @@ class Qdrant_Connector(BaseVectorDdConnector):
             list: The top_k similar vectors.
         """
         return self.vector_store.similarity_search_with_score(query=query, k=top_k)
+    
 
     def similarity_search(self, query: str, top_k: int = 5) -> list[Document]:
         """
@@ -157,6 +153,7 @@ class Qdrant_Connector(BaseVectorDdConnector):
             list: The top_k similar vectors.
         """
         return self.vector_store.similarity_search(query=query, k=top_k)
+    
 
     def multy_query_similarity_search(self, queries: list[str], top_k_per_queries: int = 5) -> list[Document]:
         """
@@ -172,12 +169,15 @@ class Qdrant_Connector(BaseVectorDdConnector):
         Returns:
             list: The combined results of the similarity searches for all queries.
         """
+        # documents = list(
+        #     map(lambda q: self.vector_store.similarity_search(query=q, k=top_k_per_queries), queries)
+        # )
+
         retrieved_chunks = {}
         for query in queries:
             retrieved = self.vector_store.similarity_search(query=query, k=top_k_per_queries)
             for document in retrieved:
                 retrieved_chunks[id(document)] = document
-        
         return list(retrieved_chunks.values())
 
     def multy_query_similarity_search_with_scores(self, queries: list[str], top_k_per_queries: int = 5) -> list[tuple[Document, float]]:
