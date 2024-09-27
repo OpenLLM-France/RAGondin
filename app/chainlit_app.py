@@ -27,12 +27,6 @@ async def set_starters():
             message='Définition et effets de la notion de "Digital Labor".',
             icon="./public/labor-man-labor.svg",
             ),
-
-    cl.Starter(
-            label="Réseaux sociaux => Narcissisme",
-            message='Les réseaux sociaux amplifient le narcissisme',
-            icon="./public/idea.svg",
-            )
     ]
 
 
@@ -45,13 +39,19 @@ async def on_chat_start():
 @cl.on_message
 async def main(message: cl.Message):
     question = message.content
-    msg = cl.Message(content="")
-    await msg.send()
 
     async with cl.Step(name="Searching for relevant documents...") as step:
-        stream, _, sources = ragPipe.run(question) # type: ignore
+        stream, _, sources = ragPipe.run(question)
     await step.remove()
 
+
+    elements = [
+        cl.Pdf(name=ref, path=s, page=p, display="side", size="medium") 
+        for ref, s, p in sources
+    ]
+    msg = cl.Message(content="", elements=elements)
+    await msg.send()
+    
     answer_txt = ""
     async for token in stream:
         await msg.stream_token(token.content)
@@ -59,18 +59,5 @@ async def main(message: cl.Message):
     
     if ragPipe.rag_mode == "ChatBotRag":
             ragPipe.update_history(question, answer_txt)
-    
-    # Sending a pdf with the local file path
-    # sources = [(s, p) for s, p in sources if s in answer_txt]
-    # await cl.Message(
-    #      content=f"Sources: {', '.join(s for s, p in sources)}", 
-    #      elements=[cl.Pdf(name=f"{s}", display="side", path=f"./{s}", page=p) for s, p in sources]).send()
-
-
-    sources = set([s for s, p in set(sources) if s in answer_txt])
-    if sources:
-        await cl.Message(
-            content=f"Sources: {', '.join(s for s in sources)}", 
-            elements=[cl.Pdf(name=f"{s}", display="side", path=f"./{s}", size='medium') for s in sources]).send()
 
     await msg.send()
