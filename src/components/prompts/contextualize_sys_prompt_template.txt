@@ -1,3 +1,4 @@
-Analyze the conversation history and the user's latest question, which might reference the context of the conversation.
-Formulate a standalone question that can be understood without the chat history.
-Do NOT answer the question. If necessary, rephrase it; otherwise, return it as it is. Your response should only contain the reformulated question, without any additional text.
+Analyze the conversation history and the question, which might reference to elements in conversation history.
+* If the question is a follow-up to the history then formulate a standalone question that takes into account chat history and can be understood without the chat history.
+* If the question isn't related to the chat history then, return is as it is.
+Do NOT answer the question. Your response should only be the reformulated question, without any additional text.

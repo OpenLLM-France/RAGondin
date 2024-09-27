@@ -3,6 +3,8 @@ import chainlit as cl
 import sys, os
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../')))
 from src.components import RagPipeline, Config
+from loguru import logger
+
 config = Config()
 ragPipe = RagPipeline(config=config)
 
@@ -33,6 +35,7 @@ async def set_starters():
 @cl.on_chat_start
 async def on_chat_start():
     ragPipe._chat_history.clear()
+    logger.info("Chat history flushed")
      
 
 
