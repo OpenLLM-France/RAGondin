@@ -4,15 +4,15 @@ from typing import Literal
 from dotenv import load_dotenv
 from dataclasses import dataclass, field
 
-# Load env variables from .env file
-load_dotenv(dotenv_path="../")
-
 
 @dataclass
 class Config:
     """This class encapsulates the configurations for the application, 
     including settings for paths, directories, and LLM-specific parameters.
     """
+    # Load env variables from .env file
+    load_dotenv(dotenv_path="../")
+
     # Docs
     data_path: Path = Path("experiments/test_data").absolute()
     # temp_folder: Path = Path(__file__).parent.absolute() / "temp_files"

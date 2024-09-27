@@ -174,8 +174,8 @@ class RagPipeline:
             )
 
             input_ = {"input": question, "chat_history": chat_history}
-            logger.info("Generating contextualized question for retreival...") # this is the bootleneck
-            question_contextualized = history_aware_retriever.invoke(input_)            
+            logger.info("Generating contextualized question for retreival...") 
+            question_contextualized = history_aware_retriever.invoke(input_) # TODO: this is the bootleneck, the model answers sometimes instead of reformulating  
             logger.info("Documents retreived...")
 
             docs = self.retriever.retrieve(
