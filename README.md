@@ -30,7 +30,7 @@ fastapi run app/api.py --reload
 ```
 * This will launch the fastapi api (at http://your_route/docs). You can also open the chainlit app (at http://your_route/chainlit ), a chatbot style user interface for RAG. Before doing RAG make sure to put documents via the (http://your_route/docs) otherwise it won't work.
 
-> Be aware that it's a rag task. Ask questions related to the documents in the **`experiments/test_data`** as the llm grounds its answers on those pdf files.
+> Be aware that it's a rag task. Ask questions related to the documents as the llm grounds its answers document in the VectorDB.
 
 4. Experiment with implementations and contribute back to the repository.
 
