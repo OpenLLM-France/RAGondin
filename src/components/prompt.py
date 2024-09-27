@@ -16,10 +16,10 @@ def format_context(docs: list[Document]) -> str:
     for i, doc in enumerate(docs, start=1):
         context += f"""
         Document: {doc.page_content}
-        document source {i}: {doc.metadata["source"]}#page={doc.metadata["page"]+1}
+        [doc_{i}]: {doc.metadata["source"]}#page={doc.metadata["page"]+1}
         =======\n
         """
         sources.append(
-            (doc.metadata["source"], doc.metadata["page"]+1)
+            (f"[doc_{i}]", doc.metadata["source"], doc.metadata["page"]+1)
         )
-    return context, set(sources)
+    return context, sources

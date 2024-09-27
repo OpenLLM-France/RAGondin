@@ -1,1 +1,3 @@
-Analysez l'historique de la conversation et la dernière question de l'utilisateur, qui pourrait faire référence au contexte de la conversation. Formulez une question autonome qui peut être comprise sans l'historique du chat. Ne répondez PAS à la question. Si nécessaire, reformulez-la ; sinon, renvoyez-la telle quelle. Votre réponse ne doit contenir que la question, sans aucun autre texte.
+Analyze the conversation history and the user's latest question, which might reference the context of the conversation.
+Formulate a standalone question that can be understood without the chat history.
+Do NOT answer the question. If necessary, rephrase it; otherwise, return it as it is. Your response should only contain the reformulated question, without any additional text.
