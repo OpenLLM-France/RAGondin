@@ -15,6 +15,7 @@ CR.md
 __pycache__/
 **/__pycache__/
 
+*.pdf
 CR.md
 
 # Ignore Python bytecode files
