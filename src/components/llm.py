@@ -3,10 +3,10 @@ from langchain_core.prompts import (
     MessagesPlaceholder, 
     ChatPromptTemplate
 )
-from langchain_core.messages import AIMessage, HumanMessage
+from langchain_core.messages import AIMessage, HumanMessage, BaseMessage
+from typing import AsyncIterator
 
-
-class LLM2:
+class LLM:
     def __init__(
             self, 
             model_name: str = 'meta-llama-31-8b-it',
@@ -15,6 +15,7 @@ class LLM2:
             timeout: int = 60,
             max_tokens: int = 1000,
         ):
+        # https://community.openai.com/t/cheat-sheet-mastering-temperature-and-top-p-in-chatgpt-api/172683
 
         self.client: ChatOpenAI = ChatOpenAI(
             model=model_name,
@@ -29,17 +30,18 @@ class LLM2:
             question: str, context: str, 
             chat_history: list[AIMessage | HumanMessage], 
             sys_prompt_template: str
-        ):
-        """This method runs the algorithm 
+        )-> AsyncIterator[BaseMessage]:
+
+        """This method runs the LLM given the user's input (`question`), `chat_history`, and the system prompt template (`sys_prompt_template`) 
 
         Args:
             question (str): The input from the user; not necessarily a question.
-            context (str): It's the retrieved documents
+            context (str): It's the retrieved documents (formatted into string)
             chat_history (list[AIMessage  |  HumanMessage]): The Chat history.
-            sys_prompt_template (str): _description_
+            sys_prompt_template (str): The system prompt
 
         Returns:
-            _type_: _description_
+            AsyncIterator[BaseMessage]
         """
 
         qa_prompt = ChatPromptTemplate.from_messages(
@@ -61,13 +63,12 @@ class LLM2:
         answer = rag_chain.astream(input_)    
         return answer
         
-        
 
-def template_from_sys_template(sys_message) -> ChatPromptTemplate:
-    return ChatPromptTemplate.from_messages(
-            [
-                ("system", sys_message),
-                MessagesPlaceholder("chat_history"),
-                ("human", "{input}"),
-            ]
-        )
+# def template_from_sys_template(sys_message) -> ChatPromptTemplate:
+#     return ChatPromptTemplate.from_messages(
+#             [
+#                 ("system", sys_message),
+#                 MessagesPlaceholder("chat_history"),
+#                 ("human", "{input}"),
+#             ]
+#         )

@@ -24,17 +24,13 @@ RAGondin is the project dedicated to experiment with advanced RAG (Retrieval-Aug
    pip install -r requirements.txt
    ```
 
-3. Run the Chainlit app:
+3. Run the fastapi app:
 ```bash
-chainlit run chainlit_app.py -w
+fastapi run app/api.py --reload
 ```
-This will launch the chainlit app, a chatbot style user interface for RAG.
+* This will launch the fastapi api (at http://your_route/docs). You can also open the chainlit app (at http://your_route/chainlit ), a chatbot style user interface for RAG. Before doing RAG make sure to put documents via the (http://your_route/docs) otherwise it won't work.
 
-Can also test the rag pipeline py running the main2.py file with the following command
-```bash
-python3 main2.py
-```
-> Be aware that it's a rag task. Ask questions related to the documents in the **`experiments/test_data`** as the llm grounds its answers on those pdf files.
+> Be aware that it's a rag task. Ask questions related to the documents as the llm grounds its answers document in the VectorDB.
 
 4. Experiment with implementations and contribute back to the repository.
 

@@ -1,5 +1,5 @@
 import asyncio
-from src.components import RagPipeline, Config
+from src.components import RagPipeline, Config, evaluate
 import time
 
 config = Config()
@@ -13,7 +13,7 @@ print(f"Start Time: {end - start} s.")
 async def main():
     while True:
         question = input("Question sur vos documents: ")
-        answer, context = ragPipe.run(question=question)
+        answer, context, _ = ragPipe.run(question=question)
         answer_txt = ""
         async for chunk in answer:
             print(chunk.content, end="")
@@ -22,9 +22,8 @@ async def main():
         if ragPipe.rag_mode == "ChatBotRag":
             ragPipe.update_history(question, answer_txt)
 
-
-        # print("\n")
-        # await evaluate(ragPipe.llm_client, question, context)
+        print("\n")
+        evaluate(ragPipe.llm_client.client, context, ragPipe._chat_history, question, answer_txt)
         print("\n")
 
 asyncio.run(main())
