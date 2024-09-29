@@ -164,7 +164,7 @@ class RagPipeline:
                 [
                     ("system", sys_prompt),
                     MessagesPlaceholder("chat_history"),
-                    ("human", "{input}"),
+                    ("human", "Here is the question to contextualize: `{input}`"),
                 ]
             )
             history_aware_retriever = (

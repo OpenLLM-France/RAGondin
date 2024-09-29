@@ -98,4 +98,4 @@ async def get_answer(new_user_input: str, chat_history: list[ChatMsg]):
 mount_chainlit(app=app, target="app/chainlit_app.py", path="/chainlit")
 
 if __name__ == "__main__":
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    uvicorn.run(app, host="0.0.0.0", port=8000) # 8083
