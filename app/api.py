@@ -75,7 +75,7 @@ async def upload_files(
 
 
 @app.post("/generate/",
-          summary="Given a questino, this endpoint allows to generate an answer grounded on the documents in the VectorDB",
+          summary="Given a question, this endpoint allows to generate an answer grounded on the documents in the VectorDB",
           tags=[Tags.LLM]
           )
 async def get_answer(new_user_input: str, chat_history: list[ChatMsg]):

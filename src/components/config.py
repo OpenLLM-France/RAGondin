@@ -47,7 +47,7 @@ class Config:
     reranker_top_k: int = 5 # number of docs to return after reranking
 
     # retriever
-    retreiver_type: Literal["hyde", "single", "multiQuery"] = "single"
+    retreiver_type: Literal["hyde", "single", "multiQuery"] = "hyde"
     criteria: str = "similarity"
     top_k: int = 6
     retriever_extra_params: dict = field( # multiQuery retreiver type
