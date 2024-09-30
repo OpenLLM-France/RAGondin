@@ -1,3 +1,4 @@
+import asyncio
 from typing import Annotated
 from fastapi import FastAPI, File, UploadFile, HTTPException, status
 from enum import Enum
@@ -9,6 +10,8 @@ from fastapi.responses import StreamingResponse
 from contextlib import asynccontextmanager
 import uvicorn
 from typing import Literal
+import aiofiles
+
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../')))
 from src.components import RagPipeline, Config
@@ -41,6 +44,28 @@ app = FastAPI(
 )
 
 
+async def process_data(file: UploadFile):
+    mime_type = file.content_type
+    if mime_type not in ['application/pdf']:
+        raise HTTPException(
+            status_code=status.HTTP_415_UNSUPPORTED_MEDIA_TYPE,
+            detail=f"Unsupported file type: {mime_type}"
+        )
+    try:
+        with open(file.filename, "wb") as f:
+            f.write(await file.read())
+            
+        await ragPipe.docvdbPipe.add_file2vdb(file.filename)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        pass
+        # Delete the temporary file after processing
+        # if os.path.exists(file.filename):
+        #     os.remove(file.filename)
+
+
+
 @app.post("/files_to_db/",
           summary="Add file(s) to the Quandrant VDB",
           tags=[Tags.VDB]
@@ -53,26 +78,9 @@ async def upload_files(
             description="PDF files to add to the vector database"
         )], 
     ):
-    for file in files:
-        mime_type = file.content_type
-        if mime_type not in ['application/pdf']:
-            raise HTTPException(
-                status_code=status.HTTP_415_UNSUPPORTED_MEDIA_TYPE,
-                detail=f"Insupported file type: {mime_type}"
-            )
-        try:
-            with open(file.filename, "wb") as f:
-                f.write(await file.read())
-                
-            ragPipe.add_file(file.filename)
-        except Exception as e:
-            raise HTTPException(status_code=500, detail=str(e))
-        finally:
-            pass
-            # Delete the temporary file after processing
-            # if os.path.exists(file.filename):
-            #     os.remove(file.filename)
-
+    tasks = [process_data(file) for file in files]
+    await asyncio.gather(*tasks)
+    
 
 @app.post("/generate/",
           summary="Given a question, this endpoint allows to generate an answer grounded on the documents in the VectorDB",

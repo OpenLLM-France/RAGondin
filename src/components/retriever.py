@@ -7,7 +7,7 @@ from .vector_store import Qdrant_Connector, BaseVectorDdConnector
 from loguru import logger
 # from .utils import load_prompt
 from langchain_core.prompts import ChatPromptTemplate
-from .prompt import load_sys_template
+from .utils import load_sys_template
 from langchain_openai import ChatOpenAI
 from langchain_core.output_parsers import StrOutputParser
 from langchain.load import dumps, loads
@@ -44,17 +44,16 @@ class SingleRetriever(BaseRetriever):
         self.top_k = top_k
         if criteria not in CRITERIAS:
             ValueError(f"Invalid type. Choose from {CRITERIAS}")
-
         self.criteria = criteria
 
     def retrieve(self, question: str, db: BaseVectorDdConnector | Qdrant_Connector) -> list[str]:
         """
-        Retrieves relevant documents based on the type of retrieval method specified.
+        Retrieves relevant documents based on the type of retrieval method specified given a question.
 
         Parameters
         ----------
             question : str
-                The question to retrieve documents for.
+                The question to retrieve relevant documents for.
             db : Qdrant_Connector
                 The Qdrant_Connector instance to use for retrieving documents.
 
@@ -193,7 +192,6 @@ class MultiQueryRetriever(SingleRetriever):
         else:
             raise ValueError(f"Invalid type. Choose from {CRITERIAS}")
         return retrieved_chunks
-
 
 
 
