@@ -1,7 +1,6 @@
 from pathlib import Path
 from langchain_core.documents.base import Document
 
-dir_path = Path(__file__).parent
 
 def load_sys_template(file_path: Path) -> tuple[str, str]:
     with open(file_path, mode="r") as f:

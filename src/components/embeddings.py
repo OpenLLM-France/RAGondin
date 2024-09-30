@@ -48,7 +48,7 @@ class HFEmbedder(BaseEmbedder):
             except Exception as e:
                 raise ValueError(f"An error occured: {e}")
         else:
-            raise ValueError(f"{model_type} is not a valid `model_type`")
+            raise ValueError(f"{model_type} is not a supported `model_type`")
 
     def get_embeddings(self) -> HuggingFaceBgeEmbeddings:
         """

@@ -1,5 +1,3 @@
-"""Module for document reranking using RAG models."""
-
 from ragatouille import RAGPretrainedModel
 from loguru import logger
 from langchain_core.documents.base import Document
@@ -20,7 +18,7 @@ class Reranker:
     def rerank(self, question: str, docs: list[Document], k: int = 5) -> list[str]:
         logger.info("Reranking documents ...")
         """
-        Rerank documents for a query.
+        Rerank documents by relevancy with respect to the given query.
 
         Args:
             question (str): Search query.

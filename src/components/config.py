@@ -13,13 +13,11 @@ class Config:
     # Load env variables from .env file
     load_dotenv(dotenv_path="../")
 
-    # Docs
-    data_path: Path = Path("experiments/test_data").absolute()
     # temp_folder: Path = Path(__file__).parent.absolute() / "temp_files"
     chunker_name: str = "recursive_splitter"
     chunk_size: int = 1000
     chunk_overlap: int = 100 # TODO: Better express it with a percentage
-    chunker_args: dict = field(default_factory= dict) # additional attributes specific to chunker
+    chunker_args: dict = field(default_factory=dict) # additional attributes specific to chunker
     
     # Embedding Model
     em_model_type: str = 'huggingface'
@@ -38,16 +36,18 @@ class Config:
     api_key: str = os.getenv('API_KEY', '')
     model_name: str = 'meta-llama-31-8b-it'
     timeout: int = 60
-    rag_mode: Literal["ChatBotRag", "SimpleRag"] = "ChatBotRag"
-    chat_history_depth: int = 4
     max_tokens: int = 1000
 
+    # RAG Pipeline
+    rag_mode: Literal["ChatBotRag", "SimpleRag"] = "ChatBotRag"
+    chat_history_depth: int = 4
+    
     # Reranker
     reranker_model_name: str | None = "colbert-ir/colbertv2.0"
     reranker_top_k: int = 5 # number of docs to return after reranking
 
     # retriever
-    retreiver_type: Literal["hyde", "single", "multiQuery"] = "hyde"
+    retreiver_type: Literal["hyde", "single", "multiQuery"] = "single"
     criteria: str = "similarity"
     top_k: int = 6
     retriever_extra_params: dict = field( # multiQuery retreiver type

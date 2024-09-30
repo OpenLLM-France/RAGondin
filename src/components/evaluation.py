@@ -1,11 +1,11 @@
 from pathlib import Path
-from .prompt import load_sys_template
+from .utils import load_sys_template
 from langchain_openai import ChatOpenAI
 from langchain_core.prompts import (
     MessagesPlaceholder, 
     ChatPromptTemplate
 )
-from langchain_core.output_parsers import JsonOutputParser, StrOutputParser
+from langchain_core.output_parsers import JsonOutputParser
 import pprint as pp
 
 
@@ -20,6 +20,7 @@ def evaluate(llm: ChatOpenAI, context, chat_history, question, answer):
     # TODO: https://www.confident-ai.com/blog/llm-evaluation-metrics-everything-you-need-for-llm-evaluation
     for metric_name, path in metrics.items():
         metric_sys_msg = load_sys_template(path)
+
         metric_prompt = ChatPromptTemplate.from_messages(
                 [
                     ("system", metric_sys_msg),
