@@ -120,9 +120,7 @@ class RagPipeline:
         Args:
             `question` (str): The new question
             `chat_history` (list): The history
-        """
-        logger.info("Contextualizing the question")
-        
+        """        
         if self.rag_mode == "SimpleRag": # for the SimpleRag, we don't need the contextualize as question are treated independently regardless of the chat_history
             logger.info("Documents retreived...")
             docs = self.retriever.retrieve(
@@ -131,6 +129,8 @@ class RagPipeline:
             )
 
         if self.rag_mode == "ChatBotRag":
+            logger.info("Contextualizing the question")
+            
             sys_prompt = load_sys_template(
                 dir_path / "prompts/contextualize_sys_prompt_template.txt" # get the prompt for contextualizing
             )
@@ -138,7 +138,7 @@ class RagPipeline:
                 [
                     ("system", sys_prompt),
                     MessagesPlaceholder("chat_history"),
-                    ("human", "Here is the question to contextualize: `{input}`"),
+                    ("human", "Here is the question to contextualize: '{input}'"),
                 ]
             )
             history_aware_retriever = (
@@ -149,11 +149,11 @@ class RagPipeline:
 
             input_ = {"input": question, "chat_history": chat_history}
             logger.info("Generating contextualized question for retreival...") 
-            question_contextualized = history_aware_retriever.invoke(input_) # TODO: this is the bootleneck, the model answers sometimes instead of reformulating  
+            contextualized_question = history_aware_retriever.invoke(input_) # TODO: this is the bootleneck, the model answers sometimes instead of reformulating  
             logger.info("Documents retreived...")
 
             docs = self.retriever.retrieve(
-                question_contextualized, 
+                contextualized_question, 
                 db=self.docvdbPipe.connector
             )
         return docs 

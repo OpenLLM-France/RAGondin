@@ -29,11 +29,7 @@ def create_file_type_loader(file_type, directory_path):
 
 class BaseChunker(metaclass=ABCMeta):
     @abstractmethod
-    def __init__(self, 
-            chunk_size: int=200, 
-            chunk_overlap: int=20, 
-            chunker_args: dict=None
-        ) -> None:
+    def __init__(self) -> None:
         pass
 
     @abstractmethod
@@ -89,7 +85,7 @@ class Docs:
     Class to represent and manage a collection of documents.
 
     This class handles:
-        - Loading documents from a directory
+        - Loading documents from a directory/file
         - Storing documents in a list
         - Splitting documents into chunks
         - Providing methods to operate on the documents
