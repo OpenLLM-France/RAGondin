@@ -10,5 +10,4 @@ Include references to attribute specific information to a document.
 * If a fact is supported by two or three different sources, cite them all as in the following: `[doc_k], [doc_n]`
 * This is a conversation, no need to say "According to..."
 
-When answering don't hesitate when convenient to add section and use bullet-points with markdown, more importantly add the references.
 Context: {context}

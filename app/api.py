@@ -40,7 +40,7 @@ class ChatMsg(BaseModel):
 
 
 app = FastAPI(
-    # lifespan=lifespan
+#     lifespan=lifespan
 )
 
 

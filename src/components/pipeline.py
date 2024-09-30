@@ -150,6 +150,7 @@ class RagPipeline:
             input_ = {"input": question, "chat_history": chat_history}
             logger.info("Generating contextualized question for retreival...") 
             contextualized_question = history_aware_retriever.invoke(input_) # TODO: this is the bootleneck, the model answers sometimes instead of reformulating  
+            print("==>", contextualized_question)
             logger.info("Documents retreived...")
 
             docs = self.retriever.retrieve(

@@ -24,7 +24,7 @@ class LLM:
             timeout=timeout,
             max_tokens=max_tokens, 
             streaming=True,
-            # temperature=0.3,
+            # temperature=0.6,
         )    
 
     def run(self, 
