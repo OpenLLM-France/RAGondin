@@ -10,6 +10,12 @@ RAGondin is the project dedicated to experiment with advanced RAG (Retrieval-Aug
 - Develop evaluation metrics for RAG applications
 - Collaborate with the community to innovate and push the boundaries of RAG applications
 
+## Configurations
+##### `.env`
+
+- `API_KEY` for your **LLM** endpoint
+- `MODEL_URL` 
+
 ## Usage
 
 #### 1. Clone the repository to your local machine:
