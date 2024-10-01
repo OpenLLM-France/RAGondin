@@ -39,9 +39,10 @@ fastapi run app/api.py --reload
 
 > Be aware that it's a rag task. Ask questions related to the documents as the llm grounds its answers document in the VectorDB.
 
-* Chainlit can also be used in Copilot mode. To test it, you create a simple html page with the following lines.
+* Chainlit can also be used in Copilot mode. To test it, you create a simple html page with the following lines or juste open the **`test_copilot.html`** file in your browser.
 
 ```html
+<!doctype html>
 <head>
 <meta charset="utf-8" />
 </head>
