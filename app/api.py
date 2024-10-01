@@ -10,8 +10,7 @@ from fastapi.responses import StreamingResponse
 from contextlib import asynccontextmanager
 import uvicorn
 from typing import Literal
-import aiofiles
-
+from pathlib import Path
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../')))
 from src.components import RagPipeline, Config
@@ -40,9 +39,14 @@ class ChatMsg(BaseModel):
 
 
 app = FastAPI(
-#     lifespan=lifespan
+    # lifespan=lifespan
 )
 
+APP_DIR = Path(__file__).parent.absolute()
+
+# Directory to store uploaded PDFs
+UPLOAD_DIR = APP_DIR / "upload_dir"
+os.makedirs(UPLOAD_DIR, exist_ok=True)
 
 async def process_data(file: UploadFile):
     mime_type = file.content_type
@@ -52,10 +56,11 @@ async def process_data(file: UploadFile):
             detail=f"Unsupported file type: {mime_type}"
         )
     try:
-        with open(file.filename, "wb") as f:
+        file_path = UPLOAD_DIR / file.filename
+        with open(file_path, "wb") as f:
             f.write(await file.read())
             
-        await ragPipe.docvdbPipe.add_file2vdb(file.filename)
+        await ragPipe.docvdbPipe.add_file2vdb(file_path)
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
     finally:
