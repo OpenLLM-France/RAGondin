@@ -31,11 +31,13 @@ conda create --name lang-test python=3.12
 pip install -r requirements.txt
 ```
 
-#### 3. Run the fastapi app:
+#### 3. Run the fastapi app
+Go to the app directory (**`cd app`**) and run the following command:
+
 ```bash
-fastapi run app/api.py --reload
+fastapi run api.py --reload
 ```
-* This will launch the fastapi api (at **`http://host:port/docs`**). You can also open the chainlit app (at **`http://host:port/chainlit`** ), a chatbot style user interface for RAG. Before doing RAG, make sure to put documents via the,fastapi api (http://your_route/docs) otherwise it won't work.
+* This will launch the fastapi api (at **`http://host:port/docs`**). You can also open the chainlit app (at **`http://host:port/chainlit`** ), a chatbot style user interface for RAG as the chainlit app is mounted in the the fastapi application. Before doing RAG, make sure to put documents via the fastapi api (http://your_route/docs) otherwise it won't work.
 
 > Be aware that it's a rag task. Ask questions related to the documents as the llm grounds its answers document in the VectorDB.
 
@@ -66,7 +68,6 @@ fastapi run app/api.py --reload
 4. Experiment with implementations and contribute back to the repository.
 
 ## Contribute
-
 Contributions to this repository are welcomed and encouraged!
 
 ## Disclaimer
