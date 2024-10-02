@@ -15,11 +15,10 @@ CR.md
 __pycache__/
 **/__pycache__/
 
+# Ignore some local files
 *.pdf
 *.ipynd 
 CR.md
-
-*.pdf
 
 # Ignore Python bytecode files
 *.pyc
