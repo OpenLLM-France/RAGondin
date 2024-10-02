@@ -14,7 +14,7 @@ class Config:
     load_dotenv(dotenv_path="../")
 
     # temp_folder: Path = Path(__file__).parent.absolute() / "temp_files"
-    chunker_name: str = "recursive_splitter"
+    chunker_name: str = "semantic_splitter" # "recursive_splitter"
     chunk_size: int = 1000
     chunk_overlap: int = 100 # TODO: Better express it with a percentage
     chunker_args: dict = field(default_factory=dict) # additional attributes specific to chunker
@@ -44,12 +44,12 @@ class Config:
     
     # Reranker
     reranker_model_name: str | None = "colbert-ir/colbertv2.0"
-    reranker_top_k: int = 5 # number of docs to return after reranking
+    reranker_top_k: int = 6 # number of docs to return after reranking
 
     # retriever
     retreiver_type: Literal["hyde", "single", "multiQuery"] = "single"
     criteria: str = "similarity"
-    top_k: int = 6
+    top_k: int = 5
     retriever_extra_params: dict = field( # multiQuery retreiver type
         default_factory=lambda: {
             "k_queries": 3 # the llm will be added when creating the pipeline

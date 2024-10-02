@@ -12,13 +12,17 @@ def format_context(docs: list[Document]) -> str:
     """Build context string from list of documents."""
     sources = []
     context = "Extracted documents:\n"
+
     for i, doc in enumerate(docs, start=1):
-        context += f"""
-        Document: {doc.page_content}
-        [doc_{i}]: {doc.metadata["source"]}#page={doc.metadata["page"]+1}
-        =======\n
-        """
-        sources.append(
-            (f"[doc_{i}]", doc.metadata["source"], doc.metadata["page"]+1)
-        )
+        doc_id = f"[doc_{i}]"
+        source = doc.metadata["source"]
+        page = doc.metadata["page"] + 1
+        
+        context += f"{doc_id}\n"
+        context += f"Content: {doc.page_content.strip()}\n"
+        context += f"Source: {source} (Page {page})\n"
+        context += "=" * 40 + "\n\n"
+        
+        sources.append((doc_id, source, page))
+
     return context, sources

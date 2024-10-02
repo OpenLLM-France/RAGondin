@@ -9,6 +9,8 @@ from langchain_community.document_loaders import UnstructuredXMLLoader, PyPDFLoa
 from langchain_community.document_loaders.csv_loader import CSVLoader
 from langchain_community.document_loaders.text import TextLoader
 from langchain_community.document_loaders import UnstructuredHTMLLoader
+from langchain_experimental.text_splitter import SemanticChunker
+
 
 # Define a dictionary to map file extensions to their respective loaders
 DEFAULT_LOADERS = {
@@ -45,7 +47,7 @@ class RecursiveSplitter(BaseChunker):
     smaller chunks of text.
     """
 
-    def __init__(self, chunk_size: int=200, chunk_overlap: int=20, chunker_args: dict=None):
+    def __init__(self, chunk_size: int=200, chunk_overlap: int=20, **chunker_args):
         """
         Initialize the Chunker object.
 
@@ -78,6 +80,27 @@ class RecursiveSplitter(BaseChunker):
         
         s = self.text_splitter.split_documents(docs)
         return s
+
+
+class SemanticSplitter(BaseChunker):
+    def __init__(self, min_chunk_size: int = 500, embeddings = None, **args) -> None:
+        self.text_splitter = SemanticChunker(
+            embeddings=embeddings, 
+            buffer_size=3, 
+            breakpoint_threshold_type='percentile', 
+            min_chunk_size=min_chunk_size
+        )
+
+
+    def split(self, docs: list[Document]):
+        if not isinstance(docs, list):
+            raise TypeError("docs must be a list of documents.")
+        
+        if len(docs) == 0:
+            raise IndexError("Docs is empty.")
+        
+        return self.text_splitter.split_documents(docs)
+
 
 
 class Docs:
@@ -161,7 +184,8 @@ class Docs:
         return self.docs
 
 CHUNKERS = {
-    "recursive_splitter": RecursiveSplitter
+    "recursive_splitter": RecursiveSplitter,
+    "semantic_splitter": SemanticSplitter
 }
 
 def get_chunker_cls(strategy_name: str) -> BaseChunker:

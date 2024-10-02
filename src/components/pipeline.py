@@ -26,13 +26,6 @@ class Doc2VdbPipe:
     """This class bridges static files with the vector database.
     """
     def __init__(self, config: Config) -> None:
-        # init chunker 
-        self.chunker = CHUNKERS[config.chunker_name](
-            chunk_size=config.chunk_size, 
-            chunk_overlap=config.chunk_overlap, 
-            chunker_args=config.chunker_args
-        )
-
         # init the embedder model
         embedder = HFEmbedder(
             model_type=config.em_model_type,
@@ -41,13 +34,38 @@ class Doc2VdbPipe:
             encode_kwargs=config.encode_kwargs
         )
 
+        # init chunker 
+        chunker_params = {
+            "chunk_size": config.chunk_size, 
+            "chunk_overlap": config.chunk_overlap, 
+            "chunker_args": config.chunker_args
+        }
+        if config.chunker_name == "semantic_splitter":
+            chunker_params.update({"embeddings": embedder.get_embeddings()})
+
+        self.chunker = CHUNKERS[config.chunker_name](**chunker_params)
+
+
         # init the connector
         self.connector = CONNECTORS[config.db_connector](
             host=config.host,
             port=config.port,
             collection_name=config.collection_name,
-            embeddings=embedder.embedding
+            embeddings=embedder.get_embeddings()
         )
+
+
+    async def add_files2vdb(self, dir_path: str | Path):
+        """Add a files to the vector database in async mode"""
+        docs = Docs()
+        try:
+            docs.load(dir_path=dir_path) # load files
+            docs_splited = self.chunker.split(docs=docs.get_docs())
+            await self.connector.aadd_documents(docs_splited)
+            logger.info(f"Documents from {dir_path} added.")
+        except Exception as e:
+            raise Exception(f"An exception as occured: {e}")
+
 
     async def add_file2vdb(self, file_path: str | Path):
         """Add a file to the vector database in async mode"""
@@ -57,7 +75,7 @@ class Doc2VdbPipe:
             # TODO: Think about chunking method with respect to file type
             docs_splited = self.chunker.split(docs=docs.get_docs())
             await self.connector.aadd_documents(docs_splited)
-            logger.info(f"Documents from {file_path} added.")
+            logger.info(f"File {file_path} added.")
         except Exception as e:
             raise Exception(f"An exception as occured: {e}")
 
@@ -66,6 +84,7 @@ class RagPipeline:
     def __init__(self, config: Config) -> None:
         docvdbPipe = Doc2VdbPipe(config=config)
         self.docvdbPipe = docvdbPipe
+    
         logger.info("File to VectorDB Connector initialized...")
         
         self.reranker = None
