@@ -83,7 +83,7 @@ class RecursiveSplitter(BaseChunker):
 
 
 class SemanticSplitter(BaseChunker):
-    def __init__(self, min_chunk_size: int = 500, embeddings = None, **args) -> None:
+    def __init__(self, min_chunk_size: int = 1000, embeddings = None, **args) -> None:
         self.text_splitter = SemanticChunker(
             embeddings=embeddings, 
             buffer_size=3, 

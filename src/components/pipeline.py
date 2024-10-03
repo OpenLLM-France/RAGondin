@@ -1,5 +1,5 @@
 from pathlib import Path
-from .chunker import Docs, CHUNKERS
+from .chunker import Docs, CHUNKERS, BaseChunker
 from .llm import LLM
 from .utils import format_context, load_sys_template
 from .reranker import Reranker
@@ -43,7 +43,7 @@ class Doc2VdbPipe:
         if config.chunker_name == "semantic_splitter":
             chunker_params.update({"embeddings": embedder.get_embeddings()})
 
-        self.chunker = CHUNKERS[config.chunker_name](**chunker_params)
+        self.chunker: BaseChunker = CHUNKERS[config.chunker_name](**chunker_params)
 
 
         # init the connector
@@ -194,6 +194,7 @@ class RagPipeline:
         
         # 3. Format the retrieved docs
         context, sources = format_context(docs)
+        print(context)
 
         # 4. run the llm for inference
         answer = self.llm_client.run(
