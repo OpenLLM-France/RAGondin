@@ -106,9 +106,9 @@ async def get_answer(new_user_input: str, chat_history: list[ChatMsg]):
                   
     return StreamingResponse(send_chunk(), media_type="text/event-stream-")
 
-    
 
 mount_chainlit(app=app, target="./chainlit_app.py", path="/chainlit")
+
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8000) # 8083
