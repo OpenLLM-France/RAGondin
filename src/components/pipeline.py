@@ -194,7 +194,6 @@ class RagPipeline:
         
         # 3. Format the retrieved docs
         context, sources = format_context(docs)
-        print(context)
 
         # 4. run the llm for inference
         answer = self.llm_client.run(

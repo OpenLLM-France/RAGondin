@@ -5,6 +5,6 @@ Instructions:
 * When referencing specific information from documents, subtly include a reference using this format: `[doc_n]` at the end of the sentence or paragraph.
 * Only cite sources where specific attribution is necessary.
 * If a point is supported by multiple documents, list them together like this: `[doc_k], [doc_n]`.
-* Maintain a conversational, approachable tone while integrating the information, as though you're sharing insights with a colleague or friend. Don't say "according to the given document...", just provide the info naturally.
+* Maintain a conversational, approachable tone while integrating the information, as though you're sharing insights with a colleague. Don't say "according to the given document...", just provide the info naturally with references.
 
 Context: {context}

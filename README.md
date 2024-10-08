@@ -27,15 +27,15 @@ git clone https://github.com/OpenLLM-France/RAGondin.git
 #### 2. Create a Conda Env and Install the necessary dependencies listed in the requirements.txt file:
 
 ```bash
-conda create --name lang-test python=3.12
+conda create --name ragondin python=3.12
 pip install -r requirements.txt
 ```
 
 #### 3. Run the fastapi app
-Go to the app directory (**`cd app`**) and run the following command:
+Run the following command:
 
 ```bash
-fastapi run api.py --reload
+fastapi run app/api.py --reload
 ```
 * This will launch the fastapi api (at **`http://host:port/docs`**). You can also open the chainlit app (at **`http://host:port/chainlit`** ), a chatbot style user interface for RAG as the chainlit app is mounted in the the fastapi application. Before doing RAG, make sure to put documents via the fastapi api (http://your_route/docs) otherwise it won't work.
 

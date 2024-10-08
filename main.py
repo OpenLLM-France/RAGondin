@@ -11,7 +11,7 @@ print(f"Start Time: {end - start} s.")
 
 
 async def main():
-    await ragPipe.docvdbPipe.add_file2vdb("./Développement-Personnel-pdf-1.pdf")
+    # await ragPipe.docvdbPipe.add_file2vdb("./Développement-Personnel-pdf-1.pdf")
     while True:
         question = input("Question sur vos documents: ")
         answer, context, _ = ragPipe.run(question=question)
