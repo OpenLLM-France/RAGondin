@@ -1,9 +1,10 @@
 from pathlib import Path
+import sys
 from .chunker import Docs, CHUNKERS, BaseChunker
 from .llm import LLM
 from .utils import format_context, load_sys_template
 from .reranker import Reranker
-from .retriever import get_retreiver_cls, BaseRetriever
+from .retriever import BaseRetriever, get_retriever
 from .vector_store import CONNECTORS
 from .embeddings import HFEmbedder
 from .config import Config
@@ -22,17 +23,12 @@ from langchain_core.messages import AIMessage, HumanMessage
 dir_path = Path(__file__).parent
 
 
-class Doc2VdbPipe:
-    """This class bridges static files with the vector database.
+class Indexer:
+    """This class bridges static files with the vector store database.
     """
-    def __init__(self, config: Config) -> None:
+    def __init__(self, config: Config, logger) -> None:
         # init the embedder model
-        embedder = HFEmbedder(
-            model_type=config.em_model_type,
-            model_name=config.em_model_name, 
-            model_kwargs=config.model_kwargs, 
-            encode_kwargs=config.encode_kwargs
-        )
+        embedder = HFEmbedder(config)
 
         # init chunker 
         chunker_params = {
@@ -45,14 +41,18 @@ class Doc2VdbPipe:
 
         self.chunker: BaseChunker = CHUNKERS[config.chunker_name](**chunker_params)
 
-
         # init the connector
-        self.connector = CONNECTORS[config.db_connector](
-            host=config.host,
-            port=config.port,
-            collection_name=config.collection_name,
+        dbconfig = config.vectordb
+        self.connector = CONNECTORS[dbconfig["connector_name"]](
+            host=dbconfig["host"],
+            port=dbconfig["port"],
+            collection_name=dbconfig["collection_name"],
             embeddings=embedder.get_embeddings()
         )
+
+        self.logger = logger
+        self.logger.info("Indexer initialized...")
+
 
 
     async def add_files2vdb(self, dir_path: str | Path):
@@ -62,7 +62,7 @@ class Doc2VdbPipe:
             docs.load(dir_path=dir_path) # load files
             docs_splited = self.chunker.split(docs=docs.get_docs())
             await self.connector.aadd_documents(docs_splited)
-            logger.info(f"Documents from {dir_path} added.")
+            self.logger.info(f"Documents from {dir_path} added.")
         except Exception as e:
             raise Exception(f"An exception as occured: {e}")
 
@@ -75,72 +75,43 @@ class Doc2VdbPipe:
             # TODO: Think about chunking method with respect to file type
             docs_splited = self.chunker.split(docs=docs.get_docs())
             await self.connector.aadd_documents(docs_splited)
-            logger.info(f"File {file_path} added.")
+            self.logger.info(f"File {file_path} added.")
         except Exception as e:
             raise Exception(f"An exception as occured: {e}")
 
 
 class RagPipeline:
     def __init__(self, config: Config) -> None:
-        docvdbPipe = Doc2VdbPipe(config=config)
-        self.docvdbPipe = docvdbPipe
-    
-        logger.info("File to VectorDB Connector initialized...")
-        
+        self.config = config
+        self.logger = self.set_logger(config)
+        self.docvdbPipe = Indexer(config, self.logger)
+            
         self.reranker = None
-        if config.reranker_model_name is not None:
-            self.reranker = Reranker(
-                model_name=config.reranker_model_name,
-            )
-            logger.info("Reranker initialized...")
-        
+        if config.reranker["model_name"]:
+            self.reranker = Reranker(self.logger, config)
+        self.reranker_top_k = int(config.reranker["top_k"])
 
         self.qa_sys_prompt: ChatPromptTemplate = load_sys_template(
-            dir_path / "prompts/basic_sys_prompt_template.txt"
+            config.dir_path / "prompts/rag_sys_prompt_template.txt"
         )
 
-        llm_client = LLM(
-            model_name=config.model_name, 
-            base_url=config.base_url, api_key=config.api_key, timeout=config.timeout, 
-            max_tokens=config.max_tokens
-        )
-        self.llm_client = llm_client
+        self.llm_client = LLM(config, logger)
+        self.retriever: BaseRetriever = get_retriever(config, logger)
 
-        retreiver_cls = get_retreiver_cls(retreiver_type=config.retreiver_type)
-        logger.info("Init Retriever...")
-
-        extra_params = config.retriever_extra_params
-        if config.retreiver_type in ["hyde", "multiQuery"]:
-            extra_params["llm"] = llm_client.client # add an llm to extra parameters for these types of retreivers
-
-            self.retriever: BaseRetriever = retreiver_cls(
-                criteria=config.criteria,
-                top_k=config.top_k,
-                **extra_params
-            )
-        if config.retreiver_type == "single": # for single retreiver
-            self.retriever: BaseRetriever = retreiver_cls(
-                criteria=config.criteria,
-                top_k=config.top_k
-            )
-            if config.retriever_extra_params: 
-                logger.info(f"'retriever_extra_params' is not used for the `{config.retreiver_type}` retreiver")
-
-
-        self.reranker_top_k = config.reranker_top_k
-        self.rag_mode = config.rag_mode
-        self.chat_history_depth = config.chat_history_depth
-        self._chat_history: deque = deque(maxlen=config.chat_history_depth)
+        self.rag_mode = config.rag["mode"]
+        self.chat_history_depth = int(config.rag["chat_history_depth"])
+        self._chat_history: deque = deque(maxlen=self.chat_history_depth)
 
     def get_contextualize_docs(self, question: str, chat_history: list):
-        """With this function, the new question is reformulated as a standalone question that takes into acoount the chat_history.
-        The new question is then used for retreival. So this allows to have RAG agent that acts as a chatbot aswell.
+        """With this function, the new question is reformulated as a standalone question that takes into account the chat_history.
+        The new contextualized question is better suited for retreival. 
+        This contextualisation allows to have a RAG agent that also takes into account history, so chatbot RAG.
 
         Args:
-            `question` (str): The new question
-            `chat_history` (list): The history
+            `question` (str): The user question
+            `chat_history` (list): The conversation history
         """        
-        if self.rag_mode == "SimpleRag": # for the SimpleRag, we don't need the contextualize as question are treated independently regardless of the chat_history
+        if self.rag_mode == "SimpleRag": # for the SimpleRag, we don't need the contextualize as questions are treated independently regardless of the chat_history
             logger.info("Documents retreived...")
             docs = self.retriever.retrieve(
                 question, 
@@ -151,7 +122,7 @@ class RagPipeline:
             logger.info("Contextualizing the question")
             
             sys_prompt = load_sys_template(
-                dir_path / "prompts/contextualize_sys_prompt_template.txt" # get the prompt for contextualizing
+                dir_path / "prompts/contextualize_prompt_template.txt" # get the prompt for contextualizing
             )
             contextualize_q_prompt = ChatPromptTemplate.from_messages(
                 [
@@ -167,15 +138,16 @@ class RagPipeline:
             )
 
             input_ = {"input": question, "chat_history": chat_history}
+
             logger.info("Generating contextualized question for retreival...") 
             contextualized_question = history_aware_retriever.invoke(input_) # TODO: this is the bootleneck, the model answers sometimes instead of reformulating  
             print("==>", contextualized_question)
             logger.info("Documents retreived...")
-
             docs = self.retriever.retrieve(
                 contextualized_question, 
                 db=self.docvdbPipe.connector
             )
+
         return docs 
 
     def run(self, question: str="", chat_history_api: list[AIMessage | HumanMessage] = None):
@@ -199,7 +171,7 @@ class RagPipeline:
         answer = self.llm_client.run(
             question=question, 
             chat_history=chat_history,
-            context=context, sys_prompt_tmpl=self.qa_sys_prompt)
+            context=context, sys_pmpt_tmpl=self.qa_sys_prompt)
 
         return answer, context, sources
 
@@ -211,3 +183,14 @@ class RagPipeline:
                 AIMessage(content=answer),
             ]
         )
+    
+    @staticmethod
+    def set_logger(config):
+        verbose = config.verbose
+        if verbose["verbose"]:
+            level = verbose['level']
+        else:
+            level = 'ERROR'
+        logger.remove()
+        logger.add(sys.stderr, level=level)
+        return logger

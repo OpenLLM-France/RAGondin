@@ -6,14 +6,18 @@ from langchain_core.documents.base import Document
 class Reranker:
     """Reranks documents for a query using a RAG model."""
 
-    def __init__(self, model_name: str = "colbert-ir/colbertv2.0"):
+    def __init__(self, logger, config):
         """
         Initialize Reranker.
 
         Args:
             model_name (str): Name of pretrained RAGondin model to use.
         """
-        self.model = RAGPretrainedModel.from_pretrained(model_name)
+        self.model = RAGPretrainedModel.from_pretrained(
+            config.reranker["model_name"]
+        )
+        self.logger = logger
+        self.logger.info("Reranker initialized...")
 
     def rerank(self, question: str, docs: list[Document], k: int = 5) -> list[str]:
         logger.info("Reranking documents ...")
@@ -28,7 +32,7 @@ class Reranker:
         Returns:
             list[str]: Top k reranked document strings.
         """
-        docs_unique = [doc for doc in drop_duplicates(docs)]
+        docs_unique = [doc for doc in drop_duplicates(docs, self.logger)]
         k = min(k, len(docs_unique)) # k must be <= the number of documents
         ranked_txt = self.model.rerank(question, [d.page_content for d in docs_unique], k=k)
         ranked_docs = original_docs(ranked_txt, docs_unique)
@@ -44,7 +48,7 @@ def original_docs(ranked_txt, docs: list[Document]):
                 break
 
 
-def drop_duplicates(L: list[Document], key=None):
+def drop_duplicates(L: list[Document], logger, key=None):
     seen = set()
     for s in L:
         val = s.page_content if key is None else key(s)

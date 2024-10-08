@@ -2,22 +2,20 @@
 from abc import ABCMeta, abstractmethod
 from pathlib import Path
 from .llm import LLM
-# from .prompt import generate_multi_query, MultiQueryPrompt
 from .vector_store import Qdrant_Connector, BaseVectorDdConnector
 from loguru import logger
-# from .utils import load_prompt
 from langchain_core.prompts import ChatPromptTemplate
 from .utils import load_sys_template
 from langchain_openai import ChatOpenAI
 from langchain_core.output_parsers import StrOutputParser
-from langchain.load import dumps, loads
+from .llm import LLM
 
 
 dir_path = Path(__file__).parent
 CRITERIAS = ["similarity"]
 
 class BaseRetriever(metaclass=ABCMeta):
-    """Abstract class for the base retreiver.
+    """Abstract class for the base retriever.
     """
     @abstractmethod
     def __init__(self, criteria: str = "similarity", top_k: int = 6, **extra_args) -> None:
@@ -39,7 +37,7 @@ class SingleRetriever(BaseRetriever):
 
         Args:
             criteria (str, optional): Retrieval criteria. Defaults to "similarity".
-            top_k (int, optional): top_k most similar documents to retreive. Defaults to 6.
+            top_k (int, optional): top_k most similar documents to retrieve. Defaults to 6.
         """
         self.top_k = top_k
         if criteria not in CRITERIAS:
@@ -107,14 +105,14 @@ class MultiQueryRetriever(SingleRetriever):
             ) -> None:
         """
         The MultiQueryRetriever class is a subclass of the Retriever class that retrieves relevant documents based on multiple queries.
-        Given a query, multiple similar are generated with an llm. Retreival is done with each one them and finally a subset is chosen.
+        Given a query, multiple similar are generated with an llm. retrieval is done with each one them and finally a subset is chosen.
 
         Attributes
         ----------
         Args:
             criteria (str, optional): Retrieval criteria. Defaults to "similarity".
-            top_k (int, optional): top_k most similar documents to retreive. Defaults to 6.
-            extra_args (dict): contains additionals arguments for this type of retreiver.
+            top_k (int, optional): top_k most similar documents to retrieve. Defaults to 6.
+            extra_args (dict): contains additionals arguments for this type of retriever.
         """
         super().__init__(criteria, top_k)
         
@@ -195,7 +193,7 @@ class MultiQueryRetriever(SingleRetriever):
 
 
 
-class HyDeRetreiver(SingleRetriever):
+class HyDeretriever(SingleRetriever):
     def __init__(self, criteria: str = "similarity", top_k: int = 6, **extra_args) -> None:
         super().__init__(criteria, top_k, **extra_args)
         try:
@@ -232,7 +230,7 @@ class HyDeRetreiver(SingleRetriever):
         hyde = self.get_hyde(question)
         logger.info("generate hyde document...")
         docs = super().retrieve(hyde, db)
-        return docs # + super().retrieve(question, db) # hyde + single retreiver for stronger results
+        return docs # + super().retrieve(question, db) # hyde + single retriever for stronger results
     
     def retrieve_with_scores(self, question: str, db: Qdrant_Connector) -> list[tuple[str, float]]:
         hyde = self.get_hyde(question)
@@ -240,25 +238,40 @@ class HyDeRetreiver(SingleRetriever):
 
 
 
-RETREIEVERS = {
+RETRIEVERS = {
     "single": SingleRetriever,
     "multiQuery": MultiQueryRetriever,
-    "hyde": HyDeRetreiver,
+    "hyde": HyDeretriever,
 }
 
-def get_retreiver_cls(retreiver_type: str) -> BaseRetriever:
-    # Retrieve the chunker class from the map and instantiate it
-    retreiver = RETREIEVERS.get(retreiver_type, None)
-    if retreiver is None:
-        raise ValueError(f"Unknown retreiver type: {retreiver_type}")
-    return retreiver
+def get_retriever_cls(retriever_type: str) -> BaseRetriever:
+    # Retrieve the retriever class from the map
+    retriever = RETRIEVERS.get(retriever_type, None)
+    if retriever is None:
+        raise ValueError(f"Unknown retriever type: {retriever_type}")
+    return retriever
 
 
-def get_unique_union(documents: list[list]):
-    """ Unique union of retrieved docs """
-    # Flatten list of lists, and convert each Document to string
-    flattened_docs = [dumps(doc) for sublist in documents for doc in sublist]
-    # Get unique documents
-    unique_docs = list(set(flattened_docs))
-    # Return
-    return [loads(doc) for doc in unique_docs]
+def get_retriever(config, logger)-> BaseRetriever:
+    retriever_cls = get_retriever_cls(retriever_type=config.retriever["type"])
+    extra_params = config.retriever["extra_params"]
+
+    if config.retriever["type"] in ["hyde", "multiQuery"]:
+        extra_params["llm"] = LLM(config, logger=None).client # add an llm client to extra parameters for these types of retrievers
+        retriever = retriever_cls(
+            criteria=config.retriever["criteria"],
+            top_k=int(config.retriever["top_k"]),
+            **extra_params
+        )
+    if config.retriever["type"] == "single": # for single retriever
+        retriever = retriever_cls(
+            criteria=config.retriever["criteria"],
+            top_k=int(config.retriever["top_k"])
+        )
+        if extra_params: 
+            logger.info(f"'config.retriever.extra_params' is not used for the `{config.retriever["type"]}` retriever")
+    
+    logger.info("Retriever initialized...")
+    return retriever
+
+

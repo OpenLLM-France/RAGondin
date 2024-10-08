@@ -7,30 +7,23 @@ from langchain_core.messages import AIMessage, HumanMessage, BaseMessage
 from typing import AsyncIterator
 
 class LLM:
-    def __init__(
-            self, 
-            model_name: str = 'meta-llama-31-8b-it',
-            base_url: str = None, 
-            api_key: str = None,
-            timeout: int = 60,
-            max_tokens: int = 1000,
-        ):
-        # https://community.openai.com/t/cheat-sheet-mastering-temperature-and-top-p-in-chatgpt-api/172683
+    def __init__(self, config, logger=None):
 
+        self.logger = logger
         self.client: ChatOpenAI = ChatOpenAI(
-            model=model_name,
-            base_url=base_url,
-            api_key=api_key,
-            timeout=timeout,
-            max_tokens=max_tokens, 
+            model=config.llm["name"],
+            base_url=config.llm["base_url"],
+            api_key=config.api_key,
+            timeout=60,
+            temperature=0.3,
+            max_tokens=config.llm["max_tokens"], 
             streaming=True,
-            # temperature=0.2,
         )    
 
     def run(self, 
             question: str, context: str, 
             chat_history: list[AIMessage | HumanMessage], 
-            sys_prompt_tmpl: str
+            sys_pmpt_tmpl: str
         )-> AsyncIterator[BaseMessage]:
 
         """This method runs the LLM given the user's input (`question`), `chat_history`, and the system prompt template (`sys_prompt_tmpl`) 
@@ -46,19 +39,24 @@ class LLM:
 
         qa_prompt = ChatPromptTemplate.from_messages(
             [
-                ("system", sys_prompt_tmpl),
+                ("system", sys_pmpt_tmpl),
                 MessagesPlaceholder("chat_history"),
-                ("human", "{input}"),
+                ("human", "{input}")
             ]
         )
-        rag_chain = (
-            qa_prompt
-            | self.client
-        )
+        rag_chain = qa_prompt | self.client.with_retry(stop_after_attempt=3)
 
         input_ = {
-            "input": question, "context": context,
+            "input": question, 
+            "context": context,
             "chat_history": chat_history, 
         }
-        answer = rag_chain.astream(input_)    
-        return answer
+        return rag_chain.astream(input_)
+
+
+        # try:
+        #     answer = rag_chain.astream(input_)   
+        #     return answer
+        # except Exception as e:
+        #     if self.logger:
+        #         self.logger.error(f"Unexpected error: {e}")
