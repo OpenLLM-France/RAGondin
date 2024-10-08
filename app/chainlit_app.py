@@ -5,7 +5,7 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../')))
 from src.components import RagPipeline, Config
 from loguru import logger
 
-config = Config()
+config = Config("../config.ini")
 ragPipe = RagPipeline(config=config)
 
 

@@ -16,7 +16,7 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../')))
 from src.components import RagPipeline, Config
 
 
-config = Config()
+config = Config("../config.ini")
 ragPipe = RagPipeline(config=config)
 
 
@@ -107,7 +107,7 @@ async def get_answer(new_user_input: str, chat_history: list[ChatMsg]):
     return StreamingResponse(send_chunk(), media_type="text/event-stream-")
 
 
-mount_chainlit(app=app, target="app/chainlit_app.py", path="/chainlit")
+mount_chainlit(app=app, target="./chainlit_app.py", path="/chainlit")
 
 
 if __name__ == "__main__":
