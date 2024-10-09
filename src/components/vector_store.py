@@ -5,7 +5,6 @@ from qdrant_client import QdrantClient
 from langchain_community.embeddings import HuggingFaceBgeEmbeddings, HuggingFaceEmbeddings
 from langchain_core.documents.base import Document
 from langchain_qdrant import QdrantVectorStore
-from loguru import logger
 
 # https://python-client.qdrant.tech/qdrant_client.qdrant_client
 
@@ -22,7 +21,7 @@ class BaseVectorDdConnector(metaclass=ABCMeta):
         pass
 
     @abstractmethod
-    def aadd_documents(self, index_name, chunks, embeddings):
+    def async_add_documents(self, index_name, chunks, embeddings):
         """
         Abstract method for building an index in the vector database.
 
@@ -72,7 +71,7 @@ class Qdrant_Connector(BaseVectorDdConnector):
             self, 
             host, port, 
             embeddings: HuggingFaceBgeEmbeddings | HuggingFaceEmbeddings=None,
-            collection_name: str = None
+            collection_name: str = None, logger = None
         ):
         """
         Initialize Qdrant_Connector.
@@ -83,7 +82,8 @@ class Qdrant_Connector(BaseVectorDdConnector):
             collection_name (str): The name of the collection in the Qdrant database.
             embeddings (list): The embeddings of the data.
         """
-        # self.collection_name = collection_name
+        self.collection_name = collection_name
+        self.logger = logger
         self.embeddings: Union[HuggingFaceBgeEmbeddings, HuggingFaceEmbeddings] = embeddings
         self.client = QdrantClient(
             port=port,
@@ -96,15 +96,39 @@ class Qdrant_Connector(BaseVectorDdConnector):
                 collection_name=collection_name,
                 embedding=embeddings,
             ) 
-            logger.warning(f"The Collection named `{collection_name}` loaded.")
+            self.logger.warning(f"The Collection named `{collection_name}` loaded.")
         else:
             self.vector_store = QdrantVectorStore.construct_instance(
                 embedding=embeddings,
                 collection_name=collection_name,
                 client_options={'port': port, 'host':host},
             )
-            logger.info(f"As the collection `{collection_name}` is non-existant, it's created.")
+            self.logger.info(f"As the collection `{collection_name}` is non-existant, it's created.")
         
+    # @classmethod
+    # def from_existant_collection(cls, host, port, collection_name: str = None, logger = None):
+    #     connector = cls.__new__(cls)
+    #     connector.logger = logger
+    #     connector.collection_name = collection_name
+        
+    #     client = QdrantClient(
+    #         port=port,
+    #         host=host, # if None, localhost will be used
+    #         prefer_grpc=False,
+    #     )
+    #     connector.client = client
+
+    #     if client.collection_exists(collection_name=collection_name):
+    #         vector_store = QdrantVectorStore.from_existing_collection(
+    #             collection_name=collection_name,
+    #             port=port, host=host
+    #         )
+    #         connector.logger.info(f"Existant collection '{collection_name}' loaded")
+    #         return vector_store
+    #     else:
+    #         connector.logger.info(f"This collection is non-existant, create it first before doing RAG")
+
+    
     def disconnect(self):
         """
         Disconnect from the Qdrant database.
@@ -113,13 +137,16 @@ class Qdrant_Connector(BaseVectorDdConnector):
         pass
 
 
-    async def aadd_documents(self, chuncked_docs: list[Document]) -> None:
+    async def async_add_documents(self, chuncked_docs: list[Document]) -> None:
         """
         Add docs to the vectore store in a async mode.
 
         Args:
             chuncked_docs (list): The chunks of data to be indexed.
         """
+        # https://github.com/langchain-ai/langchain/issues/15310
+        n = len(chuncked_docs)
+        self.logger.info(f"{n} documents to add to Vector Database.")
         await self.vector_store.aadd_documents(chuncked_docs)
 
 

@@ -8,18 +8,13 @@ class Config:
     including settings for paths, directories, and LLM-specific parameters.
     """
     def __init__(self, cfg_file) -> None:
-
-          # temp_folder: Path = Path(__file__).parent.absolute() / "temp_files"
-        self.chunker_name: str = "semantic_splitter" # "recursive_splitter"
+        self.chunker_name: str = "semantic_splitter" # "semantic_splitter"
         self.chunk_size: int = 1000
         self.chunk_overlap: int = 100 # TODO: Better express it with a percentage
-        self.chunker_args: dict = field(default_factory=dict) # additional attributes specific to chunker
-
+        # self.chunker_args: dict = field(default_factory=dict) # additional attributes specific to chunker
 
         self.api_key: str = os.getenv('API_KEY')
         self.dir_path = Path(__file__).parent
-
-        print(self.dir_path)
 
         if not self.api_key:
             print("Error: API_KEY not set")
@@ -29,18 +24,3 @@ class Config:
 
         for key, value in parser.items():
             setattr(self, key, dict(value.items()))
-            print(key, dict(value.items()))
-
-
-
-
-    
-
-
-
-
-
-
-
-
-

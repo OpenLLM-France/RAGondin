@@ -1,5 +1,6 @@
 from abc import ABCMeta, abstractmethod
 from langchain_community.embeddings import HuggingFaceBgeEmbeddings, HuggingFaceEmbeddings
+import torch
 
 
 class BaseEmbedder(metaclass=ABCMeta):
@@ -9,12 +10,10 @@ class BaseEmbedder(metaclass=ABCMeta):
     def get_embeddings(self):
         pass
 
-
 HG_EMBEDDER_TYPE = {
     "huggingface_bge": HuggingFaceBgeEmbeddings,
     "huggingface": HuggingFaceEmbeddings
 }
-
 
 class HFEmbedder(BaseEmbedder):
     """Factory class for loading HuggingFace embeddings models backend models.
@@ -31,14 +30,14 @@ class HFEmbedder(BaseEmbedder):
 
         model_type = config.embedder["type"]
         if model_type in HG_EMBEDDER_TYPE:
+            device = 'cuda' if torch.cuda.is_available() else 'cpu'
             try:
                 model_name = config.embedder["name"]
                 self.embedding = HG_EMBEDDER_TYPE[model_type](
                     model_name=model_name,
-                    model_kwargs={"device": "cpu"},
+                    model_kwargs={"device": device},
                     encode_kwargs={"normalize_embeddings": True}
                 )
-
             except Exception as e:
                 raise ValueError(f"An error occured: {e}")
         else:

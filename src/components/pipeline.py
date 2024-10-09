@@ -34,7 +34,7 @@ class Indexer:
         chunker_params = {
             "chunk_size": config.chunk_size, 
             "chunk_overlap": config.chunk_overlap, 
-            "chunker_args": config.chunker_args
+            # "chunker_args": config.chunker_args
         }
         if config.chunker_name == "semantic_splitter":
             chunker_params.update({"embeddings": embedder.get_embeddings()})
@@ -47,12 +47,10 @@ class Indexer:
             host=dbconfig["host"],
             port=dbconfig["port"],
             collection_name=dbconfig["collection_name"],
-            embeddings=embedder.get_embeddings()
+            embeddings=embedder.get_embeddings(), logger=logger
         )
-
         self.logger = logger
         self.logger.info("Indexer initialized...")
-
 
 
     async def add_files2vdb(self, dir_path: str | Path):
@@ -61,11 +59,10 @@ class Indexer:
         try:
             docs.load(dir_path=dir_path) # load files
             docs_splited = self.chunker.split(docs=docs.get_docs())
-            await self.connector.aadd_documents(docs_splited)
+            await self.connector.async_add_documents(docs_splited)
             self.logger.info(f"Documents from {dir_path} added.")
         except Exception as e:
             raise Exception(f"An exception as occured: {e}")
-
 
     async def add_file2vdb(self, file_path: str | Path):
         """Add a file to the vector database in async mode"""
@@ -74,7 +71,7 @@ class Indexer:
             docs.load_file(file_path=file_path) # populuate the docs object
             # TODO: Think about chunking method with respect to file type
             docs_splited = self.chunker.split(docs=docs.get_docs())
-            await self.connector.aadd_documents(docs_splited)
+            await self.connector.async_add_documents(docs_splited)
             self.logger.info(f"File {file_path} added.")
         except Exception as e:
             raise Exception(f"An exception as occured: {e}")
@@ -84,7 +81,7 @@ class RagPipeline:
     def __init__(self, config: Config) -> None:
         self.config = config
         self.logger = self.set_logger(config)
-        self.docvdbPipe = Indexer(config, self.logger)
+        self.indexer = Indexer(config, self.logger)
             
         self.reranker = None
         if config.reranker["model_name"]:
@@ -115,7 +112,7 @@ class RagPipeline:
             logger.info("Documents retreived...")
             docs = self.retriever.retrieve(
                 question, 
-                db=self.docvdbPipe.connector
+                db=self.indexer.connector
             )
 
         if self.rag_mode == "ChatBotRag":
@@ -143,9 +140,10 @@ class RagPipeline:
             contextualized_question = history_aware_retriever.invoke(input_) # TODO: this is the bootleneck, the model answers sometimes instead of reformulating  
             print("==>", contextualized_question)
             logger.info("Documents retreived...")
+
             docs = self.retriever.retrieve(
                 contextualized_question, 
-                db=self.docvdbPipe.connector
+                db=self.indexer.connector
             )
 
         return docs 

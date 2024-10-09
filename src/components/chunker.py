@@ -10,7 +10,7 @@ from langchain_community.document_loaders.csv_loader import CSVLoader
 from langchain_community.document_loaders.text import TextLoader
 from langchain_community.document_loaders import UnstructuredHTMLLoader
 from langchain_experimental.text_splitter import SemanticChunker
-
+from tqdm import tqdm
 
 # Define a dictionary to map file extensions to their respective loaders
 DEFAULT_LOADERS = {
@@ -55,6 +55,7 @@ class RecursiveSplitter(BaseChunker):
             chunk_size: The maximum size of each chunk.
             chunk_overlap: The number of tokens of overlap between chunks.
         """
+
 
         self.text_splitter = RecursiveCharacterTextSplitter(
             chunk_size=chunk_size,
@@ -155,7 +156,7 @@ class Docs:
         if not os.path.isdir(dir_path):
             raise FileNotFoundError(f"Directory not found: {dir_path}")
         
-        for file_type in DEFAULT_LOADERS.keys():
+        for file_type in  tqdm(DEFAULT_LOADERS.keys(), desc=f"Loading documents from '{dir_path}'"):
             loader: DirectoryLoader = create_file_type_loader(file_type=file_type, directory_path=dir_path) # create loader specific to that type
             docs = loader.load() # load document
             self.docs.extend(docs) # add them to the list
@@ -182,6 +183,7 @@ class Docs:
             list: The original documents loaded from the directory.
         """
         return self.docs
+
 
 CHUNKERS = {
     "recursive_splitter": RecursiveSplitter,
