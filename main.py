@@ -1,17 +1,17 @@
 import asyncio
 from src.components import RagPipeline, Config, evaluate
-import time
-
-config = Config()
-
-start = time.time()
-ragPipe = RagPipeline(config=config)
-end = time.time()
-print(f"Start Time: {end - start} s.")
+import time    
 
 
 async def main():
-    # await ragPipe.docvdbPipe.add_file2vdb("./Développement-Personnel-pdf-1.pdf")
+
+    config = Config("./config.ini")
+    start = time.time()
+    ragPipe = RagPipeline(config=config)
+    # await ragPipe.indexer.add_files2vdb("./app/upload_dir")
+    end = time.time()
+    print(f"Start Time: {end - start} s.")
+
     while True:
         question = input("Question sur vos documents: ")
         answer, context, _ = ragPipe.run(question=question)

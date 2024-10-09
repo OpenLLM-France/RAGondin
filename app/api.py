@@ -15,8 +15,13 @@ from pathlib import Path
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../')))
 from src.components import RagPipeline, Config
 
+APP_DIR = Path(__file__).parent.absolute()
 
-config = Config("../config.ini")
+# Directory to store uploaded PDFs
+UPLOAD_DIR = APP_DIR / "upload_dir"
+os.makedirs(UPLOAD_DIR, exist_ok=True)
+
+config = Config(APP_DIR.parent / "config.ini")
 ragPipe = RagPipeline(config=config)
 
 
@@ -31,22 +36,17 @@ class ChatMsg(BaseModel):
 
 # @asynccontextmanager
 # async def lifespan(app: FastAPI):
+#     # await ragPipe.indexer.add_files2vdb(UPLOAD_DIR)
 #     yield
 #     # Clean up the db
-#     ragPipe.docvdbPipe.connector.client.delete_collection(
-#         collection_name=config.collection_name
+#     ragPipe.indexer.connector.client.delete_collection(
+#         collection_name=config.vectordb["collection_name"]
 #     )
-
 
 app = FastAPI(
     # lifespan=lifespan
 )
 
-APP_DIR = Path(__file__).parent.absolute()
-
-# Directory to store uploaded PDFs
-UPLOAD_DIR = APP_DIR / "upload_dir"
-os.makedirs(UPLOAD_DIR, exist_ok=True)
 
 async def process_data(file: UploadFile):
     mime_type = file.content_type
@@ -60,7 +60,7 @@ async def process_data(file: UploadFile):
         with open(file_path, "wb") as f:
             f.write(await file.read())
             
-        await ragPipe.docvdbPipe.add_file2vdb(file_path)
+        await ragPipe.indexer.add_file2vdb(file_path)
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
     finally:
@@ -68,7 +68,6 @@ async def process_data(file: UploadFile):
         # Delete the temporary file after processing
         # if os.path.exists(file.filename):
         #     os.remove(file.filename)
-
 
 
 @app.post("/files_to_db/",
@@ -107,8 +106,7 @@ async def get_answer(new_user_input: str, chat_history: list[ChatMsg]):
     return StreamingResponse(send_chunk(), media_type="text/event-stream-")
 
 
-mount_chainlit(app=app, target="./chainlit_app.py", path="/chainlit")
+# mount_chainlit(app=app, target="./chainlit_app.py", path="/chainlit")
 
-
-if __name__ == "__main__":
-    uvicorn.run(app, host="0.0.0.0", port=8000) # 8083
+# if __name__ == "__main__":
+#     uvicorn.run(app, host="0.0.0.0", port=8000) # 8083

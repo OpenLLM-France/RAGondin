@@ -4,7 +4,7 @@
 </head>
 <body>
 <!-- ... -->
-<script src="http://localhost:8000/chainlit/copilot/index.js"></script>
+<script src="http://localhost:8000/copilot/index.js"></script>
 <script>
         window.addEventListener("chainlit-call-fn", (e) => {
             const { name, args, callback } = e.detail;
@@ -13,7 +13,8 @@
     </script>
 <script>
     window.mountChainlitWidget({
-    chainlitServer: "http://localhost:8000/chainlit",
+    chainlitServer: "http://localhost:8000",
+    theme: "dark",
     });
 </script>
 </body>

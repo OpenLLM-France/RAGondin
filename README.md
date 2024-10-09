@@ -11,11 +11,8 @@ RAGondin is the project dedicated to experiment with advanced RAG (Retrieval-Aug
 - Collaborate with the community to innovate and push the boundaries of RAG applications
 
 ## Configurations
-##### `.env`
-
-- `API_KEY` for your **LLM** endpoint
-- `MODEL_URL` 
-
+* The file **`config.ini`** contains data the configurations of the entire RAG Pipeline
+* `.env` contains the `API_KEY` for your **LLM** endpoint
 ## Usage
 
 #### 1. Clone the repository to your local machine:
@@ -31,15 +28,26 @@ conda create --name ragondin python=3.12
 pip install -r requirements.txt
 ```
 
-#### 3. Run the fastapi app
-Run the following command:
+#### 3. Run the chainlit app
+
+1. Before running the the chainlit application, you should 1st create a qdrant collections. For managing the qdrant collection, one should use the **`manage_collection.py`**
+```bash
+# 1. this will create a collection named "collection_name" is non-existant and upsert data from "folder_path"
+python3 manage_collection.py -f {folder_path} -c {collection_name}
+
+# 2. This will upsert data from "folder_path" to the default collection ("vectordb.collection_name") provided in the config.ini file 
+python3 manage_collection.py -f {folder_path}
+
+# 3. This will delete the collection named {collection_name} if it exits
+python3 manage_collection.py -d {collection_name}
+```
+2. Launch the chainlit app with the following command
 
 ```bash
-fastapi run app/api.py --reload
+cd app
+chainlit run chainlit_app.py -w
 ```
-* This will launch the fastapi api (at **`http://host:port/docs`**). You can also open the chainlit app (at **`http://host:port/chainlit`** ), a chatbot style user interface for RAG as the chainlit app is mounted in the the fastapi application. Before doing RAG, make sure to put documents via the fastapi api (http://your_route/docs) otherwise it won't work.
-
-> Be aware that it's a rag task. Ask questions related to the documents as the llm grounds its answers document in the VectorDB.
+> You can open on the browser the chainlit app (at **`http://host:port/chainlit`** ), a chatbot style user interface for RAG. Be aware that it's a rag task. Ask questions related to the documents as the llm grounds its answers document in the VectorDB.
 
 * Chainlit can also be used in Copilot mode. To test it, you create a simple html page with the following lines or juste open the **`test_copilot.html`** file in your browser.
 
@@ -50,7 +58,7 @@ fastapi run app/api.py --reload
 </head>
 <body>
 <!-- ... -->
-<script src="http://host:port/chainlit/copilot/index.js"></script>
+<script src="http://localhost:8000/copilot/index.js"></script>
 <script>
         window.addEventListener("chainlit-call-fn", (e) => {
             const { name, args, callback } = e.detail;
@@ -59,14 +67,13 @@ fastapi run app/api.py --reload
     </script>
 <script>
     window.mountChainlitWidget({
-    chainlitServer: "http://host:port/chainlit",
+    chainlitServer: "http://localhost:8000",
+    theme: "dark",
     });
 </script>
 </body>
 ```
-
-4. Experiment with implementations and contribute back to the repository.
-
+3. Experiment with implementations and contribute back to the repository.
 ## Contribute
 Contributions to this repository are welcomed and encouraged!
 
@@ -75,5 +82,4 @@ Contributions to this repository are welcomed and encouraged!
 This repository is for research and educational purposes only. While efforts are made to ensure the correctness and reliability of the code and documentation, the authors cannot guarantee its fitness for any particular purpose. Use at your own risk.
 
 ## License
-
 This repository is licensed under the MIT License  - see the [LICENSE]() file for details.
