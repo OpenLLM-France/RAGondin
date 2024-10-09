@@ -8,6 +8,7 @@ class Config:
     including settings for paths, directories, and LLM-specific parameters.
     """
     def __init__(self, cfg_file) -> None:
+        # TODO: place chunker args in config.ini 
         self.chunker_name: str = "semantic_splitter" # "semantic_splitter"
         self.chunk_size: int = 1000
         self.chunk_overlap: int = 100 # TODO: Better express it with a percentage
