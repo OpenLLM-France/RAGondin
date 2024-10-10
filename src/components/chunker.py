@@ -47,7 +47,7 @@ class RecursiveSplitter(BaseChunker):
     smaller chunks of text.
     """
 
-    def __init__(self, chunk_size: int=200, chunk_overlap: int=20, **chunker_args):
+    def __init__(self, chunk_size: int=200, chunk_overlap: int=20, **args):
         """
         Initialize the Chunker object.
 
@@ -60,7 +60,6 @@ class RecursiveSplitter(BaseChunker):
         self.text_splitter = RecursiveCharacterTextSplitter(
             chunk_size=chunk_size,
             chunk_overlap=chunk_overlap,
-            **chunker_args
         )
 
 

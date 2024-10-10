@@ -10,13 +10,13 @@ from .embeddings import HFEmbedder
 from .config import Config
 from loguru import logger
 from langchain_core.output_parsers import StrOutputParser
-
+import ast
 from langchain_core.prompts import (
     MessagesPlaceholder, 
     ChatPromptTemplate
 )
 
-from collections import deque
+from collections import defaultdict, deque
 from langchain_core.messages import AIMessage, HumanMessage
 
 
@@ -31,15 +31,17 @@ class Indexer:
         embedder = HFEmbedder(config)
 
         # init chunker 
-        chunker_params = {
-            "chunk_size": config.chunk_size, 
-            "chunk_overlap": config.chunk_overlap, 
-            # "chunker_args": config.chunker_args
-        }
-        if config.chunker_name == "semantic_splitter":
+        chunker_params = dict(config.chunker)
+        name = chunker_params.pop("name")
+        for k, v in chunker_params.items():
+            try:
+                chunker_params[k] = int(v)
+            except: pass
+
+        if name == "semantic_splitter":    
             chunker_params.update({"embeddings": embedder.get_embeddings()})
 
-        self.chunker: BaseChunker = CHUNKERS[config.chunker_name](**chunker_params)
+        self.chunker: BaseChunker = CHUNKERS[name](**chunker_params)
 
         # init the connector
         dbconfig = config.vectordb
