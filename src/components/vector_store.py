@@ -1,10 +1,10 @@
 from abc import ABCMeta, abstractmethod
 from collections import defaultdict
-from typing import Union
+from typing import Generator, Union
 from qdrant_client import QdrantClient
 from langchain_community.embeddings import HuggingFaceBgeEmbeddings, HuggingFaceEmbeddings
 from langchain_core.documents.base import Document
-from langchain_qdrant import QdrantVectorStore
+from langchain_qdrant import QdrantVectorStore, FastEmbedSparse, RetrievalMode
 
 # https://python-client.qdrant.tech/qdrant_client.qdrant_client
 
@@ -71,7 +71,8 @@ class Qdrant_Connector(BaseVectorDdConnector):
             self, 
             host, port, 
             embeddings: HuggingFaceBgeEmbeddings | HuggingFaceEmbeddings=None,
-            collection_name: str = None, logger = None
+            collection_name: str = None, logger = None,
+            hybrid_mode=False,
         ):
         """
         Initialize Qdrant_Connector.
@@ -87,47 +88,32 @@ class Qdrant_Connector(BaseVectorDdConnector):
         self.embeddings: Union[HuggingFaceBgeEmbeddings, HuggingFaceEmbeddings] = embeddings
         self.client = QdrantClient(
             port=port,
-            host=host, # if None, localhost will be used
+            host=host,
             prefer_grpc=False,
         )
+
+        sparse_embeddings = FastEmbedSparse(model_name="Qdrant/bm25") if hybrid_mode else None
+
+        self.retrieval_mode = RetrievalMode.HYBRID if hybrid_mode else RetrievalMode.DENSE
         if self.client.collection_exists(collection_name=collection_name):
             self.vector_store = QdrantVectorStore(
                 client=self.client,
                 collection_name=collection_name,
                 embedding=embeddings,
+                sparse_embedding=sparse_embeddings,
+                retrieval_mode=self.retrieval_mode,
             ) 
             self.logger.warning(f"The Collection named `{collection_name}` loaded.")
         else:
             self.vector_store = QdrantVectorStore.construct_instance(
                 embedding=embeddings,
+                sparse_embedding=sparse_embeddings,
                 collection_name=collection_name,
                 client_options={'port': port, 'host':host},
+                retrieval_mode=self.retrieval_mode,
             )
             self.logger.info(f"As the collection `{collection_name}` is non-existant, it's created.")
         
-    # @classmethod
-    # def from_existant_collection(cls, host, port, collection_name: str = None, logger = None):
-    #     connector = cls.__new__(cls)
-    #     connector.logger = logger
-    #     connector.collection_name = collection_name
-        
-    #     client = QdrantClient(
-    #         port=port,
-    #         host=host, # if None, localhost will be used
-    #         prefer_grpc=False,
-    #     )
-    #     connector.client = client
-
-    #     if client.collection_exists(collection_name=collection_name):
-    #         vector_store = QdrantVectorStore.from_existing_collection(
-    #             collection_name=collection_name,
-    #             port=port, host=host
-    #         )
-    #         connector.logger.info(f"Existant collection '{collection_name}' loaded")
-    #         return vector_store
-    #     else:
-    #         connector.logger.info(f"This collection is non-existant, create it first before doing RAG")
-
     
     def disconnect(self):
         """
@@ -137,7 +123,7 @@ class Qdrant_Connector(BaseVectorDdConnector):
         pass
 
 
-    async def async_add_documents(self, chuncked_docs: list[Document]) -> None:
+    async def async_add_documents(self, batch_gen: Generator[list[Document], None, None]) -> None:
         """
         Add docs to the vectore store in a async mode.
 
@@ -145,9 +131,11 @@ class Qdrant_Connector(BaseVectorDdConnector):
             chuncked_docs (list): The chunks of data to be indexed.
         """
         # https://github.com/langchain-ai/langchain/issues/15310
-        n = len(chuncked_docs)
-        self.logger.info(f"{n} documents to add to Vector Database.")
-        await self.vector_store.aadd_documents(chuncked_docs)
+
+        async for item in batch_gen:
+            s = await self.vector_store.aadd_documents(item)
+            print(s)
+
 
 
     def similarity_search_with_score(self, query: str, top_k: int = 5) -> list[tuple[Document, float]]:
