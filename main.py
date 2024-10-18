@@ -1,12 +1,16 @@
 import asyncio
-from src.components import RagPipeline, Config, evaluate
-import time    
+from src.components import RagPipeline, Config, evaluate, Indexer
+import time 
+from loguru import logger
+
+config = Config("./config.ini")
+indexer = Indexer(config, logger)    
 
 
 async def main():
-
-    config = Config("./config.ini")
     start = time.time()
+    await indexer.add_files2vdb(path='./app/upload_dir/Sources_RAG')
+
     ragPipe = RagPipeline(config=config)
     # await ragPipe.indexer.add_files2vdb("./app/upload_dir")
     end = time.time()
