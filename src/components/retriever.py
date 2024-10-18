@@ -9,6 +9,8 @@ from .utils import load_sys_template
 from langchain_openai import ChatOpenAI
 from langchain_core.output_parsers import StrOutputParser
 from .llm import LLM
+import ast
+from langchain_core.documents.base import Document
 
 
 dir_path = Path(__file__).parent
@@ -22,7 +24,7 @@ class BaseRetriever(metaclass=ABCMeta):
         pass
 
     @abstractmethod
-    def retrieve(self, question: str, db: Qdrant_Connector) -> list[str]:
+    def retrieve(self, question: str, db: Qdrant_Connector) -> list[Document]:
         pass
 
     @abstractmethod
@@ -160,7 +162,7 @@ class MultiQueryRetriever(SingleRetriever):
         retrieved_chunks_with_score = [(chunk, score) for chunk, score in retrieved_chunks ]
         return retrieved_chunks_with_score
     
-    def retrieve(self, question: str, db: Qdrant_Connector) -> list[str]:
+    def retrieve(self, question: str, db: Qdrant_Connector) -> list[Document]:
         """
         Retrieves relevant documents based on multiple queries.
 
@@ -254,7 +256,10 @@ def get_retriever_cls(retriever_type: str) -> BaseRetriever:
 
 def get_retriever(config, logger)-> BaseRetriever:
     retriever_cls = get_retriever_cls(retriever_type=config.retriever["type"])
-    extra_params = config.retriever["extra_params"]
+    extra_params = ast.literal_eval(
+        config.retriever["extra_params"]
+    )
+    print(extra_params)
 
     if config.retriever["type"] in ["hyde", "multiQuery"]:
         extra_params["llm"] = LLM(config, logger=None).client # add an llm client to extra parameters for these types of retrievers

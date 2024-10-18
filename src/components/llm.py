@@ -6,16 +6,16 @@ from langchain_core.prompts import (
 from langchain_core.messages import AIMessage, HumanMessage, BaseMessage
 from typing import AsyncIterator
 
+
 class LLM:
     def __init__(self, config, logger=None):
-
         self.logger = logger
         self.client: ChatOpenAI = ChatOpenAI(
             model=config.llm["name"],
             base_url=config.llm["base_url"],
             api_key=config.api_key,
             timeout=60,
-            temperature=0.3,
+            temperature=config.llm["temperature"],
             max_tokens=config.llm["max_tokens"], 
             streaming=True,
         )    

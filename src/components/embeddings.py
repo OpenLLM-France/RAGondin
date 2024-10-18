@@ -18,7 +18,7 @@ HG_EMBEDDER_TYPE = {
 class HFEmbedder(BaseEmbedder):
     """Factory class for loading HuggingFace embeddings models backend models.
     """
-    def __init__(self, config) -> None:
+    def __init__(self, config, device=None) -> None:
         """Initialize Embeddings.
 
         Args:
@@ -30,7 +30,8 @@ class HFEmbedder(BaseEmbedder):
 
         model_type = config.embedder["type"]
         if model_type in HG_EMBEDDER_TYPE:
-            device = 'cuda' if torch.cuda.is_available() else 'cpu'
+            if device is None:
+                device = 'cuda' if torch.cuda.is_available() else 'cpu'
             try:
                 model_name = config.embedder["name"]
                 self.embedding = HG_EMBEDDER_TYPE[model_type](

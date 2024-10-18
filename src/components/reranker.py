@@ -19,7 +19,7 @@ class Reranker:
         self.logger = logger
         self.logger.info("Reranker initialized...")
 
-    def rerank(self, question: str, docs: list[Document], k: int = 5) -> list[str]:
+    def rerank(self, question: str, docs: list[Document], k: int = 5) -> list[Document]:
         logger.info("Reranking documents ...")
         """
         Rerank documents by relevancy with respect to the given query.
