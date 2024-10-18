@@ -60,7 +60,8 @@ async def process_data(file: UploadFile):
         with open(file_path, "wb") as f:
             f.write(await file.read())
             
-        await ragPipe.indexer.add_file2vdb(file_path)
+        # await ragPipe.indexer.add_file2vdb(file_path)
+        await ragPipe.indexer.add_files2vdb(file_path)
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
     finally:
