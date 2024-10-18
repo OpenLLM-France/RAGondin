@@ -1,11 +1,12 @@
+#!/usr/bin/env python
+
 import argparse
 import asyncio
 import time
 import os
 from loguru import logger
 from qdrant_client import QdrantClient
-from src.components import Indexer, Config
-
+from src.components import Config
 
 config = Config("./config.ini")
 
@@ -42,6 +43,9 @@ async def main():
     args = parser.parse_args()
 
     if args.folder:
+        from src.components import Indexer
+
+
         collection = args.collection
         config.vectordb["collection_name"] = collection
 
@@ -49,7 +53,7 @@ async def main():
         indexer = Indexer(config, logger)
         
         start = time.time()
-        await indexer.add_files2vdb(dir_path=args.folder)
+        await indexer.add_files2vdb(path=args.folder)
         end = time.time()
 
         print(f"Execution time: {end - start:.4f} seconds")
@@ -66,6 +70,6 @@ async def main():
             logger.info(f"collection '{collection_name}' deleted")
         else:
             logger.info(f"This collection doesn't exist")
-
+    
 if __name__ == '__main__':
     asyncio.run(main())
