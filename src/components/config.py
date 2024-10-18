@@ -1,5 +1,4 @@
 import os
-from dataclasses import field
 import configparser
 from pathlib import Path
 
@@ -20,4 +19,4 @@ class Config:
         for key, value in parser.items():
             params = dict(value.items())
             setattr(self, key, params)
-            print(key, value.items())
+            # print(key, value.items())
