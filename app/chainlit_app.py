@@ -20,21 +20,21 @@ async def set_starters():
     return [
         cl.Starter(
             label="OpenLLM France",
-            message="Quel est l'objectif d'OpenLLM France et quels sont les enjeux?",
+            message="Quel est l'objectif d'OpenLLM France et les enjeux de ce projet?",
             icon="./public/idea.svg",
-    ),
+        ),
 
-    cl.Starter(
-            label="Les logiciels développés de Linagora",
-            message="Quels sont produits logiciels développés par Linagora?",
-            icon="./public/labor-man-labor.svg",
-            ),
+        cl.Starter(
+                label="Produits de Linagora",
+                message="Parle moi du Pack Twake et de LinTo?",
+                icon="./public/labor-man-labor.svg",
+                ),
 
-    cl.Starter(
-            label="Présentation de Linagora",
-            message="Fais moi une présentation de Linagora.",
-            icon= "./public/danger-triangle.svg",
-            ),
+        cl.Starter(
+                label="Présentation de Linagora",
+                message="Fais moi une présentation de Linagora.",
+                icon= "./public/danger-triangle.svg",
+                )
     ]
 
 
@@ -44,26 +44,42 @@ async def on_chat_start():
     logger.info("Chat history flushed")
      
 
+def format_elements(sources, only_txt=True):
+    elements = []
+    source_names = []
+    for doc in sources:
+        source_names.append(doc['doc_id'])
+
+        if only_txt:
+            elem = cl.Text(content=doc["content"], name=doc['doc_id'], display='side')
+        else:
+            source = Path(doc["source"])
+            match source.suffix:
+                case '.pdf':
+                    elem = cl.Pdf(name=doc['doc_id'], path=doc["source"], page=doc["page"], display="side")
+
+                case '.mp4':
+                    elem = cl.Video(name=doc['doc_id'], path=doc["source"], display='side')
+                
+                case '.mp3':
+                    elem = cl.Audio(name=doc['doc_id'], path=doc["source"], display='side')
+                
+                case _:
+                    elem = cl.Text(content=doc["content"], name=doc['doc_id'], display='side') # TODO Maybe HTML (convert the File first)
+
+        elements.append(elem)                
+    return elements, source_names
+     
+    
 @cl.on_message
 async def main(message: cl.Message):
     question = message.content
 
     async with cl.Step(name="Searching for relevant documents...") as step:
-        stream, _, sources, docs = ragPipe.run(question)
+        stream, _, sources = ragPipe.run(question)
     await step.remove()
 
-
-    # elements = [
-    #     cl.Pdf(name=ref, path=s, page=p, display="side", size="medium") 
-    #     for ref, s, p in sources
-    # ]
-
-    elements = []
-    source_names = []
-    for n, doc in enumerate(docs, start=1):
-        source_names.append(f'[doc_{n}]')
-        elements.append(cl.Text(content=doc.page_content, name=f'[doc_{n}]', display='side'))
-    
+    elements, source_names = format_elements(sources, only_txt=False)
     msg = cl.Message(content="", elements=elements)
     await msg.send()
     
@@ -77,3 +93,11 @@ async def main(message: cl.Message):
 
     await msg.stream_token("\n\nRetreived Docs: " + ', '.join(source_names))
     await msg.send()
+
+
+if __name__ == "__main__":
+    import sys
+    from chainlit.cli import run_chainlit
+
+    sys.argv.extend(["-w", "--no-cache"])
+    run_chainlit(__file__)
