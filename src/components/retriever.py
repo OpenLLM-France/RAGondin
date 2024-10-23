@@ -259,7 +259,7 @@ def get_retriever(config, logger)-> BaseRetriever:
     extra_params = ast.literal_eval(
         config.retriever["extra_params"]
     )
-    print(extra_params)
+    # print(extra_params)
 
     if config.retriever["type"] in ["hyde", "multiQuery"]:
         extra_params["llm"] = LLM(config, logger=None).client # add an llm client to extra parameters for these types of retrievers

@@ -24,6 +24,11 @@ from loguru import logger
 from tqdm.asyncio import tqdm  # For async progress bars
 
 
+from langchain_community.document_loaders import UnstructuredXMLLoader, PyPDFLoader
+from langchain_community.document_loaders.csv_loader import CSVLoader
+from langchain_community.document_loaders.text import TextLoader
+from langchain_community.document_loaders import UnstructuredHTMLLoader
+
 
 class BaseLoader(ABC):
     @abstractmethod
@@ -65,9 +70,8 @@ class AudioTranscriber(metaclass=SingletonMeta):
             compute_type=compute_type
         )
         
-
 class VideoAudioLoader(BaseLoader):
-    def __init__(self, page_sep: str='[PAGE_SEP]', batch_size=4):
+    def __init__(self, page_sep: str='[PAGE_SEP]', batch_size=4):    
         self.batch_size = batch_size
         self.page_sep = page_sep
         self.formats = [".wav", '.mp3', ".mp4"]
@@ -108,6 +112,7 @@ class VideoAudioLoader(BaseLoader):
         model = self.transcriber.model
         transcription_l = model.transcribe(audio, batch_size=self.batch_size)
         content = ' '.join([tr['text'] for tr in transcription_l['segments']])
+
         self.free_memory()
 
         return Document(
@@ -118,11 +123,11 @@ class VideoAudioLoader(BaseLoader):
             }
         )
 
-
 class CustomPPTLoader(BaseLoader):
     doc_loaders = {
-            ".pptx": UnstructuredPowerPointLoader,
-        }
+        '.pptx': UnstructuredPowerPointLoader, 
+        '.ppt': UnstructuredPowerPointLoader
+    }
 
     cat2md = {
         'Title': '#',
@@ -156,7 +161,7 @@ class CustomPPTLoader(BaseLoader):
         cls_loader = CustomPPTLoader.doc_loaders.get(path.suffix, None)
 
         if cls_loader is None:
-            raise f"This loader only supports {CustomPPTLoader.doc_loaders.keys()} format"
+            raise Exception(f"This loader only supports {CustomPPTLoader.doc_loaders.keys()} format")
         
         loader = cls_loader(
             file_path=str(file_path), 
@@ -198,11 +203,30 @@ class CustomPPTLoader(BaseLoader):
             }
         )
 
+class CustomPyMuPDFLoader(BaseLoader):
+    def __init__(self, page_sep: str='[PAGE_SEP]', **loader_args) -> None:
+        self.loader_args = loader_args
+        self.page_sep = page_sep
+
+    async def aload_doc(self, file_path):
+        loader = PyMuPDFLoader(
+            file_path=file_path,
+            **self.loader_args
+        )
+        pages = await loader.aload()
+        return Document(
+            page_content=f'{self.page_sep}'.join([p.page_content for p in pages]), 
+            metadata={
+                'source': pages[0].metadata['source'],
+                'page_sep': self.page_sep
+            }
+        )
 
 
 class CustomDocLoader(BaseLoader):
     doc_loaders = {
             ".docx": UnstructuredWordDocumentLoader,
+            '.doc': UnstructuredWordDocumentLoader,
             '.odt': UnstructuredODTLoader
         }
     def __init__(self, page_sep: str='[PAGE_SEP]', **loader_args) -> None:
@@ -226,43 +250,14 @@ class CustomDocLoader(BaseLoader):
         pages = await loader.aload()
 
         content = ' '.join([p.page_content for p in pages])
+
         return Document(
-            page_content=f'{self.page_sep}'.join([content,'']), 
+            page_content=f"{content}{self.page_sep}", 
             metadata={
                 'source': pages[0].metadata['source'],
                 'page_sep': self.page_sep
             }
         )
-
-
-class CustomPyMuPDFLoader(BaseLoader):
-    def __init__(self, page_sep: str='[PAGE_SEP]', **loader_args) -> None:
-        self.loader_args = loader_args
-        self.page_sep = page_sep
-
-    async def aload_doc(self, file_path):
-        loader = PyMuPDFLoader(
-            file_path=file_path,
-            **self.loader_args
-        )
-        pages = await loader.aload()
-        return Document(
-            page_content=f'{self.page_sep}'.join([p.page_content for p in pages]), 
-            metadata={
-                'source': pages[0].metadata['source'],
-                'page_sep': self.page_sep
-            }
-        )
-    
-
-LOADERS = {
-    '.pdf': CustomPyMuPDFLoader,
-    '.docx': CustomDocLoader,
-    '.doc': CustomDocLoader,
-    '.mp4': VideoAudioLoader,
-    '.pptx': CustomPPTLoader
-    # '.odt': CustomDocLoader,
-}
 
 
 class GeneralLoader:
@@ -321,7 +316,16 @@ async def get_batches(generator, batch_size=16):
         await asyncio.sleep(0)
 
 
+LOADERS = {
+    '.pdf': CustomPyMuPDFLoader,
 
+    '.docx': CustomDocLoader,
+    '.doc': CustomDocLoader,
+    '.odt': CustomDocLoader,
+
+    '.mp4': VideoAudioLoader,
+    '.pptx': CustomPPTLoader,
+}
 
 if __name__ == "__main__":
     async def main():

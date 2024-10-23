@@ -37,7 +37,7 @@ class HFEmbedder(BaseEmbedder):
                 self.embedding = HG_EMBEDDER_TYPE[model_type](
                     model_name=model_name,
                     model_kwargs={"device": device},
-                    encode_kwargs={"normalize_embeddings": True}
+                    encode_kwargs={"normalize_embeddings": True},
                 )
             except Exception as e:
                 raise ValueError(f"An error occured: {e}")
