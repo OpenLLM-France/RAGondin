@@ -1,7 +1,7 @@
-import asyncio
-from src.components import RagPipeline, Config, evaluate, Indexer
 import time 
+import asyncio
 from loguru import logger
+from src.components import RagPipeline, Config, evaluate, Indexer
 
 config = Config("./config.ini")
 indexer = Indexer(config, logger)    
@@ -9,8 +9,7 @@ indexer = Indexer(config, logger)
 
 async def main():
     start = time.time()
-    await indexer.add_files2vdb(path='./app/upload_dir/Sources_RAG')
-
+    await indexer.add_files2vdb(path='./app/upload_dir/test_data')
     ragPipe = RagPipeline(config=config)
     # await ragPipe.indexer.add_files2vdb("./app/upload_dir")
     end = time.time()
@@ -18,7 +17,7 @@ async def main():
 
     while True:
         question = input("Question sur vos documents: ")
-        answer, context, _ = ragPipe.run(question=question)
+        answer, context, *_ = ragPipe.run(question=question)
         answer_txt = ""
         async for chunk in answer:
             print(chunk.content, end="")
