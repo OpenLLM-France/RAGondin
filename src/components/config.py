@@ -9,6 +9,7 @@ class Config:
     def __init__(self, cfg_file) -> None:
         self.api_key: str = os.getenv('API_KEY')
         self.dir_path = Path(__file__).parent
+        self.prompts_dir = self.dir_path / 'prompts'
 
         if not self.api_key:
             print("Error: API_KEY not set")
@@ -19,4 +20,3 @@ class Config:
         for key, value in parser.items():
             params = dict(value.items())
             setattr(self, key, params)
-            # print(key, value.items())

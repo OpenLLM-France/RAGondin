@@ -23,10 +23,6 @@ from langchain_core.messages import (
 from collections import deque
 
 
-
-dir_path = Path(__file__).parent
-
-
 class Indexer:
     """This class bridges static files with the vector store database.
     """
@@ -41,6 +37,7 @@ class Indexer:
             try:
                 chunker_params[k] = int(v)
             except: pass
+            
 
         if name.startswith("semantic_splitter"):    
             chunker_params.update({"embeddings": embedder.get_embeddings()})
@@ -84,9 +81,11 @@ class RagPipeline:
             self.reranker = Reranker(self.logger, config)
         self.reranker_top_k = int(config.reranker["top_k"])
 
-        self.qa_sys_prompt: ChatPromptTemplate = load_sys_template(
-            config.dir_path / "prompts/rag_sys_prompt_template.txt"
+        self.qa_sys_prompt: str = load_sys_template(
+            config.prompts_dir / config.prompt['rag_sys_pmpt']
         )
+        self.prompts_dir = config.prompts_dir
+        self.context_pmpt_tmpl = config.prompt['context_pmpt_tmpl']
 
         self.llm_client = LLM(config, logger)
         self.retriever: BaseRetriever = get_retriever(config, logger)
@@ -115,7 +114,7 @@ class RagPipeline:
             logger.info("Contextualizing the question")
             
             sys_prompt = load_sys_template(
-                dir_path / "prompts/contextualize_prompt_template.txt" # get the prompt for contextualizing
+                self.prompts_dir / self.context_pmpt_tmpl # get the prompt for contextualizing
             )
             contextualize_q_prompt = ChatPromptTemplate.from_messages(
                 [
@@ -168,7 +167,7 @@ class RagPipeline:
             chat_history=chat_history,
             context=context, sys_pmpt_tmpl=self.qa_sys_prompt)
 
-        return answer, context, sources, docs
+        return answer, context, sources
 
     
     def update_history(self, question: str, answer: str):

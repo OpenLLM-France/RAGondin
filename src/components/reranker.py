@@ -35,8 +35,8 @@ class Reranker:
         docs_unique = [doc for doc in drop_duplicates(docs, self.logger)]
         k = min(k, len(docs_unique)) # k must be <= the number of documents
         ranked_txt = self.model.rerank(question, [d.page_content for d in docs_unique], k=k)
-        ranked_docs = original_docs(ranked_txt, docs_unique)
-        return [doc for doc in ranked_docs]
+        ranked_docs = [doc for doc in original_docs(ranked_txt, docs_unique)]
+        return ranked_docs
     
 
 def original_docs(ranked_txt, docs: list[Document]):

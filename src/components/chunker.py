@@ -1,16 +1,8 @@
 from abc import ABCMeta, abstractmethod
 from pathlib import Path
-from typing import AsyncGenerator, Generator, Iterable, Iterator
+from typing import AsyncGenerator
 from langchain_core.documents.base import Document
-from langchain_community.document_loaders import DirectoryLoader
-from langchain_community.document_loaders import UnstructuredXMLLoader, PyPDFLoader
-from langchain_community.document_loaders.csv_loader import CSVLoader
-from langchain_community.document_loaders.text import TextLoader
-from langchain_community.document_loaders import UnstructuredHTMLLoader
-from tqdm import tqdm
-from itertools import groupby
 import re
-from loguru import logger
 
 
 class BaseChunker(metaclass=ABCMeta):
@@ -65,6 +57,7 @@ class RecursiveSplitter(BaseChunker):
         chunks = self.splitter.create_documents([text])
 
         i = 0
+        filtered_chunks = []
         for chunk in chunks:
             start_idx = full_text_preprocessed.find(chunk.page_content)
 
@@ -72,12 +65,14 @@ class RecursiveSplitter(BaseChunker):
                 i += 1
             
             # print(i, start_idx, page_idx[i])
-            chunk.metadata = {
-                "page": page_idx[i]["page"], 
-                "source": source
-            }
-
-        return chunks
+            if len(chunk.page_content.strip()) > 1:
+                chunk.metadata = {
+                    "page": page_idx[i]["page"], 
+                    "source": source,
+                }
+                filtered_chunks.append(chunk)
+      
+        return filtered_chunks
 
 
     async def split(self, batch_docs: AsyncGenerator[list[Document], None]):
@@ -132,19 +127,20 @@ class SemanticSplitter(BaseChunker):
         )
 
         i = 0
+        filtered_chunks = []
         for semantic_chunk in chunks:
             start_idx = semantic_chunk.metadata["start_index"]
             while not (page_idx[i]["start_idx"] <= start_idx <= page_idx[i]["end_idx"]) and i < len(page_idx)-1:
                 i += 1
             
-            # print(i, start_idx, page_idx[i])
-            # TODO: get rid of chunks with empty page_content
-            semantic_chunk.metadata = {
-                "page": page_idx[i]["page"], 
-                "source": source
-            }
+            if len(semantic_chunk.page_content.strip()) > 1:
+                semantic_chunk.metadata = {
+                    "page": page_idx[i]["page"], 
+                    "source": source,
+                }
+                filtered_chunks.append(semantic_chunk)
         
-        return chunks
+        return filtered_chunks
 
 
     async def split(self, batch_docs: AsyncGenerator[list[Document], None]):
