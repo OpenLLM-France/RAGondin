@@ -1,4 +1,4 @@
-from abc import ABCMeta, abstractmethod, ABC
+from abc import abstractmethod, ABC
 import asyncio
 import itertools
 import os
@@ -21,7 +21,8 @@ from langchain_community.document_loaders import (
 # from langchain_community.document_loaders.word_document import UnstructuredWordDocumentLoader
 import pymupdf4llm
 from loguru import logger
-from tqdm.asyncio import tqdm  # For async progress bars
+from tqdm.asyncio import tqdm  
+from tqdm.asyncio import tqdm_asyncio # For async progress bars
 
 
 from langchain_community.document_loaders import UnstructuredXMLLoader, PyPDFLoader
@@ -75,13 +76,16 @@ class VideoAudioLoader(BaseLoader):
         self.batch_size = batch_size
         self.page_sep = page_sep
         self.formats = [".wav", '.mp3', ".mp4"]
+
         self.transcriber = AudioTranscriber(
             device='cuda' if torch.cuda.is_available() else 'cpu'
         )
+
     
     def free_memory(self):
         gc.collect()
         torch.cuda.empty_cache()
+
 
     async def aload_doc(self, file_path):
         path = Path(file_path)
@@ -268,26 +272,28 @@ class GeneralLoader:
     async def doc_generator(self, path) -> AsyncGenerator[list[Document], None]:
         p = Path(path)
         if p.is_file():
-            files = [p]
             doc_batch = []
             
-            async for doc in load_documents(files):  # async iteration
+            async for doc in load_documents([p]):  # async iteration
                 doc_batch.append(doc)
+            
+            # TODO: doc_batch = await load_documents([p])
         
             yield doc_batch
 
 
         if p.is_dir():
-            for file_type in LOADERS.keys():
+            for file_type in LOADERS.keys(): # TODO Rendre ceci async: Priority 0
                 pattern = f"**/*{file_type}"
+
                 files = get_files(path, pattern, self.recursive)
-                
                 files2 = get_files(path, pattern, self.recursive)
+
                 n_files = len(list(files2))
                 n_batches = math.ceil(n_files / self.bs)
                 logger.info(f'Loading {n_files} {file_type} files.')
 
-                async for f_batch in tqdm(get_batches(files, batch_size=self.bs), total=n_batches, desc=f"Loading {file_type} files..."):
+                async for f_batch in tqdm_asyncio(get_batches(files, batch_size=self.bs), total=n_batches, desc=f"Loading {file_type} files..."):
                     doc_batch = []
                     async for doc in load_documents(f_batch):  # async iteration
                         doc_batch.append(doc)
@@ -295,11 +301,22 @@ class GeneralLoader:
                     yield doc_batch  # yield individual batches
 
 def get_files(path, pattern, recursive):
+
     p = Path(path)
     files = p.rglob(pattern) if recursive else p.glob(recursive)
+
+    # TODO: rendre le generator async ==> Faire du batching à la volée
+    # b = []
+    # async for f in files:
+    #     b.append(f)
+    #     # if size(b) == bs:
+    #     yield b
+
     return files
 
+
 async def load_documents(paths: list[Path]):
+    # Use Terms like Serialize / Unserialize
     file_type = paths[0].suffix
     loader: BaseLoader = LOADERS.get(file_type)()
     async for doc in loader.load(paths):  # async iteration
@@ -313,7 +330,8 @@ async def get_batches(generator, batch_size=16):
         if not batch:
             break
         yield batch
-        await asyncio.sleep(0)
+
+
 
 
 LOADERS = {
@@ -326,6 +344,8 @@ LOADERS = {
     '.mp4': VideoAudioLoader,
     '.pptx': CustomPPTLoader,
 }
+
+
 
 if __name__ == "__main__":
     async def main():

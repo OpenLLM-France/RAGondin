@@ -36,8 +36,8 @@ class HFEmbedder(BaseEmbedder):
                 model_name = config.embedder["name"]
                 self.embedding = HG_EMBEDDER_TYPE[model_type](
                     model_name=model_name,
-                    model_kwargs={"device": device},
-                    encode_kwargs={"normalize_embeddings": True},
+                    model_kwargs={"device": device, 'trust_remote_code': True},
+                    encode_kwargs={"normalize_embeddings": True, 'torch_dtype': torch.bfloat16},
                 )
             except Exception as e:
                 raise ValueError(f"An error occured: {e}")

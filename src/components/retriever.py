@@ -2,7 +2,7 @@
 from abc import ABCMeta, abstractmethod
 from pathlib import Path
 from .llm import LLM
-from .vector_store import Qdrant_Connector, BaseVectorDdConnector
+from .vectore_store import QdrantDB, BaseVectorDd
 from loguru import logger
 from langchain_core.prompts import ChatPromptTemplate
 from .utils import load_sys_template
@@ -24,11 +24,11 @@ class BaseRetriever(metaclass=ABCMeta):
         pass
 
     @abstractmethod
-    def retrieve(self, question: str, db: Qdrant_Connector) -> list[Document]:
+    async def retrieve(self, question: str, db: QdrantDB) -> list[Document]:
         pass
 
     @abstractmethod
-    def retrieve_with_scores(self, question: str, db: Qdrant_Connector) -> list[tuple[str, float]]:
+    async def retrieve_with_scores(self, question: str, db: QdrantDB) -> list[tuple[str, float]]:
         pass
 
 
@@ -46,7 +46,7 @@ class SingleRetriever(BaseRetriever):
             ValueError(f"Invalid type. Choose from {CRITERIAS}")
         self.criteria = criteria
 
-    def retrieve(self, question: str, db: BaseVectorDdConnector | Qdrant_Connector) -> list[str]:
+    async def retrieve(self, question: str, db: BaseVectorDd | QdrantDB) -> list[str]:
         """
         Retrieves relevant documents based on the type of retrieval method specified given a question.
 
@@ -63,7 +63,7 @@ class SingleRetriever(BaseRetriever):
                 The list of retrieved documents.
         """
         if self.criteria == "similarity":
-            retrieved_chunks = db.similarity_search(
+            retrieved_chunks = await db.async_sim_search(
                 query=question, 
                 top_k=self.top_k
             )
@@ -74,7 +74,7 @@ class SingleRetriever(BaseRetriever):
         return retrieved_chunks_txt
 
 
-    def retrieve_with_scores(self, question: str, db: Qdrant_Connector) -> list[tuple[str, float]]:
+    async def retrieve_with_scores(self, question: str, db: QdrantDB) -> list[tuple[str, float]]:
         """
         Retrieves relevant documents based on the type of retrieval method specified.
 
@@ -91,7 +91,7 @@ class SingleRetriever(BaseRetriever):
                 The list of retrieved documents.
         """
         if self.criteria == "similarity":
-            retrieved_chunks = db.similarity_search_with_score(query=question, top_k=self.params["top_k"])
+            retrieved_chunks = await db.async_sim_search_with_score(query=question, top_k=self.params["top_k"])
         else:
             raise ValueError(f"Invalid type. Choose from criteria from {CRITERIAS}")
         retrieved_chunks_with_score = [tuple((chunk.page_content, score)) for chunk, score in retrieved_chunks]
@@ -145,7 +145,7 @@ class MultiQueryRetriever(SingleRetriever):
             raise KeyError(f"An Error has occured: {e}")
 
 
-    def retrieve_with_scores(self, question: str, db: BaseVectorDdConnector | Qdrant_Connector):
+    async def retrieve_with_scores(self, question: str, db: BaseVectorDd | QdrantDB):
         logger.info("generate different perspectives of the question ...")
         generated_questions = self.generate_queries.invoke(
             {
@@ -155,14 +155,14 @@ class MultiQueryRetriever(SingleRetriever):
         )
         
         if self.criteria == "similarity":
-            retrieved_chunks = db.multy_query_similarity_search_with_scores(queries=generated_questions, top_k_per_queries=self.top_k)
+            retrieved_chunks = await db.async_multy_query_sim_search_with_scores(queries=generated_questions, top_k_per_queries=self.top_k)
         else:
             raise ValueError(f"Invalid, {self.criteria} should be from {CRITERIAS}")
         
         retrieved_chunks_with_score = [(chunk, score) for chunk, score in retrieved_chunks ]
         return retrieved_chunks_with_score
     
-    def retrieve(self, question: str, db: Qdrant_Connector) -> list[Document]:
+    async def retrieve(self, question: str, db: QdrantDB) -> list[Document]:
         """
         Retrieves relevant documents based on multiple queries.
 
@@ -178,14 +178,13 @@ class MultiQueryRetriever(SingleRetriever):
             list[str]
                 The list of retrieved documents.
         """
-
         # generate different perspectives of the question
-        generated_questions = self.generate_queries.invoke(
+        generated_questions = await self.generate_queries.ainvoke(
             {"question": question, "k_queries": self.k_queries}
         )
 
         if self.criteria == "similarity":
-            retrieved_chunks = db.multy_query_similarity_search(
+            retrieved_chunks = await db.async_multy_query_sim_search(
                 queries=generated_questions, 
                 top_k_per_queries=self.top_k
             )
@@ -195,7 +194,7 @@ class MultiQueryRetriever(SingleRetriever):
 
 
 
-class HyDeretriever(SingleRetriever):
+class HyDeRetriever(SingleRetriever):
     def __init__(self, criteria: str = "similarity", top_k: int = 6, **extra_args) -> None:
         super().__init__(criteria, top_k, **extra_args)
         try:
@@ -218,32 +217,40 @@ class HyDeretriever(SingleRetriever):
                 | StrOutputParser() 
             )
 
+            self.combine = extra_args.get('combine', False)
+
         except Exception as e:
             raise ArithmeticError(f"An error occured: {e}")
         
 
-    def get_hyde(self, question: str):
-        generated_document = (self.generate_hyde
-                              .invoke({"question": question})
-                            )
+    async def get_hyde(self, question: str):
+        generated_document = await self.generate_hyde.ainvoke(
+            {"question": question}
+        )
         return generated_document
-
-    def retrieve(self, question: str, db: BaseVectorDdConnector | Qdrant_Connector) -> list[str]:
-        hyde = self.get_hyde(question)
-        logger.info("generate hyde document...")
-        docs = super().retrieve(hyde, db)
-        return docs # + super().retrieve(question, db) # hyde + single retriever for stronger results
     
-    def retrieve_with_scores(self, question: str, db: Qdrant_Connector) -> list[tuple[str, float]]:
-        hyde = self.get_hyde(question)
-        return super().retrieve_with_scores(hyde, db)
+    async def retrieve(self, question: str, db: BaseVectorDd | QdrantDB) -> list[str]:
+        hyde = await self.get_hyde(question)
+        logger.info("generate hyde document...")
+
+        docs = await super().retrieve(hyde, db)
+        if self.combine:
+            docs2 = await super().retrieve(question, db)
+            return docs + docs2
+        else:
+            return docs
+   
+
+    async def retrieve_with_scores(self, question: str, db: QdrantDB) -> list[tuple[str, float]]:
+        hyde = await self.get_hyde(question)
+        return await super().retrieve_with_scores(hyde, db)
 
 
 
 RETRIEVERS = {
     "single": SingleRetriever,
     "multiQuery": MultiQueryRetriever,
-    "hyde": HyDeretriever,
+    "hyde": HyDeRetriever,
 }
 
 def get_retriever_cls(retriever_type: str) -> BaseRetriever:
@@ -259,7 +266,6 @@ def get_retriever(config, logger)-> BaseRetriever:
     extra_params = ast.literal_eval(
         config.retriever["extra_params"]
     )
-    # print(extra_params)
 
     if config.retriever["type"] in ["hyde", "multiQuery"]:
         extra_params["llm"] = LLM(config, logger=None).client # add an llm client to extra parameters for these types of retrievers

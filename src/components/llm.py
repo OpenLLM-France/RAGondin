@@ -18,8 +18,8 @@ class LLM:
             temperature=config.llm["temperature"],
             max_tokens=config.llm["max_tokens"], 
             streaming=True,
-        )    
-
+        )   
+         
     def run(self, 
             question: str, context: str, 
             chat_history: list[AIMessage | HumanMessage], 

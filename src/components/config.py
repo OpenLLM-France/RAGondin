@@ -1,12 +1,16 @@
 import os
 import configparser
 from pathlib import Path
+from dotenv import load_dotenv
+
+os.environ['PYTORCH_CUDA_ALLOC_CONF'] = 'expandable_segments:True'
 
 class Config:
     """This class encapsulates the configurations for the application, 
     including settings for paths, directories, and LLM-specific parameters.
     """
     def __init__(self, cfg_file) -> None:
+        load_dotenv()
         self.api_key: str = os.getenv('API_KEY')
         self.dir_path = Path(__file__).parent
         self.prompts_dir = self.dir_path / 'prompts'

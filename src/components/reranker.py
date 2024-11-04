@@ -16,10 +16,11 @@ class Reranker:
         self.model = RAGPretrainedModel.from_pretrained(
             config.reranker["model_name"]
         )
+
         self.logger = logger
         self.logger.info("Reranker initialized...")
 
-    def rerank(self, question: str, docs: list[Document], k: int = 5) -> list[Document]:
+    def rerank(self, question: str, docs_chunks: list[Document], k: int = 5) -> list[Document]:
         logger.info("Reranking documents ...")
         """
         Rerank documents by relevancy with respect to the given query.
@@ -32,7 +33,7 @@ class Reranker:
         Returns:
             list[str]: Top k reranked document strings.
         """
-        docs_unique = [doc for doc in drop_duplicates(docs, self.logger)]
+        docs_unique = [doc for doc in drop_duplicates(docs_chunks, self.logger)]
         k = min(k, len(docs_unique)) # k must be <= the number of documents
         ranked_txt = self.model.rerank(question, [d.page_content for d in docs_unique], k=k)
         ranked_docs = [doc for doc in original_docs(ranked_txt, docs_unique)]
@@ -48,15 +49,16 @@ def original_docs(ranked_txt, docs: list[Document]):
                 break
 
 
-def drop_duplicates(L: list[Document], logger, key=None):
+def drop_duplicates(L: list[Document], logger):
     seen = set()
     for s in L:
-        val = s.page_content if key is None else key(s)
+        val = s.page_content
         if val not in seen:
             seen.add(val)
             yield s
         else:
-            logger.info("Duplicata removed...")
+            pass
+            # logger.info("Duplicata removed...")
 
 
 if __name__ == "__main__":

@@ -1,9 +1,11 @@
 from abc import ABCMeta, abstractmethod
+import gc
 from pathlib import Path
 from typing import AsyncGenerator
 from langchain_core.documents.base import Document
 import re
 
+import torch 
 
 class BaseChunker(metaclass=ABCMeta):
     @abstractmethod
@@ -22,7 +24,6 @@ class RecursiveSplitter(BaseChunker):
         self.splitter = RecursiveCharacterTextSplitter(
             chunk_size=chunk_size,
             chunk_overlap=chunk_overlap,
-            # add_start_index=True,
             **args
         )
     
@@ -71,7 +72,9 @@ class RecursiveSplitter(BaseChunker):
                     "source": source,
                 }
                 filtered_chunks.append(chunk)
-      
+        
+        gc.collect()
+        torch.cuda.empty_cache()
         return filtered_chunks
 
 
@@ -86,13 +89,13 @@ class RecursiveSplitter(BaseChunker):
 
         
 class SemanticSplitter(BaseChunker):
-    def __init__(self, min_chunk_size: int = 1000, embeddings = None, **args) -> None:
+    def __init__(self, min_chunk_size: int = 1000, embeddings = None, breakpoint_threshold_amount=85, **args) -> None:
         from langchain_experimental.text_splitter import SemanticChunker
-
         self.splitter = SemanticChunker(
             embeddings=embeddings, 
             buffer_size=1, 
             breakpoint_threshold_type='percentile', 
+            breakpoint_threshold_amount=breakpoint_threshold_amount,
             min_chunk_size=min_chunk_size,
             add_start_index=True, 
             **args
