@@ -1,10 +1,14 @@
 from abc import ABCMeta, abstractmethod
+import asyncio
 from collections import defaultdict
+import random
 from typing import Coroutine, Generator, Union
 from qdrant_client import QdrantClient, models
 from langchain_community.embeddings import HuggingFaceBgeEmbeddings, HuggingFaceEmbeddings
 from langchain_core.documents.base import Document
 from langchain_qdrant import QdrantVectorStore, FastEmbedSparse, RetrievalMode
+import torch
+from .chunker import BaseChunker
 
 
 # https://python-client.qdrant.tech/qdrant_client.qdrant_client
@@ -109,18 +113,44 @@ class QdrantDB(BaseVectorDd):
             self.logger.info(f"As the collection `{collection_name}` is non-existant, it's created.")
 
 
-    async def async_add_documents(self, batch_gen: Generator[list[Document], None, None]) -> None:
-        """
-        Add docs to the vectore store in a async mode.
-
-        Args:
-            chuncked_docs (list): The chunks of data to be indexed.
-        """
+    async def async_add_documents(self, doc_generator, chunker: BaseChunker, document_batch_size: int=6) -> None:
         # https://github.com/langchain-ai/langchain/issues/15310
 
-        async for item in batch_gen:
-            s = await self.vector_store.aadd_documents(item)
-            print(s)
+        async def chunk(doc):
+            # await asyncio.sleep(random.randint(0, 3))
+            chunks = chunker.split_document(doc) # uses GPU
+            # chunks = await asyncio.to_thread(chunker.split_document, doc)
+            print(f"Processed doc: {doc.metadata['source']}")
+            torch.cuda.empty_cache()
+            return chunks
+
+
+        tasks = []
+
+        async with asyncio.Semaphore(document_batch_size):
+            async for doc in doc_generator:
+                tasks.append(
+                    asyncio.create_task(chunk(doc))
+                )
+            
+            results = []
+
+            for completed_task in asyncio.as_completed(tasks):
+                doc_chunks = await completed_task
+                results.append(doc_chunks)
+
+                if len(results) == document_batch_size:
+                    s = await self.vector_store.aadd_documents(
+                        sum(results, [])
+                    )
+                    results = []
+            
+            if results:
+                s = await self.vector_store.aadd_documents(
+                        sum(results, [])
+                    )
+
+            
 
 
     async def async_sim_search(self, query: str, top_k: int = 5):

@@ -1,3 +1,4 @@
+from asyncio import Semaphore
 import gc
 import sys
 
@@ -11,8 +12,9 @@ from .retriever import BaseRetriever, get_retriever
 from .vectore_store import CONNECTORS
 from .embeddings import HFEmbedder
 from .config import Config
-from .loader import GeneralLoader
+from .loader import DocSerializer
 from loguru import logger
+from typing import AsyncGenerator
 from langchain_core.output_parsers import StrOutputParser
 from langchain_core.prompts import (
     MessagesPlaceholder, 
@@ -58,16 +60,20 @@ class Indexer:
             logger=logger
         )
         self.logger = logger
+        self.semaphore = Semaphore(6)
         self.logger.info("Indexer initialized...")
 
 
     async def add_files2vdb(self, path):
         """Add a files to the vector database in async mode"""
-        docs = GeneralLoader(batch_size=6)
+        serializer = DocSerializer()
         try:
-            docs_gen = docs.doc_generator(path)
-            batch_gen = self.chunker.split(docs_gen)
-            await self.connector.async_add_documents(batch_gen)
+            doc_generator: AsyncGenerator[Document, None] = serializer.serialize_documents(path, recursive=True)
+            await self.connector.async_add_documents(
+                doc_generator=doc_generator, 
+                chunker=self.chunker, 
+                document_batch_size=6,
+            )
             self.logger.info(f"Documents from {path} added.")
         except Exception as e:
             raise Exception(f"An exception as occured: {e}")
@@ -166,7 +172,6 @@ class RagPipeline:
         
         # 3. Format the retrieved docs
         context, sources = format_context(docs)
-        
 
         # 4. run the llm for inference
         answer = self.llm_client.run(
