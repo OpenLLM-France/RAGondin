@@ -1,12 +1,14 @@
-from pathlib import Path
+import gc
 import sys
+
+import torch
 from .chunker import BaseChunker, CHUNKERS
 from langchain_core.documents.base import Document
 from .llm import LLM
 from .utils import format_context, load_sys_template
 from .reranker import Reranker
 from .retriever import BaseRetriever, get_retriever
-from .vector_store import CONNECTORS
+from .vectore_store import CONNECTORS
 from .embeddings import HFEmbedder
 from .config import Config
 from .loader import GeneralLoader
@@ -45,6 +47,7 @@ class Indexer:
         self.chunker: BaseChunker = CHUNKERS[name](**chunker_params)
 
         # init the connector
+        # TODO: Implement Factory Class that uses dbconfig
         dbconfig = config.vectordb
         self.connector = CONNECTORS[dbconfig["connector_name"]](
             host=dbconfig["host"],
@@ -88,13 +91,14 @@ class RagPipeline:
         self.context_pmpt_tmpl = config.prompt['context_pmpt_tmpl']
 
         self.llm_client = LLM(config, logger)
+
         self.retriever: BaseRetriever = get_retriever(config, logger)
 
         self.rag_mode = config.rag["mode"]
         self.chat_history_depth = int(config.rag["chat_history_depth"])
         self._chat_history: deque = deque(maxlen=self.chat_history_depth)
 
-    def get_contextualize_docs(self, question: str, chat_history: list)-> list[Document]:
+    async def get_contextualize_docs(self, question: str, chat_history: list)-> list[Document]:
         """With this function, the new question is reformulated as a standalone question that takes into account the chat_history.
         The new contextualized question is better suited for retreival. 
         This contextualisation allows to have a RAG agent that also takes into account history, so chatbot RAG.
@@ -105,10 +109,11 @@ class RagPipeline:
         """        
         if self.rag_mode == "SimpleRag": # for the SimpleRag, we don't need the contextualize as questions are treated independently regardless of the chat_history
             logger.info("Documents retreived...")
-            docs = self.retriever.retrieve(
+            docs = await self.retriever.retrieve(
                 question, 
                 db=self.indexer.connector
             )
+            contextualized_question = question
 
         if self.rag_mode == "ChatBotRag":
             logger.info("Contextualizing the question")
@@ -128,23 +133,23 @@ class RagPipeline:
                 | self.llm_client.client
                 | StrOutputParser()
             )
-
             input_ = {"input": question, "chat_history": chat_history}
 
             logger.info("Generating contextualized question for retreival...") 
-            contextualized_question = history_aware_retriever.invoke(input_) # TODO: this is the bootleneck, the model answers sometimes instead of reformulating  
+            contextualized_question = await history_aware_retriever.ainvoke(input_) # TODO: this is the bootleneck, the model answers sometimes instead of reformulating  
             print("==>", contextualized_question)
             logger.info("Documents retreived...")
 
-            docs = self.retriever.retrieve(
+            docs = await self.retriever.retrieve(
                 contextualized_question, 
                 db=self.indexer.connector
             )
 
-        return docs 
+        return docs, contextualized_question
     
 
-    def run(self, question: str="", chat_history_api: list[AIMessage | HumanMessage] = None):
+
+    async def run(self, question: str="", chat_history_api: list[AIMessage | HumanMessage] = None):
         if chat_history_api is None: 
             chat_history = list(self._chat_history) # use the saved chat history
         else:
@@ -152,22 +157,31 @@ class RagPipeline:
             chat_history = chat_history[self.chat_history_depth:]
 
         # 1. contextualize the question and retreive relevant documents
-        docs = self.get_contextualize_docs(question, chat_history) 
+        docs, contextualized_question = await self.get_contextualize_docs(question, chat_history) 
 
         # 2. rerank documents is asked
         if self.reranker is not None:
-            docs = self.reranker.rerank(question, docs=docs, k=self.reranker_top_k)
+            # TODO get the contextualized question and use it reranking
+            docs = self.reranker.rerank(contextualized_question, docs_chunks=docs, k=self.reranker_top_k)
         
         # 3. Format the retrieved docs
         context, sources = format_context(docs)
+        
 
         # 4. run the llm for inference
         answer = self.llm_client.run(
             question=question, 
             chat_history=chat_history,
             context=context, sys_pmpt_tmpl=self.qa_sys_prompt)
+    
+        self.free_memory()
 
         return answer, context, sources
+
+
+    def free_memory(self):
+        gc.collect()
+        torch.cuda.empty_cache()
 
     
     def update_history(self, question: str, answer: str):
