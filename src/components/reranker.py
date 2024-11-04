@@ -1,7 +1,7 @@
 from ragatouille import RAGPretrainedModel
 from loguru import logger
 from langchain_core.documents.base import Document
-
+import asyncio
 
 class Reranker:
     """Reranks documents for a query using a RAG model."""
@@ -20,7 +20,7 @@ class Reranker:
         self.logger = logger
         self.logger.info("Reranker initialized...")
 
-    def rerank(self, question: str, docs_chunks: list[Document], k: int = 5) -> list[Document]:
+    async def rerank(self, question: str, docs_chunks: list[Document], k: int = 5) -> list[Document]:
         logger.info("Reranking documents ...")
         """
         Rerank documents by relevancy with respect to the given query.
@@ -35,7 +35,11 @@ class Reranker:
         """
         docs_unique = [doc for doc in drop_duplicates(docs_chunks, self.logger)]
         k = min(k, len(docs_unique)) # k must be <= the number of documents
-        ranked_txt = self.model.rerank(question, [d.page_content for d in docs_unique], k=k)
+
+        ranked_txt = await asyncio.to_thread(
+            lambda : self.model.rerank(question, [d.page_content for d in docs_unique], k=k)
+        )
+
         ranked_docs = [doc for doc in original_docs(ranked_txt, docs_unique)]
         return ranked_docs
     

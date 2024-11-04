@@ -1,10 +1,7 @@
 from fastapi import FastAPI
 from chainlit.utils import mount_chainlit
-import uvicorn
 from starlette.requests import Request
 from starlette.responses import RedirectResponse
-
-
 
 app = FastAPI()
 

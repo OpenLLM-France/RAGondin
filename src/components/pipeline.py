@@ -162,12 +162,11 @@ class RagPipeline:
         # 2. rerank documents is asked
         if self.reranker is not None:
             # TODO get the contextualized question and use it reranking
-            docs = self.reranker.rerank(contextualized_question, docs_chunks=docs, k=self.reranker_top_k)
+            docs = await self.reranker.rerank(contextualized_question, docs_chunks=docs, k=self.reranker_top_k)
         
         # 3. Format the retrieved docs
         context, sources = format_context(docs)
         
-
         # 4. run the llm for inference
         answer = self.llm_client.run(
             question=question, 
