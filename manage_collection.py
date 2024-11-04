@@ -45,7 +45,6 @@ async def main():
     if args.folder:
         from src.components import Indexer
 
-
         collection = args.collection
         config.vectordb["collection_name"] = collection
 
