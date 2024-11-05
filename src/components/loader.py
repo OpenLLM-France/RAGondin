@@ -1,14 +1,13 @@
 from abc import abstractmethod, ABC
 import asyncio
-import itertools
 import os
 from collections import defaultdict
 import gc
+import random
 import whisperx
 from .utils import SingletonMeta
 from pydub import AudioSegment
 import torch
-import math
 from pathlib import Path
 from typing import AsyncGenerator
 from langchain_core.documents.base import Document
@@ -18,11 +17,11 @@ from langchain_community.document_loaders import (
     UnstructuredWordDocumentLoader,
     UnstructuredPowerPointLoader
 )
-# from langchain_community.document_loaders.word_document import UnstructuredWordDocumentLoader
+from langchain_community.document_loaders.word_document import UnstructuredWordDocumentLoader
 import pymupdf4llm
 from loguru import logger
-from tqdm.asyncio import tqdm  
-from tqdm.asyncio import tqdm_asyncio # For async progress bars
+from aiopath import AsyncPath
+from typing import Dict
 
 
 from langchain_community.document_loaders import UnstructuredXMLLoader, PyPDFLoader
@@ -33,20 +32,15 @@ from langchain_community.document_loaders import UnstructuredHTMLLoader
 
 class BaseLoader(ABC):
     @abstractmethod
-    async def aload_doc(self, file_path):
+    async def aload_document(self, file_path):
         pass
-
-    async def load(self, file_paths: list[Path | str]): 
-        for fp in file_paths:
-            yield await self.aload_doc(fp)
-
 
 class Custompymupdf4llm(BaseLoader):
     def __init__(self, page_sep: str='[PAGE_SEP]', **loader_args) -> None:
         self.loader_args = loader_args
         self.page_sep = page_sep
     
-    async def aload_doc(self, file_path):
+    async def aload_document(self, file_path):
         pages = pymupdf4llm.to_markdown(
             file_path,
             write_images=False,
@@ -61,7 +55,8 @@ class Custompymupdf4llm(BaseLoader):
                 'page_sep': self.page_sep
             }
         )
-    
+
+
 
 class AudioTranscriber(metaclass=SingletonMeta):
     def __init__(self, device='cpu', compute_type='float32', model_name='large-v2', language='fr'):
@@ -87,7 +82,7 @@ class VideoAudioLoader(BaseLoader):
         torch.cuda.empty_cache()
 
 
-    async def aload_doc(self, file_path):
+    async def aload_document(self, file_path):
         path = Path(file_path)
         if path.suffix not in self.formats:
             logger.warning(
@@ -127,6 +122,8 @@ class VideoAudioLoader(BaseLoader):
             }
         )
 
+
+
 class CustomPPTLoader(BaseLoader):
     doc_loaders = {
         '.pptx': UnstructuredPowerPointLoader, 
@@ -160,7 +157,7 @@ class CustomPPTLoader(BaseLoader):
                 grouped_elements[doc.metadata.get('element_id')].append(doc)
         return grouped_elements
     
-    async def aload_doc(self, file_path):
+    async def aload_document(self, file_path):
         path = Path(file_path)
         cls_loader = CustomPPTLoader.doc_loaders.get(path.suffix, None)
 
@@ -212,7 +209,7 @@ class CustomPyMuPDFLoader(BaseLoader):
         self.loader_args = loader_args
         self.page_sep = page_sep
 
-    async def aload_doc(self, file_path):
+    async def aload_document(self, file_path):
         loader = PyMuPDFLoader(
             file_path=file_path,
             **self.loader_args
@@ -238,19 +235,18 @@ class CustomDocLoader(BaseLoader):
         self.page_sep = page_sep
     
     
-    async def aload_doc(self, file_path):
+    async def aload_document(self, file_path):
         path = Path(file_path)
         cls_loader = CustomDocLoader.doc_loaders.get(path.suffix, None)
 
         if cls_loader is None:
-            raise f"This loader only supports {CustomDocLoader.doc_loaders.keys()} format"
+            raise ValueError(f"This loader only supports {CustomDocLoader.doc_loaders.keys()} format")
         
         loader = cls_loader(
             file_path=str(file_path), 
             mode='single',
             **self.loader_args
         )
-
         pages = await loader.aload()
 
         content = ' '.join([p.page_content for p in pages])
@@ -264,79 +260,41 @@ class CustomDocLoader(BaseLoader):
         )
 
 
-class GeneralLoader:
-    def __init__(self, recursive=True, batch_size=16) -> None:
-        self.recursive = recursive
-        self.bs = batch_size
+class DocSerializer:
+    async def serialize_documents(self, path: str | Path, recursive=True) -> AsyncGenerator[Document, None]:
+        p = AsyncPath(path)
 
-    async def doc_generator(self, path) -> AsyncGenerator[list[Document], None]:
-        p = Path(path)
-        if p.is_file():
-            doc_batch = []
-            
-            async for doc in load_documents([p]):  # async iteration
-                doc_batch.append(doc)
-            
-            # TODO: doc_batch = await load_documents([p])
-        
-            yield doc_batch
+        if await p.is_file():
+            pattern = f"**/*{type}"
+            loader: BaseLoader = LOADERS.get(p.suffix)
+            logger.info(f'Loading {type} files.')
+            doc: Document = await loader().aload_document(file_path=file)
+            yield doc
 
 
-        if p.is_dir():
-            for file_type in LOADERS.keys(): # TODO Rendre ceci async: Priority 0
-                pattern = f"**/*{file_type}"
+        is_dir = await p.is_dir()
+        if is_dir:
+            for type, loader in LOADERS.items(): # TODO Rendre ceci async: Priority 0
+                pattern = f"**/*{type}"
+                logger.info(f'Loading {type} files.')
+                files = get_files(path, pattern, recursive)
 
-                files = get_files(path, pattern, self.recursive)
-                files2 = get_files(path, pattern, self.recursive)
-
-                n_files = len(list(files2))
-                n_batches = math.ceil(n_files / self.bs)
-                logger.info(f'Loading {n_files} {file_type} files.')
-
-                async for f_batch in tqdm_asyncio(get_batches(files, batch_size=self.bs), total=n_batches, desc=f"Loading {file_type} files..."):
-                    doc_batch = []
-                    async for doc in load_documents(f_batch):  # async iteration
-                        doc_batch.append(doc)
-                    
-                    yield doc_batch  # yield individual batches
-
-def get_files(path, pattern, recursive):
-
-    p = Path(path)
-    files = p.rglob(pattern) if recursive else p.glob(recursive)
-
-    # TODO: rendre le generator async ==> Faire du batching à la volée
-    # b = []
-    # async for f in files:
-    #     b.append(f)
-    #     # if size(b) == bs:
-    #     yield b
-
-    return files
-
-
-async def load_documents(paths: list[Path]):
-    # Use Terms like Serialize / Unserialize
-    file_type = paths[0].suffix
-    loader: BaseLoader = LOADERS.get(file_type)()
-    async for doc in loader.load(paths):  # async iteration
-        yield doc  # yield each document asynchronously
-
-
-async def get_batches(generator, batch_size=16):
-    it = iter(generator)
-    while True:
-        batch = list(itertools.islice(it, batch_size))
-        if not batch:
-            break
-        yield batch
+                async for file in files:
+                    doc: Document = await loader().aload_document(file_path=file)
+                    print(f"==> Serialized: {file}")
+                    yield doc
 
 
 
+async def get_files(path, pattern, recursive) -> AsyncGenerator:
+    p = AsyncPath(path)
+    async for file in (p.rglob(pattern) if recursive else p.glob(pattern)):
+        yield file
 
-LOADERS = {
+
+
+LOADERS: Dict[str, BaseLoader] = {
     '.pdf': CustomPyMuPDFLoader,
-
     '.docx': CustomDocLoader,
     '.doc': CustomDocLoader,
     '.odt': CustomDocLoader,
@@ -346,15 +304,24 @@ LOADERS = {
 }
 
 
-
 if __name__ == "__main__":
     async def main():
-        loader = GeneralLoader(recursive=True, batch_size=16)
-        dir_path = "../../app/upload_dir/Sources_RAG"  # Replace with your actual directory path
+        loader = DocSerializer()
+        dir_path = "/home/ubuntu/projects/ahmath/ragondin_1/app/upload_dir/Sources_RAG"  # Replace with your actual directory path
 
-        # Use the doc_generator method
-        async for doc_batch in loader.doc_generator(dir_path):
-            print(f"Document source {doc_batch[0]}")
-            print("-" * 50)
-
+        async def g(d):
+            await asyncio.sleep(random.randint(1, 4))
+            print(f"Processed: {d.metadata['source']}")
+            return d
+        
+        tasks = []
+        async for doc in loader.serialize_documents(dir_path, recursive=True):
+            tasks.append(
+                asyncio.create_task(g(doc))
+            )
+        
+        for completed_task in asyncio.as_completed(tasks):
+            d = await completed_task
+            pass
+                    
     asyncio.run(main())

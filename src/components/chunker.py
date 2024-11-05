@@ -5,15 +5,13 @@ from typing import AsyncGenerator
 from langchain_core.documents.base import Document
 import re
 
-import torch 
-
 class BaseChunker(metaclass=ABCMeta):
     @abstractmethod
     def __init__(self) -> None:
         pass
 
     @abstractmethod
-    def split(self, docs: list[Document]):
+    def split_document(self, doc: Document):
         pass
 
 
@@ -26,13 +24,16 @@ class RecursiveSplitter(BaseChunker):
             chunk_overlap=chunk_overlap,
             **args
         )
+
     
-    def split_doc(self, full_doc: Document):
+
+    def split_document(self, doc: Document):
         text = ''
         page_idx = []
-        source = full_doc.metadata["source"]
-        page_sep = full_doc.metadata["page_sep"]
-        pages: list[str] = full_doc.page_content.split(sep=page_sep)
+        source = doc.metadata["source"]
+        page_sep = doc.metadata["page_sep"]
+        pages: list[str] = doc.page_content.split(sep=page_sep)
+
 
         start_index = 0
         for page_num, p in enumerate(pages, start=1):
@@ -72,21 +73,13 @@ class RecursiveSplitter(BaseChunker):
                     "source": source,
                 }
                 filtered_chunks.append(chunk)
-        
-        gc.collect()
-        torch.cuda.empty_cache()
+
         return filtered_chunks
 
 
-    async def split(self, batch_docs: AsyncGenerator[list[Document], None]):
-        async for b in batch_docs:
-            # doc_batch = await asyncio.gather(*[self.split_doc(doc) async for doc in b])
-            # yield doc_batch
-            yield sum(
-                list(map(self.split_doc, b)),
-                []
-            )
-
+    # async def split(self, doc_generator: AsyncGenerator[Document, None]):
+    #     async for doc in doc_generator:
+    #         yield self.split_doc(doc)
         
 class SemanticSplitter(BaseChunker):
     def __init__(self, min_chunk_size: int = 1000, embeddings = None, breakpoint_threshold_amount=85, **args) -> None:
@@ -101,12 +94,12 @@ class SemanticSplitter(BaseChunker):
             **args
         )
     
-    def split_doc(self, full_doc: Document):
+    def split_document(self, doc: Document):
         text = ''
         page_idx = []
-        source = full_doc.metadata["source"]
-        page_sep = full_doc.metadata["page_sep"]
-        pages = full_doc.page_content.split(sep=page_sep)
+        source = doc.metadata["source"]
+        page_sep = doc.metadata["page_sep"]
+        pages = doc.page_content.split(sep=page_sep)
 
         start_index = 0
         for page_num, page_txt in enumerate(pages, start=1):
@@ -146,12 +139,12 @@ class SemanticSplitter(BaseChunker):
         return filtered_chunks
 
 
-    async def split(self, batch_docs: AsyncGenerator[list[Document], None]):
-        async for b in batch_docs:
-            yield sum(
-                list(map(self.split_doc, b)),
-                []
-            )
+    # async def split(self, batch_docs: AsyncGenerator[Document]):
+    #     async for b in batch_docs:
+    #         yield sum(
+    #             list(map(self.split_doc, b)),
+    #             []
+    #         )
 
 
 CHUNKERS = {

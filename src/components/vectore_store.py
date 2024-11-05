@@ -1,10 +1,14 @@
 from abc import ABCMeta, abstractmethod
+import asyncio
 from collections import defaultdict
+import random
 from typing import Coroutine, Generator, Union
 from qdrant_client import QdrantClient, models
 from langchain_community.embeddings import HuggingFaceBgeEmbeddings, HuggingFaceEmbeddings
 from langchain_core.documents.base import Document
 from langchain_qdrant import QdrantVectorStore, FastEmbedSparse, RetrievalMode
+import torch
+from .chunker import BaseChunker
 
 
 # https://python-client.qdrant.tech/qdrant_client.qdrant_client
@@ -109,18 +113,78 @@ class QdrantDB(BaseVectorDd):
             self.logger.info(f"As the collection `{collection_name}` is non-existant, it's created.")
 
 
-    async def async_add_documents(self, batch_gen: Generator[list[Document], None, None]) -> None:
+    async def async_add_documents(self, 
+            doc_generator, 
+            chunker: BaseChunker, 
+            document_batch_size: int=6,
+            max_concurrent_gpu_ops: int = 5,
+            max_queued_batches: int = 2
+        ) -> None:
         """
-        Add docs to the vectore store in a async mode.
+        Asynchronously process documents through a GPU-based chunker using a producer-consumer pattern.
+        
+        This implementation maintains high GPU utilization by preparing batches ahead of time while
+        the current batch is being processed. It uses a queue system to manage document batches and
+        controls GPU memory usage through semaphores.
 
         Args:
-            chuncked_docs (list): The chunks of data to be indexed.
+            doc_generator: An async iterator yielding documents to process
+            chunker (BaseChunker): The chunker instance that will split documents using GPU or CPU
+            document_batch_size (int): Number of documents to process in each batch. Default: 6
+            max_concurrent_gpu_ops (int): Maximum number of concurrent GPU operations. Default: 5
+            max_queued_batches (int): Number of batches to prepare ahead in queue. Default: 2
         """
-        # https://github.com/langchain-ai/langchain/issues/15310
 
-        async for item in batch_gen:
-            s = await self.vector_store.aadd_documents(item)
-            print(s)
+        gpu_semaphore = asyncio.Semaphore(max_concurrent_gpu_ops) # Only allow 6 GPU operation at a time
+        batch_queue = asyncio.Queue(maxsize=max_queued_batches)
+    
+        async def chunk(doc):
+            async with gpu_semaphore:
+                chunks = await asyncio.to_thread(chunker.split_document, doc) # uses GPU
+                print(f"Processed doc: {doc.metadata['source']}")
+                torch.cuda.empty_cache()
+                return chunks
+            
+
+        async def producer():
+            current_batch = []
+            async for doc in doc_generator:
+                current_batch.append(doc)
+                
+                if len(current_batch) >= document_batch_size:
+                    await batch_queue.put(current_batch)
+                    current_batch = []
+            
+            # Put remaining documents
+            if current_batch:
+                await batch_queue.put(current_batch)
+            # Signal end of production
+            await batch_queue.put(None)
+
+        async def consumer():
+            while True:
+                batch = await batch_queue.get()
+                if batch is None:  # End signal
+                    break
+                    
+                tasks = [asyncio.create_task(chunk(doc)) for doc in batch]
+                chunks_list = await asyncio.gather(*tasks)
+                all_chunks = sum(chunks_list, [])
+                
+                if all_chunks:
+                    await self.vector_store.aadd_documents(all_chunks)
+                
+                batch_queue.task_done()
+                
+    
+        # Run producer and consumer concurrently
+        producer_task = asyncio.create_task(producer())
+        consumer_task = asyncio.create_task(consumer())
+        
+        # Wait for both to complete
+        await asyncio.gather(producer_task, consumer_task)
+
+                
 
 
     async def async_sim_search(self, query: str, top_k: int = 5):
@@ -190,6 +254,7 @@ class QdrantDB(BaseVectorDd):
                         
         return list(retrieved_chunks.values())
     
+
 
 CONNECTORS = {
     "qdrant": QdrantDB

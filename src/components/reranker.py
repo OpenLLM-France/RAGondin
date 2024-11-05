@@ -1,3 +1,4 @@
+import asyncio
 from ragatouille import RAGPretrainedModel
 from loguru import logger
 from langchain_core.documents.base import Document
@@ -16,7 +17,9 @@ class Reranker:
         self.model = RAGPretrainedModel.from_pretrained(
             config.reranker["model_name"]
         )
-
+        
+        # Semaphore to limit concurrent GPU operations
+        self.gpu_semaphore = asyncio.Semaphore(5)  # Only allow 5 GPU operation at a time
         self.logger = logger
         self.logger.info("Reranker initialized...")
 

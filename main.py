@@ -9,7 +9,7 @@ indexer = Indexer(config, logger)
 
 async def main():
     start = time.time()
-    await indexer.add_files2vdb(path='./app/upload_dir/test_data')
+    await indexer.add_files2vdb(path='./app/upload_dir/S2_RAG/Sources RAG')
     ragPipe = RagPipeline(config=config)
     # await ragPipe.indexer.add_files2vdb("./app/upload_dir")
     end = time.time()
