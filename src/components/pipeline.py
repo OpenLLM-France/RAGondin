@@ -60,7 +60,6 @@ class Indexer:
             logger=logger
         )
         self.logger = logger
-        self.semaphore = Semaphore(6)
         self.logger.info("Indexer initialized...")
 
 

@@ -1,6 +1,5 @@
 from abc import abstractmethod, ABC
 import asyncio
-import itertools
 import os
 from collections import defaultdict
 import gc
@@ -9,7 +8,6 @@ import whisperx
 from .utils import SingletonMeta
 from pydub import AudioSegment
 import torch
-import math
 from pathlib import Path
 from typing import AsyncGenerator
 from langchain_core.documents.base import Document
@@ -22,11 +20,8 @@ from langchain_community.document_loaders import (
 from langchain_community.document_loaders.word_document import UnstructuredWordDocumentLoader
 import pymupdf4llm
 from loguru import logger
-from tqdm.asyncio import tqdm  
-from tqdm.asyncio import tqdm_asyncio # For async progress bars
 from aiopath import AsyncPath
 from typing import Dict
-
 
 
 from langchain_community.document_loaders import UnstructuredXMLLoader, PyPDFLoader
@@ -39,11 +34,6 @@ class BaseLoader(ABC):
     @abstractmethod
     async def aload_document(self, file_path):
         pass
-
-    async def load(self, file_paths: list[Path | str]): 
-        for fp in file_paths:
-            yield await self.aload_document(fp)
-
 
 class Custompymupdf4llm(BaseLoader):
     def __init__(self, page_sep: str='[PAGE_SEP]', **loader_args) -> None:
@@ -252,13 +242,11 @@ class CustomDocLoader(BaseLoader):
         if cls_loader is None:
             raise ValueError(f"This loader only supports {CustomDocLoader.doc_loaders.keys()} format")
         
-        
         loader = cls_loader(
             file_path=str(file_path), 
             mode='single',
             **self.loader_args
         )
-
         pages = await loader.aload()
 
         content = ' '.join([p.page_content for p in pages])
@@ -273,22 +261,27 @@ class CustomDocLoader(BaseLoader):
 
 
 class DocSerializer:
-    async def serialize_documents(self, path, recursive=True) -> AsyncGenerator[Document, None]:
+    async def serialize_documents(self, path: str | Path, recursive=True) -> AsyncGenerator[Document, None]:
         p = AsyncPath(path)
+
+        if await p.is_file():
+            pattern = f"**/*{type}"
+            loader: BaseLoader = LOADERS.get(p.suffix)
+            logger.info(f'Loading {type} files.')
+            doc: Document = await loader().aload_document(file_path=file)
+            yield doc
+
 
         is_dir = await p.is_dir()
         if is_dir:
-            
             for type, loader in LOADERS.items(): # TODO Rendre ceci async: Priority 0
                 pattern = f"**/*{type}"
                 logger.info(f'Loading {type} files.')
-
                 files = get_files(path, pattern, recursive)
-                # files2 = get_files(path, pattern, recursive)
 
                 async for file in files:
                     doc: Document = await loader().aload_document(file_path=file)
-                    print(f"==> Loaded: {file}")
+                    print(f"==> Serialized: {file}")
                     yield doc
 
 
@@ -302,12 +295,12 @@ async def get_files(path, pattern, recursive) -> AsyncGenerator:
 
 LOADERS: Dict[str, BaseLoader] = {
     '.pdf': CustomPyMuPDFLoader,
-    # '.docx': CustomDocLoader,
-    # '.doc': CustomDocLoader,
-    # '.odt': CustomDocLoader,
+    '.docx': CustomDocLoader,
+    '.doc': CustomDocLoader,
+    '.odt': CustomDocLoader,
 
-    # '.mp4': VideoAudioLoader,
-    # '.pptx': CustomPPTLoader,
+    '.mp4': VideoAudioLoader,
+    '.pptx': CustomPPTLoader,
 }
 
 
@@ -317,7 +310,7 @@ if __name__ == "__main__":
         dir_path = "/home/ubuntu/projects/ahmath/ragondin_1/app/upload_dir/Sources_RAG"  # Replace with your actual directory path
 
         async def g(d):
-            await asyncio.sleep(random.randint(1, 2))
+            await asyncio.sleep(random.randint(1, 4))
             print(f"Processed: {d.metadata['source']}")
             return d
         
@@ -331,5 +324,4 @@ if __name__ == "__main__":
             d = await completed_task
             pass
                     
-
     asyncio.run(main())

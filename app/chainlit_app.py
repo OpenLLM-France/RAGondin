@@ -21,13 +21,13 @@ async def set_starters():
     return [
         cl.Starter(
             label="OpenLLM France",
-            message="Objectif d'OpenLLM France et les enjeux de ces projet?",
+            message="Objectifs d'OpenLLM France et les enjeux de ces projet?",
             icon="/public/idea.svg",
         ),
 
         cl.Starter(
                 label="Produits de Linagora",
-                message="Parle moi du Pack Twake et du produit LinTo?",
+                message="Parle moi du Pack Twake et de LinTo?",
                 icon="/public/labor-man-labor.svg",
         ),
 
