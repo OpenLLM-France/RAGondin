@@ -31,8 +31,8 @@ def format_context(docs: list[Document]) -> str:
         page = doc.metadata["page"]
 
         document = f"""
-        Document ID: {doc_id}
-        Content: \n{doc.page_content.strip()}\n
+        document id: {doc_id}
+        content: \n{doc.page_content.strip()}\n
         """
         # Source: {source} (Page: {page})
     

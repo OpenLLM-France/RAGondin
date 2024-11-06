@@ -19,12 +19,11 @@ class Reranker:
         )
         
         # Semaphore to limit concurrent GPU operations
-        self.gpu_semaphore = asyncio.Semaphore(5)  # Only allow 5 GPU operation at a time
+        self.semaphore = asyncio.Semaphore(5)  # Only allow 5 GPU operation at a time
         self.logger = logger
         self.logger.info("Reranker initialized...")
 
     async def rerank(self, question: str, docs_chunks: list[Document], k: int = 5) -> list[Document]:
-        logger.info("Reranking documents ...")
         """
         Rerank documents by relevancy with respect to the given query.
 
@@ -36,16 +35,19 @@ class Reranker:
         Returns:
             list[str]: Top k reranked document strings.
         """
-        docs_unique = [doc for doc in drop_duplicates(docs_chunks, self.logger)]
-        k = min(k, len(docs_unique)) # k must be <= the number of documents
 
-        ranked_txt = await asyncio.to_thread(
-            lambda : self.model.rerank(question, [d.page_content for d in docs_unique], k=k)
-        )
+        logger.info("Reranking documents ...")
+        async with self.semaphore:
+            docs_unique = [doc for doc in drop_duplicates(docs_chunks, self.logger)]
+            k = min(k, len(docs_unique)) # k must be <= the number of documents
 
-        ranked_docs = [doc for doc in original_docs(ranked_txt, docs_unique)]
-        return ranked_docs
-    
+            ranked_txt = await asyncio.to_thread(
+                lambda : self.model.rerank(question, [d.page_content for d in docs_unique], k=k)
+            )
+
+            ranked_docs = [doc for doc in original_docs(ranked_txt, docs_unique)]
+            return ranked_docs
+        
 
 def original_docs(ranked_txt, docs: list[Document]):
     for doc_txt in ranked_txt:

@@ -57,7 +57,6 @@ class Custompymupdf4llm(BaseLoader):
         )
 
 
-
 class AudioTranscriber(metaclass=SingletonMeta):
     def __init__(self, device='cpu', compute_type='float32', model_name='large-v2', language='fr'):
         self.model = whisperx.load_model(
@@ -262,7 +261,7 @@ class CustomDocLoader(BaseLoader):
 
 class DocSerializer:
     async def serialize_documents(self, path: str | Path, recursive=True) -> AsyncGenerator[Document, None]:
-        p = AsyncPath(path)
+        p = await AsyncPath(path)
 
         if await p.is_file():
             pattern = f"**/*{type}"
@@ -292,6 +291,7 @@ async def get_files(path, pattern, recursive) -> AsyncGenerator:
         yield file
 
 
+# TODO create a Meta class that aggregates registery of supported documents from each child class
 
 LOADERS: Dict[str, BaseLoader] = {
     '.pdf': CustomPyMuPDFLoader,
@@ -302,6 +302,8 @@ LOADERS: Dict[str, BaseLoader] = {
     '.mp4': VideoAudioLoader,
     '.pptx': CustomPPTLoader,
 }
+
+
 
 
 if __name__ == "__main__":

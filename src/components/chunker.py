@@ -76,11 +76,6 @@ class RecursiveSplitter(BaseChunker):
 
         return filtered_chunks
 
-
-    # async def split(self, doc_generator: AsyncGenerator[Document, None]):
-    #     async for doc in doc_generator:
-    #         yield self.split_doc(doc)
-        
 class SemanticSplitter(BaseChunker):
     def __init__(self, min_chunk_size: int = 1000, embeddings = None, breakpoint_threshold_amount=85, **args) -> None:
         from langchain_experimental.text_splitter import SemanticChunker
@@ -137,14 +132,6 @@ class SemanticSplitter(BaseChunker):
                 filtered_chunks.append(semantic_chunk)
         
         return filtered_chunks
-
-
-    # async def split(self, batch_docs: AsyncGenerator[Document]):
-    #     async for b in batch_docs:
-    #         yield sum(
-    #             list(map(self.split_doc, b)),
-    #             []
-    #         )
 
 
 CHUNKERS = {

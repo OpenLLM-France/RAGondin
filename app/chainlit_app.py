@@ -2,7 +2,7 @@ from pathlib import Path
 import chainlit as cl
 import sys, os, torch
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../')))
-from src.components import RagPipeline, Config, AudioTranscriber
+from src.components import RagPipeline, Config #, AudioTranscriber
 from loguru import logger
 from io import BytesIO
 
@@ -78,7 +78,6 @@ async def on_chat_start():
 @cl.on_message
 async def on_message(message: cl.Message):
     question = message.content
-
     async with cl.Step(name="Searching for relevant documents...") as step:
         stream, _, sources = await ragPipe.run(question)
     await step.remove()
@@ -98,6 +97,7 @@ async def on_message(message: cl.Message):
 
     await msg.stream_token( '\n\n' + '-'*50 + "\n\nRetreived Docs: \n" + '\n'.join(source_names))
     await msg.send()
+
 
 
 # from pydub import AudioSegment
@@ -141,6 +141,9 @@ async def on_message(message: cl.Message):
     
 #     except Exception as e:
 #         await cl.Message(content=f"Error processing audio: {str(e)}").send()
+
+
+# chainlit run chainlit_app.py --host 0.0.0.0 --port 8000 --root-path /chainlit
 
 
 if __name__ == "__main__":

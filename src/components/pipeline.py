@@ -1,4 +1,3 @@
-from asyncio import Semaphore
 import gc
 import sys
 
@@ -71,7 +70,7 @@ class Indexer:
             await self.connector.async_add_documents(
                 doc_generator=doc_generator, 
                 chunker=self.chunker, 
-                document_batch_size=6,
+                document_batch_size=4,
             )
             self.logger.info(f"Documents from {path} added.")
         except Exception as e:
@@ -149,10 +148,8 @@ class RagPipeline:
                 contextualized_question, 
                 db=self.indexer.connector
             )
-
         return docs, contextualized_question
     
-
 
     async def run(self, question: str="", chat_history_api: list[AIMessage | HumanMessage] = None):
         if chat_history_api is None: 
