@@ -23,6 +23,7 @@ __pycache__/
 **/*.ipynb
 CR.md
 
+
 # Ignore Python bytecode files
 *.pyc
 *.pyo
