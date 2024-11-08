@@ -42,7 +42,7 @@ class Reranker:
             k = min(k, len(docs_unique)) # k must be <= the number of documents
 
             ranked_txt = await asyncio.to_thread(
-                lambda : self.model.rerank(question, [d.page_content for d in docs_unique], k=k)
+                lambda : self.model.rerank(question, [d.page_content for d in docs_unique], k=k, bsize=4)
             )
 
             ranked_docs = [doc for doc in original_docs(ranked_txt, docs_unique)]

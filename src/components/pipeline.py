@@ -2,7 +2,7 @@ import gc
 import sys
 
 import torch
-from .chunker import BaseChunker, CHUNKERS
+from .chunker import BaseChunker, ChunkerFactory
 from langchain_core.documents.base import Document
 from .llm import LLM
 from .utils import format_context, load_sys_template
@@ -32,20 +32,8 @@ class Indexer:
     def __init__(self, config: Config, logger, device=None) -> None:
         # init the embedder model
         embedder = HFEmbedder(config, device=device)
-
         # init chunker 
-        chunker_params = dict(config.chunker)
-        name = chunker_params.pop("name")
-        for k, v in chunker_params.items():
-            try:
-                chunker_params[k] = int(v)
-            except: pass
-            
-
-        if name.startswith("semantic_splitter"):    
-            chunker_params.update({"embeddings": embedder.get_embeddings()})
-
-        self.chunker: BaseChunker = CHUNKERS[name](**chunker_params)
+        self.chunker: BaseChunker = ChunkerFactory.create_chunker(config, embedder=embedder.get_embeddings())
 
         # init the connector
         # TODO: Implement Factory Class that uses dbconfig
@@ -70,7 +58,7 @@ class Indexer:
             await self.connector.async_add_documents(
                 doc_generator=doc_generator, 
                 chunker=self.chunker, 
-                document_batch_size=4,
+                document_batch_size=2, # 4
             )
             self.logger.info(f"Documents from {path} added.")
         except Exception as e:

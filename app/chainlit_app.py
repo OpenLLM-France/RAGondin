@@ -1,6 +1,6 @@
 from pathlib import Path
 import chainlit as cl
-import sys, os, torch
+import sys, os, torch, yaml
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../')))
 from src.components import RagPipeline, Config #, AudioTranscriber
 from loguru import logger
@@ -15,27 +15,18 @@ ragPipe = RagPipeline(config=config, device="cpu")
 
 # https://github.com/Cinnamon/kotaemon/blob/main/libs/ktem/ktem/reasoning/prompt_optimization/suggest_followup_chat.py
 
-
 @cl.set_starters
 async def set_starters():
+    with open(APP_DIR / 'public' / 'conversation_starters.yaml') as file: # Load the YAML file
+        data = yaml.safe_load(file)
+        
     return [
         cl.Starter(
-            label="OpenLLM France",
-            message="Objectifs d'OpenLLM France et les enjeux de ces projet?",
-            icon="/public/idea.svg",
-        ),
-
-        cl.Starter(
-                label="Produits de Linagora",
-                message="Parle moi du Pack Twake et de LinTo?",
-                icon="/public/labor-man-labor.svg",
-        ),
-
-        cl.Starter(
-                label="Présentation de Linagora",
-                message="Fais moi une présentation de Linagora.",
-                icon= "/public/danger-triangle.svg",
+            label=item["label"],
+            message=item["message"],
+            icon=item["icon"]
         )
+        for item in data['starters']
     ]
      
 
@@ -68,6 +59,7 @@ def format_elements(sources, only_txt=True):
         source_names.append(s)               
     return elements, source_names
 
+
 @cl.on_chat_start
 async def on_chat_start():
     ragPipe._chat_history.clear()
@@ -95,7 +87,7 @@ async def on_message(message: cl.Message):
     if ragPipe.rag_mode == "ChatBotRag":
             ragPipe.update_history(question, answer_txt)
 
-    await msg.stream_token( '\n\n' + '-'*50 + "\n\nRetreived Docs: \n" + '\n'.join(source_names))
+    await msg.stream_token( '\n\n' + '-'*50 + "\n\nRetrieved Docs: \n" + '\n'.join(source_names))
     await msg.send()
 
 

@@ -261,7 +261,7 @@ class CustomDocLoader(BaseLoader):
 
 class DocSerializer:
     async def serialize_documents(self, path: str | Path, recursive=True) -> AsyncGenerator[Document, None]:
-        p = await AsyncPath(path)
+        p = AsyncPath(path)
 
         if await p.is_file():
             pattern = f"**/*{type}"
@@ -295,12 +295,12 @@ async def get_files(path, pattern, recursive) -> AsyncGenerator:
 
 LOADERS: Dict[str, BaseLoader] = {
     '.pdf': CustomPyMuPDFLoader,
-    '.docx': CustomDocLoader,
-    '.doc': CustomDocLoader,
-    '.odt': CustomDocLoader,
+    # '.docx': CustomDocLoader,
+    # '.doc': CustomDocLoader,
+    # '.odt': CustomDocLoader,
 
-    '.mp4': VideoAudioLoader,
-    '.pptx': CustomPPTLoader,
+    # '.mp4': VideoAudioLoader,
+    # '.pptx': CustomPPTLoader,
 }
 
 

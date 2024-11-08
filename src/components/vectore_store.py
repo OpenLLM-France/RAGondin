@@ -1,6 +1,7 @@
 from abc import ABCMeta, abstractmethod
 import asyncio
 from collections import defaultdict
+from functools import partial
 import random
 from typing import Coroutine, Generator, Union
 from qdrant_client import QdrantClient, models
@@ -117,8 +118,8 @@ class QdrantDB(BaseVectorDd):
             doc_generator, 
             chunker: BaseChunker, 
             document_batch_size: int=6,
-            max_concurrent_gpu_ops: int=5,
-            max_queued_batches: int=2
+            max_concurrent_gpu_ops: int=4, # 5
+            max_queued_batches: int=2 # 2
         ) -> None:
         """
         Asynchronously process documents through a GPU-based chunker using a producer-consumer pattern.
@@ -141,6 +142,7 @@ class QdrantDB(BaseVectorDd):
         async def chunk(doc):
             async with gpu_semaphore:
                 chunks = await asyncio.to_thread(chunker.split_document, doc) # uses GPU
+                # chunks = await asyncio.to_thread(asyncio.run, partial(chunker.split_document, doc)() )
                 print(f"Processed doc: {doc.metadata['source']}")
                 # torch.cuda.empty_cache()
                 return chunks
