@@ -17,7 +17,7 @@ from langchain_community.document_loaders import (
     UnstructuredWordDocumentLoader,
     UnstructuredPowerPointLoader
 )
-from langchain_community.document_loaders.word_document import UnstructuredWordDocumentLoader
+from langchain_community.document_loaders import UnstructuredWordDocumentLoader
 import pymupdf4llm
 from loguru import logger
 from aiopath import AsyncPath
@@ -107,8 +107,7 @@ class VideoAudioLoader(BaseLoader):
         if path.suffix != '.wav':
             os.remove(audio_path_wav)
 
-        model = self.transcriber.model
-        transcription_l = model.transcribe(audio, batch_size=self.batch_size)
+        transcription_l = self.transcriber.model.transcribe(audio, batch_size=self.batch_size)
         content = ' '.join([tr['text'] for tr in transcription_l['segments']])
 
         self.free_memory()
@@ -247,7 +246,6 @@ class CustomDocLoader(BaseLoader):
             **self.loader_args
         )
         pages = await loader.aload()
-
         content = ' '.join([p.page_content for p in pages])
 
         return Document(
@@ -264,10 +262,11 @@ class DocSerializer:
         p = AsyncPath(path)
 
         if await p.is_file():
+            type = p.suffix
             pattern = f"**/*{type}"
             loader: BaseLoader = LOADERS.get(p.suffix)
             logger.info(f'Loading {type} files.')
-            doc: Document = await loader().aload_document(file_path=file)
+            doc: Document = await loader().aload_document(file_path=str(p))
             yield doc
 
 
@@ -292,17 +291,15 @@ async def get_files(path, pattern, recursive) -> AsyncGenerator:
 
 
 # TODO create a Meta class that aggregates registery of supported documents from each child class
-
 LOADERS: Dict[str, BaseLoader] = {
     '.pdf': CustomPyMuPDFLoader,
-    # '.docx': CustomDocLoader,
-    # '.doc': CustomDocLoader,
-    # '.odt': CustomDocLoader,
+    '.docx': CustomDocLoader,
+    '.doc': CustomDocLoader,
+    '.odt': CustomDocLoader,
 
-    # '.mp4': VideoAudioLoader,
-    # '.pptx': CustomPPTLoader,
+    '.mp4': VideoAudioLoader,
+    '.pptx': CustomPPTLoader,
 }
-
 
 
 

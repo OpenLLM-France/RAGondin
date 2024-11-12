@@ -25,7 +25,6 @@ from langchain_core.messages import (
 )
 from collections import deque
 
-
 class Indexer:
     """This class bridges static files with the vector store database.
     """
@@ -58,7 +57,7 @@ class Indexer:
             await self.connector.async_add_documents(
                 doc_generator=doc_generator, 
                 chunker=self.chunker, 
-                document_batch_size=2, # 4
+                document_batch_size=4, # 4
             )
             self.logger.info(f"Documents from {path} added.")
         except Exception as e:

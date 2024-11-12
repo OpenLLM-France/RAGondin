@@ -118,7 +118,7 @@ class QdrantDB(BaseVectorDd):
             doc_generator, 
             chunker: BaseChunker, 
             document_batch_size: int=6,
-            max_concurrent_gpu_ops: int=4, # 5
+            max_concurrent_gpu_ops: int=5, # 5
             max_queued_batches: int=2 # 2
         ) -> None:
         """
@@ -136,17 +136,14 @@ class QdrantDB(BaseVectorDd):
             max_queued_batches (int): Number of batches to prepare ahead in queue. Default: 2
         """
 
-        gpu_semaphore = asyncio.Semaphore(max_concurrent_gpu_ops) # Only allow 6 GPU operation at a time
+        gpu_semaphore = asyncio.Semaphore(max_concurrent_gpu_ops) # Only allow max_concurrent_gpu_ops GPU operation at a time
         batch_queue = asyncio.Queue(maxsize=max_queued_batches)
 
         async def chunk(doc):
             async with gpu_semaphore:
                 chunks = await asyncio.to_thread(chunker.split_document, doc) # uses GPU
-                # chunks = await asyncio.to_thread(asyncio.run, partial(chunker.split_document, doc)() )
-                print(f"Processed doc: {doc.metadata['source']}")
-                # torch.cuda.empty_cache()
+                self.logger.info(f"Processed doc: {doc.metadata['source']}")
                 return chunks
-            
 
         async def producer():
             current_batch = []
@@ -167,28 +164,27 @@ class QdrantDB(BaseVectorDd):
                     await batch_queue.put(None)
 
 
-        async def consumer():
+        async def consumer(consumer_id=0):
             while True:
                 batch = await batch_queue.get()
                 if batch is None:  # End signal
                     batch_queue.task_done()
+                    self.logger.info(f"Consumer {consumer_id} ended")
                     break
-                    
+                
                 tasks = [asyncio.create_task(chunk(doc)) for doc in batch]
                 chunks_list = await asyncio.gather(*tasks, return_exceptions=True)
-                # TODO Handle exceptions
                 all_chunks = sum(chunks_list, [])
                 
                 if all_chunks:
                     await self.vector_store.aadd_documents(all_chunks)
-                    print("INSERTED")
+                    self.logger.info("INSERTED")
+                    
                 batch_queue.task_done()
                 
         # Run producer and consumer concurrently
         producer_task = asyncio.create_task(producer())
-        # consumer_task = asyncio.create_task(consumer())
-        consumer_tasks = [asyncio.create_task(consumer()) for _ in range(max_queued_batches)]
-        
+        consumer_tasks = [asyncio.create_task(consumer(consumer_id=i)) for i in range(max_queued_batches)]
 
         # Wait for producer to complete and queue to be empty
         await producer_task

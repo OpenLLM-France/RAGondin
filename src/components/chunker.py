@@ -2,7 +2,7 @@ import re
 import asyncio
 from .llm import LLM
 from typing import Optional
-from abc import ABCMeta, abstractmethod
+from abc import ABCMeta, abstractmethod, ABC
 from langchain_openai import ChatOpenAI
 from langchain_core.documents.base import Document
 from langchain_core.prompts import ChatPromptTemplate
@@ -10,30 +10,38 @@ from langchain_core.output_parsers import StrOutputParser
 from langchain_community.embeddings import HuggingFaceBgeEmbeddings, HuggingFaceEmbeddings
 from langchain.callbacks import StdOutCallbackHandler
 from loguru import logger
+from langchain_core.runnables import RunnableLambda
+import openai
 
-class BaseChunker(metaclass=ABCMeta):
+class BaseChunker(ABC):
     @abstractmethod
     def __init__(self) -> None:
         pass
 
     @abstractmethod
-    async def split_document(self, doc: Document):
+    def split_document(self, doc: Document):
         pass
+
+    
 
 
 
 templtate = """
-<document> 
+<document>
 {origin}
-</document> 
-Here is the chunk we want to situate/contextualize within the whole document named `{source}`. 
-The name of the document itself contains relevant info (employees CV, Tutorials, etc.) about the document, so take that into account. 
-<chunk> 
-{chunk} 
-</chunk> 
-Please give a short succinct context to situate this chunk within the overall document for the purposes of improving search retrieval of the chunk. 
-Answer only with the succinct context and nothing else in the same language as the provided document and chunk.     
+</document>
+
+This is the chunk we want to situate within the document named `{source}`.
+The document’s name itself may contain relevant information (such as "employees CV," "tutorials," etc.) that can help contextualize the content. 
+
+<chunk>
+{chunk}
+</chunk>
+
+Please provide a brief, succinct context to situate this chunk within the document, specifically to improve search retrieval of this chunk. 
+Respond only with the concise context in the same language as the provided document and chunk.
 """
+
 
 prompt = ChatPromptTemplate.from_template(
     template=templtate
@@ -81,8 +89,8 @@ class RecursiveSplitter(BaseChunker):
         page_sep = doc.metadata["page_sep"]
         pages: list[str] = doc.page_content.split(sep=page_sep)
 
-
         start_index = 0
+        # We can apply apply this function 'split_text' once.
         for page_num, p in enumerate(pages, start=1):
             text += ' ' + p
             c = ' '.join(
@@ -103,6 +111,7 @@ class RecursiveSplitter(BaseChunker):
             self.splitter.split_text(text)
         )
         # chunking the full text
+        filtered_chunks = []
         chunks = self.splitter.create_documents([text])
 
         i = 0
@@ -117,7 +126,9 @@ class RecursiveSplitter(BaseChunker):
                     "page": page_idx[i]["page"], 
                     "source": source,
                 }
-                chunk
+                filtered_chunks.append(chunk)
+        
+        return filtered_chunks
 
 
 class SemanticSplitter(BaseChunker):
@@ -141,31 +152,37 @@ class SemanticSplitter(BaseChunker):
             **args
         )
         self.contextual_retrieval = contextual_retrieval
-        self.gen_context = (prompt | llm | StrOutputParser())
+        self.context_generator = (prompt | llm | StrOutputParser())
     
 
-    async def contextualize(self, b_chunks: list[str], pages: list[Document], source: str):
+    def contextualize(self, idxs: list, b_chunks: list[Document], pages: list[Document], source: str):
+        # TODO: consider adding previous paragraph
+        if not self.contextual_retrieval:
+            return [chunk.page_content for chunk in b_chunks]
+        
         origin = f"""first page: {pages[0]}\n\nlast page: {pages[-1]}"""
         try:
-            b_contexts = await self.gen_context\
+            b_contexts = self.context_generator\
                 .with_retry(
                     retry_if_exception_type=(Exception, ),
-                    wait_exponential_jitter=False,
-                    stop_after_attempt=4
+                    wait_exponential_jitter=True,
+                    stop_after_attempt=3
                 )\
-                .abatch(
-                    [{"origin": origin, 'chunk': chunk,'source': source} for chunk in b_chunks], 
-                    config={"callbacks": [StdOutCallbackHandler()]}
+                .batch(
+                    [
+                        {
+                            "origin": origin, 
+                            'chunk': chunk.page_content,'source': source
+                        } for idx, chunk in zip(idxs, b_chunks)
+                    ], 
+                    # config={"callbacks": [StdOutCallbackHandler()]}
                 )
 
             s = """chunk's context: {chunk_context}\n\n=> chunk: {chunk}"""
-            print(b_contexts)
-            return [s.format(chunk=chunk, chunk_context=chunk_context) for chunk, chunk_context in zip(b_chunks, b_contexts)]
+            return [s.format(chunk=chunk.page_content, chunk_context=chunk_context) for chunk, chunk_context in zip(b_chunks, b_contexts)]
         except Exception as e:
-            logger.warning(e)
-            return [f'{chunk}'.format(chunk=chunk) for chunk in zip(b_chunks)]
-
-
+            logger.warning(f"An error happened with document `{source}`: {e}")
+            return [chunk.page_content for chunk in b_chunks]
 
 
     def split_document(self, doc: Document):
@@ -195,30 +212,32 @@ class SemanticSplitter(BaseChunker):
             [' '.join(re.split(self.splitter.sentence_split_regex, text))]
         )
 
-        # if self.contextual_retrieval:
-        #     bs = 3
-        #     CH = []
-        #     for i in range(0, len(chunks), bs):
-        #         b_chunks = chunks[i:i+bs]
-        #         processed_b_chunks = await self.contextualize(b_chunks=b_chunks, pages=pages, source=source)
-        #         CH.extend(processed_b_chunks)
-            
-        #     logger.info("Done")
-
-
         i = 0
         filtered_chunks = []
-        for semantic_chunk in chunks:
-            start_idx = semantic_chunk.metadata["start_index"]
-            while not (page_idx[i]["start_idx"] <= start_idx <= page_idx[i]["end_idx"]) and i < len(page_idx)-1:
-                i += 1
+        batch_size = 4
+
+        for j in range(0, len(chunks), batch_size):
+            b_chunks = chunks[j:j+batch_size] 
+            idxs = [idx for idx in range(j, min(j+batch_size, len(chunks))) ]
             
-            if len(semantic_chunk.page_content.strip()) > 1:
-                semantic_chunk.metadata = {
-                    "page": page_idx[i]["page"], 
-                    "source": source,
-                }
-                filtered_chunks.append(semantic_chunk)
+            b_chunks_w_context = self.contextualize(
+                idxs=idxs, b_chunks=b_chunks, 
+                pages=pages, source=source
+            )
+
+            for chunk, b_chunk_w_context in zip(b_chunks, b_chunks_w_context):
+                start_idx = chunk.metadata["start_index"]
+
+                while not (page_idx[i]["start_idx"] <= start_idx <= page_idx[i]["end_idx"]) and i < len(page_idx)-1:
+                    i += 1
+            
+                if len(chunk.page_content.strip()) > 1:
+                    chunk.page_content = b_chunk_w_context
+                    chunk.metadata = {
+                        "page": page_idx[i]["page"], 
+                        "source": source,
+                    }
+                    filtered_chunks.append(chunk)
 
         return filtered_chunks
 

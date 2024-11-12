@@ -1,6 +1,6 @@
 from pathlib import Path
 import chainlit as cl
-import sys, os, torch, yaml
+import sys, os, yaml, torch
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../')))
 from src.components import RagPipeline, Config #, AudioTranscriber
 from loguru import logger
@@ -143,3 +143,5 @@ if __name__ == "__main__":
     from chainlit.cli import run_chainlit
     sys.argv.extend(["-w", "--no-cache"])
     run_chainlit(__file__)
+
+

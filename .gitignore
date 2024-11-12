@@ -4,6 +4,7 @@
 # generate folders
 .files/
 .chainlit/
+qdrant_storage/
 
 # other files and folders
 
@@ -22,6 +23,7 @@ __pycache__/
 *.ipynb
 **/*.ipynb
 CR.md
+
 
 
 # Ignore Python bytecode files
