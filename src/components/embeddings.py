@@ -1,51 +1,75 @@
-from abc import ABCMeta, abstractmethod
+from abc import abstractmethod, ABC
 from langchain_community.embeddings import HuggingFaceBgeEmbeddings, HuggingFaceEmbeddings
 import torch
+from omegaconf import OmegaConf
 
 
-class BaseEmbedder(metaclass=ABCMeta):
-    """Abstract class for embedders
+class ABCEmbedder(ABC):
+    """Abstract base class defining the interface for embedder implementations.
+
+    This class serves as a template for creating embedder classes that convert text
+    into vector representations using various embedding models.
     """
+
     @abstractmethod
     def get_embeddings(self):
+        """Return the embeddings model instance.
+
+        Returns:
+            Any: The embeddings model instance that can generate vector representations.
+        """
         pass
 
+
+# Dictionary mapping embedding model types to their corresponding classes
 HG_EMBEDDER_TYPE = {
     "huggingface_bge": HuggingFaceBgeEmbeddings,
     "huggingface": HuggingFaceEmbeddings
 }
 
-class HFEmbedder(BaseEmbedder):
-    """Factory class for loading HuggingFace embeddings models backend models.
+
+class HFEmbedder(ABCEmbedder):
+    """Factory class for loading and managing HuggingFace embedding models.
+
+    This class handles the initialization and configuration of various HuggingFace
+    embedding models, supporting both BGE and standard HuggingFace embeddings.
+
+    Args:
+        embedder_config (OmegaConf): Configuration object containing model parameters
+        device (str, optional): Device to run the model on ('cuda' or 'cpu'). 
+            Defaults to None, which auto-selects based on CUDA availability.
+    
+    Raises:
+        ValueError: If the specified model type is not supported or if initialization fails.
     """
-    def __init__(self, config, device=None) -> None:
-        """Initialize Embeddings.
 
-        Args:
-            model_type (str): Type of embedding model to use. Defaults to 'huggingface'.
-            model_name (str): Name of specific model.. Defaults to "thenlper/gte-small".
-        Raises:
-            ValueError: If invalid `model_type` passed or non-existant `model_name`.
-        """
+    def __init__(self, embedder_config: OmegaConf, device=None) -> None:
+        # Extract model type from config
+        model_type = embedder_config["type"]
 
-        model_type = config.embedder["type"]
         if model_type in HG_EMBEDDER_TYPE:
+            # Auto-select device if none specified
             if device is None:
                 device = 'cuda' if torch.cuda.is_available() else 'cpu'
+            
             try:
-                model_name = config.embedder["name"]
+                model_name = embedder_config["model_name"]
                 self.embedding = HG_EMBEDDER_TYPE[model_type](
                     model_name=model_name,
                     model_kwargs={"device": device, 'trust_remote_code': True},
-                    encode_kwargs={"normalize_embeddings": True} # , 'torch_dtype': torch.bfloat16},
+                    encode_kwargs={"normalize_embeddings": True}
                 )
             except Exception as e:
-                raise ValueError(f"An error occured: {e}")
+                raise ValueError(f"An error occurred during model initialization: {e}")
         else:
             raise ValueError(f"{model_type} is not a supported `model_type`")
 
+
     def get_embeddings(self) -> HuggingFaceBgeEmbeddings:
-        """
-        Return the generated embeddings. This will be used in the Vector DB.
+        """Retrieve the initialized embedding model.
+
+        Returns:
+            HuggingFaceBgeEmbeddings: The configured embedding model instance
+            ready for generating embeddings.
         """
         return self.embedding

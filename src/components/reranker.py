@@ -3,6 +3,8 @@ from ragatouille import RAGPretrainedModel
 from loguru import logger
 from langchain_core.documents.base import Document
 import asyncio
+import torch
+import gc
 
 class Reranker:
     """Reranks documents for a query using a RAG model."""
@@ -23,7 +25,7 @@ class Reranker:
         self.logger = logger
         self.logger.info("Reranker initialized...")
 
-    async def rerank(self, question: str, docs_chunks: list[Document], k: int = 5) -> list[Document]:
+    async def rerank(self, question: str, chunks: list[Document], k: int = 5) -> list[Document]:
         """
         Rerank documents by relevancy with respect to the given query.
 
@@ -38,13 +40,14 @@ class Reranker:
 
         logger.info("Reranking documents ...")
         async with self.semaphore:
-            docs_unique = [doc for doc in drop_duplicates(docs_chunks, self.logger)]
-            k = min(k, len(docs_unique)) # k must be <= the number of documents
+            k = min(k, len(chunks)) # k must be <= the number of documents
 
             ranked_txt = await asyncio.to_thread(
-                lambda : self.model.rerank(question, [d.page_content for d in docs_unique], k=k, bsize=4)
+                lambda : self.model.rerank(question, [d.page_content for d in chunks], k=k, bsize='auto')
             )
-            ranked_docs = [doc for doc in original_docs(ranked_txt, docs_unique)]
+            gc.collect()
+            torch.cuda.empty_cache()
+            ranked_docs = [doc for doc in original_docs(ranked_txt, chunks)]
             return ranked_docs
         
 
@@ -55,18 +58,6 @@ def original_docs(ranked_txt, docs: list[Document]):
                 yield doc
                 docs.remove(doc)
                 break
-
-
-def drop_duplicates(L: list[Document], logger):
-    seen = set()
-    for s in L:
-        val = s.page_content
-        if val not in seen:
-            seen.add(val)
-            yield s
-        else:
-            pass
-            # logger.info("Duplicata removed...")
 
 
 if __name__ == "__main__":

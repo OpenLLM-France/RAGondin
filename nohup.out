@@ -1,0 +1,549 @@
+2024-11-14 14:52:49 - Loaded .env file
+Usage: chainlit run [OPTIONS] TARGET
+Try 'chainlit run --help' for help.
+
+Error: Invalid value: File does not exist: chainlit_app.py
+/home/ubuntu/ahmath/RAGondin/.venv/lib/python3.12/site-packages/pyannote/audio/core/io.py:43: UserWarning: torchaudio._backend.set_audio_backend has been deprecated. With dispatcher enabled, this function is no-op. You can remove the function call.
+  torchaudio.set_audio_backend("soundfile")
+/home/ubuntu/ahmath/RAGondin/.venv/lib/python3.12/site-packages/pyannote/audio/pipelines/speaker_verification.py:43: UserWarning: torchaudio._backend.get_audio_backend has been deprecated. With dispatcher enabled, this function is no-op. You can remove the function call.
+  backend = torchaudio.get_audio_backend()
+INFO:speechbrain.utils.quirks:Applied quirks (see `speechbrain.utils.quirks`): [allow_tf32, disable_jit_profiling]
+INFO:speechbrain.utils.quirks:Excluded quirks specified by the `SB_DISABLE_QUIRKS` environment (comma-separated list): []
+/home/ubuntu/ahmath/RAGondin/.venv/lib/python3.12/site-packages/pyannote/audio/pipelines/speaker_verification.py:45: UserWarning: Module 'speechbrain.pretrained' was deprecated, redirecting to 'speechbrain.inference'. Please update your script. This is a change from SpeechBrain 1.0. See: https://github.com/speechbrain/speechbrain/releases/tag/v1.0.0
+  from speechbrain.pretrained import (
+/home/ubuntu/ahmath/RAGondin/.venv/lib/python3.12/site-packages/pyannote/audio/pipelines/speaker_verification.py:53: UserWarning: torchaudio._backend.set_audio_backend has been deprecated. With dispatcher enabled, this function is no-op. You can remove the function call.
+  torchaudio.set_audio_backend(backend)
+/home/ubuntu/ahmath/RAGondin/.venv/lib/python3.12/site-packages/pyannote/audio/tasks/segmentation/mixins.py:37: UserWarning: `torchaudio.backend.common.AudioMetaData` has been moved to `torchaudio.AudioMetaData`. Please update the import path.
+  from torchaudio.backend.common import AudioMetaData
+/home/ubuntu/ahmath/RAGondin/src/components/config.py:10: UserWarning: 
+The version_base parameter is not specified.
+Please specify a compatability version level, or None.
+Will assume defaults for version 1.1
+  with initialize(config_path=config_path, job_name="config_loader"):
+/home/ubuntu/ahmath/RAGondin/.venv/lib/python3.12/site-packages/hydra/_internal/defaults_list.py:251: UserWarning: In 'config': Defaults list is missing `_self_`. See https://hydra.cc/docs/1.2/upgrades/1.0_to_1.1/default_composition_order for more information
+  warnings.warn(msg, UserWarning)
+2024-11-14 16:58:28.598 | WARNING  | __main__:main:50 - Data will be upserted to the collection ida
+/home/ubuntu/ahmath/RAGondin/src/components/embeddings.py:57: LangChainDeprecationWarning: The class `HuggingFaceEmbeddings` was deprecated in LangChain 0.2.2 and will be removed in 1.0. An updated version of the class exists in the :class:`~langchain-huggingface package and should be used instead. To use it run `pip install -U :class:`~langchain-huggingface` and import as `from :class:`~langchain_huggingface import HuggingFaceEmbeddings``.
+  self.embedding = HG_EMBEDDER_TYPE[model_type](
+INFO:sentence_transformers.SentenceTransformer:Load pretrained SentenceTransformer: HIT-TMG/KaLM-embedding-multilingual-mini-v1
+INFO:sentence_transformers.SentenceTransformer:2 prompts are loaded, with the keys: ['query', 'document']
+Fetching 29 files:   0%|          | 0/29 [00:00<?, ?it/s]Fetching 29 files: 100%|██████████| 29/29 [00:00<00:00, 17238.49it/s]
+INFO:httpx:HTTP Request: GET http://localhost:6333/collections/ida/exists "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: GET http://localhost:6333/collections/ida/exists "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: PUT http://localhost:6333/collections/ida "HTTP/1.1 200 OK"
+2024-11-14 16:58:32.461 | INFO     | src.components.vectore_store:__init__:83 - As the collection `ida` is non-existant, it's created.
+2024-11-14 16:58:32.461 | INFO     | src.components.pipeline:__init__:36 - Indexer initialized...
+2024-11-14 16:58:32.467 | INFO     | src.components.loader:serialize_documents:313 - Loading .pdf files.
+/home/ubuntu/miniconda3/lib/python3.12/pathlib.py:169: RuntimeWarning: coroutine 'AsyncPath.is_dir' was never awaited
+  if not parent_path.is_dir():
+2024-11-14 16:58:33.897 | INFO     | src.components.loader:serialize_documents:313 - Loading .docx files.
+2024-11-14 16:58:33.900 | INFO     | src.components.loader:serialize_documents:313 - Loading .doc files.
+2024-11-14 16:58:33.903 | INFO     | src.components.loader:serialize_documents:313 - Loading .odt files.
+2024-11-14 16:58:33.913 | INFO     | src.components.loader:serialize_documents:313 - Loading .mp4 files.
+2024-11-14 16:58:33.916 | INFO     | src.components.loader:serialize_documents:313 - Loading .pptx files.
+2024-11-14 16:58:33.919 | INFO     | src.components.loader:serialize_documents:313 - Loading .txt files.
+2024-11-14 16:58:33.948 | INFO     | src.components.loader:serialize_documents:313 - Loading .html files.
+INFO:httpx:HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 200 OK"
+2024-11-14 16:58:43.801 | INFO     | src.components.vectore_store:chunk:132 - Processed doc: /home/ubuntu/data/Amerique_puissance_du_Nord_affirmation_du_Sud.pdf
+2024-11-14 16:58:43.864 | INFO     | src.components.vectore_store:chunk:132 - Processed doc: /home/ubuntu/data/g5-afrique.pdf
+2024-11-14 16:58:44.587 | INFO     | src.components.vectore_store:chunk:132 - Processed doc: /home/ubuntu/data/g3_asie_japon_chine_f.pdf
+INFO:httpx:HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 200 OK"
+2024-11-14 16:59:02.593 | INFO     | src.components.vectore_store:chunk:132 - Processed doc: /home/ubuntu/data/g3b-espaces-maritimes.pdf
+INFO:httpx:HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 200 OK"
+2024-11-14 16:59:07.008 | INFO     | src.components.vectore_store:chunk:132 - Processed doc: /home/ubuntu/data/attention_is_all.pdf
+INFO:httpx:HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 200 OK"
+2024-11-14 16:59:12.024 | INFO     | src.components.vectore_store:chunk:132 - Processed doc: /home/ubuntu/data/g2-mondialisation.pdf
+INFO:httpx:HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 200 OK"
+2024-11-14 16:59:30.064 | INFO     | src.components.vectore_store:chunk:132 - Processed doc: /home/ubuntu/data/lightweight_transformer.pdf
+INFO:httpx:HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: PUT http://localhost:6333/collections/ida/points?wait=true "HTTP/1.1 200 OK"
+2024-11-14 16:59:31.212 | INFO     | src.components.vectore_store:consumer:168 - INSERTED
+INFO:httpx:HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 200 OK"
+2024-11-14 16:59:37.920 | INFO     | src.components.vectore_store:chunk:132 - Processed doc: /home/ubuntu/data/Tyrannosaure.txt
+2024-11-14 16:59:38.021 | INFO     | src.components.vectore_store:chunk:132 - Processed doc: /home/ubuntu/data/election_présidentielle_américaine_2024.txt
+INFO:httpx:HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 200 OK"
+2024-11-14 16:59:40.523 | INFO     | src.components.vectore_store:chunk:132 - Processed doc: /home/ubuntu/data/g3-territoires.pdf
+2024-11-14 16:59:41.768 | INFO     | src.components.vectore_store:chunk:132 - Processed doc: /home/ubuntu/data/flashattention.pdf
+INFO:httpx:HTTP Request: PUT http://localhost:6333/collections/ida/points?wait=true "HTTP/1.1 200 OK"
+2024-11-14 16:59:43.636 | INFO     | src.components.vectore_store:consumer:168 - INSERTED
+INFO:httpx:HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 200 OK"
+2024-11-14 16:59:46.221 | INFO     | src.components.vectore_store:chunk:132 - Processed doc: /home/ubuntu/data/premier_ministre_français.txt
+INFO:httpx:HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 400 Bad Request"
+INFO:httpx:HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 400 Bad Request"
+INFO:httpx:HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 400 Bad Request"
+INFO:httpx:HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 400 Bad Request"
+INFO:httpx:HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 400 Bad Request"
+INFO:httpx:HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 400 Bad Request"
+INFO:httpx:HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 400 Bad Request"
+INFO:httpx:HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 400 Bad Request"
+INFO:httpx:HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 400 Bad Request"
+INFO:httpx:HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 400 Bad Request"
+INFO:httpx:HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 400 Bad Request"
+INFO:httpx:HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 400 Bad Request"
+INFO:httpx:HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 400 Bad Request"
+2024-11-14 16:59:58.688 | WARNING  | src.components.chunker:contextualize:100 - An error occurred with document `/home/ubuntu/data/wiki_premier_ministre_français.html`: Error code: 400 - {'error': {'message': 'litellm.BadRequestError: litellm.ContextWindowExceededError: ContextWindowExceededError: OpenAIException - Error code: 400 - {\'object\': \'error\', \'message\': "This model\'s maximum context length is 32768 tokens. However, you requested 49146 tokens (48122 in the messages, 1024 in the completion). Please reduce the length of the messages or completion.", \'type\': \'BadRequestError\', \'param\': None, \'code\': 400}\nmodel=meta-llama-31-8b-it. context_window_fallbacks=None. fallbacks=None.\n\nSet \'context_window_fallback\' - https://docs.litellm.ai/docs/routing#fallbacks', 'type': None, 'param': None, 'code': 400}}
+INFO:httpx:HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 400 Bad Request"
+INFO:httpx:HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 400 Bad Request"
+INFO:httpx:HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 400 Bad Request"
+INFO:httpx:HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 400 Bad Request"
+INFO:httpx:HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 400 Bad Request"
+INFO:httpx:HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 400 Bad Request"
+INFO:httpx:HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 400 Bad Request"
+INFO:httpx:HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 400 Bad Request"
+INFO:httpx:HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 400 Bad Request"
+INFO:httpx:HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 400 Bad Request"
+INFO:httpx:HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 400 Bad Request"
+INFO:httpx:HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 400 Bad Request"
+2024-11-14 17:00:08.682 | WARNING  | src.components.chunker:contextualize:100 - An error occurred with document `/home/ubuntu/data/wiki_premier_ministre_français.html`: Error code: 400 - {'error': {'message': 'litellm.BadRequestError: litellm.ContextWindowExceededError: ContextWindowExceededError: OpenAIException - Error code: 400 - {\'object\': \'error\', \'message\': "This model\'s maximum context length is 32768 tokens. However, you requested 41648 tokens (40624 in the messages, 1024 in the completion). Please reduce the length of the messages or completion.", \'type\': \'BadRequestError\', \'param\': None, \'code\': 400}\nmodel=meta-llama-31-8b-it. context_window_fallbacks=None. fallbacks=None.\n\nSet \'context_window_fallback\' - https://docs.litellm.ai/docs/routing#fallbacks', 'type': None, 'param': None, 'code': 400}}
+INFO:httpx:HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 400 Bad Request"
+INFO:httpx:HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 400 Bad Request"
+INFO:httpx:HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 400 Bad Request"
+2024-11-14 17:00:15.229 | WARNING  | src.components.chunker:contextualize:100 - An error occurred with document `/home/ubuntu/data/wiki_premier_ministre_français.html`: Error code: 400 - {'error': {'message': 'litellm.BadRequestError: litellm.ContextWindowExceededError: ContextWindowExceededError: OpenAIException - Error code: 400 - {\'object\': \'error\', \'message\': "This model\'s maximum context length is 32768 tokens. However, you requested 43151 tokens (42127 in the messages, 1024 in the completion). Please reduce the length of the messages or completion.", \'type\': \'BadRequestError\', \'param\': None, \'code\': 400}\nmodel=meta-llama-31-8b-it. context_window_fallbacks=None. fallbacks=None.\n\nSet \'context_window_fallback\' - https://docs.litellm.ai/docs/routing#fallbacks', 'type': None, 'param': None, 'code': 400}}
+2024-11-14 17:00:15.230 | INFO     | src.components.vectore_store:chunk:132 - Processed doc: /home/ubuntu/data/wiki_premier_ministre_français.html
+2024-11-14 17:00:19.503 | INFO     | src.components.vectore_store:chunk:132 - Processed doc: /home/ubuntu/data/rowenta.html
+INFO:httpx:HTTP Request: PUT http://localhost:6333/collections/ida/points?wait=true "HTTP/1.1 200 OK"
+2024-11-14 17:00:20.098 | INFO     | src.components.vectore_store:consumer:168 - INSERTED
+2024-11-14 17:00:20.098 | INFO     | src.components.vectore_store:consumer:159 - Consumer 0 ended
+INFO:httpx:HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 400 Bad Request"
+INFO:httpx:HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 400 Bad Request"
+2024-11-14 17:00:23.536 | WARNING  | src.components.chunker:contextualize:100 - An error occurred with document `/home/ubuntu/data/overview_llm.pdf`: Error code: 400 - {'error': {'message': 'litellm.BadRequestError: litellm.ContextWindowExceededError: ContextWindowExceededError: OpenAIException - Error code: 400 - {\'object\': \'error\', \'message\': "This model\'s maximum context length is 32768 tokens. However, you requested 45753 tokens (44729 in the messages, 1024 in the completion). Please reduce the length of the messages or completion.", \'type\': \'BadRequestError\', \'param\': None, \'code\': 400}\nmodel=meta-llama-31-8b-it. context_window_fallbacks=None. fallbacks=None.\n\nSet \'context_window_fallback\' - https://docs.litellm.ai/docs/routing#fallbacks', 'type': None, 'param': None, 'code': 400}}
+INFO:httpx:HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 200 OK"
+2024-11-14 17:01:33.193 | INFO     | src.components.vectore_store:chunk:132 - Processed doc: /home/ubuntu/data/overview_llm.pdf
+INFO:httpx:HTTP Request: PUT http://localhost:6333/collections/ida/points?wait=true "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: PUT http://localhost:6333/collections/ida/points?wait=true "HTTP/1.1 200 OK"
+2024-11-14 17:01:35.960 | INFO     | src.components.vectore_store:consumer:168 - INSERTED
+2024-11-14 17:01:35.960 | INFO     | src.components.vectore_store:consumer:159 - Consumer 1 ended
+2024-11-14 17:01:35.961 | INFO     | src.components.pipeline:add_files2vdb:49 - Documents from /home/ubuntu/data added.
+2024-11-14 17:01:35.961 | INFO     | __main__:main:58 - Documents loaded to collection named 'ida'. 
+==> Serialized: /home/ubuntu/data/g3_asie_japon_chine_f.pdf
+==> Serialized: /home/ubuntu/data/Amerique_puissance_du_Nord_affirmation_du_Sud.pdf
+==> Serialized: /home/ubuntu/data/flashattention.pdf
+==> Serialized: /home/ubuntu/data/g5-afrique.pdf
+==> Serialized: /home/ubuntu/data/attention_is_all.pdf
+==> Serialized: /home/ubuntu/data/g2-mondialisation.pdf
+==> Serialized: /home/ubuntu/data/g3b-espaces-maritimes.pdf
+==> Serialized: /home/ubuntu/data/lightweight_transformer.pdf
+==> Serialized: /home/ubuntu/data/g3-territoires.pdf
+==> Serialized: /home/ubuntu/data/overview_llm.pdf
+==> Serialized: /home/ubuntu/data/election_présidentielle_américaine_2024.txt
+==> Serialized: /home/ubuntu/data/Tyrannosaure.txt
+==> Serialized: /home/ubuntu/data/premier_ministre_français.txt
+==> Serialized: /home/ubuntu/data/wiki_premier_ministre_français.html
+==> Serialized: /home/ubuntu/data/rowenta.html
+Execution time: 183.4998 seconds
+Traceback (most recent call last):
+  File "/home/ubuntu/ahmath/RAGondin/.venv/lib/python3.12/site-packages/ragatouille/data/preprocessors.py", line 2, in <module>
+    from llama_index import Document
+ImportError: cannot import name 'Document' from 'llama_index' (unknown location)
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/home/ubuntu/ahmath/RAGondin/./manage_collection.py", line 9, in <module>
+    from src.components import load_config
+  File "/home/ubuntu/ahmath/RAGondin/src/components/__init__.py", line 2, in <module>
+    from .pipeline import RagPipeline, Indexer
+  File "/home/ubuntu/ahmath/RAGondin/src/components/pipeline.py", line 9, in <module>
+    from .reranker import Reranker
+  File "/home/ubuntu/ahmath/RAGondin/src/components/reranker.py", line 2, in <module>
+    from ragatouille import RAGPretrainedModel
+  File "/home/ubuntu/ahmath/RAGondin/.venv/lib/python3.12/site-packages/ragatouille/__init__.py", line 2, in <module>
+    from .RAGPretrainedModel import RAGPretrainedModel
+  File "/home/ubuntu/ahmath/RAGondin/.venv/lib/python3.12/site-packages/ragatouille/RAGPretrainedModel.py", line 8, in <module>
+    from ragatouille.data.corpus_processor import CorpusProcessor
+  File "/home/ubuntu/ahmath/RAGondin/.venv/lib/python3.12/site-packages/ragatouille/data/__init__.py", line 1, in <module>
+    from .corpus_processor import CorpusProcessor
+  File "/home/ubuntu/ahmath/RAGondin/.venv/lib/python3.12/site-packages/ragatouille/data/corpus_processor.py", line 4, in <module>
+    from ragatouille.data.preprocessors import llama_index_sentence_splitter
+  File "/home/ubuntu/ahmath/RAGondin/.venv/lib/python3.12/site-packages/ragatouille/data/preprocessors.py", line 5, in <module>
+    from llama_index.core import Document
+  File "/home/ubuntu/ahmath/RAGondin/.venv/lib/python3.12/site-packages/llama_index/core/__init__.py", line 10, in <module>
+    from llama_index.core.base.response.schema import Response
+  File "/home/ubuntu/ahmath/RAGondin/.venv/lib/python3.12/site-packages/llama_index/core/base/response/schema.py", line 9, in <module>
+    from llama_index.core.schema import NodeWithScore
+  File "/home/ubuntu/ahmath/RAGondin/.venv/lib/python3.12/site-packages/llama_index/core/schema.py", line 27, in <module>
+    from llama_index.core.utils import SAMPLE_TEXT, truncate_text
+  File "/home/ubuntu/ahmath/RAGondin/.venv/lib/python3.12/site-packages/llama_index/core/utils.py", line 89, in <module>
+    globals_helper = GlobalsHelper()
+                     ^^^^^^^^^^^^^^^
+  File "/home/ubuntu/ahmath/RAGondin/.venv/lib/python3.12/site-packages/llama_index/core/utils.py", line 45, in __init__
+    import nltk
+  File "/home/ubuntu/ahmath/RAGondin/.venv/lib/python3.12/site-packages/nltk/__init__.py", line 146, in <module>
+    from nltk.chunk import *
+  File "/home/ubuntu/ahmath/RAGondin/.venv/lib/python3.12/site-packages/nltk/chunk/__init__.py", line 155, in <module>
+    from nltk.chunk.api import ChunkParserI
+  File "/home/ubuntu/ahmath/RAGondin/.venv/lib/python3.12/site-packages/nltk/chunk/api.py", line 15, in <module>
+    from nltk.parse import ParserI
+  File "/home/ubuntu/ahmath/RAGondin/.venv/lib/python3.12/site-packages/nltk/parse/__init__.py", line 100, in <module>
+    from nltk.parse.transitionparser import TransitionParser
+  File "/home/ubuntu/ahmath/RAGondin/.venv/lib/python3.12/site-packages/nltk/parse/transitionparser.py", line 18, in <module>
+    from sklearn import svm
+  File "/home/ubuntu/ahmath/RAGondin/.venv/lib/python3.12/site-packages/sklearn/svm/__init__.py", line 12, in <module>
+    from ._classes import SVC, SVR, LinearSVC, LinearSVR, NuSVC, NuSVR, OneClassSVM
+  File "/home/ubuntu/ahmath/RAGondin/.venv/lib/python3.12/site-packages/sklearn/svm/_classes.py", line 6, in <module>
+    from ..linear_model._base import LinearClassifierMixin, LinearModel, SparseCoefMixin
+  File "/home/ubuntu/ahmath/RAGondin/.venv/lib/python3.12/site-packages/sklearn/linear_model/__init__.py", line 9, in <module>
+    from ._coordinate_descent import (
+  File "/home/ubuntu/ahmath/RAGondin/.venv/lib/python3.12/site-packages/sklearn/linear_model/_coordinate_descent.py", line 20, in <module>
+    from ..model_selection import check_cv
+  File "/home/ubuntu/ahmath/RAGondin/.venv/lib/python3.12/site-packages/sklearn/model_selection/__init__.py", line 5, in <module>
+    from ._classification_threshold import (
+  File "/home/ubuntu/ahmath/RAGondin/.venv/lib/python3.12/site-packages/sklearn/model_selection/_classification_threshold.py", line 14, in <module>
+    from ..metrics import (
+  File "/home/ubuntu/ahmath/RAGondin/.venv/lib/python3.12/site-packages/sklearn/metrics/__init__.py", line 3, in <module>
+    from . import cluster
+  File "/home/ubuntu/ahmath/RAGondin/.venv/lib/python3.12/site-packages/sklearn/metrics/cluster/__init__.py", line 25, in <module>
+    from ._unsupervised import (
+  File "/home/ubuntu/ahmath/RAGondin/.venv/lib/python3.12/site-packages/sklearn/metrics/cluster/_unsupervised.py", line 23, in <module>
+    from ..pairwise import _VALID_METRICS, pairwise_distances, pairwise_distances_chunked
+  File "/home/ubuntu/ahmath/RAGondin/.venv/lib/python3.12/site-packages/sklearn/metrics/pairwise.py", line 50, in <module>
+    from ._pairwise_distances_reduction import ArgKmin
+  File "/home/ubuntu/ahmath/RAGondin/.venv/lib/python3.12/site-packages/sklearn/metrics/_pairwise_distances_reduction/__init__.py", line 94, in <module>
+    from ._dispatcher import (
+  File "/home/ubuntu/ahmath/RAGondin/.venv/lib/python3.12/site-packages/sklearn/metrics/_pairwise_distances_reduction/_dispatcher.py", line 13, in <module>
+    from ._argkmin import (
+  File "sklearn/metrics/_pairwise_distances_reduction/_argkmin.pyx", line 1, in init sklearn.metrics._pairwise_distances_reduction._argkmin
+  File "sklearn/metrics/_pairwise_distances_reduction/_base.pyx", line 1, in init sklearn.metrics._pairwise_distances_reduction._base
+  File "<frozen importlib._bootstrap>", line 1349, in _find_and_load
+KeyboardInterrupt
+/home/ubuntu/ahmath/RAGondin/.venv/lib/python3.12/site-packages/pyannote/audio/core/io.py:43: UserWarning: torchaudio._backend.set_audio_backend has been deprecated. With dispatcher enabled, this function is no-op. You can remove the function call.
+  torchaudio.set_audio_backend("soundfile")
+/home/ubuntu/ahmath/RAGondin/.venv/lib/python3.12/site-packages/pyannote/audio/pipelines/speaker_verification.py:43: UserWarning: torchaudio._backend.get_audio_backend has been deprecated. With dispatcher enabled, this function is no-op. You can remove the function call.
+  backend = torchaudio.get_audio_backend()
+INFO:speechbrain.utils.quirks:Applied quirks (see `speechbrain.utils.quirks`): [disable_jit_profiling, allow_tf32]
+INFO:speechbrain.utils.quirks:Excluded quirks specified by the `SB_DISABLE_QUIRKS` environment (comma-separated list): []
+/home/ubuntu/ahmath/RAGondin/.venv/lib/python3.12/site-packages/pyannote/audio/pipelines/speaker_verification.py:45: UserWarning: Module 'speechbrain.pretrained' was deprecated, redirecting to 'speechbrain.inference'. Please update your script. This is a change from SpeechBrain 1.0. See: https://github.com/speechbrain/speechbrain/releases/tag/v1.0.0
+  from speechbrain.pretrained import (
+/home/ubuntu/ahmath/RAGondin/.venv/lib/python3.12/site-packages/pyannote/audio/pipelines/speaker_verification.py:53: UserWarning: torchaudio._backend.set_audio_backend has been deprecated. With dispatcher enabled, this function is no-op. You can remove the function call.
+  torchaudio.set_audio_backend(backend)
+/home/ubuntu/ahmath/RAGondin/.venv/lib/python3.12/site-packages/pyannote/audio/tasks/segmentation/mixins.py:37: UserWarning: `torchaudio.backend.common.AudioMetaData` has been moved to `torchaudio.AudioMetaData`. Please update the import path.
+  from torchaudio.backend.common import AudioMetaData
+/home/ubuntu/ahmath/RAGondin/src/components/config.py:10: UserWarning: 
+The version_base parameter is not specified.
+Please specify a compatability version level, or None.
+Will assume defaults for version 1.1
+  with initialize(config_path=config_path, job_name="config_loader"):
+/home/ubuntu/ahmath/RAGondin/.venv/lib/python3.12/site-packages/hydra/_internal/defaults_list.py:251: UserWarning: In 'config': Defaults list is missing `_self_`. See https://hydra.cc/docs/1.2/upgrades/1.0_to_1.1/default_composition_order for more information
+  warnings.warn(msg, UserWarning)
+2024-11-14 18:52:01.269 | WARNING  | __main__:main:50 - Data will be upserted to the collection ida
+/home/ubuntu/ahmath/RAGondin/src/components/embeddings.py:57: LangChainDeprecationWarning: The class `HuggingFaceEmbeddings` was deprecated in LangChain 0.2.2 and will be removed in 1.0. An updated version of the class exists in the :class:`~langchain-huggingface package and should be used instead. To use it run `pip install -U :class:`~langchain-huggingface` and import as `from :class:`~langchain_huggingface import HuggingFaceEmbeddings``.
+  self.embedding = HG_EMBEDDER_TYPE[model_type](
+INFO:sentence_transformers.SentenceTransformer:Load pretrained SentenceTransformer: HIT-TMG/KaLM-embedding-multilingual-mini-v1
+INFO:sentence_transformers.SentenceTransformer:2 prompts are loaded, with the keys: ['query', 'document']
+Fetching 29 files:   0%|          | 0/29 [00:00<?, ?it/s]Fetching 29 files: 100%|██████████| 29/29 [00:00<00:00, 152043.52it/s]
+INFO:httpx:HTTP Request: GET http://localhost:6333/collections/ida/exists "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: GET http://localhost:6333/collections/ida "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: GET http://localhost:6333/collections/ida "HTTP/1.1 200 OK"
+2024-11-14 18:52:06.429 | WARNING  | src.components.vectore_store:__init__:74 - The Collection named `ida` loaded.
+2024-11-14 18:52:06.429 | INFO     | src.components.pipeline:__init__:36 - Indexer initialized...
+2024-11-14 18:52:06.434 | INFO     | src.components.loader:serialize_documents:313 - Loading .pdf files.
+/home/ubuntu/miniconda3/lib/python3.12/pathlib.py:169: RuntimeWarning: coroutine 'AsyncPath.is_dir' was never awaited
+  if not parent_path.is_dir():
+2024-11-14 18:52:07.742 | INFO     | src.components.loader:serialize_documents:313 - Loading .docx files.
+2024-11-14 18:52:07.744 | INFO     | src.components.loader:serialize_documents:313 - Loading .doc files.
+2024-11-14 18:52:07.747 | INFO     | src.components.loader:serialize_documents:313 - Loading .odt files.
+2024-11-14 18:52:07.750 | INFO     | src.components.loader:serialize_documents:313 - Loading .mp4 files.
+2024-11-14 18:52:07.753 | INFO     | src.components.loader:serialize_documents:313 - Loading .pptx files.
+2024-11-14 18:52:07.756 | INFO     | src.components.loader:serialize_documents:313 - Loading .txt files.
+2024-11-14 18:52:07.763 | INFO     | src.components.loader:serialize_documents:313 - Loading .html files.
+INFO:httpx:HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 200 OK"
+2024-11-14 18:52:17.811 | INFO     | src.components.vectore_store:chunk:132 - Processed doc: /home/ubuntu/data/Amerique_puissance_du_Nord_affirmation_du_Sud.pdf
+2024-11-14 18:52:17.886 | INFO     | src.components.vectore_store:chunk:132 - Processed doc: /home/ubuntu/data/g5-afrique.pdf
+INFO:httpx:HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 200 OK"
+2024-11-14 18:52:21.587 | INFO     | src.components.vectore_store:chunk:132 - Processed doc: /home/ubuntu/data/g3_asie_japon_chine_f.pdf
+INFO:httpx:HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 200 OK"
+==> Serialized: /home/ubuntu/data/g3_asie_japon_chine_f.pdf
+==> Serialized: /home/ubuntu/data/Amerique_puissance_du_Nord_affirmation_du_Sud.pdf
+==> Serialized: /home/ubuntu/data/flashattention.pdf
+==> Serialized: /home/ubuntu/data/g5-afrique.pdf
+==> Serialized: /home/ubuntu/data/attention_is_all.pdf
+==> Serialized: /home/ubuntu/data/g2-mondialisation.pdf
+==> Serialized: /home/ubuntu/data/g3b-espaces-maritimes.pdf
+==> Serialized: /home/ubuntu/data/lightweight_transformer.pdf
+==> Serialized: /home/ubuntu/data/g3-territoires.pdf
+==> Serialized: /home/ubuntu/data/overview_llm.pdf
+==> Serialized: /home/ubuntu/data/election_présidentielle_américaine_2024.txt
+==> Serialized: /home/ubuntu/data/Tyrannosaure.txt
+==> Serialized: /home/ubuntu/data/premier_ministre_français.txt
+==> Serialized: /home/ubuntu/data/wiki_premier_ministre_français.html
+==> Serialized: /home/ubuntu/data/rowenta.html
+Traceback (most recent call last):
+  File "/home/ubuntu/miniconda3/lib/python3.12/asyncio/runners.py", line 118, in run
+    return self._loop.run_until_complete(task)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/miniconda3/lib/python3.12/asyncio/base_events.py", line 687, in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+  File "/home/ubuntu/ahmath/RAGondin/./manage_collection.py", line 54, in main
+    await indexer.add_files2vdb(path=args.folder)
+  File "/home/ubuntu/ahmath/RAGondin/src/components/pipeline.py", line 44, in add_files2vdb
+    await self.vectordb.async_add_documents(
+  File "/home/ubuntu/ahmath/RAGondin/src/components/vectore_store.py", line 177, in async_add_documents
+    await producer_task
+  File "/home/ubuntu/ahmath/RAGondin/src/components/vectore_store.py", line 151, in producer
+    await batch_queue.put(None)
+  File "/home/ubuntu/miniconda3/lib/python3.12/asyncio/queues.py", line 120, in put
+    await putter
+asyncio.exceptions.CancelledError
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/home/ubuntu/miniconda3/lib/python3.12/asyncio/runners.py", line 194, in run
+    return runner.run(main)
+           ^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/miniconda3/lib/python3.12/asyncio/runners.py", line 123, in run
+    raise KeyboardInterrupt()
+KeyboardInterrupt
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/home/ubuntu/ahmath/RAGondin/./manage_collection.py", line 73, in <module>
+    asyncio.run(main())
+  File "/home/ubuntu/miniconda3/lib/python3.12/asyncio/runners.py", line 193, in run
+    with Runner(debug=debug, loop_factory=loop_factory) as runner:
+  File "/home/ubuntu/miniconda3/lib/python3.12/asyncio/runners.py", line 62, in __exit__
+    self.close()
+  File "/home/ubuntu/miniconda3/lib/python3.12/asyncio/runners.py", line 72, in close
+    loop.run_until_complete(
+  File "/home/ubuntu/miniconda3/lib/python3.12/asyncio/base_events.py", line 674, in run_until_complete
+    self.run_forever()
+  File "/home/ubuntu/miniconda3/lib/python3.12/asyncio/base_events.py", line 641, in run_forever
+    self._run_once()
+  File "/home/ubuntu/miniconda3/lib/python3.12/asyncio/base_events.py", line 1949, in _run_once
+    event_list = self._selector.select(timeout)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/miniconda3/lib/python3.12/selectors.py", line 468, in select
+    fd_event_list = self._selector.poll(timeout, max_ev)
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+KeyboardInterrupt
+Exception ignored in: <module 'threading' from '/home/ubuntu/miniconda3/lib/python3.12/threading.py'>
+Traceback (most recent call last):
+  File "/home/ubuntu/miniconda3/lib/python3.12/threading.py", line 1592, in _shutdown
+    atexit_call()
+  File "/home/ubuntu/miniconda3/lib/python3.12/concurrent/futures/thread.py", line 31, in _python_exit
+    t.join()
+  File "/home/ubuntu/miniconda3/lib/python3.12/threading.py", line 1147, in join
+    self._wait_for_tstate_lock()
+  File "/home/ubuntu/miniconda3/lib/python3.12/threading.py", line 1167, in _wait_for_tstate_lock
+    if lock.acquire(block, timeout):
+       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+KeyboardInterrupt: 
+/home/ubuntu/ahmath/RAGondin/.venv/lib/python3.12/site-packages/pyannote/audio/core/io.py:43: UserWarning: torchaudio._backend.set_audio_backend has been deprecated. With dispatcher enabled, this function is no-op. You can remove the function call.
+  torchaudio.set_audio_backend("soundfile")
+/home/ubuntu/ahmath/RAGondin/.venv/lib/python3.12/site-packages/pyannote/audio/pipelines/speaker_verification.py:43: UserWarning: torchaudio._backend.get_audio_backend has been deprecated. With dispatcher enabled, this function is no-op. You can remove the function call.
+  backend = torchaudio.get_audio_backend()
+/home/ubuntu/ahmath/RAGondin/.venv/lib/python3.12/site-packages/pyannote/audio/pipelines/speaker_verification.py:53: UserWarning: torchaudio._backend.set_audio_backend has been deprecated. With dispatcher enabled, this function is no-op. You can remove the function call.
+  torchaudio.set_audio_backend(backend)
+Traceback (most recent call last):
+  File "/home/ubuntu/ahmath/RAGondin/./manage_collection.py", line 9, in <module>
+    from src.components import load_config
+  File "/home/ubuntu/ahmath/RAGondin/src/components/__init__.py", line 2, in <module>
+    from .pipeline import RagPipeline, Indexer
+  File "/home/ubuntu/ahmath/RAGondin/src/components/pipeline.py", line 14, in <module>
+    from .loader import DocSerializer
+  File "/home/ubuntu/ahmath/RAGondin/src/components/loader.py", line 7, in <module>
+    import whisperx
+  File "/home/ubuntu/ahmath/RAGondin/.venv/lib/python3.12/site-packages/whisperx/__init__.py", line 4, in <module>
+    from .transcribe import load_model
+  File "/home/ubuntu/ahmath/RAGondin/.venv/lib/python3.12/site-packages/whisperx/transcribe.py", line 10, in <module>
+    from .asr import load_model
+  File "/home/ubuntu/ahmath/RAGondin/.venv/lib/python3.12/site-packages/whisperx/asr.py", line 13, in <module>
+    from .vad import load_vad_model, merge_chunks
+  File "/home/ubuntu/ahmath/RAGondin/.venv/lib/python3.12/site-packages/whisperx/vad.py", line 11, in <module>
+    from pyannote.audio.pipelines import VoiceActivityDetection
+  File "/home/ubuntu/ahmath/RAGondin/.venv/lib/python3.12/site-packages/pyannote/audio/pipelines/__init__.py", line 26, in <module>
+    from .speaker_diarization import SpeakerDiarization
+  File "/home/ubuntu/ahmath/RAGondin/.venv/lib/python3.12/site-packages/pyannote/audio/pipelines/speaker_diarization.py", line 42, in <module>
+    from pyannote.audio.pipelines.speaker_verification import PretrainedSpeakerEmbedding
+  File "/home/ubuntu/ahmath/RAGondin/.venv/lib/python3.12/site-packages/pyannote/audio/pipelines/speaker_verification.py", line 45, in <module>
+    from speechbrain.pretrained import (
+  File "/home/ubuntu/ahmath/RAGondin/.venv/lib/python3.12/site-packages/speechbrain/__init__.py", line 6, in <module>
+    from .core import Brain, Stage, create_experiment_directory, parse_arguments
+  File "/home/ubuntu/ahmath/RAGondin/.venv/lib/python3.12/site-packages/speechbrain/core.py", line 49, in <module>
+    sb.utils.quirks.apply_quirks()
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/ahmath/RAGondin/.venv/lib/python3.12/site-packages/speechbrain/utils/importutils.py", line 112, in __getattr__
+    return getattr(self.ensure_module(1), attr)
+                   ^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/ahmath/RAGondin/.venv/lib/python3.12/site-packages/speechbrain/utils/importutils.py", line 80, in ensure_module
+    importer_frame = inspect.getframeinfo(sys._getframe(stacklevel + 1))
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/miniconda3/lib/python3.12/inspect.py", line 1708, in getframeinfo
+    lines, lnum = findsource(frame)
+                  ^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/miniconda3/lib/python3.12/inspect.py", line 1084, in findsource
+    module = getmodule(object, file)
+             ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/miniconda3/lib/python3.12/inspect.py", line 1010, in getmodule
+    os.path.realpath(f)] = module.__name__
+    ^^^^^^^^^^^^^^^^^^^
+  File "<frozen posixpath>", line 427, in realpath
+  File "<frozen posixpath>", line 462, in _joinrealpath
+KeyboardInterrupt

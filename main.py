@@ -1,19 +1,18 @@
 import time 
 import asyncio
 from loguru import logger
-from src.components import RagPipeline, Config, evaluate, Indexer
+from pathlib import Path
+from src.components import RagPipeline, load_config, evaluate, Indexer
 
-import nltk
-nltk.download('punkt_tab')
-
-config = Config("./config.ini")
+# config_path = Path(__file__) / '.hydra-config'
+config = load_config()
 indexer = Indexer(config, logger)    
 
 
 async def main():
     start = time.time()
     # await indexer.add_files2vdb(path='./app/upload_dir/S2_RAG/Sources RAG/MARAP/PR_Memoire_Technique_VdM_18182_V8.odt')
-    await indexer.add_files2vdb(path='./app/upload_dir/S2_RAG/CV')
+    await indexer.add_files2vdb(path='./app/upload_dir/S2_RAG/Sources RAG/AI')
     # ragPipe = RagPipeline(config=config)
     # # await ragPipe.indexer.add_files2vdb("./app/upload_dir")
     end = time.time()

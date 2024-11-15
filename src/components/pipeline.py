@@ -2,15 +2,15 @@ import gc
 import sys
 
 import torch
-from .chunker import BaseChunker, ChunkerFactory
+from .chunker import ABCChunker, ChunkerFactory
 from langchain_core.documents.base import Document
 from .llm import LLM
 from .utils import format_context, load_sys_template
 from .reranker import Reranker
-from .retriever import BaseRetriever, get_retriever
-from .vectore_store import CONNECTORS
+from .retriever import ABCRetriever, RetrieverFactory
+from .vectordb import ConnectorFactory
 from .embeddings import HFEmbedder
-from .config import Config
+from omegaconf import OmegaConf
 from .loader import DocSerializer
 from loguru import logger
 from typing import AsyncGenerator
@@ -28,23 +28,10 @@ from collections import deque
 class Indexer:
     """This class bridges static files with the vector store database.
     """
-    def __init__(self, config: Config, logger, device=None) -> None:
-        # init the embedder model
-        embedder = HFEmbedder(config, device=device)
-        # init chunker 
-        self.chunker: BaseChunker = ChunkerFactory.create_chunker(config, embedder=embedder.get_embeddings())
-
-        # init the connector
-        # TODO: Implement Factory Class that uses dbconfig
-        dbconfig = config.vectordb
-        self.connector = CONNECTORS[dbconfig["connector_name"]](
-            host=dbconfig["host"],
-            port=dbconfig["port"],
-            collection_name=dbconfig["collection_name"],
-            embeddings=embedder.get_embeddings(), 
-            hybrid_mode=bool(dbconfig['hybrid_mode']),
-            logger=logger
-        )
+    def __init__(self, config: OmegaConf, logger, device=None) -> None:
+        embedder = HFEmbedder(embedder_config=config.embedder, device=device)
+        self.chunker: ABCChunker = ChunkerFactory.create_chunker(config, embedder=embedder.get_embeddings())
+        self.vectordb = ConnectorFactory.create_vdb(config, logger=logger, embeddings=embedder.get_embeddings())
         self.logger = logger
         self.logger.info("Indexer initialized...")
 
@@ -54,10 +41,10 @@ class Indexer:
         serializer = DocSerializer()
         try:
             doc_generator: AsyncGenerator[Document, None] = serializer.serialize_documents(path, recursive=True)
-            await self.connector.async_add_documents(
+            await self.vectordb.async_add_documents(
                 doc_generator=doc_generator, 
                 chunker=self.chunker, 
-                document_batch_size=4, # 4
+                document_batch_size=4
             )
             self.logger.info(f"Documents from {path} added.")
         except Exception as e:
@@ -65,7 +52,7 @@ class Indexer:
 
 
 class RagPipeline:
-    def __init__(self, config: Config, device="cpu") -> None:
+    def __init__(self, config, device="cpu") -> None:
         self.config = config
         self.logger = self.set_logger(config)
         self.indexer = Indexer(config, self.logger, device=device)
@@ -73,6 +60,7 @@ class RagPipeline:
         self.reranker = None
         if config.reranker["model_name"]:
             self.reranker = Reranker(self.logger, config)
+
         self.reranker_top_k = int(config.reranker["top_k"])
 
         self.qa_sys_prompt: str = load_sys_template(
@@ -82,11 +70,10 @@ class RagPipeline:
         self.context_pmpt_tmpl = config.prompt['context_pmpt_tmpl']
 
         self.llm_client = LLM(config, logger)
-
-        self.retriever: BaseRetriever = get_retriever(config, logger)
+        self.retriever: ABCRetriever = RetrieverFactory.create_retriever(config=config, logger=logger)
 
         self.rag_mode = config.rag["mode"]
-        self.chat_history_depth = int(config.rag["chat_history_depth"])
+        self.chat_history_depth = config.rag["chat_history_depth"]
         self._chat_history: deque = deque(maxlen=self.chat_history_depth)
 
     async def get_contextualize_docs(self, question: str, chat_history: list)-> list[Document]:
@@ -102,7 +89,7 @@ class RagPipeline:
             logger.info("Documents retreived...")
             docs = await self.retriever.retrieve(
                 question, 
-                db=self.indexer.connector
+                db=self.indexer.vectordb
             )
             contextualized_question = question
 
@@ -133,8 +120,10 @@ class RagPipeline:
 
             docs = await self.retriever.retrieve(
                 contextualized_question, 
-                db=self.indexer.connector
+                db=self.indexer.vectordb
             )
+            gc.collect()
+            torch.cuda.empty_cache()
         return docs, contextualized_question
     
 
@@ -150,8 +139,7 @@ class RagPipeline:
 
         # 2. rerank documents is asked
         if self.reranker is not None:
-            # TODO get the contextualized question and use it reranking
-            docs = await self.reranker.rerank(contextualized_question, docs_chunks=docs, k=self.reranker_top_k)
+            docs = await self.reranker.rerank(contextualized_question, chunks=docs, k=self.reranker_top_k)
         
         # 3. Format the retrieved docs
         context, sources = format_context(docs)
@@ -163,7 +151,6 @@ class RagPipeline:
             context=context, sys_pmpt_tmpl=self.qa_sys_prompt)
     
         self.free_memory()
-
         return answer, context, sources
 
 

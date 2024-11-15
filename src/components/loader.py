@@ -18,16 +18,18 @@ from langchain_community.document_loaders import (
     UnstructuredPowerPointLoader
 )
 from langchain_community.document_loaders import UnstructuredWordDocumentLoader
+from langchain_community.document_loaders import TextLoader
+from langchain_community.document_loaders import UnstructuredHTMLLoader
+
 import pymupdf4llm
 from loguru import logger
 from aiopath import AsyncPath
 from typing import Dict
 
-
-from langchain_community.document_loaders import UnstructuredXMLLoader, PyPDFLoader
-from langchain_community.document_loaders.csv_loader import CSVLoader
-from langchain_community.document_loaders.text import TextLoader
-from langchain_community.document_loaders import UnstructuredHTMLLoader
+# from langchain_community.document_loaders import UnstructuredXMLLoader, PyPDFLoader
+# from langchain_community.document_loaders.csv_loader import CSVLoader
+# from langchain_community.document_loaders.text import TextLoader
+# from langchain_community.document_loaders import UnstructuredHTMLLoader
 
 
 class BaseLoader(ABC):
@@ -75,11 +77,9 @@ class VideoAudioLoader(BaseLoader):
             device='cuda' if torch.cuda.is_available() else 'cpu'
         )
 
-    
     def free_memory(self):
         gc.collect()
         torch.cuda.empty_cache()
-
 
     async def aload_document(self, file_path):
         path = Path(file_path)
@@ -119,7 +119,6 @@ class VideoAudioLoader(BaseLoader):
                 'page_sep': self.page_sep
             }
         )
-
 
 
 class CustomPPTLoader(BaseLoader):
@@ -209,7 +208,7 @@ class CustomPyMuPDFLoader(BaseLoader):
 
     async def aload_document(self, file_path):
         loader = PyMuPDFLoader(
-            file_path=file_path,
+            file_path=Path(file_path).absolute(),
             **self.loader_args
         )
         pages = await loader.aload()
@@ -220,6 +219,42 @@ class CustomPyMuPDFLoader(BaseLoader):
                 'page_sep': self.page_sep
             }
         )
+
+class CustomTextLoader(BaseLoader):
+    def __init__(self, page_sep: str='[PAGE_SEP]', **loader_args) -> None:
+        self.loader_args = loader_args
+        self.page_sep = page_sep
+
+    async def aload_document(self, file_path):
+        path = Path(file_path)
+        loader = TextLoader(file_path=str(path), autodetect_encoding=True)
+        doc = await loader.aload()
+        return Document(
+            page_content=f'{self.page_sep}'.join([p.page_content for p in doc]), 
+            metadata={
+                'source': doc[0].metadata['source'],
+                'page_sep': self.page_sep
+            }
+        )
+    
+
+class CustomHTMLLoader(BaseLoader):
+    def __init__(self, page_sep: str='[PAGE_SEP]', **loader_args) -> None:
+        self.loader_args = loader_args
+        self.page_sep = page_sep
+
+    async def aload_document(self, file_path):
+        path = Path(file_path)
+        loader = UnstructuredHTMLLoader(file_path=str(path), autodetect_encoding=True)
+        doc = await loader.aload()
+        return Document(
+            page_content=f'{self.page_sep}'.join([p.page_content for p in doc]), 
+            metadata={
+                'source': doc[0].metadata['source'],
+                'page_sep': self.page_sep
+            }
+        )
+
 
 
 class CustomDocLoader(BaseLoader):
@@ -283,11 +318,11 @@ class DocSerializer:
                     yield doc
 
 
-
 async def get_files(path, pattern, recursive) -> AsyncGenerator:
     p = AsyncPath(path)
     async for file in (p.rglob(pattern) if recursive else p.glob(pattern)):
         yield file
+
 
 
 # TODO create a Meta class that aggregates registery of supported documents from each child class
@@ -299,6 +334,8 @@ LOADERS: Dict[str, BaseLoader] = {
 
     '.mp4': VideoAudioLoader,
     '.pptx': CustomPPTLoader,
+    '.txt': CustomTextLoader,
+    '.html': CustomHTMLLoader
 }
 
 

@@ -1,16 +1,15 @@
 # Ignore environment files
 .env
 
-# generate folders
+# generate files and folders
 .files/
 .chainlit/
+**/*chainlit.md
+.venv/
 qdrant_storage/
 
 # other files and folders
-
-chainlit_tuto/
-try.ipynb
-CR.md
+misc
 
 # Ignore __pycache__ directories
 __pycache__/
@@ -29,3 +28,5 @@ CR.md
 # Ignore Python bytecode files
 *.pyc
 *.pyo
+
+.venv/

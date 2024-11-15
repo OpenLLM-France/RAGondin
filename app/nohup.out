@@ -1,0 +1,781 @@
+2024-11-14 21:16:48 - Loading faiss with AVX2 support.
+2024-11-14 21:16:48 - Successfully loaded faiss with AVX2 support.
+/home/ubuntu/miniconda3/envs/ragondin/lib/python3.12/site-packages/pyannote/audio/core/io.py:43: UserWarning: torchaudio._backend.set_audio_backend has been deprecated. With dispatcher enabled, this function is no-op. You can remove the function call.
+  torchaudio.set_audio_backend("soundfile")
+/home/ubuntu/miniconda3/envs/ragondin/lib/python3.12/site-packages/pyannote/audio/pipelines/speaker_verification.py:43: UserWarning: torchaudio._backend.get_audio_backend has been deprecated. With dispatcher enabled, this function is no-op. You can remove the function call.
+  backend = torchaudio.get_audio_backend()
+2024-11-14 21:16:52 - Applied quirks (see `speechbrain.utils.quirks`): [allow_tf32, disable_jit_profiling]
+2024-11-14 21:16:52 - Excluded quirks specified by the `SB_DISABLE_QUIRKS` environment (comma-separated list): []
+/home/ubuntu/miniconda3/envs/ragondin/lib/python3.12/site-packages/pyannote/audio/pipelines/speaker_verification.py:45: UserWarning: Module 'speechbrain.pretrained' was deprecated, redirecting to 'speechbrain.inference'. Please update your script. This is a change from SpeechBrain 1.0. See: https://github.com/speechbrain/speechbrain/releases/tag/v1.0.0
+  from speechbrain.pretrained import (
+/home/ubuntu/miniconda3/envs/ragondin/lib/python3.12/site-packages/pyannote/audio/pipelines/speaker_verification.py:53: UserWarning: torchaudio._backend.set_audio_backend has been deprecated. With dispatcher enabled, this function is no-op. You can remove the function call.
+  torchaudio.set_audio_backend(backend)
+/home/ubuntu/miniconda3/envs/ragondin/lib/python3.12/site-packages/pyannote/audio/tasks/segmentation/mixins.py:37: UserWarning: `torchaudio.backend.common.AudioMetaData` has been moved to `torchaudio.AudioMetaData`. Please update the import path.
+  from torchaudio.backend.common import AudioMetaData
+/home/ubuntu/ahmath/RAGondin/src/components/config.py:10: UserWarning: 
+The version_base parameter is not specified.
+Please specify a compatability version level, or None.
+Will assume defaults for version 1.1
+  with initialize(config_path=config_path, job_name="config_loader"):
+/home/ubuntu/miniconda3/envs/ragondin/lib/python3.12/site-packages/hydra/_internal/defaults_list.py:251: UserWarning: In 'config': Defaults list is missing `_self_`. See https://hydra.cc/docs/1.2/upgrades/1.0_to_1.1/default_composition_order for more information
+  warnings.warn(msg, UserWarning)
+/home/ubuntu/ahmath/RAGondin/src/components/embeddings.py:57: LangChainDeprecationWarning: The class `HuggingFaceEmbeddings` was deprecated in LangChain 0.2.2 and will be removed in 1.0. An updated version of the class exists in the :class:`~langchain-huggingface package and should be used instead. To use it run `pip install -U :class:`~langchain-huggingface` and import as `from :class:`~langchain_huggingface import HuggingFaceEmbeddings``.
+  self.embedding = HG_EMBEDDER_TYPE[model_type](
+2024-11-14 21:16:52 - Load pretrained SentenceTransformer: HIT-TMG/KaLM-embedding-multilingual-mini-v1
+2024-11-14 21:16:54 - 2 prompts are loaded, with the keys: ['query', 'document']
+Fetching 29 files:   0%|          | 0/29 [00:00<?, ?it/s]Fetching 29 files: 100%|██████████| 29/29 [00:00<00:00, 73897.22it/s]
+2024-11-14 21:16:55 - HTTP Request: GET http://localhost:6333/collections/ifa_db/exists "HTTP/1.1 200 OK"
+2024-11-14 21:16:55 - HTTP Request: GET http://localhost:6333/collections/ifa_db "HTTP/1.1 200 OK"
+2024-11-14 21:16:55 - HTTP Request: GET http://localhost:6333/collections/ifa_db "HTTP/1.1 200 OK"
+2024-11-14 21:16:55.358 | WARNING  | src.components.vectore_store:__init__:74 - The Collection named `ifa_db` loaded.
+2024-11-14 21:16:55.358 | INFO     | src.components.pipeline:__init__:36 - Indexer initialized...
+2024-11-14 21:16:56 - flash_attn is not installed. Using PyTorch native attention implementation.
+2024-11-14 21:16:56 - flash_attn is not installed. Using PyTorch native attention implementation.
+2024-11-14 21:16:56 - flash_attn is not installed. Using PyTorch native attention implementation.
+2024-11-14 21:16:56 - flash_attn is not installed. Using PyTorch native attention implementation.
+2024-11-14 21:16:56 - flash_attn is not installed. Using PyTorch native attention implementation.
+2024-11-14 21:16:56 - flash_attn is not installed. Using PyTorch native attention implementation.
+2024-11-14 21:16:56 - flash_attn is not installed. Using PyTorch native attention implementation.
+2024-11-14 21:16:56 - flash_attn is not installed. Using PyTorch native attention implementation.
+2024-11-14 21:16:56 - flash_attn is not installed. Using PyTorch native attention implementation.
+2024-11-14 21:16:56 - flash_attn is not installed. Using PyTorch native attention implementation.
+2024-11-14 21:16:56 - flash_attn is not installed. Using PyTorch native attention implementation.
+2024-11-14 21:16:56 - flash_attn is not installed. Using PyTorch native attention implementation.
+2024-11-14 21:16:56 - flash_attn is not installed. Using PyTorch native attention implementation.
+2024-11-14 21:16:56 - flash_attn is not installed. Using PyTorch native attention implementation.
+2024-11-14 21:16:56 - flash_attn is not installed. Using PyTorch native attention implementation.
+2024-11-14 21:16:56 - flash_attn is not installed. Using PyTorch native attention implementation.
+2024-11-14 21:16:56 - flash_attn is not installed. Using PyTorch native attention implementation.
+2024-11-14 21:16:56 - flash_attn is not installed. Using PyTorch native attention implementation.
+2024-11-14 21:16:56 - flash_attn is not installed. Using PyTorch native attention implementation.
+2024-11-14 21:16:56 - flash_attn is not installed. Using PyTorch native attention implementation.
+2024-11-14 21:16:56 - flash_attn is not installed. Using PyTorch native attention implementation.
+2024-11-14 21:16:56 - flash_attn is not installed. Using PyTorch native attention implementation.
+2024-11-14 21:16:56 - flash_attn is not installed. Using PyTorch native attention implementation.
+2024-11-14 21:16:56 - flash_attn is not installed. Using PyTorch native attention implementation.
+2024-11-14 21:16:56 - flash_attn is not installed. Using PyTorch native attention implementation.
+2024-11-14 21:17:00.668 | INFO     | src.components.reranker:__init__:26 - Reranker initialized...
+2024-11-14 21:17:00.705 | INFO     | src.components.retriever:__init__:47 - Retriever initialized...
+2024-11-14 21:17:00 - Your app is available at http://0.0.0.0:8000/chainlit
+2024-11-14 21:17:58 - Translation file for fr-FR not found. Using default translation en-US.
+2024-11-14 21:17:58 - Translated markdown file for fr-FR not found. Defaulting to chainlit.md.
+2024-11-14 21:17:59.398 | INFO     | chainlit_app.py:on_chat_start:66 - Chat history flushed
+2024-11-14 21:18:17 - Translation file for fr-FR not found. Using default translation en-US.
+2024-11-14 21:18:17 - Translation file for fr-FR not found. Using default translation en-US.
+2024-11-14 21:18:18 - Translated markdown file for fr-FR not found. Defaulting to chainlit.md.
+2024-11-14 21:18:18.376 | INFO     | chainlit_app.py:on_chat_start:66 - Chat history flushed
+2024-11-14 21:18:20 - Translation file for fr-FR not found. Using default translation en-US.
+2024-11-14 21:18:20 - Translation file for fr-FR not found. Using default translation en-US.
+2024-11-14 21:18:20 - Translated markdown file for fr-FR not found. Defaulting to chainlit.md.
+2024-11-14 21:18:20.924 | INFO     | chainlit_app.py:on_chat_start:66 - Chat history flushed
+2024-11-14 22:34:33.356 | INFO     | chainlit_app.py:on_chat_start:66 - Chat history flushed
+2024-11-14 22:36:06 - Translation file for fr-FR not found. Using default translation en-US.
+2024-11-14 22:36:06 - Translated markdown file for fr-FR not found. Defaulting to chainlit.md.
+2024-11-14 22:36:07.348 | INFO     | chainlit_app.py:on_chat_start:66 - Chat history flushed
+2024-11-14 22:36:29 - Translation file for fr-FR not found. Using default translation en-US.
+2024-11-14 22:36:31.546 | INFO     | src.components.pipeline:get_contextualize_docs:97 - Contextualizing the question
+2024-11-14 22:36:31.548 | INFO     | src.components.pipeline:get_contextualize_docs:116 - Generating contextualized question for retreival...
+2024-11-14 22:36:31 - HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 200 OK"
+2024-11-14 22:36:32.429 | INFO     | src.components.pipeline:get_contextualize_docs:119 - Documents retreived...
+==> Qui est le candidat favori pour la prochaine élection présidentielle américaine ?
+2024-11-14 22:36:32 - HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 200 OK"
+2024-11-14 22:36:34 - HTTP Request: POST http://localhost:6333/collections/ifa_db/points/query "HTTP/1.1 200 OK"
+2024-11-14 22:36:34 - HTTP Request: POST http://localhost:6333/collections/ifa_db/points/query "HTTP/1.1 200 OK"
+2024-11-14 22:36:34 - HTTP Request: POST http://localhost:6333/collections/ifa_db/points/query "HTTP/1.1 200 OK"
+2024-11-14 22:36:35.122 | INFO     | src.components.reranker:rerank:41 - Reranking documents ...
+BSIZE:
+2
+  0%|          | 0/8 [00:00<?, ?it/s] 12%|█▎        | 1/8 [00:01<00:12,  1.84s/it] 25%|██▌       | 2/8 [00:03<00:11,  1.84s/it] 38%|███▊      | 3/8 [00:05<00:09,  1.84s/it] 50%|█████     | 4/8 [00:07<00:07,  1.84s/it] 62%|██████▎   | 5/8 [00:09<00:05,  1.84s/it] 75%|███████▌  | 6/8 [00:11<00:03,  1.84s/it] 88%|████████▊ | 7/8 [00:12<00:01,  1.85s/it]100%|██████████| 8/8 [00:14<00:00,  1.85s/it]100%|██████████| 8/8 [00:14<00:00,  1.85s/it]
+2024-11-14 22:36:51 - HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 200 OK"
+2024-11-14 22:37:06.318 | INFO     | src.components.pipeline:get_contextualize_docs:97 - Contextualizing the question
+2024-11-14 22:37:06.319 | INFO     | src.components.pipeline:get_contextualize_docs:116 - Generating contextualized question for retreival...
+2024-11-14 22:37:06 - HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 200 OK"
+2024-11-14 22:37:06.791 | INFO     | src.components.pipeline:get_contextualize_docs:119 - Documents retreived...
+==> Qui sera le prochain président des États-Unis ?
+2024-11-14 22:37:06 - HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 200 OK"
+2024-11-14 22:37:08 - HTTP Request: POST http://localhost:6333/collections/ifa_db/points/query "HTTP/1.1 200 OK"
+2024-11-14 22:37:08 - HTTP Request: POST http://localhost:6333/collections/ifa_db/points/query "HTTP/1.1 200 OK"
+2024-11-14 22:37:08 - HTTP Request: POST http://localhost:6333/collections/ifa_db/points/query "HTTP/1.1 200 OK"
+2024-11-14 22:37:08.539 | INFO     | src.components.reranker:rerank:41 - Reranking documents ...
+BSIZE:
+2
+  0%|          | 0/6 [00:00<?, ?it/s] 17%|█▋        | 1/6 [00:01<00:09,  1.86s/it] 33%|███▎      | 2/6 [00:03<00:07,  1.86s/it] 50%|█████     | 3/6 [00:05<00:05,  1.86s/it] 67%|██████▋   | 4/6 [00:07<00:03,  1.86s/it] 83%|████████▎ | 5/6 [00:09<00:01,  1.85s/it]100%|██████████| 6/6 [00:10<00:00,  1.55s/it]100%|██████████| 6/6 [00:10<00:00,  1.70s/it]
+2024-11-14 22:37:19 - HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 200 OK"
+2024-11-14 22:37:52 - Translation file for fr-FR not found. Using default translation en-US.
+2024-11-14 22:37:54.065 | INFO     | src.components.pipeline:get_contextualize_docs:97 - Contextualizing the question
+2024-11-14 22:37:54.066 | INFO     | src.components.pipeline:get_contextualize_docs:116 - Generating contextualized question for retreival...
+2024-11-14 22:37:54 - HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 200 OK"
+2024-11-14 22:37:54.625 | INFO     | src.components.pipeline:get_contextualize_docs:119 - Documents retreived...
+==> Qui est le prochain président des États-Unis ?
+2024-11-14 22:37:54 - HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 200 OK"
+2024-11-14 22:37:55 - HTTP Request: POST http://localhost:6333/collections/ifa_db/points/query "HTTP/1.1 200 OK"
+2024-11-14 22:37:55 - HTTP Request: POST http://localhost:6333/collections/ifa_db/points/query "HTTP/1.1 200 OK"
+2024-11-14 22:37:56 - HTTP Request: POST http://localhost:6333/collections/ifa_db/points/query "HTTP/1.1 200 OK"
+2024-11-14 22:37:56.430 | INFO     | src.components.reranker:rerank:41 - Reranking documents ...
+BSIZE:
+2
+  0%|          | 0/6 [00:00<?, ?it/s] 17%|█▋        | 1/6 [00:01<00:09,  1.85s/it] 33%|███▎      | 2/6 [00:03<00:07,  1.85s/it] 50%|█████     | 3/6 [00:05<00:05,  1.85s/it] 67%|██████▋   | 4/6 [00:07<00:03,  1.86s/it] 83%|████████▎ | 5/6 [00:09<00:01,  1.86s/it]100%|██████████| 6/6 [00:11<00:00,  1.85s/it]100%|██████████| 6/6 [00:11<00:00,  1.85s/it]
+2024-11-14 22:38:08 - HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 200 OK"
+2024-11-14 22:38:11 - Translation file for fr-FR not found. Using default translation en-US.
+2024-11-14 22:38:34.406 | INFO     | src.components.pipeline:get_contextualize_docs:97 - Contextualizing the question
+2024-11-14 22:38:34.407 | INFO     | src.components.pipeline:get_contextualize_docs:116 - Generating contextualized question for retreival...
+2024-11-14 22:38:34 - HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 200 OK"
+2024-11-14 22:38:34.896 | INFO     | src.components.pipeline:get_contextualize_docs:119 - Documents retreived...
+==> Qui est le premier ministre actuel de la France ?
+2024-11-14 22:38:34 - HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 200 OK"
+2024-11-14 22:38:36 - HTTP Request: POST http://localhost:6333/collections/ifa_db/points/query "HTTP/1.1 200 OK"
+2024-11-14 22:38:36 - HTTP Request: POST http://localhost:6333/collections/ifa_db/points/query "HTTP/1.1 200 OK"
+2024-11-14 22:38:36 - HTTP Request: POST http://localhost:6333/collections/ifa_db/points/query "HTTP/1.1 200 OK"
+2024-11-14 22:38:36.586 | INFO     | src.components.reranker:rerank:41 - Reranking documents ...
+BSIZE:
+2
+  0%|          | 0/7 [00:00<?, ?it/s] 14%|█▍        | 1/7 [00:01<00:11,  1.85s/it] 29%|██▊       | 2/7 [00:03<00:09,  1.86s/it] 43%|████▎     | 3/7 [00:05<00:07,  1.86s/it] 57%|█████▋    | 4/7 [00:07<00:05,  1.86s/it] 71%|███████▏  | 5/7 [00:09<00:03,  1.85s/it] 86%|████████▌ | 6/7 [00:11<00:01,  1.85s/it]100%|██████████| 7/7 [00:12<00:00,  1.85s/it]100%|██████████| 7/7 [00:12<00:00,  1.85s/it]
+2024-11-14 22:38:50 - HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 200 OK"
+2024-11-14 22:39:23 - Translation file for fr-FR not found. Using default translation en-US.
+2024-11-14 22:39:24.685 | INFO     | src.components.pipeline:get_contextualize_docs:97 - Contextualizing the question
+2024-11-14 22:39:24.686 | INFO     | src.components.pipeline:get_contextualize_docs:116 - Generating contextualized question for retreival...
+2024-11-14 22:39:24 - HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 200 OK"
+2024-11-14 22:39:25.297 | INFO     | src.components.pipeline:get_contextualize_docs:119 - Documents retreived...
+==> What is the number of benchmarks compared for Lightweight Vision Transformer?
+2024-11-14 22:39:25 - HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 200 OK"
+2024-11-14 22:39:26 - HTTP Request: POST http://localhost:6333/collections/ifa_db/points/query "HTTP/1.1 200 OK"
+2024-11-14 22:39:26 - HTTP Request: POST http://localhost:6333/collections/ifa_db/points/query "HTTP/1.1 200 OK"
+2024-11-14 22:39:26 - HTTP Request: POST http://localhost:6333/collections/ifa_db/points/query "HTTP/1.1 200 OK"
+2024-11-14 22:39:26.883 | INFO     | src.components.reranker:rerank:41 - Reranking documents ...
+BSIZE:
+2
+  0%|          | 0/6 [00:00<?, ?it/s] 17%|█▋        | 1/6 [00:02<00:11,  2.25s/it] 33%|███▎      | 2/6 [00:04<00:09,  2.25s/it] 50%|█████     | 3/6 [00:06<00:06,  2.26s/it] 67%|██████▋   | 4/6 [00:09<00:04,  2.26s/it] 83%|████████▎ | 5/6 [00:11<00:02,  2.25s/it]100%|██████████| 6/6 [00:12<00:00,  1.88s/it]100%|██████████| 6/6 [00:12<00:00,  2.07s/it]
+2024-11-14 22:39:40 - HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 200 OK"
+2024-11-14 22:39:57.885 | INFO     | src.components.pipeline:get_contextualize_docs:97 - Contextualizing the question
+2024-11-14 22:39:57.886 | INFO     | src.components.pipeline:get_contextualize_docs:116 - Generating contextualized question for retreival...
+2024-11-14 22:39:57 - HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 200 OK"
+2024-11-14 22:39:58.402 | INFO     | src.components.pipeline:get_contextualize_docs:119 - Documents retreived...
+==> Quels sont les benchmarks comparés pour le Lightweight Vision Transformer ?
+2024-11-14 22:39:58 - HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 200 OK"
+2024-11-14 22:39:59 - HTTP Request: POST http://localhost:6333/collections/ifa_db/points/query "HTTP/1.1 200 OK"
+2024-11-14 22:39:59 - HTTP Request: POST http://localhost:6333/collections/ifa_db/points/query "HTTP/1.1 200 OK"
+2024-11-14 22:39:59 - HTTP Request: POST http://localhost:6333/collections/ifa_db/points/query "HTTP/1.1 200 OK"
+2024-11-14 22:40:00.455 | INFO     | src.components.reranker:rerank:41 - Reranking documents ...
+BSIZE:
+2
+  0%|          | 0/7 [00:00<?, ?it/s] 14%|█▍        | 1/7 [00:02<00:13,  2.26s/it] 29%|██▊       | 2/7 [00:04<00:11,  2.25s/it] 43%|████▎     | 3/7 [00:06<00:09,  2.25s/it] 57%|█████▋    | 4/7 [00:09<00:06,  2.25s/it] 71%|███████▏  | 5/7 [00:11<00:04,  2.25s/it] 86%|████████▌ | 6/7 [00:13<00:02,  2.26s/it]100%|██████████| 7/7 [00:14<00:00,  1.90s/it]100%|██████████| 7/7 [00:14<00:00,  2.10s/it]
+2024-11-14 22:40:16 - HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 200 OK"
+2024-11-14 22:40:36 - Translation file for fr-FR not found. Using default translation en-US.
+2024-11-14 22:40:38.326 | INFO     | src.components.pipeline:get_contextualize_docs:97 - Contextualizing the question
+2024-11-14 22:40:38.327 | INFO     | src.components.pipeline:get_contextualize_docs:116 - Generating contextualized question for retreival...
+2024-11-14 22:40:38 - HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 200 OK"
+2024-11-14 22:40:38.825 | INFO     | src.components.pipeline:get_contextualize_docs:119 - Documents retreived...
+==> Qui est le premier ministre actuel de la France ?
+2024-11-14 22:40:38 - HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 200 OK"
+2024-11-14 22:40:40 - HTTP Request: POST http://localhost:6333/collections/ifa_db/points/query "HTTP/1.1 200 OK"
+2024-11-14 22:40:40 - HTTP Request: POST http://localhost:6333/collections/ifa_db/points/query "HTTP/1.1 200 OK"
+2024-11-14 22:40:40 - HTTP Request: POST http://localhost:6333/collections/ifa_db/points/query "HTTP/1.1 200 OK"
+2024-11-14 22:40:40.631 | INFO     | src.components.reranker:rerank:41 - Reranking documents ...
+BSIZE:
+2
+  0%|          | 0/7 [00:00<?, ?it/s] 14%|█▍        | 1/7 [00:01<00:11,  1.86s/it] 29%|██▊       | 2/7 [00:03<00:09,  1.85s/it] 43%|████▎     | 3/7 [00:05<00:07,  1.85s/it] 57%|█████▋    | 4/7 [00:07<00:05,  1.85s/it] 71%|███████▏  | 5/7 [00:09<00:03,  1.85s/it] 86%|████████▌ | 6/7 [00:11<00:01,  1.85s/it]100%|██████████| 7/7 [00:12<00:00,  1.86s/it]100%|██████████| 7/7 [00:12<00:00,  1.86s/it]
+2024-11-14 22:40:54 - HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 200 OK"
+2024-11-14 22:41:30 - Translation file for fr-FR not found. Using default translation en-US.
+2024-11-14 22:41:32.405 | INFO     | src.components.pipeline:get_contextualize_docs:97 - Contextualizing the question
+2024-11-14 22:41:32.406 | INFO     | src.components.pipeline:get_contextualize_docs:116 - Generating contextualized question for retreival...
+2024-11-14 22:41:32 - HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 200 OK"
+2024-11-14 22:41:32.919 | INFO     | src.components.pipeline:get_contextualize_docs:119 - Documents retreived...
+==> What are the benchmark comparisons for the lightweight vision transformer's performance?
+2024-11-14 22:41:32 - HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 200 OK"
+2024-11-14 22:41:34 - HTTP Request: POST http://localhost:6333/collections/ifa_db/points/query "HTTP/1.1 200 OK"
+2024-11-14 22:41:34 - HTTP Request: POST http://localhost:6333/collections/ifa_db/points/query "HTTP/1.1 200 OK"
+2024-11-14 22:41:34 - HTTP Request: POST http://localhost:6333/collections/ifa_db/points/query "HTTP/1.1 200 OK"
+2024-11-14 22:41:34.791 | INFO     | src.components.reranker:rerank:41 - Reranking documents ...
+BSIZE:
+2
+  0%|          | 0/6 [00:00<?, ?it/s] 17%|█▋        | 1/6 [00:02<00:11,  2.25s/it] 33%|███▎      | 2/6 [00:04<00:09,  2.25s/it] 50%|█████     | 3/6 [00:06<00:06,  2.26s/it] 67%|██████▋   | 4/6 [00:09<00:04,  2.25s/it] 83%|████████▎ | 5/6 [00:11<00:02,  2.25s/it]100%|██████████| 6/6 [00:12<00:00,  1.87s/it]100%|██████████| 6/6 [00:12<00:00,  2.07s/it]
+2024-11-14 22:41:48 - HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 200 OK"
+2024-11-14 22:42:07.425 | INFO     | src.components.pipeline:get_contextualize_docs:97 - Contextualizing the question
+2024-11-14 22:42:07.426 | INFO     | src.components.pipeline:get_contextualize_docs:116 - Generating contextualized question for retreival...
+2024-11-14 22:42:07 - HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 200 OK"
+2024-11-14 22:42:07.882 | INFO     | src.components.pipeline:get_contextualize_docs:119 - Documents retreived...
+==> What is the performance of the lightweight vision transformer?
+2024-11-14 22:42:07 - HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 200 OK"
+2024-11-14 22:42:08 - HTTP Request: POST http://localhost:6333/collections/ifa_db/points/query "HTTP/1.1 200 OK"
+2024-11-14 22:42:08 - HTTP Request: POST http://localhost:6333/collections/ifa_db/points/query "HTTP/1.1 200 OK"
+2024-11-14 22:42:08 - HTTP Request: POST http://localhost:6333/collections/ifa_db/points/query "HTTP/1.1 200 OK"
+2024-11-14 22:42:09.382 | INFO     | src.components.reranker:rerank:41 - Reranking documents ...
+BSIZE:
+2
+  0%|          | 0/6 [00:00<?, ?it/s] 17%|█▋        | 1/6 [00:02<00:11,  2.26s/it] 33%|███▎      | 2/6 [00:04<00:09,  2.25s/it] 50%|█████     | 3/6 [00:06<00:06,  2.25s/it] 67%|██████▋   | 4/6 [00:09<00:04,  2.25s/it] 83%|████████▎ | 5/6 [00:11<00:02,  2.25s/it]100%|██████████| 6/6 [00:12<00:00,  1.88s/it]100%|██████████| 6/6 [00:12<00:00,  2.07s/it]
+2024-11-14 22:42:22 - HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 200 OK"
+2024-11-14 22:43:01.485 | INFO     | src.components.pipeline:get_contextualize_docs:97 - Contextualizing the question
+2024-11-14 22:43:01.486 | INFO     | src.components.pipeline:get_contextualize_docs:116 - Generating contextualized question for retreival...
+2024-11-14 22:43:01 - HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 200 OK"
+2024-11-14 22:43:02.031 | INFO     | src.components.pipeline:get_contextualize_docs:119 - Documents retreived...
+==> What benchmarks were compared for the Lightweight Vision Transformer?
+2024-11-14 22:43:02 - HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 200 OK"
+2024-11-14 22:43:03 - HTTP Request: POST http://localhost:6333/collections/ifa_db/points/query "HTTP/1.1 200 OK"
+2024-11-14 22:43:03 - HTTP Request: POST http://localhost:6333/collections/ifa_db/points/query "HTTP/1.1 200 OK"
+2024-11-14 22:43:03 - HTTP Request: POST http://localhost:6333/collections/ifa_db/points/query "HTTP/1.1 200 OK"
+2024-11-14 22:43:03.613 | INFO     | src.components.reranker:rerank:41 - Reranking documents ...
+BSIZE:
+2
+  0%|          | 0/6 [00:00<?, ?it/s] 17%|█▋        | 1/6 [00:02<00:11,  2.25s/it] 33%|███▎      | 2/6 [00:04<00:09,  2.25s/it] 50%|█████     | 3/6 [00:06<00:06,  2.26s/it] 67%|██████▋   | 4/6 [00:09<00:04,  2.25s/it] 83%|████████▎ | 5/6 [00:11<00:02,  2.25s/it]100%|██████████| 6/6 [00:12<00:00,  1.88s/it]100%|██████████| 6/6 [00:12<00:00,  2.07s/it]
+2024-11-14 22:43:17 - HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 200 OK"
+2024-11-14 22:43:31 - Translation file for fr-FR not found. Using default translation en-US.
+2024-11-14 22:43:42.645 | INFO     | src.components.pipeline:get_contextualize_docs:97 - Contextualizing the question
+2024-11-14 22:43:42.646 | INFO     | src.components.pipeline:get_contextualize_docs:116 - Generating contextualized question for retreival...
+2024-11-14 22:43:42 - HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 200 OK"
+2024-11-14 22:43:43.112 | INFO     | src.components.pipeline:get_contextualize_docs:119 - Documents retreived...
+==> What are the instructions for using T-Drive?
+2024-11-14 22:43:43 - HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 200 OK"
+2024-11-14 22:43:44 - HTTP Request: POST http://localhost:6333/collections/ifa_db/points/query "HTTP/1.1 200 OK"
+2024-11-14 22:43:44 - HTTP Request: POST http://localhost:6333/collections/ifa_db/points/query "HTTP/1.1 200 OK"
+2024-11-14 22:43:44 - HTTP Request: POST http://localhost:6333/collections/ifa_db/points/query "HTTP/1.1 200 OK"
+2024-11-14 22:43:44.572 | INFO     | src.components.reranker:rerank:41 - Reranking documents ...
+BSIZE:
+2
+  0%|          | 0/9 [00:00<?, ?it/s] 11%|█         | 1/9 [00:00<00:07,  1.13it/s] 22%|██▏       | 2/9 [00:01<00:06,  1.13it/s] 33%|███▎      | 3/9 [00:02<00:05,  1.13it/s] 44%|████▍     | 4/9 [00:03<00:04,  1.13it/s] 56%|█████▌    | 5/9 [00:04<00:03,  1.13it/s] 67%|██████▋   | 6/9 [00:05<00:02,  1.13it/s] 78%|███████▊  | 7/9 [00:06<00:01,  1.13it/s] 89%|████████▉ | 8/9 [00:07<00:00,  1.14it/s]100%|██████████| 9/9 [00:07<00:00,  1.36it/s]100%|██████████| 9/9 [00:07<00:00,  1.20it/s]
+2024-11-14 22:43:53 - HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 200 OK"
+2024-11-14 22:44:42 - Translation file for fr-FR not found. Using default translation en-US.
+2024-11-14 22:47:25 - Translation file for fr-FR not found. Using default translation en-US.
+2024-11-14 22:47:27.925 | INFO     | src.components.pipeline:get_contextualize_docs:97 - Contextualizing the question
+2024-11-14 22:47:27.926 | INFO     | src.components.pipeline:get_contextualize_docs:116 - Generating contextualized question for retreival...
+2024-11-14 22:47:28 - HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 200 OK"
+2024-11-14 22:47:28.525 | INFO     | src.components.pipeline:get_contextualize_docs:119 - Documents retreived...
+==> Qui est Michel-Marie Maudet ?
+2024-11-14 22:47:28 - HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 200 OK"
+2024-11-14 22:47:29 - HTTP Request: POST http://localhost:6333/collections/ifa_db/points/query "HTTP/1.1 200 OK"
+2024-11-14 22:47:29 - HTTP Request: POST http://localhost:6333/collections/ifa_db/points/query "HTTP/1.1 200 OK"
+2024-11-14 22:47:29 - HTTP Request: POST http://localhost:6333/collections/ifa_db/points/query "HTTP/1.1 200 OK"
+2024-11-14 22:47:30.045 | INFO     | src.components.reranker:rerank:41 - Reranking documents ...
+BSIZE:
+2
+  0%|          | 0/9 [00:00<?, ?it/s] 11%|█         | 1/9 [00:01<00:14,  1.83s/it] 22%|██▏       | 2/9 [00:03<00:12,  1.83s/it] 33%|███▎      | 3/9 [00:05<00:11,  1.84s/it] 44%|████▍     | 4/9 [00:07<00:09,  1.84s/it] 56%|█████▌    | 5/9 [00:09<00:07,  1.84s/it] 67%|██████▋   | 6/9 [00:11<00:05,  1.84s/it] 78%|███████▊  | 7/9 [00:12<00:03,  1.84s/it] 89%|████████▉ | 8/9 [00:14<00:01,  1.84s/it]100%|██████████| 9/9 [00:15<00:00,  1.57s/it]100%|██████████| 9/9 [00:15<00:00,  1.74s/it]
+2024-11-14 22:47:47 - HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 200 OK"
+2024-11-14 22:49:01 - Translation file for fr-FR not found. Using default translation en-US.
+2024-11-14 22:49:03.073 | INFO     | src.components.pipeline:get_contextualize_docs:97 - Contextualizing the question
+2024-11-14 22:49:03.076 | INFO     | src.components.pipeline:get_contextualize_docs:116 - Generating contextualized question for retreival...
+2024-11-14 22:49:03 - HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 200 OK"
+2024-11-14 22:49:03.878 | INFO     | src.components.pipeline:get_contextualize_docs:119 - Documents retreived...
+==> Quel est le plus grand Tyrannosaurus rex complet découvert à ce jour ?
+2024-11-14 22:49:03 - HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 200 OK"
+2024-11-14 22:49:05 - HTTP Request: POST http://localhost:6333/collections/ifa_db/points/query "HTTP/1.1 200 OK"
+2024-11-14 22:49:05 - HTTP Request: POST http://localhost:6333/collections/ifa_db/points/query "HTTP/1.1 200 OK"
+2024-11-14 22:49:05 - HTTP Request: POST http://localhost:6333/collections/ifa_db/points/query "HTTP/1.1 200 OK"
+2024-11-14 22:49:06.184 | INFO     | src.components.reranker:rerank:41 - Reranking documents ...
+BSIZE:
+2
+  0%|          | 0/9 [00:00<?, ?it/s] 11%|█         | 1/9 [00:00<00:03,  2.08it/s] 22%|██▏       | 2/9 [00:00<00:03,  2.07it/s] 33%|███▎      | 3/9 [00:01<00:02,  2.06it/s] 44%|████▍     | 4/9 [00:01<00:02,  2.06it/s] 56%|█████▌    | 5/9 [00:02<00:01,  2.06it/s] 67%|██████▋   | 6/9 [00:02<00:01,  2.06it/s] 78%|███████▊  | 7/9 [00:03<00:00,  2.05it/s] 89%|████████▉ | 8/9 [00:03<00:00,  2.05it/s]100%|██████████| 9/9 [00:04<00:00,  2.43it/s]100%|██████████| 9/9 [00:04<00:00,  2.18it/s]
+2024-11-14 22:49:11 - HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 200 OK"
+2024-11-14 22:49:44 - Translation file for fr-FR not found. Using default translation en-US.
+2024-11-14 22:49:46.886 | INFO     | src.components.pipeline:get_contextualize_docs:97 - Contextualizing the question
+2024-11-14 22:49:46.887 | INFO     | src.components.pipeline:get_contextualize_docs:116 - Generating contextualized question for retreival...
+2024-11-14 22:49:46 - HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 200 OK"
+2024-11-14 22:49:47.676 | INFO     | src.components.pipeline:get_contextualize_docs:119 - Documents retreived...
+==> Qui sont les candidats potentiels à la présidence des États-Unis en 2024 ?
+2024-11-14 22:49:47 - HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 200 OK"
+2024-11-14 22:49:49 - HTTP Request: POST http://localhost:6333/collections/ifa_db/points/query "HTTP/1.1 200 OK"
+2024-11-14 22:49:49 - HTTP Request: POST http://localhost:6333/collections/ifa_db/points/query "HTTP/1.1 200 OK"
+2024-11-14 22:49:49 - HTTP Request: POST http://localhost:6333/collections/ifa_db/points/query "HTTP/1.1 200 OK"
+2024-11-14 22:49:50.436 | INFO     | src.components.reranker:rerank:41 - Reranking documents ...
+BSIZE:
+2
+  0%|          | 0/10 [00:00<?, ?it/s] 10%|█         | 1/10 [00:01<00:16,  1.84s/it] 20%|██        | 2/10 [00:03<00:14,  1.84s/it] 30%|███       | 3/10 [00:05<00:12,  1.85s/it] 40%|████      | 4/10 [00:07<00:11,  1.85s/it] 50%|█████     | 5/10 [00:09<00:09,  1.85s/it] 60%|██████    | 6/10 [00:11<00:07,  1.85s/it] 70%|███████   | 7/10 [00:12<00:05,  1.85s/it] 80%|████████  | 8/10 [00:14<00:03,  1.85s/it] 90%|█████████ | 9/10 [00:16<00:01,  1.85s/it]100%|██████████| 10/10 [00:17<00:00,  1.57s/it]100%|██████████| 10/10 [00:17<00:00,  1.76s/it]
+2024-11-14 22:50:09 - HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 200 OK"
+2024-11-14 22:50:31.225 | INFO     | src.components.pipeline:get_contextualize_docs:97 - Contextualizing the question
+2024-11-14 22:50:31.227 | INFO     | src.components.pipeline:get_contextualize_docs:116 - Generating contextualized question for retreival...
+2024-11-14 22:50:31 - HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 200 OK"
+2024-11-14 22:50:31.743 | INFO     | src.components.pipeline:get_contextualize_docs:119 - Documents retreived...
+==> Qui sera le prochain président des États-Unis ?
+2024-11-14 22:50:31 - HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 200 OK"
+2024-11-14 22:50:33 - HTTP Request: POST http://localhost:6333/collections/ifa_db/points/query "HTTP/1.1 200 OK"
+2024-11-14 22:50:33 - HTTP Request: POST http://localhost:6333/collections/ifa_db/points/query "HTTP/1.1 200 OK"
+2024-11-14 22:50:33 - HTTP Request: POST http://localhost:6333/collections/ifa_db/points/query "HTTP/1.1 200 OK"
+2024-11-14 22:50:33.473 | INFO     | src.components.reranker:rerank:41 - Reranking documents ...
+BSIZE:
+2
+  0%|          | 0/6 [00:00<?, ?it/s] 17%|█▋        | 1/6 [00:01<00:09,  1.86s/it] 33%|███▎      | 2/6 [00:03<00:07,  1.86s/it] 50%|█████     | 3/6 [00:05<00:05,  1.86s/it] 67%|██████▋   | 4/6 [00:07<00:03,  1.86s/it] 83%|████████▎ | 5/6 [00:09<00:01,  1.86s/it]100%|██████████| 6/6 [00:11<00:00,  1.86s/it]100%|██████████| 6/6 [00:11<00:00,  1.86s/it]
+2024-11-14 22:50:45 - HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 200 OK"
+2024-11-14 22:51:11 - Translation file for fr-FR not found. Using default translation en-US.
+2024-11-14 22:51:13.626 | INFO     | src.components.pipeline:get_contextualize_docs:97 - Contextualizing the question
+2024-11-14 22:51:13.627 | INFO     | src.components.pipeline:get_contextualize_docs:116 - Generating contextualized question for retreival...
+2024-11-14 22:51:13 - HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 200 OK"
+2024-11-14 22:51:14.255 | INFO     | src.components.pipeline:get_contextualize_docs:119 - Documents retreived...
+==> Qui sera le prochain président des États-Unis ?
+2024-11-14 22:51:14 - HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 200 OK"
+2024-11-14 22:51:15 - HTTP Request: POST http://localhost:6333/collections/ifa_db/points/query "HTTP/1.1 200 OK"
+2024-11-14 22:51:15 - HTTP Request: POST http://localhost:6333/collections/ifa_db/points/query "HTTP/1.1 200 OK"
+2024-11-14 22:51:15 - HTTP Request: POST http://localhost:6333/collections/ifa_db/points/query "HTTP/1.1 200 OK"
+2024-11-14 22:51:16.095 | INFO     | src.components.reranker:rerank:41 - Reranking documents ...
+BSIZE:
+2
+  0%|          | 0/6 [00:00<?, ?it/s] 17%|█▋        | 1/6 [00:01<00:09,  1.86s/it] 33%|███▎      | 2/6 [00:03<00:07,  1.86s/it] 50%|█████     | 3/6 [00:05<00:05,  1.86s/it] 67%|██████▋   | 4/6 [00:07<00:03,  1.86s/it] 83%|████████▎ | 5/6 [00:09<00:01,  1.86s/it]100%|██████████| 6/6 [00:11<00:00,  1.86s/it]100%|██████████| 6/6 [00:11<00:00,  1.86s/it]
+2024-11-14 22:51:28 - HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 200 OK"
+2024-11-14 22:51:37.285 | INFO     | src.components.pipeline:get_contextualize_docs:97 - Contextualizing the question
+2024-11-14 22:51:37.286 | INFO     | src.components.pipeline:get_contextualize_docs:116 - Generating contextualized question for retreival...
+2024-11-14 22:51:37 - HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 200 OK"
+2024-11-14 22:51:37.753 | INFO     | src.components.pipeline:get_contextualize_docs:119 - Documents retreived...
+==> Qui est le premier ministre actuel de la France ?
+2024-11-14 22:51:37 - HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 200 OK"
+2024-11-14 22:51:39 - HTTP Request: POST http://localhost:6333/collections/ifa_db/points/query "HTTP/1.1 200 OK"
+2024-11-14 22:51:39 - HTTP Request: POST http://localhost:6333/collections/ifa_db/points/query "HTTP/1.1 200 OK"
+2024-11-14 22:51:39 - HTTP Request: POST http://localhost:6333/collections/ifa_db/points/query "HTTP/1.1 200 OK"
+2024-11-14 22:51:39.518 | INFO     | src.components.reranker:rerank:41 - Reranking documents ...
+BSIZE:
+2
+  0%|          | 0/7 [00:00<?, ?it/s] 14%|█▍        | 1/7 [00:01<00:11,  1.86s/it] 29%|██▊       | 2/7 [00:03<00:09,  1.86s/it] 43%|████▎     | 3/7 [00:05<00:07,  1.86s/it] 57%|█████▋    | 4/7 [00:07<00:05,  1.86s/it] 71%|███████▏  | 5/7 [00:09<00:03,  1.86s/it] 86%|████████▌ | 6/7 [00:11<00:01,  1.86s/it]100%|██████████| 7/7 [00:13<00:00,  1.86s/it]100%|██████████| 7/7 [00:13<00:00,  1.86s/it]
+2024-11-14 22:51:53 - HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 200 OK"
+2024-11-14 22:52:01.846 | INFO     | src.components.pipeline:get_contextualize_docs:97 - Contextualizing the question
+2024-11-14 22:52:01.847 | INFO     | src.components.pipeline:get_contextualize_docs:116 - Generating contextualized question for retreival...
+2024-11-14 22:52:01 - HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 200 OK"
+2024-11-14 22:52:02.281 | INFO     | src.components.pipeline:get_contextualize_docs:119 - Documents retreived...
+==> Qui est le premier ministre actuel de la France ?
+2024-11-14 22:52:02 - HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 200 OK"
+2024-11-14 22:52:03 - HTTP Request: POST http://localhost:6333/collections/ifa_db/points/query "HTTP/1.1 200 OK"
+2024-11-14 22:52:03 - HTTP Request: POST http://localhost:6333/collections/ifa_db/points/query "HTTP/1.1 200 OK"
+2024-11-14 22:52:03 - HTTP Request: POST http://localhost:6333/collections/ifa_db/points/query "HTTP/1.1 200 OK"
+2024-11-14 22:52:04.038 | INFO     | src.components.reranker:rerank:41 - Reranking documents ...
+BSIZE:
+2
+  0%|          | 0/8 [00:00<?, ?it/s] 12%|█▎        | 1/8 [00:01<00:13,  1.86s/it] 25%|██▌       | 2/8 [00:03<00:11,  1.86s/it] 38%|███▊      | 3/8 [00:05<00:09,  1.86s/it] 50%|█████     | 4/8 [00:07<00:07,  1.86s/it] 62%|██████▎   | 5/8 [00:09<00:05,  1.86s/it] 75%|███████▌  | 6/8 [00:11<00:03,  1.86s/it] 88%|████████▊ | 7/8 [00:13<00:01,  1.87s/it]100%|██████████| 8/8 [00:14<00:00,  1.58s/it]100%|██████████| 8/8 [00:14<00:00,  1.75s/it]
+2024-11-14 22:52:19 - HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 200 OK"
+2024-11-14 22:52:45 - Translation file for fr-FR not found. Using default translation en-US.
+2024-11-14 22:53:18 - Translation file for fr-FR not found. Using default translation en-US.
+2024-11-14 22:53:20.185 | INFO     | src.components.pipeline:get_contextualize_docs:97 - Contextualizing the question
+2024-11-14 22:53:20.186 | INFO     | src.components.pipeline:get_contextualize_docs:116 - Generating contextualized question for retreival...
+2024-11-14 22:53:20 - HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 200 OK"
+2024-11-14 22:53:20.615 | INFO     | src.components.pipeline:get_contextualize_docs:119 - Documents retreived...
+==> Qu'est-ce que le LLM ?
+2024-11-14 22:53:20 - HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 200 OK"
+2024-11-14 22:53:21 - HTTP Request: POST http://localhost:6333/collections/ifa_db/points/query "HTTP/1.1 200 OK"
+2024-11-14 22:53:21 - HTTP Request: POST http://localhost:6333/collections/ifa_db/points/query "HTTP/1.1 200 OK"
+2024-11-14 22:53:21 - HTTP Request: POST http://localhost:6333/collections/ifa_db/points/query "HTTP/1.1 200 OK"
+2024-11-14 22:53:22.183 | INFO     | src.components.reranker:rerank:41 - Reranking documents ...
+BSIZE:
+2
+  0%|          | 0/9 [00:00<?, ?it/s] 11%|█         | 1/9 [00:00<00:02,  3.55it/s] 22%|██▏       | 2/9 [00:00<00:01,  3.55it/s] 33%|███▎      | 3/9 [00:00<00:01,  3.56it/s] 44%|████▍     | 4/9 [00:01<00:01,  3.53it/s] 56%|█████▌    | 5/9 [00:01<00:01,  3.53it/s] 67%|██████▋   | 6/9 [00:01<00:00,  3.54it/s] 78%|███████▊  | 7/9 [00:01<00:00,  3.54it/s] 89%|████████▉ | 8/9 [00:02<00:00,  3.55it/s]100%|██████████| 9/9 [00:02<00:00,  4.20it/s]100%|██████████| 9/9 [00:02<00:00,  3.75it/s]
+2024-11-14 22:53:25 - HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 200 OK"
+2024-11-14 22:54:02 - Translation file for fr-FR not found. Using default translation en-US.
+2024-11-14 22:54:08.625 | INFO     | src.components.pipeline:get_contextualize_docs:97 - Contextualizing the question
+2024-11-14 22:54:08.626 | INFO     | src.components.pipeline:get_contextualize_docs:116 - Generating contextualized question for retreival...
+2024-11-14 22:54:08 - HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 200 OK"
+2024-11-14 22:54:09.005 | INFO     | src.components.pipeline:get_contextualize_docs:119 - Documents retreived...
+==> Qui est Donald Trump ?
+2024-11-14 22:54:09 - HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 200 OK"
+2024-11-14 22:54:10 - HTTP Request: POST http://localhost:6333/collections/ifa_db/points/query "HTTP/1.1 200 OK"
+2024-11-14 22:54:10 - HTTP Request: POST http://localhost:6333/collections/ifa_db/points/query "HTTP/1.1 200 OK"
+2024-11-14 22:54:10 - HTTP Request: POST http://localhost:6333/collections/ifa_db/points/query "HTTP/1.1 200 OK"
+2024-11-14 22:54:10.601 | INFO     | src.components.reranker:rerank:41 - Reranking documents ...
+BSIZE:
+2
+  0%|          | 0/9 [00:00<?, ?it/s] 11%|█         | 1/9 [00:01<00:14,  1.84s/it] 22%|██▏       | 2/9 [00:03<00:12,  1.84s/it] 33%|███▎      | 3/9 [00:05<00:11,  1.85s/it] 44%|████▍     | 4/9 [00:07<00:09,  1.85s/it] 56%|█████▌    | 5/9 [00:09<00:07,  1.85s/it] 67%|██████▋   | 6/9 [00:11<00:05,  1.85s/it] 78%|███████▊  | 7/9 [00:12<00:03,  1.85s/it] 89%|████████▉ | 8/9 [00:14<00:01,  1.85s/it]100%|██████████| 9/9 [00:15<00:00,  1.57s/it]100%|██████████| 9/9 [00:15<00:00,  1.75s/it]
+2024-11-14 22:54:27 - HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 200 OK"
+2024-11-14 22:55:13 - Translation file for fr-FR not found. Using default translation en-US.
+2024-11-14 22:57:12 - Translation file for fr-FR not found. Using default translation en-US.
+2024-11-14 22:57:14.586 | INFO     | src.components.pipeline:get_contextualize_docs:97 - Contextualizing the question
+2024-11-14 22:57:14.587 | INFO     | src.components.pipeline:get_contextualize_docs:116 - Generating contextualized question for retreival...
+2024-11-14 22:57:14 - HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 200 OK"
+2024-11-14 22:57:15.308 | INFO     | src.components.pipeline:get_contextualize_docs:119 - Documents retreived...
+==> Quelle est la procédure pour utiliser Twake Drive ?
+2024-11-14 22:57:15 - HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 200 OK"
+2024-11-14 22:57:16 - HTTP Request: POST http://localhost:6333/collections/ifa_db/points/query "HTTP/1.1 200 OK"
+2024-11-14 22:57:16 - HTTP Request: POST http://localhost:6333/collections/ifa_db/points/query "HTTP/1.1 200 OK"
+2024-11-14 22:57:16 - HTTP Request: POST http://localhost:6333/collections/ifa_db/points/query "HTTP/1.1 200 OK"
+2024-11-14 22:57:17.200 | INFO     | src.components.reranker:rerank:41 - Reranking documents ...
+BSIZE:
+2
+  0%|          | 0/7 [00:00<?, ?it/s] 14%|█▍        | 1/7 [00:00<00:01,  3.40it/s] 29%|██▊       | 2/7 [00:00<00:01,  3.43it/s] 43%|████▎     | 3/7 [00:00<00:01,  3.45it/s] 57%|█████▋    | 4/7 [00:01<00:00,  3.43it/s] 71%|███████▏  | 5/7 [00:01<00:00,  3.45it/s] 86%|████████▌ | 6/7 [00:01<00:00,  3.45it/s]100%|██████████| 7/7 [00:01<00:00,  4.12it/s]100%|██████████| 7/7 [00:01<00:00,  3.71it/s]
+2024-11-14 22:57:20 - HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 200 OK"
+2024-11-14 22:59:03 - Translation file for fr-FR not found. Using default translation en-US.
+2024-11-14 22:59:07 - Translation file for fr-FR not found. Using default translation en-US.
+2024-11-14 23:01:53 - Translated markdown file for fr-FR not found. Defaulting to chainlit.md.
+2024-11-14 23:01:53 - Translation file for fr-FR not found. Using default translation en-US.
+2024-11-14 23:01:56.882 | INFO     | chainlit_app.py:on_chat_start:66 - Chat history flushed
+2024-11-14 23:02:12 - Translated markdown file for fr-FR not found. Defaulting to chainlit.md.
+2024-11-14 23:02:12 - Translated markdown file for fr-FR not found. Defaulting to chainlit.md.
+2024-11-14 23:02:12 - Translation file for fr-FR not found. Using default translation en-US.
+2024-11-14 23:13:14 - Translation file for fr-FR not found. Using default translation en-US.
+2024-11-14 23:15:46 - Translation file for fr-FR not found. Using default translation en-US.
+2024-11-14 23:16:24 - Translation file for fr-FR not found. Using default translation en-US.
+2024-11-14 23:19:08 - Translation file for fr-FR not found. Using default translation en-US.
+2024-11-14 23:19:46 - Translation file for fr-FR not found. Using default translation en-US.
+2024-11-14 23:21:33 - Translation file for fr-FR not found. Using default translation en-US.
+2024-11-14 23:24:12 - Translation file for fr-FR not found. Using default translation en-US.
+2024-11-14 23:24:14.140 | INFO     | src.components.pipeline:get_contextualize_docs:97 - Contextualizing the question
+2024-11-14 23:24:14.142 | INFO     | src.components.pipeline:get_contextualize_docs:116 - Generating contextualized question for retreival...
+2024-11-14 23:24:14 - HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 200 OK"
+2024-11-14 23:24:15.045 | INFO     | src.components.pipeline:get_contextualize_docs:119 - Documents retreived...
+==> Quels outils en ligne créent des flashcards en français pour aider à apprendre et à mémoriser des informations ?
+2024-11-14 23:24:15 - HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 200 OK"
+2024-11-14 23:24:17 - HTTP Request: POST http://localhost:6333/collections/ifa_db/points/query "HTTP/1.1 200 OK"
+2024-11-14 23:24:17 - HTTP Request: POST http://localhost:6333/collections/ifa_db/points/query "HTTP/1.1 200 OK"
+2024-11-14 23:24:17 - HTTP Request: POST http://localhost:6333/collections/ifa_db/points/query "HTTP/1.1 200 OK"
+2024-11-14 23:24:17.969 | INFO     | src.components.reranker:rerank:41 - Reranking documents ...
+BSIZE:
+2
+  0%|          | 0/9 [00:00<?, ?it/s] 11%|█         | 1/9 [00:01<00:13,  1.69s/it] 22%|██▏       | 2/9 [00:03<00:11,  1.69s/it] 33%|███▎      | 3/9 [00:05<00:10,  1.69s/it] 44%|████▍     | 4/9 [00:06<00:08,  1.69s/it] 56%|█████▌    | 5/9 [00:08<00:06,  1.69s/it] 67%|██████▋   | 6/9 [00:10<00:05,  1.69s/it] 78%|███████▊  | 7/9 [00:11<00:03,  1.69s/it] 89%|████████▉ | 8/9 [00:13<00:01,  1.69s/it]100%|██████████| 9/9 [00:14<00:00,  1.44s/it]100%|██████████| 9/9 [00:14<00:00,  1.60s/it]
+2024-11-14 23:24:33 - HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 200 OK"
+2024-11-14 23:25:03 - Translation file for fr-FR not found. Using default translation en-US.
+2024-11-14 23:25:55.200 | INFO     | src.components.pipeline:get_contextualize_docs:97 - Contextualizing the question
+2024-11-14 23:25:55.201 | INFO     | src.components.pipeline:get_contextualize_docs:116 - Generating contextualized question for retreival...
+2024-11-14 23:25:55 - HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 200 OK"
+2024-11-14 23:25:55.676 | INFO     | src.components.pipeline:get_contextualize_docs:119 - Documents retreived...
+==> Qu'est-ce que FlashAttention ?
+2024-11-14 23:25:55 - HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 200 OK"
+2024-11-14 23:25:56 - HTTP Request: POST http://localhost:6333/collections/ifa_db/points/query "HTTP/1.1 200 OK"
+2024-11-14 23:25:56 - HTTP Request: POST http://localhost:6333/collections/ifa_db/points/query "HTTP/1.1 200 OK"
+2024-11-14 23:25:56 - HTTP Request: POST http://localhost:6333/collections/ifa_db/points/query "HTTP/1.1 200 OK"
+2024-11-14 23:25:57.133 | INFO     | src.components.reranker:rerank:41 - Reranking documents ...
+BSIZE:
+2
+  0%|          | 0/6 [00:00<?, ?it/s] 17%|█▋        | 1/6 [00:00<00:04,  1.15it/s] 33%|███▎      | 2/6 [00:01<00:03,  1.15it/s] 50%|█████     | 3/6 [00:02<00:02,  1.15it/s] 67%|██████▋   | 4/6 [00:03<00:01,  1.15it/s] 83%|████████▎ | 5/6 [00:04<00:00,  1.15it/s]100%|██████████| 6/6 [00:05<00:00,  1.16it/s]100%|██████████| 6/6 [00:05<00:00,  1.15it/s]
+2024-11-14 23:26:03 - HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 200 OK"
+2024-11-14 23:26:42 - Translation file for fr-FR not found. Using default translation en-US.
+2024-11-14 23:31:11 - Translation file for fr-FR not found. Using default translation en-US.
+2024-11-14 23:40:54 - Translation file for fr-FR not found. Using default translation en-US.
+2024-11-14 23:40:56.528 | INFO     | src.components.pipeline:get_contextualize_docs:97 - Contextualizing the question
+2024-11-14 23:40:56.530 | INFO     | src.components.pipeline:get_contextualize_docs:116 - Generating contextualized question for retreival...
+2024-11-14 23:40:56 - HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 200 OK"
+2024-11-14 23:40:57.192 | INFO     | src.components.pipeline:get_contextualize_docs:119 - Documents retreived...
+==> What datasets was FlashAttention (Lightweight Transformer) benchmarked on?
+2024-11-14 23:40:57 - HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 200 OK"
+2024-11-14 23:40:58 - HTTP Request: POST http://localhost:6333/collections/ifa_db/points/query "HTTP/1.1 200 OK"
+2024-11-14 23:40:58 - HTTP Request: POST http://localhost:6333/collections/ifa_db/points/query "HTTP/1.1 200 OK"
+2024-11-14 23:40:58 - HTTP Request: POST http://localhost:6333/collections/ifa_db/points/query "HTTP/1.1 200 OK"
+2024-11-14 23:40:58.924 | INFO     | src.components.reranker:rerank:41 - Reranking documents ...
+BSIZE:
+2
+  0%|          | 0/8 [00:00<?, ?it/s] 12%|█▎        | 1/8 [00:02<00:15,  2.22s/it] 25%|██▌       | 2/8 [00:04<00:13,  2.23s/it] 38%|███▊      | 3/8 [00:06<00:11,  2.23s/it] 50%|█████     | 4/8 [00:08<00:08,  2.24s/it] 62%|██████▎   | 5/8 [00:11<00:06,  2.24s/it] 75%|███████▌  | 6/8 [00:13<00:04,  2.24s/it] 88%|████████▊ | 7/8 [00:15<00:02,  2.25s/it]100%|██████████| 8/8 [00:17<00:00,  2.25s/it]100%|██████████| 8/8 [00:17<00:00,  2.24s/it]
+2024-11-14 23:41:18 - HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 200 OK"
+2024-11-14 23:42:08 - Translation file for fr-FR not found. Using default translation en-US.
+2024-11-14 23:42:12.648 | INFO     | src.components.pipeline:get_contextualize_docs:97 - Contextualizing the question
+2024-11-14 23:42:12.649 | INFO     | src.components.pipeline:get_contextualize_docs:116 - Generating contextualized question for retreival...
+2024-11-14 23:42:12 - HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 200 OK"
+2024-11-14 23:42:13.182 | INFO     | src.components.pipeline:get_contextualize_docs:119 - Documents retreived...
+==> What benchmarks were compared for Lightweight Vision Transformer ?
+2024-11-14 23:42:13 - HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 200 OK"
+2024-11-14 23:42:14 - HTTP Request: POST http://localhost:6333/collections/ifa_db/points/query "HTTP/1.1 200 OK"
+2024-11-14 23:42:14 - HTTP Request: POST http://localhost:6333/collections/ifa_db/points/query "HTTP/1.1 200 OK"
+2024-11-14 23:42:14 - HTTP Request: POST http://localhost:6333/collections/ifa_db/points/query "HTTP/1.1 200 OK"
+2024-11-14 23:42:14.749 | INFO     | src.components.reranker:rerank:41 - Reranking documents ...
+BSIZE:
+2
+  0%|          | 0/6 [00:00<?, ?it/s] 17%|█▋        | 1/6 [00:02<00:11,  2.23s/it] 33%|███▎      | 2/6 [00:04<00:08,  2.24s/it] 50%|█████     | 3/6 [00:06<00:06,  2.24s/it] 67%|██████▋   | 4/6 [00:08<00:04,  2.25s/it] 83%|████████▎ | 5/6 [00:11<00:02,  2.25s/it]100%|██████████| 6/6 [00:12<00:00,  1.88s/it]100%|██████████| 6/6 [00:12<00:00,  2.06s/it]
+2024-11-14 23:42:28 - HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 200 OK"
+2024-11-14 23:43:08 - Translation file for fr-FR not found. Using default translation en-US.
+2024-11-14 23:43:11 - Translation file for fr-FR not found. Using default translation en-US.
+2024-11-14 23:43:12 - Translated markdown file for fr-FR not found. Defaulting to chainlit.md.
+2024-11-14 23:43:12.591 | INFO     | chainlit_app.py:on_chat_start:66 - Chat history flushed
+2024-11-14 23:43:18 - Translation file for fr-FR not found. Using default translation en-US.
+2024-11-14 23:43:20.668 | INFO     | src.components.pipeline:get_contextualize_docs:97 - Contextualizing the question
+2024-11-14 23:43:20.669 | INFO     | src.components.pipeline:get_contextualize_docs:116 - Generating contextualized question for retreival...
+2024-11-14 23:43:20 - HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 200 OK"
+2024-11-14 23:43:21.209 | INFO     | src.components.pipeline:get_contextualize_docs:119 - Documents retreived...
+==> Quelle est la documentation officielle pour utiliser Twake Drive ?
+2024-11-14 23:43:21 - HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 200 OK"
+2024-11-14 23:43:22 - HTTP Request: POST http://localhost:6333/collections/ifa_db/points/query "HTTP/1.1 200 OK"
+2024-11-14 23:43:22 - HTTP Request: POST http://localhost:6333/collections/ifa_db/points/query "HTTP/1.1 200 OK"
+2024-11-14 23:43:22 - HTTP Request: POST http://localhost:6333/collections/ifa_db/points/query "HTTP/1.1 200 OK"
+2024-11-14 23:43:22.957 | INFO     | src.components.reranker:rerank:41 - Reranking documents ...
+BSIZE:
+2
+  0%|          | 0/7 [00:00<?, ?it/s] 14%|█▍        | 1/7 [00:00<00:01,  3.38it/s] 29%|██▊       | 2/7 [00:00<00:01,  3.42it/s] 43%|████▎     | 3/7 [00:00<00:01,  3.43it/s] 57%|█████▋    | 4/7 [00:01<00:00,  3.42it/s] 71%|███████▏  | 5/7 [00:01<00:00,  3.43it/s] 86%|████████▌ | 6/7 [00:01<00:00,  3.44it/s]100%|██████████| 7/7 [00:01<00:00,  4.10it/s]100%|██████████| 7/7 [00:01<00:00,  3.69it/s]
+2024-11-14 23:43:25 - HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 200 OK"
+2024-11-14 23:43:37 - Translation file for fr-FR not found. Using default translation en-US.
+2024-11-14 23:43:55 - Translation file for fr-FR not found. Using default translation en-US.
+2024-11-14 23:44:01.687 | INFO     | src.components.pipeline:get_contextualize_docs:97 - Contextualizing the question
+2024-11-14 23:44:01.688 | INFO     | src.components.pipeline:get_contextualize_docs:116 - Generating contextualized question for retreival...
+2024-11-14 23:44:01 - HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 200 OK"
+2024-11-14 23:44:02.255 | INFO     | src.components.pipeline:get_contextualize_docs:119 - Documents retreived...
+==> Quelle est la meilleure façon d'utiliser Twake Drive ?
+2024-11-14 23:44:02 - HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 200 OK"
+2024-11-14 23:44:03 - HTTP Request: POST http://localhost:6333/collections/ifa_db/points/query "HTTP/1.1 200 OK"
+2024-11-14 23:44:03 - HTTP Request: POST http://localhost:6333/collections/ifa_db/points/query "HTTP/1.1 200 OK"
+2024-11-14 23:44:03 - HTTP Request: POST http://localhost:6333/collections/ifa_db/points/query "HTTP/1.1 200 OK"
+2024-11-14 23:44:04.078 | INFO     | src.components.reranker:rerank:41 - Reranking documents ...
+BSIZE:
+2
+  0%|          | 0/6 [00:00<?, ?it/s] 17%|█▋        | 1/6 [00:00<00:01,  3.44it/s] 33%|███▎      | 2/6 [00:00<00:01,  3.45it/s] 50%|█████     | 3/6 [00:00<00:00,  3.45it/s] 67%|██████▋   | 4/6 [00:01<00:00,  3.43it/s] 83%|████████▎ | 5/6 [00:01<00:00,  3.44it/s]100%|██████████| 6/6 [00:01<00:00,  3.47it/s]100%|██████████| 6/6 [00:01<00:00,  3.45it/s]
+2024-11-14 23:44:07 - HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 200 OK"
+2024-11-14 23:44:36 - Translation file for fr-FR not found. Using default translation en-US.
+2024-11-14 23:44:38.847 | INFO     | src.components.pipeline:get_contextualize_docs:97 - Contextualizing the question
+2024-11-14 23:44:38.848 | INFO     | src.components.pipeline:get_contextualize_docs:116 - Generating contextualized question for retreival...
+2024-11-14 23:44:39 - HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 200 OK"
+2024-11-14 23:44:39.673 | INFO     | src.components.pipeline:get_contextualize_docs:119 - Documents retreived...
+==> **Quelle est la procédure d'utilisation de Twake Drive ?**
+2024-11-14 23:44:39 - HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 200 OK"
+2024-11-14 23:44:41 - HTTP Request: POST http://localhost:6333/collections/ifa_db/points/query "HTTP/1.1 200 OK"
+2024-11-14 23:44:41 - HTTP Request: POST http://localhost:6333/collections/ifa_db/points/query "HTTP/1.1 200 OK"
+2024-11-14 23:44:41 - HTTP Request: POST http://localhost:6333/collections/ifa_db/points/query "HTTP/1.1 200 OK"
+2024-11-14 23:44:41.408 | INFO     | src.components.reranker:rerank:41 - Reranking documents ...
+BSIZE:
+2
+  0%|          | 0/6 [00:00<?, ?it/s] 17%|█▋        | 1/6 [00:00<00:01,  3.44it/s] 33%|███▎      | 2/6 [00:00<00:01,  3.45it/s] 50%|█████     | 3/6 [00:00<00:00,  3.45it/s] 67%|██████▋   | 4/6 [00:01<00:00,  3.43it/s] 83%|████████▎ | 5/6 [00:01<00:00,  3.44it/s]100%|██████████| 6/6 [00:01<00:00,  3.47it/s]100%|██████████| 6/6 [00:01<00:00,  3.45it/s]
+2024-11-14 23:44:44 - HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 200 OK"
+2024-11-14 23:44:49 - Translation file for fr-FR not found. Using default translation en-US.
+2024-11-14 23:45:05.767 | INFO     | src.components.pipeline:get_contextualize_docs:97 - Contextualizing the question
+2024-11-14 23:45:05.768 | INFO     | src.components.pipeline:get_contextualize_docs:116 - Generating contextualized question for retreival...
+2024-11-14 23:45:05 - HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 200 OK"
+2024-11-14 23:45:06.253 | INFO     | src.components.pipeline:get_contextualize_docs:119 - Documents retreived...
+==> **Comment utiliser Google Drive ?**
+2024-11-14 23:45:06 - HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 200 OK"
+2024-11-14 23:45:07 - HTTP Request: POST http://localhost:6333/collections/ifa_db/points/query "HTTP/1.1 200 OK"
+2024-11-14 23:45:07 - HTTP Request: POST http://localhost:6333/collections/ifa_db/points/query "HTTP/1.1 200 OK"
+2024-11-14 23:45:07 - HTTP Request: POST http://localhost:6333/collections/ifa_db/points/query "HTTP/1.1 200 OK"
+2024-11-14 23:45:07.812 | INFO     | src.components.reranker:rerank:41 - Reranking documents ...
+BSIZE:
+2
+  0%|          | 0/11 [00:00<?, ?it/s]  9%|▉         | 1/11 [00:01<00:10,  1.07s/it] 18%|█▊        | 2/11 [00:02<00:09,  1.08s/it] 27%|██▋       | 3/11 [00:03<00:08,  1.08s/it] 36%|███▋      | 4/11 [00:04<00:07,  1.08s/it] 45%|████▌     | 5/11 [00:05<00:06,  1.08s/it] 55%|█████▍    | 6/11 [00:06<00:05,  1.09s/it] 64%|██████▎   | 7/11 [00:07<00:04,  1.09s/it] 73%|███████▎  | 8/11 [00:08<00:03,  1.09s/it] 82%|████████▏ | 9/11 [00:09<00:02,  1.08s/it] 91%|█████████ | 10/11 [00:10<00:01,  1.08s/it]100%|██████████| 11/11 [00:11<00:00,  1.09it/s]100%|██████████| 11/11 [00:11<00:00,  1.03s/it]
+2024-11-14 23:45:20 - HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 200 OK"
+2024-11-14 23:45:47 - Translation file for fr-FR not found. Using default translation en-US.
+2024-11-14 23:45:49 - Translation file for fr-FR not found. Using default translation en-US.
+2024-11-14 23:45:49 - Translated markdown file for fr-FR not found. Defaulting to chainlit.md.
+2024-11-14 23:45:50.144 | INFO     | chainlit_app.py:on_chat_start:66 - Chat history flushed
+2024-11-14 23:45:53.488 | INFO     | src.components.pipeline:get_contextualize_docs:97 - Contextualizing the question
+2024-11-14 23:45:53.489 | INFO     | src.components.pipeline:get_contextualize_docs:116 - Generating contextualized question for retreival...
+2024-11-14 23:45:53 - HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 200 OK"
+2024-11-14 23:45:53.970 | INFO     | src.components.pipeline:get_contextualize_docs:119 - Documents retreived...
+==> Qu'est-ce que T-Drive et comment l'utiliser ?
+2024-11-14 23:45:54 - HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 200 OK"
+2024-11-14 23:45:55 - HTTP Request: POST http://localhost:6333/collections/ifa_db/points/query "HTTP/1.1 200 OK"
+2024-11-14 23:45:55 - HTTP Request: POST http://localhost:6333/collections/ifa_db/points/query "HTTP/1.1 200 OK"
+2024-11-14 23:45:55 - HTTP Request: POST http://localhost:6333/collections/ifa_db/points/query "HTTP/1.1 200 OK"
+2024-11-14 23:45:55.750 | INFO     | src.components.reranker:rerank:41 - Reranking documents ...
+BSIZE:
+2
+  0%|          | 0/8 [00:00<?, ?it/s] 12%|█▎        | 1/8 [00:00<00:02,  3.44it/s] 25%|██▌       | 2/8 [00:00<00:01,  3.44it/s] 38%|███▊      | 3/8 [00:00<00:01,  3.44it/s] 50%|█████     | 4/8 [00:01<00:01,  3.42it/s] 62%|██████▎   | 5/8 [00:01<00:00,  3.43it/s] 75%|███████▌  | 6/8 [00:01<00:00,  3.44it/s] 88%|████████▊ | 7/8 [00:02<00:00,  3.43it/s]100%|██████████| 8/8 [00:02<00:00,  3.44it/s]100%|██████████| 8/8 [00:02<00:00,  3.44it/s]
+2024-11-14 23:45:59 - HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 200 OK"
+2024-11-14 23:46:26 - Translation file for fr-FR not found. Using default translation en-US.
+2024-11-14 23:46:29.924 | INFO     | chainlit_app.py:on_chat_start:66 - Chat history flushed
+2024-11-14 23:46:31.388 | INFO     | src.components.pipeline:get_contextualize_docs:97 - Contextualizing the question
+2024-11-14 23:46:31.389 | INFO     | src.components.pipeline:get_contextualize_docs:116 - Generating contextualized question for retreival...
+2024-11-14 23:46:31 - HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 200 OK"
+2024-11-14 23:46:31.924 | INFO     | src.components.pipeline:get_contextualize_docs:119 - Documents retreived...
+==> Qui est Donald Trump, le 45e président des États-Unis ?
+2024-11-14 23:46:31 - HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 200 OK"
+2024-11-14 23:46:33 - HTTP Request: POST http://localhost:6333/collections/ifa_db/points/query "HTTP/1.1 200 OK"
+2024-11-14 23:46:33 - HTTP Request: POST http://localhost:6333/collections/ifa_db/points/query "HTTP/1.1 200 OK"
+2024-11-14 23:46:33 - HTTP Request: POST http://localhost:6333/collections/ifa_db/points/query "HTTP/1.1 200 OK"
+2024-11-14 23:46:34.018 | INFO     | src.components.reranker:rerank:41 - Reranking documents ...
+BSIZE:
+2
+  0%|          | 0/9 [00:00<?, ?it/s] 11%|█         | 1/9 [00:01<00:14,  1.85s/it] 22%|██▏       | 2/9 [00:03<00:12,  1.85s/it] 33%|███▎      | 3/9 [00:05<00:11,  1.85s/it] 44%|████▍     | 4/9 [00:07<00:09,  1.85s/it]2024-11-14 23:46:42 - Translation file for fr-FR not found. Using default translation en-US.
+ 56%|█████▌    | 5/9 [00:09<00:07,  1.85s/it] 67%|██████▋   | 6/9 [00:11<00:05,  1.85s/it] 78%|███████▊  | 7/9 [00:12<00:03,  1.85s/it] 89%|████████▉ | 8/9 [00:14<00:01,  1.85s/it]100%|██████████| 9/9 [00:15<00:00,  1.57s/it]100%|██████████| 9/9 [00:15<00:00,  1.75s/it]
+2024-11-14 23:46:50 - HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 200 OK"
+2024-11-14 23:47:25.071 | INFO     | chainlit_app.py:on_chat_start:66 - Chat history flushed
+2024-11-14 23:47:26.369 | INFO     | src.components.pipeline:get_contextualize_docs:97 - Contextualizing the question
+2024-11-14 23:47:26.370 | INFO     | src.components.pipeline:get_contextualize_docs:116 - Generating contextualized question for retreival...
+2024-11-14 23:47:26 - HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 200 OK"
+2024-11-14 23:47:26.780 | INFO     | src.components.pipeline:get_contextualize_docs:119 - Documents retreived...
+==> What benchmarks were compared for the lightweight vision transformer?
+2024-11-14 23:47:26 - HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 200 OK"
+2024-11-14 23:47:27 - HTTP Request: POST http://localhost:6333/collections/ifa_db/points/query "HTTP/1.1 200 OK"
+2024-11-14 23:47:27 - HTTP Request: POST http://localhost:6333/collections/ifa_db/points/query "HTTP/1.1 200 OK"
+2024-11-14 23:47:27 - HTTP Request: POST http://localhost:6333/collections/ifa_db/points/query "HTTP/1.1 200 OK"
+2024-11-14 23:47:28.280 | INFO     | src.components.reranker:rerank:41 - Reranking documents ...
+BSIZE:
+2
+  0%|          | 0/7 [00:00<?, ?it/s] 14%|█▍        | 1/7 [00:02<00:13,  2.25s/it] 29%|██▊       | 2/7 [00:04<00:11,  2.25s/it] 43%|████▎     | 3/7 [00:06<00:09,  2.25s/it] 57%|█████▋    | 4/7 [00:09<00:06,  2.26s/it] 71%|███████▏  | 5/7 [00:11<00:04,  2.26s/it] 86%|████████▌ | 6/7 [00:13<00:02,  2.25s/it]100%|██████████| 7/7 [00:15<00:00,  2.26s/it]100%|██████████| 7/7 [00:15<00:00,  2.25s/it]
+2024-11-14 23:47:45 - HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 200 OK"
+2024-11-14 23:47:59.248 | INFO     | src.components.pipeline:get_contextualize_docs:97 - Contextualizing the question
+2024-11-14 23:47:59.249 | INFO     | src.components.pipeline:get_contextualize_docs:116 - Generating contextualized question for retreival...
+2024-11-14 23:47:59 - HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 200 OK"
+2024-11-14 23:47:59.677 | INFO     | src.components.pipeline:get_contextualize_docs:119 - Documents retreived...
+==> What are the benchmarks compared for the Lightweight Vision Transformer?
+2024-11-14 23:47:59 - HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 200 OK"
+2024-11-14 23:48:01 - HTTP Request: POST http://localhost:6333/collections/ifa_db/points/query "HTTP/1.1 200 OK"
+2024-11-14 23:48:01 - HTTP Request: POST http://localhost:6333/collections/ifa_db/points/query "HTTP/1.1 200 OK"
+2024-11-14 23:48:01 - HTTP Request: POST http://localhost:6333/collections/ifa_db/points/query "HTTP/1.1 200 OK"
+2024-11-14 23:48:01.436 | INFO     | src.components.reranker:rerank:41 - Reranking documents ...
+BSIZE:
+2
+  0%|          | 0/8 [00:00<?, ?it/s] 12%|█▎        | 1/8 [00:02<00:15,  2.26s/it] 25%|██▌       | 2/8 [00:04<00:13,  2.25s/it] 38%|███▊      | 3/8 [00:06<00:11,  2.25s/it] 50%|█████     | 4/8 [00:09<00:09,  2.26s/it] 62%|██████▎   | 5/8 [00:11<00:06,  2.26s/it] 75%|███████▌  | 6/8 [00:13<00:04,  2.26s/it] 88%|████████▊ | 7/8 [00:15<00:02,  2.26s/it]100%|██████████| 8/8 [00:16<00:00,  1.91s/it]100%|██████████| 8/8 [00:16<00:00,  2.12s/it]
+2024-11-14 23:48:19 - HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 200 OK"
+2024-11-14 23:48:38 - Translation file for fr-FR not found. Using default translation en-US.
+2024-11-14 23:48:41 - Translation file for fr-FR not found. Using default translation en-US.
+2024-11-14 23:48:41 - Translated markdown file for fr-FR not found. Defaulting to chainlit.md.
+2024-11-14 23:48:42.273 | INFO     | chainlit_app.py:on_chat_start:66 - Chat history flushed
+2024-11-14 23:48:44.088 | INFO     | src.components.pipeline:get_contextualize_docs:97 - Contextualizing the question
+2024-11-14 23:48:44.089 | INFO     | src.components.pipeline:get_contextualize_docs:116 - Generating contextualized question for retreival...
+2024-11-14 23:48:44 - HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 200 OK"
+2024-11-14 23:48:44.980 | INFO     | src.components.pipeline:get_contextualize_docs:119 - Documents retreived...
+==> Quelles sont les meilleures méthodes pour créer des flashcards en français pour apprendre le jeu de société FlashAttention ?
+2024-11-14 23:48:45 - HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 200 OK"
+2024-11-14 23:48:47 - HTTP Request: POST http://localhost:6333/collections/ifa_db/points/query "HTTP/1.1 200 OK"
+2024-11-14 23:48:47 - HTTP Request: POST http://localhost:6333/collections/ifa_db/points/query "HTTP/1.1 200 OK"
+2024-11-14 23:48:47 - HTTP Request: POST http://localhost:6333/collections/ifa_db/points/query "HTTP/1.1 200 OK"
+2024-11-14 23:48:47.687 | INFO     | src.components.reranker:rerank:41 - Reranking documents ...
+BSIZE:
+2
+  0%|          | 0/10 [00:00<?, ?it/s] 10%|█         | 1/10 [00:01<00:12,  1.35s/it] 20%|██        | 2/10 [00:02<00:10,  1.35s/it] 30%|███       | 3/10 [00:04<00:09,  1.35s/it] 40%|████      | 4/10 [00:05<00:08,  1.35s/it] 50%|█████     | 5/10 [00:06<00:06,  1.35s/it] 60%|██████    | 6/10 [00:08<00:05,  1.34s/it] 70%|███████   | 7/10 [00:09<00:04,  1.35s/it] 80%|████████  | 8/10 [00:10<00:02,  1.34s/it] 90%|█████████ | 9/10 [00:12<00:01,  1.34s/it]100%|██████████| 10/10 [00:13<00:00,  1.34s/it]100%|██████████| 10/10 [00:13<00:00,  1.34s/it]
+2024-11-14 23:49:02 - HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 200 OK"
+2024-11-14 23:49:37 - Translation file for fr-FR not found. Using default translation en-US.
+2024-11-14 23:49:40 - Translation file for fr-FR not found. Using default translation en-US.
+2024-11-14 23:49:41 - Translated markdown file for fr-FR not found. Defaulting to chainlit.md.
+2024-11-14 23:49:41.734 | INFO     | chainlit_app.py:on_chat_start:66 - Chat history flushed
+2024-11-14 23:49:48.729 | INFO     | src.components.pipeline:get_contextualize_docs:97 - Contextualizing the question
+2024-11-14 23:49:48.730 | INFO     | src.components.pipeline:get_contextualize_docs:116 - Generating contextualized question for retreival...
+2024-11-14 23:49:48 - HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 200 OK"
+2024-11-14 23:49:49.235 | INFO     | src.components.pipeline:get_contextualize_docs:119 - Documents retreived...
+==> What benchmarks were compared for lightweight transformer models?
+2024-11-14 23:49:49 - HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 200 OK"
+2024-11-14 23:49:50 - HTTP Request: POST http://localhost:6333/collections/ifa_db/points/query "HTTP/1.1 200 OK"
+2024-11-14 23:49:50 - HTTP Request: POST http://localhost:6333/collections/ifa_db/points/query "HTTP/1.1 200 OK"
+2024-11-14 23:49:50 - HTTP Request: POST http://localhost:6333/collections/ifa_db/points/query "HTTP/1.1 200 OK"
+2024-11-14 23:49:50.881 | INFO     | src.components.reranker:rerank:41 - Reranking documents ...
+BSIZE:
+2
+  0%|          | 0/7 [00:00<?, ?it/s] 14%|█▍        | 1/7 [00:02<00:14,  2.46s/it] 29%|██▊       | 2/7 [00:04<00:12,  2.47s/it] 43%|████▎     | 3/7 [00:07<00:09,  2.47s/it] 57%|█████▋    | 4/7 [00:09<00:07,  2.47s/it] 71%|███████▏  | 5/7 [00:12<00:04,  2.46s/it] 86%|████████▌ | 6/7 [00:14<00:02,  2.47s/it]100%|██████████| 7/7 [00:17<00:00,  2.47s/it]100%|██████████| 7/7 [00:17<00:00,  2.47s/it]
+2024-11-14 23:50:09 - HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 200 OK"
+2024-11-14 23:50:17 - Translation file for fr-FR not found. Using default translation en-US.
+2024-11-14 23:51:02 - Translation file for fr-FR not found. Using default translation en-US.
+2024-11-14 23:51:04 - Translation file for fr-FR not found. Using default translation en-US.
+2024-11-14 23:51:04 - Translated markdown file for fr-FR not found. Defaulting to chainlit.md.
+2024-11-14 23:51:05.334 | INFO     | chainlit_app.py:on_chat_start:66 - Chat history flushed
+2024-11-14 23:51:20 - Translation file for fr-FR not found. Using default translation en-US.
+2024-11-14 23:51:54.048 | INFO     | src.components.pipeline:get_contextualize_docs:97 - Contextualizing the question
+2024-11-14 23:51:54.050 | INFO     | src.components.pipeline:get_contextualize_docs:116 - Generating contextualized question for retreival...
+2024-11-14 23:51:54 - HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 200 OK"
+2024-11-14 23:51:54.507 | INFO     | src.components.pipeline:get_contextualize_docs:119 - Documents retreived...
+==> What are the benchmark datasets used to compare lightweight transformer models?
+2024-11-14 23:51:54 - HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 200 OK"
+2024-11-14 23:51:55 - HTTP Request: POST http://localhost:6333/collections/ifa_db/points/query "HTTP/1.1 200 OK"
+2024-11-14 23:51:55 - HTTP Request: POST http://localhost:6333/collections/ifa_db/points/query "HTTP/1.1 200 OK"
+2024-11-14 23:51:55 - HTTP Request: POST http://localhost:6333/collections/ifa_db/points/query "HTTP/1.1 200 OK"
+2024-11-14 23:51:56.254 | INFO     | src.components.reranker:rerank:41 - Reranking documents ...
+BSIZE:
+2
+  0%|          | 0/8 [00:00<?, ?it/s] 12%|█▎        | 1/8 [00:02<00:17,  2.45s/it] 25%|██▌       | 2/8 [00:04<00:14,  2.45s/it] 38%|███▊      | 3/8 [00:07<00:12,  2.46s/it] 50%|█████     | 4/8 [00:09<00:09,  2.45s/it] 62%|██████▎   | 5/8 [00:12<00:07,  2.45s/it]2024-11-14 23:52:10 - Translation file for fr-FR not found. Using default translation en-US.
+ 75%|███████▌  | 6/8 [00:14<00:04,  2.46s/it] 88%|████████▊ | 7/8 [00:17<00:02,  2.47s/it]100%|██████████| 8/8 [00:18<00:00,  2.09s/it]100%|██████████| 8/8 [00:18<00:00,  2.31s/it]
+2024-11-14 23:52:16 - HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 200 OK"
+2024-11-14 23:53:04 - Translation file for fr-FR not found. Using default translation en-US.
+2024-11-14 23:53:11 - Translation file for fr-FR not found. Using default translation en-US.
+2024-11-15 00:04:39 - Translation file for fr-FR not found. Using default translation en-US.
+2024-11-15 05:52:04 - Translation file for fr-FR not found. Using default translation en-US.
+2024-11-15 05:52:53 - Translation file for fr-FR not found. Using default translation en-US.
+2024-11-15 05:52:59 - Translation file for fr-FR not found. Using default translation en-US.
+2024-11-15 05:52:59 - Translated markdown file for fr-FR not found. Defaulting to chainlit.md.
+2024-11-15 05:52:59.621 | INFO     | chainlit_app.py:on_chat_start:66 - Chat history flushed
+2024-11-15 05:53:01.793 | INFO     | src.components.pipeline:get_contextualize_docs:97 - Contextualizing the question
+2024-11-15 05:53:01.795 | INFO     | src.components.pipeline:get_contextualize_docs:116 - Generating contextualized question for retreival...
+2024-11-15 05:53:02 - HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 200 OK"
+2024-11-15 05:53:02.671 | INFO     | src.components.pipeline:get_contextualize_docs:119 - Documents retreived...
+==> Quels sont les objectifs et les enjeux du projet OpenLLM France ?
+2024-11-15 05:53:02 - HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 200 OK"
+2024-11-15 05:53:04 - HTTP Request: POST http://localhost:6333/collections/ifa_db/points/query "HTTP/1.1 200 OK"
+2024-11-15 05:53:04 - HTTP Request: POST http://localhost:6333/collections/ifa_db/points/query "HTTP/1.1 200 OK"
+2024-11-15 05:53:04 - HTTP Request: POST http://localhost:6333/collections/ifa_db/points/query "HTTP/1.1 200 OK"
+2024-11-15 05:53:04.765 | INFO     | src.components.reranker:rerank:41 - Reranking documents ...
+BSIZE:
+2
+  0%|          | 0/6 [00:00<?, ?it/s] 17%|█▋        | 1/6 [00:00<00:01,  3.37it/s] 33%|███▎      | 2/6 [00:00<00:01,  3.43it/s] 50%|█████     | 3/6 [00:00<00:00,  3.46it/s] 67%|██████▋   | 4/6 [00:01<00:00,  3.44it/s] 83%|████████▎ | 5/6 [00:01<00:00,  3.47it/s]100%|██████████| 6/6 [00:01<00:00,  4.17it/s]100%|██████████| 6/6 [00:01<00:00,  3.76it/s]
+2024-11-15 05:53:07 - HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 200 OK"
+2024-11-15 05:56:31 - Translation file for fr-FR not found. Using default translation en-US.
+2024-11-15 07:39:46 - Translation file for fr-FR not found. Using default translation en-US.
+2024-11-15 07:39:46 - Translated markdown file for fr-FR not found. Defaulting to chainlit.md.
+2024-11-15 07:39:46.793 | INFO     | chainlit_app.py:on_chat_start:66 - Chat history flushed
+2024-11-15 08:26:06 - Translation file for fr-FR not found. Using default translation en-US.
+2024-11-15 08:26:06 - Translated markdown file for fr-FR not found. Defaulting to chainlit.md.
+2024-11-15 08:26:06.965 | INFO     | chainlit_app.py:on_chat_start:66 - Chat history flushed
+2024-11-15 08:26:17 - Translation file for fr-FR not found. Using default translation en-US.
+2024-11-15 08:26:21.801 | INFO     | src.components.pipeline:get_contextualize_docs:97 - Contextualizing the question
+2024-11-15 08:26:21.802 | INFO     | src.components.pipeline:get_contextualize_docs:116 - Generating contextualized question for retreival...
+2024-11-15 08:26:22 - HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 200 OK"
+2024-11-15 08:26:22.388 | INFO     | src.components.pipeline:get_contextualize_docs:119 - Documents retreived...
+==> Qu'est-ce que FlashAttention ?
+2024-11-15 08:26:22 - HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 200 OK"
+2024-11-15 08:26:23 - HTTP Request: POST http://localhost:6333/collections/ifa_db/points/query "HTTP/1.1 200 OK"
+2024-11-15 08:26:23 - HTTP Request: POST http://localhost:6333/collections/ifa_db/points/query "HTTP/1.1 200 OK"
+2024-11-15 08:26:23 - HTTP Request: POST http://localhost:6333/collections/ifa_db/points/query "HTTP/1.1 200 OK"
+2024-11-15 08:26:23.859 | INFO     | src.components.reranker:rerank:41 - Reranking documents ...
+BSIZE:
+2
+  0%|          | 0/5 [00:00<?, ?it/s] 20%|██        | 1/5 [00:00<00:03,  1.15it/s] 40%|████      | 2/5 [00:01<00:02,  1.15it/s] 60%|██████    | 3/5 [00:02<00:01,  1.15it/s] 80%|████████  | 4/5 [00:03<00:00,  1.15it/s]100%|██████████| 5/5 [00:04<00:00,  1.16it/s]100%|██████████| 5/5 [00:04<00:00,  1.15it/s]
+2024-11-15 08:26:29 - HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 200 OK"
+2024-11-15 08:26:46 - Translation file for fr-FR not found. Using default translation en-US.
+2024-11-15 08:27:03 - Translation file for fr-FR not found. Using default translation en-US.
+2024-11-15 08:27:55 - Translation file for fr-FR not found. Using default translation en-US.
+2024-11-15 08:27:55 - Translated markdown file for fr-FR not found. Defaulting to chainlit.md.
+2024-11-15 08:27:55.931 | INFO     | chainlit_app.py:on_chat_start:66 - Chat history flushed
+2024-11-15 08:28:01 - Translation file for fr-FR not found. Using default translation en-US.
+2024-11-15 08:28:57 - Translation file for fr-FR not found. Using default translation en-US.
+2024-11-15 08:59:40 - Translation file for fr-FR not found. Using default translation en-US.
+2024-11-15 08:59:43.230 | INFO     | src.components.pipeline:get_contextualize_docs:97 - Contextualizing the question
+2024-11-15 08:59:43.231 | INFO     | src.components.pipeline:get_contextualize_docs:116 - Generating contextualized question for retreival...
+2024-11-15 08:59:43 - HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 200 OK"
+2024-11-15 08:59:44.052 | INFO     | src.components.pipeline:get_contextualize_docs:119 - Documents retreived...
+==> Quels sont les événements et conférences auxquels Linagora a participé ?
+2024-11-15 08:59:44 - HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 200 OK"
+2024-11-15 08:59:46 - HTTP Request: POST http://localhost:6333/collections/ifa_db/points/query "HTTP/1.1 200 OK"
+2024-11-15 08:59:46 - HTTP Request: POST http://localhost:6333/collections/ifa_db/points/query "HTTP/1.1 200 OK"
+2024-11-15 08:59:46 - HTTP Request: POST http://localhost:6333/collections/ifa_db/points/query "HTTP/1.1 200 OK"
+2024-11-15 08:59:46.647 | INFO     | src.components.reranker:rerank:41 - Reranking documents ...
+BSIZE:
+2
+  0%|          | 0/7 [00:00<?, ?it/s] 14%|█▍        | 1/7 [00:00<00:03,  1.74it/s] 29%|██▊       | 2/7 [00:01<00:02,  1.72it/s] 43%|████▎     | 3/7 [00:01<00:02,  1.73it/s] 57%|█████▋    | 4/7 [00:02<00:01,  1.72it/s] 71%|███████▏  | 5/7 [00:02<00:01,  1.72it/s] 86%|████████▌ | 6/7 [00:03<00:00,  1.72it/s]100%|██████████| 7/7 [00:04<00:00,  1.72it/s]100%|██████████| 7/7 [00:04<00:00,  1.72it/s]
+2024-11-15 08:59:51 - HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 200 OK"
+2024-11-15 09:00:06 - Translation file for fr-FR not found. Using default translation en-US.
+2024-11-15 09:00:06 - Translated markdown file for fr-FR not found. Defaulting to chainlit.md.
+2024-11-15 09:00:07.423 | INFO     | chainlit_app.py:on_chat_start:66 - Chat history flushed
+2024-11-15 09:41:12 - Translation file for fr-FR not found. Using default translation en-US.
+2024-11-15 10:20:11 - Translation file for fr-FR not found. Using default translation en-US.
+2024-11-15 10:20:20.545 | INFO     | chainlit_app.py:on_chat_start:66 - Chat history flushed
+2024-11-15 10:20:43 - Translation file for fr-FR not found. Using default translation en-US.
+2024-11-15 10:20:43 - Translated markdown file for fr-FR not found. Defaulting to chainlit.md.
+2024-11-15 10:20:43.535 | INFO     | chainlit_app.py:on_chat_start:66 - Chat history flushed
+2024-11-15 10:21:01.915 | INFO     | src.components.pipeline:get_contextualize_docs:97 - Contextualizing the question
+2024-11-15 10:21:01.916 | INFO     | src.components.pipeline:get_contextualize_docs:116 - Generating contextualized question for retreival...
+2024-11-15 10:21:02 - HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 200 OK"
+2024-11-15 10:21:02.751 | INFO     | src.components.pipeline:get_contextualize_docs:119 - Documents retreived...
+==> Quels sont les objectifs et les enjeux du projet OpenLLM France ?
+2024-11-15 10:21:02 - HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 200 OK"
+2024-11-15 10:21:04 - HTTP Request: POST http://localhost:6333/collections/ifa_db/points/query "HTTP/1.1 200 OK"
+2024-11-15 10:21:04 - HTTP Request: POST http://localhost:6333/collections/ifa_db/points/query "HTTP/1.1 200 OK"
+2024-11-15 10:21:04 - HTTP Request: POST http://localhost:6333/collections/ifa_db/points/query "HTTP/1.1 200 OK"
+2024-11-15 10:21:04.653 | INFO     | src.components.reranker:rerank:41 - Reranking documents ...
+BSIZE:
+2
+  0%|          | 0/6 [00:00<?, ?it/s] 17%|█▋        | 1/6 [00:00<00:01,  2.63it/s] 33%|███▎      | 2/6 [00:00<00:01,  3.04it/s] 50%|█████     | 3/6 [00:00<00:00,  3.20it/s] 67%|██████▋   | 4/6 [00:01<00:00,  3.26it/s] 83%|████████▎ | 5/6 [00:01<00:00,  3.33it/s]100%|██████████| 6/6 [00:01<00:00,  4.03it/s]100%|██████████| 6/6 [00:01<00:00,  3.53it/s]
+2024-11-15 10:21:07 - HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 200 OK"
+2024-11-15 10:21:58 - Translation file for fr-FR not found. Using default translation en-US.
+2024-11-15 10:21:59.779 | INFO     | src.components.pipeline:get_contextualize_docs:97 - Contextualizing the question
+2024-11-15 10:21:59.780 | INFO     | src.components.pipeline:get_contextualize_docs:116 - Generating contextualized question for retreival...
+2024-11-15 10:21:59 - HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 200 OK"
+2024-11-15 10:22:00.386 | INFO     | src.components.pipeline:get_contextualize_docs:119 - Documents retreived...
+==> Quelle est la documentation officielle pour l'utilisation de T-Drive ?
+2024-11-15 10:22:00 - HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 200 OK"
+2024-11-15 10:22:01 - HTTP Request: POST http://localhost:6333/collections/ifa_db/points/query "HTTP/1.1 200 OK"
+2024-11-15 10:22:01 - HTTP Request: POST http://localhost:6333/collections/ifa_db/points/query "HTTP/1.1 200 OK"
+2024-11-15 10:22:01 - HTTP Request: POST http://localhost:6333/collections/ifa_db/points/query "HTTP/1.1 200 OK"
+2024-11-15 10:22:02.193 | INFO     | src.components.reranker:rerank:41 - Reranking documents ...
+BSIZE:
+2
+  0%|          | 0/8 [00:00<?, ?it/s] 12%|█▎        | 1/8 [00:00<00:02,  2.85it/s] 25%|██▌       | 2/8 [00:00<00:01,  3.16it/s] 38%|███▊      | 3/8 [00:00<00:01,  3.27it/s] 50%|█████     | 4/8 [00:01<00:01,  3.30it/s] 62%|██████▎   | 5/8 [00:01<00:00,  3.35it/s] 75%|███████▌  | 6/8 [00:01<00:00,  3.37it/s] 88%|████████▊ | 7/8 [00:02<00:00,  3.37it/s]100%|██████████| 8/8 [00:02<00:00,  3.40it/s]100%|██████████| 8/8 [00:02<00:00,  3.33it/s]
+2024-11-15 10:22:05 - HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 200 OK"
+2024-11-15 12:48:52 - Translation file for fr-FR not found. Using default translation en-US.
+2024-11-15 13:24:27 - Translation file for fr-FR not found. Using default translation en-US.
+2024-11-15 13:24:32 - Translation file for fr-FR not found. Using default translation en-US.
+2024-11-15 13:24:59 - Translation file for fr-FR not found. Using default translation en-US.
+2024-11-15 14:51:04 - Translation file for fr-FR not found. Using default translation en-US.
+2024-11-15 14:51:05 - Translated markdown file for fr-FR not found. Defaulting to chainlit.md.
+2024-11-15 14:51:05.474 | INFO     | chainlit_app.py:on_chat_start:66 - Chat history flushed
+2024-11-15 14:51:10.570 | INFO     | src.components.pipeline:get_contextualize_docs:97 - Contextualizing the question
+2024-11-15 14:51:10.572 | INFO     | src.components.pipeline:get_contextualize_docs:116 - Generating contextualized question for retreival...
+2024-11-15 14:51:10 - HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 200 OK"
+2024-11-15 14:51:11.290 | INFO     | src.components.pipeline:get_contextualize_docs:119 - Documents retreived...
+==> Quels sont les objectifs et les enjeux du projet OpenLLM France ?
+2024-11-15 14:51:11 - HTTP Request: POST https://chat.ai.linagora.exaion.com/v1/chat/completions "HTTP/1.1 200 OK"
+2024-11-15 14:51:12 - HTTP Request: POST http://localhost:6333/collections/ifa_db/points/query "HTTP/1.1 200 OK"
+2024-11-15 14:51:12 - HTTP Request: POST http://localhost:6333/collections/ifa_db/points/query "HTTP/1.1 200 OK"
+2024-11-15 14:51:12 - HTTP Request: POST http://localhost:6333/collections/ifa_db/points/query "HTTP/1.1 200 OK"
+2024-11-15 14:51:13.353 | INFO     | src.components.reranker:rerank:41 - Reranking documents ...
+BSIZE:
+2
+  0%|          | 0/6 [00:00<?, ?it/s] 17%|█▋        | 1/6 [00:00<00:01,  3.41it/s] 33%|███▎      | 2/6 [00:00<00:01,  3.42it/s] 50%|█████     | 3/6 [00:00<00:00,  3.41it/s] 67%|██████▋   | 4/6 [00:01<00:00,  3.39it/s] 83%|████████▎ | 5/6 [00:01<00:00,  3.42it/s]100%|██████████| 6/6 [00:01<00:00,  4.12it/s]100%|██████████| 6/6 [00:01<00:00,  3.72it/s]
+2024-11-15 14:51:20 - Translation file for fr-FR not found. Using default translation en-US.
+2024-11-15 14:51:20 - Translated markdown file for fr-FR not found. Defaulting to chainlit.md.
+2024-11-15 14:51:21.032 | INFO     | chainlit_app.py:on_chat_start:66 - Chat history flushed
+2024-11-15 14:51:27 - Translation file for fr-FR not found. Using default translation en-US.
+2024-11-15 14:57:26 - Translation file for fr-FR not found. Using default translation en-US.
+2024-11-15 14:57:26 - Translated markdown file for fr-FR not found. Defaulting to chainlit.md.
+2024-11-15 14:57:26.818 | INFO     | chainlit_app.py:on_chat_start:66 - Chat history flushed
+2024-11-15 14:57:33 - Translation file for fr-FR not found. Using default translation en-US.
+2024-11-15 14:57:40 - Translation file for fr-FR not found. Using default translation en-US.
+2024-11-15 15:23:14 - Translation file for fr-FR not found. Using default translation en-US.

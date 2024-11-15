@@ -1,16 +1,16 @@
 starters:
   - label: "OpenLLM France"
-    message: "Objectifs d'OpenLLM France et les enjeux de ce projet?"
+    message: "Quels sont les objectifs d'OpenLLM France et les enjeux de ce projet ?"
     icon: "/public/idea.svg"
 
   - label: "Produits de Linagora"
-    message: "Parle moi du Pack Twake et de LinTo?"
+    message: "Parle-moi du Pack Twake et de LinTo ?"
     icon: "/public/labor-man-labor.svg"
 
   - label: "Présentation de Linagora"
-    message: "Fais moi une présentation de Linagora."
+    message: "Fais-moi une présentation de Linagora."
     icon: "/public/danger-triangle.svg"
 
-  - label: "Events"
-    message: "Quels sont les evenements dans lesquels Linagora a participé?"
+  - label: "Événements"
+    message: "Quels sont les événements dans lesquels Linagora a participé ?"
     icon: "/public/events.svg"

@@ -1,0 +1,5 @@
+# This configuration is for the recursive splitter
+name: recursive_splitter
+chunk_size: 1000
+chunk_overlap: 100
+contextual_retrieval: true

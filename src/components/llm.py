@@ -13,7 +13,7 @@ class LLM:
         self.client: ChatOpenAI = ChatOpenAI(
             model=config.llm["name"],
             base_url=config.llm["base_url"],
-            api_key=config.api_key,
+            api_key=config.llm['api_key'],
             timeout=60,
             temperature=config.llm["temperature"],
             max_tokens=config.llm["max_tokens"], 
@@ -52,11 +52,3 @@ class LLM:
             "chat_history": chat_history, 
         }
         return rag_chain.astream(input_)
-
-
-        # try:
-        #     answer = rag_chain.astream(input_)   
-        #     return answer
-        # except Exception as e:
-        #     if self.logger:
-        #         self.logger.error(f"Unexpected error: {e}")

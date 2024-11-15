@@ -1,26 +1,22 @@
 import os
-import configparser
 from pathlib import Path
 from dotenv import load_dotenv
+from omegaconf import OmegaConf
+from hydra import initialize, compose
 
-os.environ['PYTORCH_CUDA_ALLOC_CONF'] = 'expandable_segments:True'
+def load_config(config_path="../../.hydra-config")-> OmegaConf:
+    
+    load_dotenv()
 
-class Config:
-    """This class encapsulates the configurations for the application, 
-    including settings for paths, directories, and LLM-specific parameters.
-    """
-    def __init__(self, cfg_file) -> None:
-        load_dotenv()
-        self.api_key: str = os.getenv('API_KEY')
-        self.dir_path = Path(__file__).parent
-        self.prompts_dir = self.dir_path / 'prompts'
+    with initialize(config_path=config_path, job_name="config_loader"):
+        config = compose(config_name="config")
+        dir_path = Path(__file__).parent
+        config.dir_path = dir_path
+        config.prompts_dir = dir_path / 'prompts'
+        config.llm.api_key = os.environ["API_KEY"]
+        return config
 
-        if not self.api_key:
-            print("Error: API_KEY not set")
-        
-        parser = configparser.ConfigParser()
-        parser.read_file(open(cfg_file))
-
-        for key, value in parser.items():
-            params = dict(value.items())
-            setattr(self, key, params)
+# Example usage
+if __name__ == "__main__":
+    config = load_config()
+    print(config)

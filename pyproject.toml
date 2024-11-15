@@ -1,0 +1,40 @@
+[tool.poetry]
+name = "ragondin"
+version = "0.1.0"
+description = ""
+authors = ["Ahmath-GADJI <ahmathgadji27@gmail.com>","MChrys <chrys.beltran@outlook.fr>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = ">=3.12,<3.13"
+
+
+chainlit = "^1.3.2"
+loguru = "^0.7.2"
+pyyaml = "^6.0.2"
+langchain-core = "^0.3.17"
+langchain-community = "^0.3.7"
+langchain-openai = "^0.2.8"
+ragatouille = "^0.0.8.post4"
+whisperx = {git = "https://github.com/federicotorrielli/BetterWhisperX", branch="main"}
+pyannote-audio = "3.1.1"
+ctranslate2 = "4.4.0"
+qdrant-client = "^1.12.1"
+langchain-qdrant = "^0.2.0"
+pydub = "^0.25.1"
+pymupdf4llm = "^0.0.17"
+aiopath = "^0.7.7"
+langchain-experimental = "^0.3.3"
+fastembed-gpu = "^0.4.2"
+hydra-core = "^1.3.2"
+python-dotenv = "^1.0.1"
+unstructured = "^0.16.5"
+python-docx = "^1.1.2"
+pypandoc = "^1.14"
+click = "^8.1.7"
+git-filter-repo = "^2.45.0"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

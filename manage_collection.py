@@ -6,9 +6,9 @@ import time
 import os
 from loguru import logger
 from qdrant_client import QdrantClient
-from src.components import Config
+from src.components import load_config
 
-config = Config("./config.ini")
+config = load_config() # Config("./config.ini")
 
 def is_valid_directory(path):
     """Custom validation to check if the directory exists."""
@@ -20,7 +20,6 @@ def is_valid_directory(path):
 
 async def main():
     parser = argparse.ArgumentParser(description='Adds local files from a folder to qdrant vector db')
-    
     # Add a folder argument for uploading to qdrant
     parser.add_argument("-f", "--folder",
         type=is_valid_directory,
