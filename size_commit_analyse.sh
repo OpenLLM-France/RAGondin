@@ -1,14 +1,12 @@
 #!/bin/bash
 
 # Vérifier si un argument de chemin a été fourni
-if [ -z "$1" ]; then
-    repo_path=$(pwd)
-else
-    repo_path=$1
-fi
+
+repo_path=$(pwd)
+
 
 # Vérifier si un argument de taille minimale a été fourni
-if [ -z "$2" ]; then
+if [ -z "$1" ]; then
     min_size=500
 else
     min_size=$2
@@ -66,5 +64,10 @@ echo "$problematic_objects" | while read -r line; do
         done
     done
 done
+
+# Afficher le nombre de fichiers trouvés
+file_count=$(wc -l < "$output_file")
+file_count=$((file_count - 1)) # Soustraire l'en-tête
+echo "Number of problematic files found: $file_count"
 
 echo "Report generated: $output_file"
