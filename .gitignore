@@ -28,5 +28,6 @@ CR.md
 # Ignore Python bytecode files
 *.pyc
 *.pyo
+*.csv
 
 .venv/

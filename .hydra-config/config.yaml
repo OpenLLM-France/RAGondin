@@ -13,13 +13,13 @@ llm:
   name: meta-llama-31-8b-it
   api_key: ''
   max_tokens: 1024
-  temperature: 0.1
+  temperature: 0.0
 
 vectordb:
   host: localhost
   port: 6333
   connector_name: qdrant
-  collection_name: ifa_db # vdb95
+  collection_name: vdb95
   hybrid_mode: true
 
 reranker:
@@ -31,7 +31,7 @@ verbose:
   level: INFO
 
 prompt:
-  rag_sys_pmpt: rag_sys_pmpt_tmpl_ifa.txt # rag_sys_prompt_template.txt
+  rag_sys_pmpt: rag_sys_prompt_template.txt # rag_sys_pmpt_tmpl_ifa.txt
   context_pmpt_tmpl: contextualize_prompt_template.txt
 
 

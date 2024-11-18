@@ -42,20 +42,22 @@ class ABCChunker(ABC):
 
 templtate = """
 <document>
-first page: {first_page}
-
-previous chunk: {prev_chunk}
+Title: {source} # Document title may contain key metadata (e.g., "employee_CVs_2024.pdf", "tutorial_videos_sql.mp4", "client_proposals_Q1.pdf")
+First page: {first_page}
+Previous chunk: {prev_chunk}
 </document>
 
-The next chunk is the chunk we want to situate within this document named `{source}`.
-The document’s name itself may contain relevant information (such as "employees CV," "tutorials," etc.) that can help contextualize the content. 
-
-<chunk>
+<current_chunk>
 {chunk}
-</chunk>
+</current_chunk>
 
-Please provide a brief, succinct context to situate this chunk within the document (first page and previous chunk), specifically to improve search retrieval of this chunk. 
-Respond only with the concise context in the same language as the provided document and chunk.
+Provide a brief, one-sentence context that situates this chunk within the document, incorporating relevant context from:
+1. The document title (including any format, type, or category information encoded in the filename)
+2. First page content
+3. Previous chunk
+4. Current chunk content
+
+Response format: A complete and concise contextual sentence in the same language (french or english) as the <current_chunk>.
 """
 
 

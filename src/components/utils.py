@@ -30,8 +30,12 @@ def format_context(docs: list[Document]) -> str:
         source = doc.metadata["source"]
         page = doc.metadata["page"]
 
-        document = f"""<chunk document_id={doc_id}>\n{doc.page_content.strip()}\n</chunk>\n"""
+        document = f"""
+        document id: {doc_id}
+        content: \n{doc.page_content.strip()}\n
+        """
 
+        # document = f"""<chunk document_id={doc_id}>\n{doc.page_content.strip()}\n</chunk>\n"""
         # Source: {source} (Page: {page})
     
         context += document

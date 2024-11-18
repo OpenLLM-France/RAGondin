@@ -42,6 +42,7 @@ class Reranker:
         async with self.semaphore:
             k = min(k, len(chunks)) # k must be <= the number of documents
 
+            # TODO: Can run faster with flash-attn if installed. Must update cuda to a version > 11.7.
             ranked_txt = await asyncio.to_thread(
                 lambda : self.model.rerank(question, [d.page_content for d in chunks], k=k, bsize='auto')
             )
