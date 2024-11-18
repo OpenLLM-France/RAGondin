@@ -1,5 +1,25 @@
 #!/bin/bash
 
+# Vérifier si un argument de chemin a été fourni
+if [ -z "$1" ]; then
+    repo_path=$(pwd)
+else
+    repo_path=$1
+fi
+
+# Vérifier si un argument de taille minimale a été fourni
+if [ -z "$2" ]; then
+    min_size=500
+else
+    min_size=$2
+fi
+
+# Convertir la taille minimale en octets
+min_size_bytes=$((min_size * 1024))
+
+# Changer de répertoire
+cd "$repo_path" || { echo "Le répertoire $repo_path n'existe pas."; exit 1; }
+
 # Fichier de sortie
 output_file="problematic_objects_report.csv"
 if [ -f "$output_file" ]; then
@@ -7,10 +27,10 @@ if [ -f "$output_file" ]; then
 fi
 
 # Initialiser le fichier de sortie
-echo "Commit, Branch, Object ID, Object Path, Format, Author, Date, Row Size, Size" > $output_file
+echo "Commit,Branch,Object ID,Object Path,Format,Author,Date,Row Size,Size" > $output_file
 
 # Trouver les gros objets (excepté le .pack) et les trier par taille
-problematic_objects=$(git rev-list --objects --all | git cat-file --batch-check='%(objecttype) %(objectname) %(objectsize) %(rest)' | sed -n 's/^blob //p' | grep -v '\.pack' | sort -k2 -nr)
+problematic_objects=$(git rev-list --objects --all | git cat-file --batch-check='%(objecttype) %(objectname) %(objectsize) %(rest)' | sed -n 's/^blob //p' | grep -v '\.pack' | awk -v min_size_bytes="$min_size_bytes" '$2 >= min_size_bytes' | sort -k2 -nr)
 
 # Utiliser un tableau associatif pour éviter les doublons
 declare -A seen_objects

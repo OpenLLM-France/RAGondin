@@ -12,6 +12,7 @@ def filter_files(ff, xf, ms, h):
     Filtre le fichier CSV en fonction des critères spécifiés et génère un fichier files-to-remove.txt.
     """
     df = pd.read_csv("problematic_objects_report.csv")
+    print(df.columns.tolist())
 
     if h:
         df = df.head(h)
