@@ -4,7 +4,7 @@ from dotenv import load_dotenv
 from omegaconf import OmegaConf
 from hydra import initialize, compose
 
-def load_config(config_path="../../.hydra-config")-> OmegaConf:
+def load_config(config_path="../../.hydra_config")-> OmegaConf:
     
     load_dotenv()
 

@@ -21,7 +21,7 @@ class ABCRetriever(ABC):
     """Abstract class for the base retriever.
     """
     @abstractmethod
-    def __init__(self, criteria: str = "similarity", top_k: int = 6, **extra_args) -> None:
+    def __init__(self, criteria: str = "similarity", top_k: int = 6, similarity_threshold: int=0.95, **extra_args) -> None:
         pass
 
     @abstractmethod
@@ -32,7 +32,7 @@ class ABCRetriever(ABC):
 
 # Define the Simple Retriever class
 class BaseRetriever(ABCRetriever):
-    def __init__(self, criteria: str = "similarity", top_k: int = 6, logger=None, **extra_args) -> None:
+    def __init__(self, criteria: str = "similarity", top_k: int = 6, similarity_threshold: int=0.95, logger=None, **extra_args) -> None:
         """Constructs all the necessary attributes for the Retriever object.
 
         Args:
@@ -40,6 +40,7 @@ class BaseRetriever(ABCRetriever):
             top_k (int, optional): top_k most similar documents to retrieve. Defaults to 6.
         """
         self.top_k = top_k
+        self.similarity_threshold = similarity_threshold
         if criteria not in CRITERIAS:
             ValueError(f"Invalid type. Choose from {CRITERIAS}")
         self.criteria = criteria
@@ -51,14 +52,15 @@ class BaseRetriever(ABCRetriever):
         self.logger.info("Getting relevant documents.")
         chunks = await db.async_search(
             query=question, 
-            top_k=self.top_k
+            top_k=self.top_k,
+            similarity_threshold=self.similarity_threshold
         )
         return chunks
 
 
 class SingleRetreiver(BaseRetriever):
-    def __init__(self, criteria: str = "similarity", top_k: int = 6, logger=None, **extra_args) -> None:
-        super().__init__(criteria, top_k, logger, **extra_args)
+    def __init__(self, criteria: str = "similarity", top_k: int = 6, similarity_threshold: int = 0.95, logger=None, **extra_args) -> None:
+        super().__init__(criteria, top_k, similarity_threshold, logger, **extra_args)
    
 
 
@@ -66,6 +68,7 @@ class MultiQueryRetriever(BaseRetriever):
     def __init__(
             self, 
             criteria: str = "similarity", top_k: int = 6,
+            similarity_threshold: int = 0.95,
             logger=None,
             **extra_args
             ) -> None:
@@ -80,7 +83,7 @@ class MultiQueryRetriever(BaseRetriever):
             top_k (int, optional): top_k most similar documents to retrieve. Defaults to 6.
             extra_args (dict): contains additionals arguments for this type of retriever.
         """
-        super().__init__(criteria, top_k, logger, **extra_args)
+        super().__init__(criteria, top_k, similarity_threshold, logger, **extra_args)
         
         try:
             llm: ChatOpenAI = extra_args.get('llm')
@@ -112,14 +115,18 @@ class MultiQueryRetriever(BaseRetriever):
                 "k_queries": self.k_queries
             }
         )
-        chunks = await db.async_multy_query_search(queries=generated_questions, top_k_per_query=self.top_k)
+        chunks = await db.async_multy_query_search(
+            queries=generated_questions, 
+            top_k_per_query=self.top_k,
+            similarity_threshold=self.similarity_threshold
+        )
         return chunks
 
 
 
 class HyDeRetriever(BaseRetriever):
-    def __init__(self, criteria: str = "similarity", top_k: int = 6, logger=None, **extra_args) -> None:
-        super().__init__(criteria, top_k, logger, **extra_args)
+    def __init__(self, criteria: str = "similarity", top_k: int = 6, similarity_threshold: int = 0.95,logger=None, **extra_args) -> None:
+        super().__init__(criteria, top_k, similarity_threshold, logger, **extra_args)
 
         try:
             llm = extra_args.get("llm")
@@ -149,7 +156,7 @@ class HyDeRetriever(BaseRetriever):
         if self.combine:
             queries.append(question)
         
-        return await db.async_multy_query_search(queries=queries, top_k_per_query=self.top_k)
+        return await db.async_multy_query_search(queries=queries, top_k_per_query=self.top_k, similarity_threshold=self.similarity_threshold)
    
 
 class RetrieverFactory:

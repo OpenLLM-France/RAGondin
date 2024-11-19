@@ -22,6 +22,9 @@ def load_sys_template(file_path: Path) -> tuple[str, str]:
 
 def format_context(docs: list[Document]) -> str:
     """Build context string from list of documents."""
+    if not docs:
+        return 'No document found from the database', []
+    
     sources = []
     context = "Extracted documents:\n"
 

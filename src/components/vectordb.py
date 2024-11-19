@@ -5,8 +5,6 @@ from qdrant_client import QdrantClient, models
 from langchain_community.embeddings import HuggingFaceBgeEmbeddings, HuggingFaceEmbeddings
 from langchain_core.documents.base import Document
 from langchain_qdrant import QdrantVectorStore, FastEmbedSparse, RetrievalMode
-import torch
-import gc
 from .chunker import ABCChunker
 
 
@@ -52,6 +50,7 @@ class QdrantDB(ABCVectorDB):
             collection_name (str): The name of the collection in the Qdrant database.
             embeddings (list): The embeddings.
         """
+
         self.collection_name = collection_name
         self.logger = logger
         self.embeddings: Union[HuggingFaceBgeEmbeddings, HuggingFaceEmbeddings] = embeddings
@@ -84,23 +83,25 @@ class QdrantDB(ABCVectorDB):
             self.logger.info(f"As the collection `{collection_name}` is non-existant, it's created.")
 
 
-    async def async_search(self, query: str, top_k: int = 5) -> list[Document]:
-        return await self.vector_store.asimilarity_search(query, k=top_k)
+    async def async_search(self, query: str, top_k: int = 5, similarity_threshold: int=0.80) -> list[Document]:
+        docs_scores = await self.vector_store.asimilarity_search_with_relevance_scores(query=query, k=top_k, score_threshold=similarity_threshold)
+        docs = [doc for doc, score in docs_scores]
+        return docs
     
 
-    async def async_multy_query_search(self, queries: list[str], top_k_per_query: int = 5) -> list[Document]:
+    async def async_multy_query_search(self, queries: list[str], top_k_per_query: int = 5, similarity_threshold: int=0.80) -> list[Document]:
         # Gather all search tasks concurrently
-        search_tasks = [self.async_search(query=query, top_k=top_k_per_query) for query in queries]
+        search_tasks = [self.async_search(query=query, top_k=top_k_per_query, similarity_threshold=similarity_threshold) for query in queries]
         retrieved_results = await asyncio.gather(*search_tasks)
 
-        gc.collect()
-        torch.cuda.empty_cache()
+        s = sum(retrieved_results, [])
 
         retrieved_chunks = {}
         # Process the retrieved documents
         for retrieved in retrieved_results:
-            for document in retrieved:
-                retrieved_chunks[document.metadata["_id"]] = document
+            if retrieved:
+                for document in retrieved:
+                    retrieved_chunks[document.metadata["_id"]] = document
         
         return list(retrieved_chunks.values())
     
@@ -126,7 +127,6 @@ class QdrantDB(ABCVectorDB):
             max_concurrent_gpu_ops (int): Maximum number of concurrent GPU operations. Default: 5
             max_queued_batches (int): Number of batches to prepare ahead in queue. Default: 2
         """
-
         gpu_semaphore = asyncio.Semaphore(max_concurrent_gpu_ops) # Only allow max_concurrent_gpu_ops GPU operation at a time
         batch_queue = asyncio.Queue(maxsize=max_queued_batches)
 

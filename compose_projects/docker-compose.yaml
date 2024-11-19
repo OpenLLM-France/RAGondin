@@ -1,0 +1,69 @@
+version: '3.9'
+
+services:
+  chainlit-app:
+    image: ${IMAGE_NAME}:${TAG}
+    container_name: ${CONTAINER_NAME}
+    working_dir: /${WORKDIR}
+    volumes:
+      - ${PWD}/README.md:/${WORKDIR}/README.md
+      - ${PWD}/pyproject.toml:/${WORKDIR}/pyproject.toml
+      - ${PWD}/poetry.lock:/${WORKDIR}/poetry.lock
+      - venv:/${WORKDIR}/${ENVS_PATH}/${VENV_NAME}
+      - hydra_config:/${WORKDIR}/${CONFIG_PATH}
+      - chainlit_app:/${WORKDIR}/app
+      - source:/${WORKDIR}/src
+    
+    environment:
+      - POETRY_VIRTUALENVS_PATH=/${WORKDIR}/${ENVS_PATH}/${VENV_NAME}
+      - POETRY_VIRTUALENVS_CREATE=true
+      - POETRY_VIRTUALENVS_IN_PROJECT=false
+    
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+
+    
+    command: >
+      sh -c "
+        echo 'PATH: $PATH' && \
+        
+        if [ ! -f poetry.lock ] || [ pyproject.toml -nt poetry.lock ]; then
+          echo 'Installing dependencies...' && \
+          poetry env use python3.12 && \
+          poetry install --no-interaction -vv --no-root; 
+        else
+          echo 'Dependencies are up to date';
+        fi 
+        poetry run chainlit run app/chainlit_app.py -w
+      "
+
+volumes:
+  hydra_config:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: '${PWD}/${CONFIG_PATH}'
+
+  venv:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: '${PWD}/${ENVS_PATH}/${VENV_NAME}'
+
+  chainlit_app:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: '${PWD}/app'
+
+  source:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: '${PWD}/src'

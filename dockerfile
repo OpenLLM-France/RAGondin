@@ -14,7 +14,7 @@ RUN apt-get update && apt-get install -y \
 
 
 
-WORKDIR /app
+WORKDIR /service
 
 
 # Vérifier et installer libcudnn8 si nécessaire
@@ -32,25 +32,26 @@ RUN apt install -y curl
 #RUN apk --no-cache add curl
 # Installer Poetry
 
-COPY pyproject.toml /app/
-COPY poetry.lock /app/
 
-RUN apt-get update && apt-get install -y \
-    python3.12 \
-    python3.12-venv \
-    python3.12-dev
 
+
+FROM python:3.12-slim
+
+# Installer curl
+RUN apt-get update && apt-get install -y curl && apt-get clean
+RUN apt-get update && apt-get install -y git && apt-get clean
+#RUN apt-get update && apt-get install -y \
+#    python3.12 \
+#    python3.12-venv \
+#    python3.12-dev
+#COPY pyproject.toml /service/
+#COPY poetry.lock /service/
 # Installer Poetry
 RUN curl -sSL https://install.python-poetry.org | python3.12 -
-RUN    export PATH="/root/.local/bin:$PATH" && \ 
-    poetry config virtualenvs.create true --local && \
-    poetry config virtualenvs.in-project true --local 
+RUN    export PATH="/root/.local/bin:$PATH" 
 ENV PATH="/root/.local/bin:$PATH"
 
-RUN poetry env use python3.12 && \
-    poetry install --no-interaction -vv --no-root
+#RUN poetry env use python3.12 && \
+#    poetry install --no-interaction -vv --no-root
 
 
-COPY . /app/
-
-ENTRYPOINT ["chainlit", "run", "app/chainlit_app.py", "-w"]

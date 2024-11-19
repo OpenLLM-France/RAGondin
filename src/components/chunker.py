@@ -52,12 +52,13 @@ Previous chunk: {prev_chunk}
 </current_chunk>
 
 Provide a brief, one-sentence context that situates this chunk within the document, incorporating relevant context from:
-1. The document title (including any format, type, or category information encoded in the filename)
+1. Title (including any format, type, or category information encoded in the filename): It's important to take this into account
 2. First page content
 3. Previous chunk
 4. Current chunk content
 
-Response format: A complete and concise contextual sentence in the same language (french or english) as the <current_chunk>.
+Response format:  complete and concise contextual sentence as the <current_chunk>.
+It is mandatory to provide answer as in the same language as the current chunk to improve retreival.
 """
 
 

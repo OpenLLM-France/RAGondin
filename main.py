@@ -4,7 +4,7 @@ from loguru import logger
 from pathlib import Path
 from src.components import RagPipeline, load_config, evaluate, Indexer
 
-# config_path = Path(__file__) / '.hydra-config'
+# config_path = Path(__file__) / '.hydra_config'
 config = load_config()
 indexer = Indexer(config, logger)    
 

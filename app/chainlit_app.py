@@ -2,7 +2,7 @@ from pathlib import Path
 import chainlit as cl
 import sys, os, yaml, torch
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../')))
-from src.components import RagPipeline, load_config , AudioTranscriber
+from src.components import RagPipeline, load_config, AudioTranscriber
 from loguru import logger
 from io import BytesIO
 
@@ -74,10 +74,13 @@ async def on_message(message: cl.Message):
         stream, _, sources = await ragPipe.run(question)
     await step.remove()
 
-    elements, source_names = format_elements(sources, only_txt=False)
-    msg = cl.Message(content="", elements=elements)
-    await msg.send()
+    if sources:
+        elements, source_names = format_elements(sources, only_txt=True)
+        msg = cl.Message(content="", elements=elements)
+    else:
+        msg = cl.Message(content="")
     
+    await msg.send()
     answer_txt = ""
     
     async for token in stream:
@@ -87,7 +90,9 @@ async def on_message(message: cl.Message):
     if ragPipe.rag_mode == "ChatBotRag":
             ragPipe.update_history(question, answer_txt)
 
-    await msg.stream_token( '\n\n' + '-'*50 + "\n\nRetrieved Docs: \n" + '\n'.join(source_names))
+    if sources:
+        await msg.stream_token( '\n\n' + '-'*50 + "\n\nRetrieved Docs: \n" + '\n'.join(source_names))
+        
     await msg.send()
     torch.cuda.empty_cache()
 

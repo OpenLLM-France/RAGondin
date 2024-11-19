@@ -24,7 +24,7 @@ vectordb:
 
 reranker:
   model_name: jinaai/jina-colbert-v2
-  top_k: 6
+  top_k: 10
 
 verbose:
   verbose: true

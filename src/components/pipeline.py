@@ -137,10 +137,11 @@ class RagPipeline:
         # 1. contextualize the question and retreive relevant documents
         docs, contextualized_question = await self.get_contextualize_docs(question, chat_history) 
 
-        # 2. rerank documents is asked
-        if self.reranker is not None:
-            docs = await self.reranker.rerank(contextualized_question, chunks=docs, k=self.reranker_top_k)
-        
+        if docs:
+            # 2. rerank documents is asked
+            if self.reranker is not None:
+                docs = await self.reranker.rerank(contextualized_question, chunks=docs, k=self.reranker_top_k)
+            
         # 3. Format the retrieved docs
         context, sources = format_context(docs)
 
