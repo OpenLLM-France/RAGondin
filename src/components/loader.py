@@ -299,23 +299,28 @@ class DocSerializer:
         if await p.is_file():
             type = p.suffix
             pattern = f"**/*{type}"
-            loader: BaseLoader = LOADERS.get(p.suffix)
+            loader_cls: BaseLoader = LOADERS.get(p.suffix)
             logger.info(f'Loading {type} files.')
-            doc: Document = await loader().aload_document(file_path=str(p))
+            doc: Document = await loader_cls().aload_document(file_path=str(p))
             yield doc
 
 
         is_dir = await p.is_dir()
         if is_dir:
-            for type, loader in LOADERS.items(): # TODO Rendre ceci async: Priority 0
+            for type, loader_cls in LOADERS.items(): # TODO Rendre ceci async: Priority 0
                 pattern = f"**/*{type}"
                 logger.info(f'Loading {type} files.')
                 files = get_files(path, pattern, recursive)
 
+                
                 async for file in files:
-                    doc: Document = await loader().aload_document(file_path=file)
+                    loader = loader_cls()
+                    doc: Document = await loader.aload_document(file_path=file)
                     print(f"==> Serialized: {file}")
                     yield doc
+
+        
+                
 
 
 async def get_files(path, pattern, recursive) -> AsyncGenerator:
@@ -335,7 +340,7 @@ LOADERS: Dict[str, BaseLoader] = {
     '.mp4': VideoAudioLoader,
     '.pptx': CustomPPTLoader,
     '.txt': CustomTextLoader,
-    '.html': CustomHTMLLoader
+    #'.html': CustomHTMLLoader
 }
 
 

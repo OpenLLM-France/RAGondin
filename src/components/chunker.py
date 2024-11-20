@@ -81,7 +81,7 @@ class ChunkContextualizer:
             b_contexts = self.context_generator\
                 .with_retry(
                     retry_if_exception_type=(Exception,),
-                    wait_exponential_jitter=True,
+                    wait_exponential_jitter=False,
                     stop_after_attempt=3
                 )\
                 .batch([

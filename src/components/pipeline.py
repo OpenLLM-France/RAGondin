@@ -24,6 +24,7 @@ from langchain_core.messages import (
     HumanMessage
 )
 from collections import deque
+from .grader import Grader
 
 class Indexer:
     """This class bridges static files with the vector store database.
@@ -69,8 +70,12 @@ class RagPipeline:
         self.prompts_dir = config.prompts_dir
         self.context_pmpt_tmpl = config.prompt['context_pmpt_tmpl']
 
-        self.llm_client = LLM(config, logger)
-        self.retriever: ABCRetriever = RetrieverFactory.create_retriever(config=config, logger=logger)
+        self.llm_client = LLM(config, self.logger)
+        self.retriever: ABCRetriever = RetrieverFactory.create_retriever(config=config, logger=self.logger)
+
+        self.grader: Grader = None
+        if config.grader['grade_documents']:
+            self.grader = Grader(config, logger=self.logger)
 
         self.rag_mode = config.rag["mode"]
         self.chat_history_depth = config.rag["chat_history_depth"]
@@ -137,9 +142,12 @@ class RagPipeline:
         # 1. contextualize the question and retreive relevant documents
         docs, contextualized_question = await self.get_contextualize_docs(question, chat_history) 
 
+        # grade and filter irrelevant docs
+        docs = await self.grader.grade(user_input=contextualized_question, docs=docs) if self.grader else docs
+
         if docs:
             # 2. rerank documents is asked
-            if self.reranker is not None:
+            if self.reranker:
                 docs = await self.reranker.rerank(contextualized_question, chunks=docs, k=self.reranker_top_k)
             
         # 3. Format the retrieved docs
