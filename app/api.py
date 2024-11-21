@@ -22,6 +22,9 @@ UPLOAD_DIR = APP_DIR / "upload_dir"
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 
 config = Config(APP_DIR.parent / "config.ini")
+config.vectordb["host"] = "172.17.0.2"
+print("config.vectordb['host']", config.vectordb["host"])
+print("config.vectordb['port']", config.vectordb["port"])
 ragPipe = RagPipeline(config=config)
 
 

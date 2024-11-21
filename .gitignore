@@ -31,3 +31,6 @@ CR.md
 *.csv
 
 .venv/
+model_weights
+modelweights
+data

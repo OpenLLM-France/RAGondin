@@ -39,7 +39,7 @@ class QdrantDB(ABCVectorDB):
             host, port, 
             embeddings: HuggingFaceBgeEmbeddings | HuggingFaceEmbeddings=None,
             collection_name: str = None, logger = None,
-            hybrid_mode=False,
+            hybrid_mode=True,
         ):
         """
         Initialize Qdrant_Connector.
@@ -51,36 +51,55 @@ class QdrantDB(ABCVectorDB):
             embeddings (list): The embeddings.
         """
 
-        self.collection_name = collection_name
         self.logger = logger
         self.embeddings: Union[HuggingFaceBgeEmbeddings, HuggingFaceEmbeddings] = embeddings
+        self.port = port
+        self.host = host
         self.client = QdrantClient(
             port=port, host=host,
             prefer_grpc=False,
         )
 
-        sparse_embeddings = FastEmbedSparse(model_name="Qdrant/bm25") if hybrid_mode else None
+        self.sparse_embeddings = FastEmbedSparse(model_name="Qdrant/bm25") if hybrid_mode else None
         self.retrieval_mode = RetrievalMode.HYBRID if hybrid_mode else RetrievalMode.DENSE
         
-        if self.client.collection_exists(collection_name=collection_name):
+        # Initialize collection-related attributes
+        self._collection_name = None
+        self.vector_store = None
+
+        # Set the initial collection name (if provided)
+        if collection_name:
+            self.collection_name = collection_name
+        
+    @property
+    def collection_name(self):
+        return self._collection_name
+    
+    @collection_name.setter
+    def collection_name(self, name: str):
+        if not name:
+            raise ValueError("Collection name cannot be empty.")
+        
+        
+        if self.client.collection_exists(collection_name=name):
             self.vector_store = QdrantVectorStore(
                 client=self.client,
-                collection_name=collection_name,
-                embedding=embeddings,
-                sparse_embedding=sparse_embeddings,
+                collection_name=name,
+                embedding=self.embeddings,
+                sparse_embedding=self.sparse_embeddings,
                 retrieval_mode=self.retrieval_mode,
 
             ) 
-            self.logger.warning(f"The Collection named `{collection_name}` loaded.")
+            self.logger.warning(f"The Collection named `{name}` loaded.")
         else:
             self.vector_store = QdrantVectorStore.construct_instance(
-                embedding=embeddings,
-                sparse_embedding=sparse_embeddings,
-                collection_name=collection_name,
-                client_options={'port': port, 'host':host},
+                embedding=self.embeddings,
+                sparse_embedding=self.sparse_embeddings,
+                collection_name=name,
+                client_options={'port': self.port, 'host':self.host},
                 retrieval_mode=self.retrieval_mode,
             )
-            self.logger.info(f"As the collection `{collection_name}` is non-existant, it's created.")
+            self.logger.info(f"As the collection `{name}` is non-existant, it's created.")
 
 
     async def async_search(self, query: str, top_k: int = 5, similarity_threshold: int=0.80) -> list[Document]:

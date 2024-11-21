@@ -9,13 +9,13 @@ import asyncio
 
 sys_prompt = """You are an expert at judging documents' relevancy with respect to a given user query/input."""
 
-
 class GradeDocuments(BaseModel):
-    """Evaluates document relevance using a binary scoring system."""
+    """Evaluates document's relevancy using a binary scoring system."""
 
-    relevance_score: Literal['yes', 'no'] = Field(
+    relevance_score: Literal['yes', 'maybe', 'no'] = Field(
         description="Document relevance classification:\n"
-                    "- yes: Document strongly matches the query's main concepts\n"
+                    "- yes: The document is highly relevant to the query's main concepts\n"
+                    "- maybe: Somewhat relevant with shared keywords"
                     "- no: Document has minimal or no meaningful connection"
     )
 
@@ -32,11 +32,6 @@ class Grader:
         }
         # langchain llm
         lc_llm = ChatOpenAI(**settings) # TODO: consider retry strategy
-        # \
-        #     .with_retry(
-        #         retry_if_exception_type=(Exception,), 
-        #         wait_exponential_jitter=False, stop_after_attempt=3
-        # )
 
         llm = LangChainLLM(
             llm=lc_llm
@@ -70,6 +65,6 @@ class Grader:
         grades = await asyncio.gather(*tasks)
 
         # filtering
-        relevants_docs = list(filter(lambda x: x[1] == 'yes', zip(docs, grades)))
+        relevants_docs = list(filter(lambda x: x[1] != 'no', zip(docs, grades)))
         print(1)
         return [doc for doc, grade in relevants_docs] 

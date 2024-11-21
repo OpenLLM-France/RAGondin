@@ -9,24 +9,29 @@ services:
       - ${PWD}/README.md:/${WORKDIR}/README.md
       - ${PWD}/pyproject.toml:/${WORKDIR}/pyproject.toml
       - ${PWD}/poetry.lock:/${WORKDIR}/poetry.lock
+      - ${PWD}/chainlit_app.py:/${WORKDIR}/chainlit_app.py
       - venv:/${WORKDIR}/${ENVS_PATH}/${VENV_NAME}
       - hydra_config:/${WORKDIR}/${CONFIG_PATH}
       - chainlit_app:/${WORKDIR}/app
       - source:/${WORKDIR}/src
+      - pickled_weights:/${WORKDIR}/model_weights
     
     environment:
       - POETRY_VIRTUALENVS_PATH=/${WORKDIR}/${ENVS_PATH}/${VENV_NAME}
       - POETRY_VIRTUALENVS_CREATE=true
       - POETRY_VIRTUALENVS_IN_PROJECT=false
+
+    network_mode: bridge
+
     
     ports:
-      - "8000:8000"
+      - "${APP_PORT}:${APP_PORT}"
     env_file:
-      - .env
+      - .env.compose
 
     
     command: >
-      sh -c "
+      bash -c "
         echo 'PATH: $PATH' && \
         
         if [ ! -f poetry.lock ] || [ pyproject.toml -nt poetry.lock ]; then
@@ -35,9 +40,20 @@ services:
           poetry install --no-interaction -vv --no-root; 
         else
           echo 'Dependencies are up to date';
-        fi 
-        poetry run chainlit run app/chainlit_app.py -w
+        fi && \
+        echo 'Current environment variables:' && \
+        printenv && \
+        echo 'Container is running. Use docker exec -it RAGondin bash to connect.' && \
+        poetry run chainlit run chainlit_app.py --watch --host ${APP_HOST} --port ${APP_PORT}
       "
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all 
+              capabilities: [gpu]
+
 
 volumes:
   hydra_config:
@@ -52,7 +68,7 @@ volumes:
     driver_opts:
       type: none
       o: bind
-      device: '${PWD}/${ENVS_PATH}/${VENV_NAME}'
+      device: '${PWD}/${ENVS_PATH}/RAGondin_rag_chainlit'
 
   chainlit_app:
     driver: local
@@ -67,3 +83,11 @@ volumes:
       type: none
       o: bind
       device: '${PWD}/src'
+
+
+  pickled_weights:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: '${PWD}/model_weights'

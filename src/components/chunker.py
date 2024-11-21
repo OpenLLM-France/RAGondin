@@ -42,23 +42,27 @@ class ABCChunker(ABC):
 
 templtate = """
 <document>
-Title: {source} # Document title may contain key metadata (e.g., "employee_CVs_2024.pdf", "tutorial_videos_sql.mp4", "client_proposals_Q1.pdf")
-First page: {first_page}
-Previous chunk: {prev_chunk}
+Title: {source}  
+# The document title may contain key metadata (e.g., "cv", "videos", "client proposals").
+First page of the document: {first_page}  
+Previous chunk: {prev_chunk}  
 </document>
 
 <current_chunk>
 {chunk}
 </current_chunk>
 
-Provide a brief, one-sentence context that situates this chunk within the document, incorporating relevant context from:
-1. Title (including any format, type, or category information encoded in the filename): It's important to take this into account
-2. First page content
-3. Previous chunk
-4. Current chunk content
+**Task:**  
+Provide a concise, one-sentence context that situates the *<current_chunk>* within the *<document>*, integrating relevant information from:  
+1. **Title** (e.g., type, or category information encoded in the filename).  
+2. **First page of the document**.  
+3. **Previous chunk**.  
+4. **Current chunk content**.  
 
-Response format:  complete and concise contextual sentence as the <current_chunk>.
-It is mandatory to provide answer as in the same language as the current chunk to improve retreival.
+**Response Format:**  
+- Only provide a single, concise contextual sentence for the *<current_chunk>*.  
+- Write the response in the **same language** as the current chunk to enhance retrieval quality.  
+- Do not include any additional text or explanation.  
 """
 
 

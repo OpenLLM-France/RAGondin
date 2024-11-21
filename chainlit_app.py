@@ -1,17 +1,17 @@
 from pathlib import Path
 import chainlit as cl
 import sys, os, yaml, torch
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../')))
+# sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../')))
 
 from src.components import RagPipeline, load_config, AudioTranscriber
 from loguru import logger
 from io import BytesIO
 
-APP_DIR = Path(__file__).parent.absolute() # Path.cwd().parent.absolute()
+APP_DIR = Path.cwd().absolute()
 UPLOAD_DIR = APP_DIR / "upload_dir"
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 
-config = load_config() # Config(APP_DIR.parent / "config.ini")
+config = load_config()
 config.vectordb["host"] = os.getenv('host')
 config.vectordb["port"] = os.getenv('port')
 print("config.vectordb['host']", config.vectordb["host"])
@@ -19,6 +19,14 @@ print("config.vectordb['port']", config.vectordb["port"])
 ragPipe = RagPipeline(config=config, device="cpu")
 
 # https://github.com/Cinnamon/kotaemon/blob/main/libs/ktem/ktem/reasoning/prompt_optimization/suggest_followup_chat.py
+
+
+def set_nested_attr(obj, attr_path: str, value: str):
+    attrs = attr_path.split('.')
+    for attr in attrs[:-1]:
+        obj = getattr(obj, attr)
+    
+    setattr(obj, attrs[-1], value)
 
 @cl.set_starters
 async def set_starters():
@@ -67,23 +75,23 @@ def format_elements(sources, only_txt=True):
 
 @cl.on_chat_start
 async def on_chat_start():
+    # setting the vector db
+    collection_name = cl.user_session.get('chat_profile')
+    set_nested_attr(ragPipe, 'indexer.vectordb.collection_name', collection_name)
     ragPipe._chat_history.clear()
     logger.info("Chat history flushed")
 
 
 @cl.set_chat_profiles
-async def chat_profile():
+async def chat_profiles():
+    with open(APP_DIR / 'public' / 'conversation_starters.yaml') as file: # Load the YAML file
+        data = yaml.safe_load(file)
+
     return [
         cl.ChatProfile(
-            name='vdb95',
-            markdown_description='The underlying vector database is **vdb95**',
-            icon='"https://picsum.photos/200"'
-        ),
-        cl.ChatProfile(
-            name='vdb2',
-            markdown_description='The underlying vector database is **vdb95**',
-            icon='"https://picsum.photos/200"'
-        )
+            **profile,
+        ) 
+        for profile in data['chat_profiles']
     ]
 
     
@@ -167,3 +175,9 @@ if __name__ == "__main__":
     import sys
     from chainlit.cli import run_chainlit
     run_chainlit(__file__)
+
+
+# docker run -d --name vdb_rag \
+#     -p 6333:6333 -p 6334:6334 \
+#     -v $(pwd)/qdrant_storage:/qdrant/storage:z \
+#     qdrant/qdrant

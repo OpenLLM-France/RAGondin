@@ -14,7 +14,6 @@ from langchain_core.documents.base import Document
 from omegaconf import OmegaConf
 
 
-dir_path = Path(__file__).parent
 CRITERIAS = ["similarity"]
 
 class ABCRetriever(ABC):
@@ -95,8 +94,7 @@ class MultiQueryRetriever(BaseRetriever):
                 raise TypeError(f"`k_queries` should be of type {int}")
             self.k_queries = k_queries
             
-
-            pmpt_tmpl_path = dir_path / "prompts" / extra_args.get('prompt_tmpl')
+            pmpt_tmpl_path = extra_args.get('prompts_dir') / extra_args.get('prompt_tmpl')
             multi_query_tmpl = load_sys_template(pmpt_tmpl_path)
             prompt: ChatPromptTemplate = ChatPromptTemplate.from_template(
                 multi_query_tmpl
@@ -133,7 +131,7 @@ class HyDeRetriever(BaseRetriever):
             if not isinstance(llm, ChatOpenAI):
                 raise TypeError(f"`llm` should be of type {ChatOpenAI}")
             
-            pmpt_tmpl_path = dir_path / "prompts" / extra_args.get('prompt_tmpl')
+            pmpt_tmpl_path = extra_args.get('prompts_dir') / extra_args.get('prompt_tmpl')
             hyde_template = load_sys_template(pmpt_tmpl_path)
             prompt: ChatPromptTemplate = ChatPromptTemplate.from_template(hyde_template)
 
@@ -170,6 +168,7 @@ class RetrieverFactory:
     def create_retriever(cls, config:OmegaConf, logger) -> ABCRetriever:
         retreiverConfig = OmegaConf.to_container(config.retriever, resolve=True)
         retreiverConfig['logger'] = logger
+        retreiverConfig['prompts_dir'] = Path(config.paths['prompts_dir'])
 
         retriever_type = retreiverConfig.pop('type')
         retriever_cls = RetrieverFactory.RETRIEVERS.get(retriever_type, None)

@@ -1,4 +1,4 @@
 type: ''
 criteria: similarity
 top_k: 10
-similarity_threshold: 0.70
+similarity_threshold: 0.65

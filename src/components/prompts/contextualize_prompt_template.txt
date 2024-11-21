@@ -8,12 +8,11 @@ REQUIREMENTS:
 5. Output only the reformulated query
 6. If input is unrelated to chat history or is a thank you message, return it unchanged
 
-FORMAT:
-[Query in question format, in the same language as input]
+FORMAT: [Query in question format, in the same language as input]
 
 RESTRICTIONS:
 - Never add information not present in the original input
 - Never answer questions
 - Never explain your process
 - Never add commentary
-- Output query text only
+- Output query text only and don't markdown format to it

@@ -33,6 +33,8 @@ python-docx = "^1.1.2"
 pypandoc = "^1.14"
 click = "^8.1.7"
 git-filter-repo = "^2.45.0"
+python-pptx = "^1.0.2"
+llama-index-llms-langchain = "^0.5.0"
 
 
 [tool.poetry.group.dev.dependencies]
@@ -41,7 +43,7 @@ gitpython = "^3.1.43"
 docker = "^7.1.0"
 
 [tool.poetry.scripts]
-deploy_compose_service = { callable = "scripts.deploy_compose_service:main", extras = ["dev"] }
+compose_service = { callable = "scripts.compose_service:main", extras = ["dev"] }
 
 
 [build-system]

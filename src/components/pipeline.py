@@ -23,6 +23,7 @@ from langchain_core.messages import (
     AIMessage, 
     HumanMessage
 )
+from pathlib import Path
 from collections import deque
 from .grader import Grader
 
@@ -55,6 +56,7 @@ class Indexer:
 class RagPipeline:
     def __init__(self, config, device="cpu") -> None:
         self.config = config
+        print(self.config)
         self.logger = self.set_logger(config)
         self.indexer = Indexer(config, self.logger, device=device)
             
@@ -64,10 +66,12 @@ class RagPipeline:
 
         self.reranker_top_k = int(config.reranker["top_k"])
 
+        self.prompts_dir = Path(config.paths.prompts_dir)
+
         self.qa_sys_prompt: str = load_sys_template(
-            config.prompts_dir / config.prompt['rag_sys_pmpt']
+            self.prompts_dir / config.prompt['rag_sys_pmpt']
         )
-        self.prompts_dir = config.prompts_dir
+        
         self.context_pmpt_tmpl = config.prompt['context_pmpt_tmpl']
 
         self.llm_client = LLM(config, self.logger)
@@ -80,6 +84,7 @@ class RagPipeline:
         self.rag_mode = config.rag["mode"]
         self.chat_history_depth = config.rag["chat_history_depth"]
         self._chat_history: deque = deque(maxlen=self.chat_history_depth)
+
 
     async def get_contextualize_docs(self, question: str, chat_history: list)-> list[Document]:
         """With this function, the new question is reformulated as a standalone question that takes into account the chat_history.
@@ -99,7 +104,7 @@ class RagPipeline:
             contextualized_question = question
 
         if self.rag_mode == "ChatBotRag":
-            logger.info("Contextualizing the question")
+            logger.info("Contextualizing the question...")
             
             sys_prompt = load_sys_template(
                 self.prompts_dir / self.context_pmpt_tmpl # get the prompt for contextualizing
@@ -108,7 +113,7 @@ class RagPipeline:
                 [
                     ("system", sys_prompt),
                     MessagesPlaceholder("chat_history"),
-                    ("human", "Here is the question to contextualize: '{input}'"),
+                    ("human", "Here is the query to contextualize: '{input}'"),
                 ]
             )
             history_aware_retriever = (
@@ -116,7 +121,10 @@ class RagPipeline:
                 | self.llm_client.client
                 | StrOutputParser()
             )
-            input_ = {"input": question, "chat_history": chat_history}
+            input_ = {
+                "input": question, 
+                "chat_history": chat_history
+            }
 
             logger.info("Generating contextualized question for retreival...") 
             contextualized_question = await history_aware_retriever.ainvoke(input_) # TODO: this is the bootleneck, the model answers sometimes instead of reformulating  

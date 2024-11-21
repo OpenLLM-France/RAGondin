@@ -11,7 +11,7 @@ embedder:
 llm:
   base_url: https://chat.ai.linagora.exaion.com/v1/
   name: meta-llama-31-8b-it
-  api_key: ''
+  api_key: ${oc.env:API_KEY}
   max_tokens: 1024
   temperature: 0.0
 
@@ -19,21 +19,24 @@ vectordb:
   host: localhost
   port: 6333
   connector_name: qdrant
-  collection_name: vdb95
+  collection_name: vdb95 # vdb95_no_context
   hybrid_mode: true
 
 reranker:
   model_name: jinaai/jina-colbert-v2
-  top_k: 10
+  top_k: 7
+
+grader:
+  grade_documents: true
 
 verbose:
   verbose: true
   level: INFO
 
+paths:
+  base_dir: ${oc.env:BASE_DIR}
+  prompts_dir: ${oc.env:PROMPTS_DIR}
+
 prompt:
   rag_sys_pmpt: rag_sys_prompt_template.txt # rag_sys_pmpt_tmpl_ifa.txt
   context_pmpt_tmpl: contextualize_prompt_template.txt
-
-
-dir_path: ''
-prompts_dir: ''
