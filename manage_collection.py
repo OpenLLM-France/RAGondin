@@ -8,7 +8,7 @@ from loguru import logger
 from qdrant_client import QdrantClient
 from src.components import load_config
 
-config = load_config() # Config("./config.ini")
+config = load_config()
 
 def is_valid_directory(path):
     """Custom validation to check if the directory exists."""
@@ -26,28 +26,32 @@ async def main():
         help="Path to the folder"
     )
 
-    # Add a collection argument for specifying where to upload
-    parser.add_argument("-c", "--collection",
-        type=str,
-        help="Name of the collection to which data will be added. If not provided the one from config.ini (vectordb.collection_name) will be used", 
-        default=config.vectordb["collection_name"]
-    )
-
     # Add a collection deletion argument
     parser.add_argument("-d", "--delete",
         type=str,
         help="Name of the collection to delete"
     )
 
+    # Add an override argument for Hydra config
+    parser.add_argument(
+        "-o", "--override",
+        action="append",
+        help="Overrides for the Hydra configuration (e.g., vectordb.collection_name='vdb95'). Can be used multiple times.",
+        default=None,
+    )
+
     args = parser.parse_args()
+
+    # Load the config with potential overrides
+    config = load_config(overrides=args.override)
+    print(config)
 
     if args.folder:
         from src.components import Indexer
 
-        collection = args.collection
-        config.vectordb["collection_name"] = collection
+        collection = config.vectordb["collection_name"]
+        logger.warning(f"Data will be upserted to the collection {collection}")
 
-        logger.warning(f"Data will be upserted to the collection {config.vectordb["collection_name"]}")
         indexer = Indexer(config, logger)
         
         start = time.time()
@@ -71,3 +75,6 @@ async def main():
     
 if __name__ == '__main__':
     asyncio.run(main())
+
+
+# ./manage_collection.py -f app/upload_dir/S2_RAG/ -o vectordb.collection_name='vdb90' -o chunker.breakpoint_threshold_amount=90

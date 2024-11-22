@@ -20,7 +20,6 @@ ragPipe = RagPipeline(config=config, device="cpu")
 
 # https://github.com/Cinnamon/kotaemon/blob/main/libs/ktem/ktem/reasoning/prompt_optimization/suggest_followup_chat.py
 
-
 def set_nested_attr(obj, attr_path: str, value: str):
     attrs = attr_path.split('.')
     for attr in attrs[:-1]:
@@ -84,6 +83,7 @@ async def on_chat_start():
 
 @cl.set_chat_profiles
 async def chat_profiles():
+    # TODO: Do it automatically
     with open(APP_DIR / 'public' / 'conversation_starters.yaml') as file: # Load the YAML file
         data = yaml.safe_load(file)
 
@@ -103,7 +103,7 @@ async def on_message(message: cl.Message):
     await step.remove()
 
     if sources:
-        elements, source_names = format_elements(sources, only_txt=True)
+        elements, source_names = format_elements(sources, only_txt=False)
         msg = cl.Message(content="", elements=elements)
     else:
         msg = cl.Message(content="")
