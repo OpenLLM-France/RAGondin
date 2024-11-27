@@ -109,24 +109,20 @@ class RagPipeline:
         if self.rag_mode == "ChatBotRag":
             logger.info("Contextualizing the question...")
             
-            sys_prompt = load_sys_template(
+            template = load_sys_template(
                 self.prompts_dir / self.context_pmpt_tmpl # get the prompt for contextualizing
             )
-            contextualize_q_prompt = ChatPromptTemplate.from_messages(
-                [
-                    ("system", sys_prompt),
-                    MessagesPlaceholder("chat_history"),
-                    ("human", "Here is the query to contextualize: '{input}'"),
-                ]
-            )
+    
+            contextualize_q_prompt = ChatPromptTemplate.from_template(template)
+
             history_aware_retriever = (
                 contextualize_q_prompt
                 | self.llm_client.client
                 | StrOutputParser()
             )
             input_ = {
-                "input": question, 
-                "chat_history": chat_history
+                "query": question, 
+                "chat_history": chat_history,
             }
 
             logger.info("Generating contextualized question for retreival...") 
