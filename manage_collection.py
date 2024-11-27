@@ -78,3 +78,5 @@ if __name__ == '__main__':
 
 
 # ./manage_collection.py -f app/upload_dir/S2_RAG/ -o vectordb.collection_name='vdb90' -o chunker.breakpoint_threshold_amount=90
+
+# ./manage_collection.py -f app/upload_dir/S2_RAG/ -o vectordb.collection_name='vdb95' -o chunker.breakpoint_threshold_amount=95
