@@ -32,6 +32,7 @@ class Indexer:
     """
     def __init__(self, config: OmegaConf, logger, device=None) -> None:
         embedder = HFEmbedder(embedder_config=config.embedder, device=device)
+        self.serializer = DocSerializer(root_dir=config.paths.root_dir)
         self.chunker: ABCChunker = ChunkerFactory.create_chunker(config, embedder=embedder.get_embeddings())
         self.vectordb = ConnectorFactory.create_vdb(config, logger=logger, embeddings=embedder.get_embeddings())
         self.logger = logger
@@ -40,9 +41,8 @@ class Indexer:
 
     async def add_files2vdb(self, path):
         """Add a files to the vector database in async mode"""
-        serializer = DocSerializer()
         try:
-            doc_generator: AsyncGenerator[Document, None] = serializer.serialize_documents(path, recursive=True)
+            doc_generator: AsyncGenerator[Document, None] = self.serializer.serialize_documents(path, recursive=True)
             await self.vectordb.async_add_documents(
                 doc_generator=doc_generator, 
                 chunker=self.chunker, 
@@ -56,7 +56,7 @@ class Indexer:
 class RagPipeline:
     def __init__(self, config, device="cpu") -> None:
         self.config = config
-        print(self.config)
+        # print(self.config)
         self.logger = self.set_logger(config)
         self.indexer = Indexer(config, self.logger, device=device)
             
@@ -74,7 +74,6 @@ class RagPipeline:
         
         self.context_pmpt_tmpl = config.prompt['context_pmpt_tmpl']
 
-        self.llm_client = LLM(config, self.logger)
         self.retriever: ABCRetriever = RetrieverFactory.create_retriever(config=config, logger=self.logger)
 
         self.grader: Grader = None
@@ -82,9 +81,13 @@ class RagPipeline:
             self.grader = Grader(config, logger=self.logger)
 
         self.rag_mode = config.rag["mode"]
-        self.chat_history_depth = config.rag["chat_history_depth"]
-        self._chat_history: deque = deque(maxlen=self.chat_history_depth)
 
+        self.chat_history_depth = config.rag["chat_history_depth"]
+
+        self._chat_history: deque = deque(maxlen=self.chat_history_depth)
+        self.llm_client = LLM(
+            config, self.logger, 
+        )
 
     async def get_contextualize_docs(self, question: str, chat_history: list)-> list[Document]:
         """With this function, the new question is reformulated as a standalone question that takes into account the chat_history.
@@ -140,12 +143,11 @@ class RagPipeline:
         return docs, contextualized_question
     
 
-    async def run(self, question: str="", chat_history_api: list[AIMessage | HumanMessage] = None):
-        if chat_history_api is None: 
-            chat_history = list(self._chat_history) # use the saved chat history
+    async def run(self, question: str="", chat_history: list[AIMessage | HumanMessage]=None):
+        if chat_history: # when the user provides chat_history (in api_mode)
+            chat_history = chat_history[-self.chat_history_depth:]
         else:
-            # this is for when the user provides chat_history (in api_mode)
-            chat_history = chat_history[self.chat_history_depth:]
+            chat_history = list(self._chat_history) # use the saved chat history
       
         # 1. contextualize the question and retreive relevant documents
         docs, contextualized_question = await self.get_contextualize_docs(question, chat_history) 
@@ -165,9 +167,12 @@ class RagPipeline:
         answer = self.llm_client.run(
             question=question, 
             chat_history=chat_history,
-            context=context, sys_pmpt_tmpl=self.qa_sys_prompt)
+            context=context,
+            sys_pmpt_tmpl=self.qa_sys_prompt
+        )
     
         self.free_memory()
+        
         return answer, context, sources
 
 

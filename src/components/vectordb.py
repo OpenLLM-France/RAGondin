@@ -62,6 +62,7 @@ class QdrantDB(ABCVectorDB):
 
         self.sparse_embeddings = FastEmbedSparse(model_name="Qdrant/bm25") if hybrid_mode else None
         self.retrieval_mode = RetrievalMode.HYBRID if hybrid_mode else RetrievalMode.DENSE
+        print("RETRIEVE MODE ==>", self.retrieval_mode)
         
         # Initialize collection-related attributes
         self._collection_name = None
@@ -88,7 +89,6 @@ class QdrantDB(ABCVectorDB):
                 embedding=self.embeddings,
                 sparse_embedding=self.sparse_embeddings,
                 retrieval_mode=self.retrieval_mode,
-
             ) 
             self.logger.warning(f"The Collection named `{name}` loaded.")
         else:

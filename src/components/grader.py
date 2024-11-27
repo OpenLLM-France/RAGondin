@@ -20,6 +20,11 @@ class GradeDocuments(BaseModel):
     )
 
 
+# Evaluation Criteria:
+# - 'yes': The document directly addresses the key concepts, provides substantive information, and closely aligns with the query's primary intent
+# - 'maybe': The document contains partial or tangential information related to the query, with some meaningful connections but not comprehensive coverage
+# - 'no': The document has minimal or no meaningful relationship to the query's core objectives
+
 class Grader:
     def __init__(self, config, logger=None) -> None:
         settings = {
@@ -44,7 +49,8 @@ class Grader:
         self.logger = logger
 
     
-    async def grade(self, user_input: str, docs: list[Document], n_workers=6):
+    async def grade(self, user_input: str, docs: list[Document], n_workers=8):
+        n_workers = min(n_workers, len(docs))
         sem = asyncio.Semaphore(n_workers)
         async def eval_document(user_input, doc: Document):
             async with sem:
@@ -66,5 +72,4 @@ class Grader:
 
         # filtering
         relevants_docs = list(filter(lambda x: x[1] != 'no', zip(docs, grades)))
-        print(1)
         return [doc for doc, grade in relevants_docs] 

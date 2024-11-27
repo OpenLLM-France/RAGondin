@@ -31,7 +31,6 @@ from typing import Dict
 # from langchain_community.document_loaders.text import TextLoader
 # from langchain_community.document_loaders import UnstructuredHTMLLoader
 
-
 class BaseLoader(ABC):
     @abstractmethod
     async def aload_document(self, file_path):
@@ -53,7 +52,7 @@ class Custompymupdf4llm(BaseLoader):
         return Document(
             page_content=page_content, 
             metadata={
-                'source': pages[0]["metadata"]['file_path'],
+                'source': str(file_path),
                 'page_sep': self.page_sep
             }
         )
@@ -196,7 +195,7 @@ class CustomPPTLoader(BaseLoader):
         return Document(
             page_content=content, 
             metadata={
-                'source': elements[0].metadata['source'],
+                'source': str(file_path),
                 'page_sep': self.page_sep
             }
         )
@@ -208,14 +207,14 @@ class CustomPyMuPDFLoader(BaseLoader):
 
     async def aload_document(self, file_path):
         loader = PyMuPDFLoader(
-            file_path=Path(file_path).absolute(),
+            file_path=Path(file_path),
             **self.loader_args
         )
         pages = await loader.aload()
         return Document(
             page_content=f'{self.page_sep}'.join([p.page_content for p in pages]), 
             metadata={
-                'source': pages[0].metadata['source'],
+                'source': str(file_path),
                 'page_sep': self.page_sep
             }
         )
@@ -232,7 +231,7 @@ class CustomTextLoader(BaseLoader):
         return Document(
             page_content=f'{self.page_sep}'.join([p.page_content for p in doc]), 
             metadata={
-                'source': doc[0].metadata['source'],
+                'source': str(file_path),
                 'page_sep': self.page_sep
             }
         )
@@ -250,7 +249,7 @@ class CustomHTMLLoader(BaseLoader):
         return Document(
             page_content=f'{self.page_sep}'.join([p.page_content for p in doc]), 
             metadata={
-                'source': doc[0].metadata['source'],
+                'source': str(file_path),
                 'page_sep': self.page_sep
             }
         )
@@ -286,13 +285,16 @@ class CustomDocLoader(BaseLoader):
         return Document(
             page_content=f"{content}{self.page_sep}", 
             metadata={
-                'source': pages[0].metadata['source'],
+                'source': str(file_path),
                 'page_sep': self.page_sep
             }
         )
 
 
 class DocSerializer:
+    def __init__(self, root_dir=None) -> None:
+        self.root_dir = root_dir
+
     async def serialize_documents(self, path: str | Path, recursive=True) -> AsyncGenerator[Document, None]:
         p = AsyncPath(path)
 
@@ -301,7 +303,7 @@ class DocSerializer:
             pattern = f"**/*{type}"
             loader_cls: BaseLoader = LOADERS.get(p.suffix)
             logger.info(f'Loading {type} files.')
-            doc: Document = await loader_cls().aload_document(file_path=str(p))
+            doc: Document = await loader_cls().aload_document(file_path=path)
             yield doc
 
 
@@ -310,13 +312,13 @@ class DocSerializer:
             for type, loader_cls in LOADERS.items(): # TODO Rendre ceci async: Priority 0
                 pattern = f"**/*{type}"
                 logger.info(f'Loading {type} files.')
-                files = get_files(path, pattern, recursive)
-
+                files = get_files(path, pattern, recursive) 
                 
                 async for file in files:
                     loader = loader_cls()
-                    doc: Document = await loader.aload_document(file_path=file)
-                    print(f"==> Serialized: {file}")
+                    relative_file_path = Path(file).relative_to(self.root_dir)
+                    doc: Document = await loader.aload_document(file_path=relative_file_path)
+                    print(f"==> Serialized: {str(file)}")
                     yield doc
 
         
@@ -344,25 +346,13 @@ LOADERS: Dict[str, BaseLoader] = {
 }
 
 
+# if __name__ == "__main__":
+#     async def main():
+#         loader = DocSerializer()
+#         dir_path = "../../data/"  # Replace with your actual directory path
+#         docs = loader.serialize_documents(dir_path)
+#         async for d in docs:
+#             pass
 
-if __name__ == "__main__":
-    async def main():
-        loader = DocSerializer()
-        dir_path = "/home/ubuntu/projects/ahmath/ragondin_1/app/upload_dir/Sources_RAG"  # Replace with your actual directory path
-
-        async def g(d):
-            await asyncio.sleep(random.randint(1, 4))
-            print(f"Processed: {d.metadata['source']}")
-            return d
-        
-        tasks = []
-        async for doc in loader.serialize_documents(dir_path, recursive=True):
-            tasks.append(
-                asyncio.create_task(g(doc))
-            )
-        
-        for completed_task in asyncio.as_completed(tasks):
-            d = await completed_task
-            pass
                     
-    asyncio.run(main())
+#     asyncio.run(main())

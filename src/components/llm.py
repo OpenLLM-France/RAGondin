@@ -1,11 +1,13 @@
+from uuid import UUID
+from langchain_core.outputs import ChatGenerationChunk, GenerationChunk, LLMResult
 from langchain_openai import ChatOpenAI
 from langchain_core.prompts import (
     MessagesPlaceholder, 
     ChatPromptTemplate
 )
 from langchain_core.messages import AIMessage, HumanMessage, BaseMessage
-from typing import AsyncIterator
-
+from langchain_core.callbacks import AsyncCallbackHandler
+from typing import Any, AsyncIterator
 
 class LLM:
     def __init__(self, config, logger=None):
@@ -17,7 +19,7 @@ class LLM:
             timeout=60,
             temperature=config.llm["temperature"],
             max_tokens=config.llm["max_tokens"], 
-            streaming=True,
+            streaming=True
         )   
          
     def run(self, 
