@@ -6,7 +6,7 @@ You have access to the prior conversation history between the human and the AI, 
    - Leverage the prior chat conversation to ensure the reformulated query is relevant and incorporate prior information from the chat if not empty.  
 2. **Preservation**: Maintain the original language, intent, and tone of the user’s input.  
    - Do not introduce new information that is not present in the user’s input or the chat history.  
-3. **Unrelated Queries**: If the user input is unrelated to the conversation history (e.g., thank-yous or casual remarks), return it unchanged.  
+3. **Unrelated Queries**: If the user input is unrelated to the conversation history, return it unchanged.  
 4. **People-Related Queries**: When the input explicitly asks about a person, do not provide answers; instead, focus on contextualizing the query.  
 5. **Output Format**:  
    - Return only the reformulated query as plain text.  
