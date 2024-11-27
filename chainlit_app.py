@@ -16,9 +16,11 @@ config.vectordb["host"] = os.getenv('host')
 config.vectordb["port"] = os.getenv('port')
 print("config.vectordb['host']", config.vectordb["host"])
 print("config.vectordb['port']", config.vectordb["port"])
+
 ragPipe = RagPipeline(config=config, device="cpu")
 
 # https://github.com/Cinnamon/kotaemon/blob/main/libs/ktem/ktem/reasoning/prompt_optimization/suggest_followup_chat.py
+
 
 def set_nested_attr(obj, attr_path: str, value: str):
     attrs = attr_path.split('.')
@@ -114,12 +116,13 @@ async def on_message(message: cl.Message):
     async for token in stream:
         await msg.stream_token(token.content)
         answer_txt += token.content
-    
+        
     if ragPipe.rag_mode == "ChatBotRag":
             ragPipe.update_history(question, answer_txt)
 
     if sources:
         await msg.stream_token( '\n\n' + '-'*50 + "\n\nRetrieved Docs: \n" + '\n'.join(source_names))
+        # await msg.stream_token("[doc_](http://localhost:8082/static/S2_RAG/Sources%20RAG/AI/P2IA%20Langues%20Vivantes%20-%20Me%CC%81moire%20technique%20-%20babylon%20IA.pdf)")
         
     await msg.send()
     torch.cuda.empty_cache()
