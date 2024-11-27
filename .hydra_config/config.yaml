@@ -34,6 +34,7 @@ verbose:
   level: INFO
 
 paths:
+  root_dir: ${oc.env:ROOT_DIR}
   base_dir: ${oc.env:BASE_DIR}
   prompts_dir: ${oc.env:PROMPTS_DIR}
 
