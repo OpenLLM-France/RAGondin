@@ -24,7 +24,6 @@ __pycache__/
 CR.md
 
 
-
 # Ignore Python bytecode files
 *.pyc
 *.pyo
@@ -33,3 +32,4 @@ CR.md
 .venv/
 model_weights
 data
+**/*.env.compose

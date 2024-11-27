@@ -146,7 +146,7 @@ class RagPipeline:
         else:
             # this is for when the user provides chat_history (in api_mode)
             chat_history = chat_history[self.chat_history_depth:]
-
+      
         # 1. contextualize the question and retreive relevant documents
         docs, contextualized_question = await self.get_contextualize_docs(question, chat_history) 
 
