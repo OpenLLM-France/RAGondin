@@ -22,7 +22,7 @@ chat_profiles:
     icon: public/favicon.svg
     default: true
   
-  - name: vdb95_no_context
-    markdown_description: 'The underlying vector database is **vdb95_no_context** (Vector Database without contextual retrieval)'
-    icon: https://picsum.photos/200
-    default: false
+  # - name: vdb95_no_context
+  #   markdown_description: 'The underlying vector database is **vdb95_no_context** (Vector Database without contextual retrieval)'
+  #   icon: https://picsum.photos/200
+  #   default: false
