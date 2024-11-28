@@ -47,12 +47,12 @@ async def main():
     print(config)
 
     if args.folder:
-        from src.components import Indexer
+        from filecatcher.components import Indexer
 
         collection = config.vectordb["collection_name"]
         logger.warning(f"Data will be upserted to the collection {collection}")
 
-        indexer = Indexer(config, logger)
+        indexer = Indexer(config = config, logger = logger)
         
         start = time.time()
         await indexer.add_files2vdb(path=args.folder)

@@ -17,6 +17,7 @@ langchain-community = "^0.3.7"
 langchain-openai = "^0.2.8"
 ragatouille = "^0.0.8.post4"
 whisperx = {git = "https://github.com/federicotorrielli/BetterWhisperX", branch="main"}
+filecatcher = {git = "https://github.com/OpenLLM-France/fileCatcher.git"}
 pyannote-audio = "3.1.1"
 ctranslate2 = "4.4.0"
 qdrant-client = "^1.12.1"

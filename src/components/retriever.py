@@ -1,17 +1,12 @@
 # Import necessary modules and classes
 from abc import abstractmethod, ABC
-import asyncio
 from pathlib import Path
-from .llm import LLM
-from .vectordb import QdrantDB, ABCVectorDB
-from loguru import logger
 from langchain_core.prompts import ChatPromptTemplate
-from .utils import load_sys_template
 from langchain_openai import ChatOpenAI
 from langchain_core.output_parsers import StrOutputParser
-from .llm import LLM
 from langchain_core.documents.base import Document
 from omegaconf import OmegaConf
+from filecatcher.components import LLM, QdrantDB, ABCVectorDB, load_sys_template
 
 
 CRITERIAS = ["similarity"]
