@@ -1,5 +1,5 @@
 from pathlib import Path
-from .utils import load_sys_template
+from filecatcher.components import load_sys_template
 from langchain_openai import ChatOpenAI
 from langchain_core.prompts import (
     MessagesPlaceholder, 

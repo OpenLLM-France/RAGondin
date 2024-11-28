@@ -2,23 +2,12 @@ import gc
 import sys
 
 import torch
-from .chunker import ABCChunker, ChunkerFactory
 from langchain_core.documents.base import Document
-from .llm import LLM
-from .utils import format_context, load_sys_template
 from .reranker import Reranker
 from .retriever import ABCRetriever, RetrieverFactory
-from .vectordb import ConnectorFactory
-from .embeddings import HFEmbedder
-from omegaconf import OmegaConf
-from .loader import DocSerializer
 from loguru import logger
-from typing import AsyncGenerator
 from langchain_core.output_parsers import StrOutputParser
-from langchain_core.prompts import (
-    MessagesPlaceholder, 
-    ChatPromptTemplate
-)
+from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.messages import (
     AIMessage, 
     HumanMessage
@@ -26,31 +15,7 @@ from langchain_core.messages import (
 from pathlib import Path
 from collections import deque
 from .grader import Grader
-
-class Indexer:
-    """This class bridges static files with the vector store database.
-    """
-    def __init__(self, config: OmegaConf, logger, device=None) -> None:
-        embedder = HFEmbedder(embedder_config=config.embedder, device=device)
-        self.serializer = DocSerializer(root_dir=config.paths.root_dir)
-        self.chunker: ABCChunker = ChunkerFactory.create_chunker(config, embedder=embedder.get_embeddings())
-        self.vectordb = ConnectorFactory.create_vdb(config, logger=logger, embeddings=embedder.get_embeddings())
-        self.logger = logger
-        self.logger.info("Indexer initialized...")
-
-
-    async def add_files2vdb(self, path):
-        """Add a files to the vector database in async mode"""
-        try:
-            doc_generator: AsyncGenerator[Document, None] = self.serializer.serialize_documents(path, recursive=True)
-            await self.vectordb.async_add_documents(
-                doc_generator=doc_generator, 
-                chunker=self.chunker, 
-                document_batch_size=4
-            )
-            self.logger.info(f"Documents from {path} added.")
-        except Exception as e:
-            raise Exception(f"An exception as occured: {e}")
+from filecatcher.components import Indexer, LLM, format_context, load_sys_template
 
 
 class RagPipeline:
@@ -58,7 +23,7 @@ class RagPipeline:
         self.config = config
         # print(self.config)
         self.logger = self.set_logger(config)
-        self.indexer = Indexer(config, self.logger, device=device)
+        self.indexer = Indexer(config = config, logger = self.logger, device=device)
             
         self.reranker = None
         if config.reranker["model_name"]:

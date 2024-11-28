@@ -2,7 +2,8 @@ import time
 import asyncio
 from loguru import logger
 from pathlib import Path
-from src.components import RagPipeline, load_config, evaluate, Indexer
+from src.components import RagPipeline, load_config, evaluate
+from filecatcher.components import Indexer
 
 # config_path = Path(__file__) / '.hydra_config'
 config = load_config()

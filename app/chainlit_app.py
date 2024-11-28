@@ -3,9 +3,8 @@ import chainlit as cl
 import sys, os, yaml, torch
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../')))
 
-from src.components import RagPipeline, load_config, AudioTranscriber
+from src.components import RagPipeline, load_config
 from loguru import logger
-from io import BytesIO
 
 APP_DIR = Path(__file__).parent.absolute() # Path.cwd().parent.absolute()
 UPLOAD_DIR = APP_DIR / "upload_dir"
