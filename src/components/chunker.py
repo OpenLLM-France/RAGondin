@@ -182,10 +182,9 @@ class RecursiveSplitter(ABCChunker):
             
                 if len(chunk.page_content.strip()) > 1:
                     chunk.page_content = b_chunk_w_context
-                    chunk.metadata = {
-                        "page": page_idx[i]["page"], 
-                        "source": source,
-                    }
+                    metadata = doc.metadata
+                    metadata.update({"page": page_idx[i]["page"]})
+                    chunk.metadata = metadata
                     filtered_chunks.append(chunk)
 
         return filtered_chunks
@@ -260,10 +259,10 @@ class SemanticSplitter(ABCChunker):
             
                 if len(chunk.page_content.strip()) > 1:
                     chunk.page_content = b_chunk_w_context
-                    chunk.metadata = {
-                        "page": page_idx[i]["page"], 
-                        "source": source,
-                    }
+                    metadata = doc.metadata
+                    metadata.update({"page": page_idx[i]["page"]})
+                    
+                    chunk.metadata = metadata
                     filtered_chunks.append(chunk)
         return filtered_chunks
 

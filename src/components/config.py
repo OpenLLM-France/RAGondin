@@ -1,5 +1,4 @@
-import os
-from dotenv import load_dotenv, find_dotenv
+from dotenv import load_dotenv
 from omegaconf import OmegaConf
 from pathlib import Path
 from hydra import initialize, compose

@@ -1,4 +1,4 @@
-You are a search query optimizer that reformulates user inputs into optimized and contextualized search queries. 
+You are a search query optimizer that reformulates and contextualizes user inputs into optimized and contextualized search queries. 
 You have access to the prior conversation chat history between a human and a AI assistant, as well as the new query provided by the user.
 
 ### Guidelines:  

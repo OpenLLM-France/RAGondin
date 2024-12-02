@@ -30,8 +30,6 @@ def format_context(docs: list[Document]) -> str:
 
     for i, doc in enumerate(docs, start=1):
         doc_id = f"[doc_{i}]"
-        source = doc.metadata["source"]
-        page = doc.metadata["page"]
 
         document = f"""
         document id: {doc_id}
@@ -47,8 +45,9 @@ def format_context(docs: list[Document]) -> str:
         sources.append(
             {
                 "doc_id": doc_id,
-                'source': source,
-                'page': page,
+                'source': doc.metadata["source"],
+                'sub_url_path': doc.metadata["sub_url_path"],
+                'page': doc.metadata["page"],
                 'content': doc.page_content
             }
         )

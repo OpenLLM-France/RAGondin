@@ -32,7 +32,7 @@ class Indexer:
     """
     def __init__(self, config: OmegaConf, logger, device=None) -> None:
         embedder = HFEmbedder(embedder_config=config.embedder, device=device)
-        self.serializer = DocSerializer(root_dir=config.paths.root_dir)
+        self.serializer = DocSerializer(data_dir=config.paths.root_dir / 'data')
         self.chunker: ABCChunker = ChunkerFactory.create_chunker(config, embedder=embedder.get_embeddings())
         self.vectordb = ConnectorFactory.create_vdb(config, logger=logger, embeddings=embedder.get_embeddings())
         self.logger = logger
@@ -56,7 +56,6 @@ class Indexer:
 class RagPipeline:
     def __init__(self, config, device="cpu") -> None:
         self.config = config
-        # print(self.config)
         self.logger = self.set_logger(config)
         self.indexer = Indexer(config, self.logger, device=device)
             
