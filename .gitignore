@@ -33,3 +33,4 @@ CR.md
 model_weights
 data
 **/*.env.compose
+kotaemon

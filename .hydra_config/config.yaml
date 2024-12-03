@@ -9,9 +9,10 @@ embedder:
   # powerful multilingual model => More language => token's decomposed heavily => More to embed => this model is better than Alibaba NLP models
 
 llm:
-  base_url: https://chat.ai.linagora.exaion.com/v1/
+  base_url: https://chat.ai.linagora.exaion.com/v1
   name: meta-llama-31-8b-it
-  api_key: ${oc.env:API_KEY}
+  portkey_api_key: ${oc.env:PORTKEY_API_KEY}
+  virtual_key: ${oc.env:VIRTUAL_KEY}
   max_tokens: 1024
   temperature: 0.0
 

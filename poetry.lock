@@ -561,6 +561,17 @@ files = [
 ]
 
 [[package]]
+name = "cached-property"
+version = "2.0.1"
+description = "A decorator for caching properties in classes."
+optional = false
+python-versions = ">=3.8"
+files = [
+    {file = "cached_property-2.0.1-py3-none-any.whl", hash = "sha256:f617d70ab1100b7bcf6e42228f9ddcb78c676ffa167278d9f730d1c2fba69ccb"},
+    {file = "cached_property-2.0.1.tar.gz", hash = "sha256:484d617105e3ee0e4f1f58725e72a8ef9e93deee462222dbd51cd91230897641"},
+]
+
+[[package]]
 name = "caio"
 version = "0.9.17"
 description = "Asynchronous file IO for Linux MacOS or Windows."
@@ -4954,6 +4965,34 @@ redis = ["redis"]
 tests = ["pytest (>=5.4.1)", "pytest-cov (>=2.8.1)", "pytest-mypy (>=0.8.0)", "pytest-timeout (>=2.1.0)", "redis", "sphinx (>=6.0.0)", "types-redis"]
 
 [[package]]
+name = "portkey-ai"
+version = "1.9.7"
+description = "Python client library for the Portkey API"
+optional = false
+python-versions = ">=3.8"
+files = [
+    {file = "portkey_ai-1.9.7-py3-none-any.whl", hash = "sha256:050233c508a557b7e1fa923307873d86b5bc3337319291d1e2a1df2a05c6cca2"},
+    {file = "portkey_ai-1.9.7.tar.gz", hash = "sha256:e87913744aa33d17675355447d47e58c07efc27d50fa3899fc5843d0b89f253c"},
+]
+
+[package.dependencies]
+anyio = ">=3.5.0,<5"
+cached-property = "*"
+distro = ">=1.7.0,<2"
+httpx = "*"
+jiter = ">=0.4.0,<1"
+pydantic = ">=1.10.0"
+sniffio = "*"
+tqdm = ">4"
+types-requests = "*"
+typing_extensions = ">=4.7.1,<5.0"
+
+[package.extras]
+dev = ["black (==23.7.0)", "mypy (>=0.991,<2.0)", "pytest (==7.4.2)", "pytest-asyncio (==0.23.5)", "python-dotenv (==1.0.0)", "ruff (==0.0.292)"]
+langchain-callback = ["langchain-core"]
+llama-index-callback = ["llama-index"]
+
+[[package]]
 name = "primepy"
 version = "1.3"
 description = "This module contains several useful functions to work with prime numbers. from primePy import primes"
@@ -7570,6 +7609,20 @@ shellingham = ">=1.3.0"
 typing-extensions = ">=3.7.4.3"
 
 [[package]]
+name = "types-requests"
+version = "2.32.0.20241016"
+description = "Typing stubs for requests"
+optional = false
+python-versions = ">=3.8"
+files = [
+    {file = "types-requests-2.32.0.20241016.tar.gz", hash = "sha256:0d9cad2f27515d0e3e3da7134a1b6f28fb97129d86b867f24d9c726452634d95"},
+    {file = "types_requests-2.32.0.20241016-py3-none-any.whl", hash = "sha256:4195d62d6d3e043a4eaaf08ff8a62184584d2e8684e9d2aa178c7915a7da3747"},
+]
+
+[package.dependencies]
+urllib3 = ">=2"
+
+[[package]]
 name = "typing-extensions"
 version = "4.12.2"
 description = "Backported and Experimental Type Hints for Python 3.8+"
@@ -8475,4 +8528,4 @@ type = ["pytest-mypy"]
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.12,<3.13"
-content-hash = "cd7a77417ff6d5efeb9d98026745bc5d4799b0894c0595fb6b78fde865248294"
+content-hash = "72e1c61b47910997b3192f3b0b8b890d590e6f186a7815a2ed9d6ee6ff6a65b5"

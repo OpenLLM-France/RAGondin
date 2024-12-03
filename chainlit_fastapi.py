@@ -1,33 +1,22 @@
 from pathlib import Path
+from urllib.parse import urlparse
 import chainlit as cl
-import sys, os, yaml, torch
-# sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../')))
-
-from src.components import RagPipeline, load_config, AudioTranscriber
+import yaml, torch
 from loguru import logger
 from io import BytesIO
+import json
+import httpx
 
+
+BASE_URL = "http://localhost:8082/{method}/"
 APP_DIR = Path.cwd().absolute()
-UPLOAD_DIR = APP_DIR / "upload_dir"
-os.makedirs(UPLOAD_DIR, exist_ok=True)
 
-config = load_config()
-config.vectordb["host"] = os.getenv('host')
-config.vectordb["port"] = os.getenv('port')
-print("config.vectordb['host']", config.vectordb["host"])
-print("config.vectordb['port']", config.vectordb["port"])
-
-ragPipe = RagPipeline(config=config, device="cpu")
+headers = {
+    "accept": "application/json", 
+    "Content-Type": "application/json"
+}
 
 # https://github.com/Cinnamon/kotaemon/blob/main/libs/ktem/ktem/reasoning/prompt_optimization/suggest_followup_chat.py
-
-
-def set_nested_attr(obj, attr_path: str, value: str):
-    attrs = attr_path.split('.')
-    for attr in attrs[:-1]:
-        obj = getattr(obj, attr)
-    
-    setattr(obj, attrs[-1], value)
 
 @cl.set_starters
 async def set_starters():
@@ -48,39 +37,37 @@ def format_elements(sources, only_txt=True):
     elements = []
     source_names = []
     for doc in sources:
+        parsed_url = urlparse(doc['url'])
+        doc_name = parsed_url.path.split('/')[-1]
+        
         if only_txt:
             elem = cl.Text(content=doc["content"], name=doc['doc_id'], display='side')
-            s = f"{doc['doc_id']}: {Path(doc["source"]).name}"
+            
         else:
-            source = Path(doc["source"])
+            source = Path(parsed_url)
             match source.suffix:
                 case '.pdf':
-                    elem = cl.Pdf(name=doc['doc_id'], path=doc["source"], page=doc["page"], display='side')
-                    s = f"{doc['doc_id']}: {Path(doc["source"]).name} (p. {doc["page"]})"
+                    elem = cl.Pdf(name=doc['doc_id'], url=parsed_url, page=doc["page"], display='side')
                 case '.mp4':
-                    elem = cl.Video(name=doc['doc_id'], path=doc["source"], display='side')
-                    s = f"{doc['doc_id']}: {Path(doc["source"]).name}"
-                
+                    elem = cl.Video(name=doc['doc_id'], url=parsed_url, display='side')                
                 case '.mp3':
-                    elem = cl.Audio(name=doc['doc_id'], path=doc["source"], display='side')
-                    s = f"{doc['doc_id']}: {Path(doc["source"]).name}"
-                
+                    elem = cl.Audio(name=doc['doc_id'], url=parsed_url, display='side')                
                 case _:
-                    elem = cl.Text(content=doc["content"], name=doc['doc_id'], display='side') # TODO Maybe HTML (convert the File first)
-                    s = f"{doc['doc_id']}: {Path(doc["source"]).name}"
+                    elem = cl.Text(content=doc["content"], name=doc['doc_id'], display='side', url=parsed_url) # TODO Maybe HTML (convert the File first)
 
+        s = f"{doc['doc_id']}: {doc_name}"
         elements.append(elem) 
         source_names.append(s)               
     return elements, source_names
 
 
+history = []
+
 @cl.on_chat_start
 async def on_chat_start():
-    # setting the vector db
-    collection_name = cl.user_session.get('chat_profile')
-    set_nested_attr(ragPipe, 'indexer.vectordb.collection_name', collection_name)
-    ragPipe._chat_history.clear()
-    logger.info("Chat history flushed")
+    global history
+    history.clear()
+    logger.info("New Chat Started")
 
 
 @cl.set_chat_profiles
@@ -99,9 +86,20 @@ async def chat_profiles():
     
 @cl.on_message
 async def on_message(message: cl.Message):
-    question = message.content
+    user_message = message.content
+    params = {
+            "new_user_input": user_message
+        }
     async with cl.Step(name="Searching for relevant documents...") as step:
-        stream, _, sources = await ragPipe.run(question)
+        async with httpx.AsyncClient(timeout=httpx.Timeout(60.0)) as client:
+            async with client.stream('POST',
+                BASE_URL.format(method='generate'), 
+                params=params, headers=headers,
+                json=history
+            ) as strem_response:
+                metadata_sources = strem_response.headers.get("X-Metadata-Sources")
+                sources = json.loads(metadata_sources)
+
     await step.remove()
 
     if sources:
@@ -111,15 +109,18 @@ async def on_message(message: cl.Message):
         msg = cl.Message(content="")
     
     await msg.send()
+
     answer_txt = ""
-    
-    async for token in stream:
+    async for token in strem_response.aiter_bytes():
         await msg.stream_token(token.content)
         answer_txt += token.content
+    
+    global history
+    history.append([
+        {'role': 'user', 'content': user_message},
+        {'role': 'user', 'content': answer_txt}
+    ])
         
-    if ragPipe.rag_mode == "ChatBotRag":
-        ragPipe.update_history(question, answer_txt)
-
     if sources:
         await msg.stream_token( '\n\n' + '-'*50 + "\n\nRetrieved Docs: \n" + '\n'.join(source_names))
         # await msg.stream_token("[doc_](http://localhost:8082/static/S2_RAG/Sources%20RAG/AI/P2IA%20Langues%20Vivantes%20-%20Me%CC%81moire%20technique%20-%20babylon%20IA.pdf)")
@@ -178,9 +179,3 @@ if __name__ == "__main__":
     import sys
     from chainlit.cli import run_chainlit
     run_chainlit(__file__)
-
-
-# docker run -d --name vdb_rag \
-#     -p 6333:6333 -p 6334:6334 \
-#     -v $(pwd)/qdrant_storage:/qdrant/storage:z \
-#     qdrant/qdrant

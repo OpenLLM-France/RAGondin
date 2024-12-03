@@ -6,6 +6,7 @@ from langchain_core.documents.base import Document
 from llama_index.core.llms import ChatMessage, MessageRole
 import asyncio
 
+from .llm import LLM
 
 sys_prompt = """You are an expert at judging documents' relevancy with respect to a given user query/input."""
 
@@ -27,17 +28,7 @@ class GradeDocuments(BaseModel):
 
 class Grader:
     def __init__(self, config, logger=None) -> None:
-        settings = {
-            'model': config.llm["name"],
-            'base_url': config.llm["base_url"],
-            'api_key': config.llm['api_key'],
-            'timeout': 60,
-            'temperature': config.llm["temperature"],
-            'max_tokens': config.llm["max_tokens"], 
-        }
-        # langchain llm
-        lc_llm = ChatOpenAI(**settings) # TODO: consider retry strategy
-
+        lc_llm = LLM(config=config, logger=None).client
         llm = LangChainLLM(
             llm=lc_llm
         )

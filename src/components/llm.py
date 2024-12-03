@@ -1,6 +1,7 @@
 from uuid import UUID
 from langchain_core.outputs import ChatGenerationChunk, GenerationChunk, LLMResult
 from langchain_openai import ChatOpenAI
+from portkey_ai import createHeaders, PORTKEY_GATEWAY_URL
 from langchain_core.prompts import (
     MessagesPlaceholder, 
     ChatPromptTemplate
@@ -12,14 +13,22 @@ from typing import Any, AsyncIterator
 class LLM:
     def __init__(self, config, logger=None):
         self.logger = logger
+        portkey_headers = createHeaders(
+            api_key=config.llm['portkey_api_key'],
+            provider='openai',
+            virtual_key=config.llm['virtual_key'],
+            custom_host=config.llm['base_url']
+        )
+
         self.client: ChatOpenAI = ChatOpenAI(
             model=config.llm["name"],
-            base_url=config.llm["base_url"],
-            api_key=config.llm['api_key'],
+            base_url=PORTKEY_GATEWAY_URL,
+            api_key='X',
             timeout=60,
             temperature=config.llm["temperature"],
             max_tokens=config.llm["max_tokens"], 
-            streaming=True
+            streaming=True,
+            default_headers=portkey_headers
         )   
          
     def run(self, 
