@@ -1,5 +1,5 @@
 from pathlib import Path
-from urllib.parse import urlparse
+from urllib.parse import urlparse, quote
 import chainlit as cl
 import yaml, torch
 from loguru import logger
@@ -15,6 +15,8 @@ headers = {
     "accept": "application/json", 
     "Content-Type": "application/json"
 }
+
+history = []
 
 # https://github.com/Cinnamon/kotaemon/blob/main/libs/ktem/ktem/reasoning/prompt_optimization/suggest_followup_chat.py
 
@@ -37,6 +39,7 @@ def format_elements(sources, only_txt=True):
     elements = []
     source_names = []
     for doc in sources:
+        url = quote(doc['url'], safe=':/')
         parsed_url = urlparse(doc['url'])
         doc_name = parsed_url.path.split('/')[-1]
         
@@ -44,16 +47,16 @@ def format_elements(sources, only_txt=True):
             elem = cl.Text(content=doc["content"], name=doc['doc_id'], display='side')
             
         else:
-            source = Path(parsed_url)
+            source = Path(url)
             match source.suffix:
                 case '.pdf':
-                    elem = cl.Pdf(name=doc['doc_id'], url=parsed_url, page=doc["page"], display='side')
+                    elem = cl.Pdf(name=doc['doc_id'], url=url, page=doc["page"], display='side')
                 case '.mp4':
-                    elem = cl.Video(name=doc['doc_id'], url=parsed_url, display='side')                
+                    elem = cl.Video(name=doc['doc_id'], url=url, display='side')                
                 case '.mp3':
-                    elem = cl.Audio(name=doc['doc_id'], url=parsed_url, display='side')                
+                    elem = cl.Audio(name=doc['doc_id'], url=url, display='side')                
                 case _:
-                    elem = cl.Text(content=doc["content"], name=doc['doc_id'], display='side', url=parsed_url) # TODO Maybe HTML (convert the File first)
+                    elem = cl.Text(content=doc["content"], name=doc['doc_id'], display='side', url=url) # TODO Maybe HTML (convert the File first)
 
         s = f"{doc['doc_id']}: {doc_name}"
         elements.append(elem) 
@@ -61,13 +64,17 @@ def format_elements(sources, only_txt=True):
     return elements, source_names
 
 
-history = []
-
 @cl.on_chat_start
 async def on_chat_start():
-    global history
-    history.clear()
-    logger.info("New Chat Started")
+    try:
+        global history
+        history.clear()
+        logger.info("New Chat Started")
+        async with httpx.AsyncClient(timeout=httpx.Timeout(60.0)) as client:
+            response = await client.get(url=BASE_URL.format(method='hello'))
+            print(response.text)
+    except:
+        logger.warning("Make sur the fastapi is launched!!")
 
 
 @cl.set_chat_profiles
@@ -86,44 +93,43 @@ async def chat_profiles():
     
 @cl.on_message
 async def on_message(message: cl.Message):
+    global history
     user_message = message.content
     params = {
             "new_user_input": user_message
         }
     async with cl.Step(name="Searching for relevant documents...") as step:
         async with httpx.AsyncClient(timeout=httpx.Timeout(60.0)) as client:
-            async with client.stream('POST',
+            async with client.stream(
+                'POST',
                 BASE_URL.format(method='generate'), 
-                params=params, headers=headers,
+                params=params, 
+                headers=headers,
                 json=history
-            ) as strem_response:
-                metadata_sources = strem_response.headers.get("X-Metadata-Sources")
+            ) as streaming_response:
+                metadata_sources = streaming_response.headers.get("X-Metadata-Sources")
                 sources = json.loads(metadata_sources)
 
-    await step.remove()
-
-    if sources:
-        elements, source_names = format_elements(sources, only_txt=False)
-        msg = cl.Message(content="", elements=elements)
-    else:
-        msg = cl.Message(content="")
+                if sources:
+                    elements, source_names = format_elements(sources, only_txt=False)
+                    msg = cl.Message(content="", elements=elements)
+                else:
+                    msg = cl.Message(content="")
+                
+                await msg.send()
+                answer_txt = ""
+                async for token in streaming_response.aiter_bytes():
+                    token = token.decode()
+                    await msg.stream_token(token)
+                    answer_txt += token
     
-    await msg.send()
-
-    answer_txt = ""
-    async for token in strem_response.aiter_bytes():
-        await msg.stream_token(token.content)
-        answer_txt += token.content
-    
-    global history
-    history.append([
+    history.extend([
         {'role': 'user', 'content': user_message},
         {'role': 'user', 'content': answer_txt}
     ])
-        
+
     if sources:
         await msg.stream_token( '\n\n' + '-'*50 + "\n\nRetrieved Docs: \n" + '\n'.join(source_names))
-        # await msg.stream_token("[doc_](http://localhost:8082/static/S2_RAG/Sources%20RAG/AI/P2IA%20Langues%20Vivantes%20-%20Me%CC%81moire%20technique%20-%20babylon%20IA.pdf)")
         
     await msg.send()
     torch.cuda.empty_cache()
