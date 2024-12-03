@@ -3,7 +3,7 @@ import chainlit as cl
 import sys, os, yaml, torch
 # sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../')))
 
-from src.components import RagPipeline, load_config, AudioTranscriber
+from src.components import RagPipeline, load_config, Indexer, AudioTranscriber
 from loguru import logger
 from io import BytesIO
 
@@ -17,7 +17,8 @@ config.vectordb["port"] = os.getenv('port')
 print("config.vectordb['host']", config.vectordb["host"])
 print("config.vectordb['port']", config.vectordb["port"])
 
-ragPipe = RagPipeline(config=config, device="cpu")
+indexer = Indexer(config=config, logger=logger)
+ragPipe = RagPipeline(config=config, vectordb=indexer.vectordb, logger=logger)
 
 # https://github.com/Cinnamon/kotaemon/blob/main/libs/ktem/ktem/reasoning/prompt_optimization/suggest_followup_chat.py
 
@@ -118,7 +119,7 @@ async def on_message(message: cl.Message):
         answer_txt += token.content
         
     if ragPipe.rag_mode == "ChatBotRag":
-        ragPipe.update_history(question, answer_txt)
+            ragPipe.update_history(question, answer_txt)
 
     if sources:
         await msg.stream_token( '\n\n' + '-'*50 + "\n\nRetrieved Docs: \n" + '\n'.join(source_names))

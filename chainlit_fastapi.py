@@ -79,15 +79,18 @@ async def on_chat_start():
 
 @cl.set_chat_profiles
 async def chat_profiles():
-    # TODO: Do it automatically
     with open(APP_DIR / 'public' / 'conversation_starters.yaml') as file: # Load the YAML file
         data = yaml.safe_load(file)
-
+    
+    async with httpx.AsyncClient(timeout=httpx.Timeout(60.0)) as client:
+        response = await client.get(url=BASE_URL.format(method='collections'))
+        collections = json.loads(response.text)
+    
     return [
         cl.ChatProfile(
             **profile,
         ) 
-        for profile in data['chat_profiles']
+        for profile in data['chat_profiles'] if profile['name'] in collections
     ]
 
     

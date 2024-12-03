@@ -15,6 +15,11 @@ class ABCVectorDB(ABC):
     Abstract base class for a Vector Database.
     This class defines the interface for a vector database connector.
     """
+
+    @abstractmethod
+    async def get_collections(self):
+        pass
+
     @abstractmethod
     async def async_add_documents(self, index_name, chunks, embeddings):
         pass
@@ -101,6 +106,9 @@ class QdrantDB(ABCVectorDB):
             )
             self.logger.info(f"As the collection `{name}` is non-existant, it's created.")
 
+
+    async def get_collections(self) -> list[str]:
+        return [c.name for c in self.client.get_collections().collections]
 
     async def async_search(self, query: str, top_k: int = 5, similarity_threshold: int=0.80) -> list[Document]:
         docs_scores = await self.vector_store.asimilarity_search_with_relevance_scores(query=query, k=top_k, score_threshold=similarity_threshold)

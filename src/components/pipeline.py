@@ -8,7 +8,7 @@ from .llm import LLM
 from .utils import format_context, load_sys_template
 from .reranker import Reranker
 from .retriever import ABCRetriever, RetrieverFactory
-from .vectordb import ConnectorFactory
+from .vectordb import ConnectorFactory, ABCVectorDB
 from .embeddings import HFEmbedder
 from omegaconf import OmegaConf
 from .loader import DocSerializer
@@ -37,7 +37,7 @@ class Indexer:
         self.vectordb = ConnectorFactory.create_vdb(config, logger=logger, embeddings=embedder.get_embeddings())
         self.logger = logger
         self.logger.info("Indexer initialized...")
-
+        
 
     async def add_files2vdb(self, path):
         """Add a files to the vector database in async mode"""
@@ -54,10 +54,10 @@ class Indexer:
 
 
 class RagPipeline:
-    def __init__(self, config, device="cpu") -> None:
+    def __init__(self, config, vectordb: ABCVectorDB, logger=None) -> None:
         self.config = config
-        self.logger = self.set_logger(config)
-        self.indexer = Indexer(config, self.logger, device=device)
+        self.logger = self.set_logger(config) if logger is None else logger
+        self.vectordb: ABCVectorDB = vectordb
             
         self.reranker = None
         if config.reranker["model_name"]:
@@ -101,7 +101,7 @@ class RagPipeline:
             logger.info("Documents retreived...")
             docs = await self.retriever.retrieve(
                 question, 
-                db=self.indexer.vectordb
+                db=self.vectordb
             )
             contextualized_question = question
 
@@ -131,7 +131,7 @@ class RagPipeline:
 
             docs = await self.retriever.retrieve(
                 contextualized_question, 
-                db=self.indexer.vectordb
+                db=self.vectordb
             )
             gc.collect()
             torch.cuda.empty_cache()

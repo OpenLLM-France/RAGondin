@@ -13,13 +13,13 @@ from fastapi.staticfiles import StaticFiles
 import uvicorn
 from typing import Literal
 from pathlib import Path
-from src.components import RagPipeline, load_config
+from src.components import RagPipeline, load_config, Indexer
+from loguru import logger
 
 APP_DIR = Path.cwd()
-
+DATA_DIR = APP_DIR / 'data'
 # Directory to store uploaded PDFs
 UPLOAD_DIR = APP_DIR / 'data' / "upload_dir"
-DATA_DIR = APP_DIR / 'data'
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 
 config = load_config()
@@ -27,13 +27,13 @@ config = load_config()
 print("config.vectordb['host']", config.vectordb["host"])
 print("config.vectordb['port']", config.vectordb["port"])
 
-ragPipe = RagPipeline(config=config)
+indexer = Indexer(config, logger)
+ragPipe = RagPipeline(config=config, vectordb=indexer.vectordb, logger=logger)
 
 class Tags(Enum):
     VDB = "VectorDB operations"
     LLM = "LLM Calls"
 
-  
 class ChatMsg(BaseModel):
     role: Literal["user", "assistant"]
     content: str
@@ -44,7 +44,7 @@ mapping = {
 }
 
 app = FastAPI()
-app.mount('/static', StaticFiles(directory=DATA_DIR.absolute()), name='static')
+app.mount('/static', StaticFiles(directory=DATA_DIR.absolute(), check_dir=True), name='static')
 
 
 def static_base_url_dependency(request: Request) -> str:
@@ -56,6 +56,14 @@ def source2url(s: dict, static_base_url: str):
     s.pop("source")
     s.pop('sub_url_path')
     return s
+
+
+@app.get("/collections/",
+          summary="Get existant collections",
+          tags=[Tags.VDB]
+          )
+async def get_collections() -> list[str]:
+    return await indexer.vectordb.get_collections()
 
 
 @app.post("/generate/",
@@ -86,7 +94,7 @@ async def get_answer(
     )
 
 
-@app.get("/hello/")
+@app.get("/hello/", summary="Toy endpoint to check that the api is up")
 async def hello():
     return "hello"
 
