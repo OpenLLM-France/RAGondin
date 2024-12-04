@@ -55,6 +55,8 @@ class Indexer:
 
 class RagPipeline:
     def __init__(self, config, vectordb: ABCVectorDB, logger=None) -> None:
+        # TODO: Turn VectorDB into an API and put a link.
+
         self.config = config
         self.logger = self.set_logger(config) if logger is None else logger
         self.vectordb: ABCVectorDB = vectordb
