@@ -74,7 +74,7 @@ async def on_chat_start():
             response = await client.get(url=BASE_URL.format(method='hello'))
             print(response.text)
     except:
-        logger.warning("Make sur the fastapi is launched!!")
+        logger.warning("Make sur the fastapi is up!!")
 
 
 @cl.set_chat_profiles

@@ -77,9 +77,13 @@ def format_elements(sources, only_txt=True):
 
 @cl.on_chat_start
 async def on_chat_start():
+    global indexer
+    global ragPipe
     # setting the vector db
     collection_name = cl.user_session.get('chat_profile')
-    set_nested_attr(ragPipe, 'indexer.vectordb.collection_name', collection_name)
+    indexer.vectordb.collection_name = collection_name
+    ragPipe.vectordb = indexer.vectordb
+
     ragPipe._chat_history.clear()
     logger.info("Chat history flushed")
 
