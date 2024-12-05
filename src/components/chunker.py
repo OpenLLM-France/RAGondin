@@ -213,8 +213,9 @@ class SemanticSplitter(ABCChunker):
     def split_document(self, doc: Document):
         text = ''
         page_idx = []
-        source = doc.metadata["source"]
-        page_sep = doc.metadata["page_sep"]
+        metadata = doc.metadata
+        source = metadata["source"]
+        page_sep = metadata.pop("page_sep")
         pages = doc.page_content.split(sep=page_sep) 
 
         start_index = 0
@@ -254,15 +255,19 @@ class SemanticSplitter(ABCChunker):
             for chunk, b_chunk_w_context in zip(b_chunks, b_chunks_w_context):
                 start_idx = chunk.metadata["start_index"]
 
-                while not (page_idx[i]["start_idx"] <= start_idx <= page_idx[i]["end_idx"]) and i < len(page_idx)-1:
+                while not (page_idx[i]["start_idx"] <= start_idx <= page_idx[i]["end_idx"]):
                     i += 1
             
+                # print(page_idx[i], start_idx)
                 if len(chunk.page_content.strip()) > 1:
                     chunk.page_content = b_chunk_w_context
-                    metadata = doc.metadata
+
                     metadata.update({"page": page_idx[i]["page"]})
-                    
-                    chunk.metadata = metadata
+                    chunk.metadata = {
+                        "page": page_idx[i]["page"],
+                        "source": metadata["source"],
+                        'sub_url_path': metadata["sub_url_path"]
+                    }
                     filtered_chunks.append(chunk)
         return filtered_chunks
 

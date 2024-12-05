@@ -311,7 +311,10 @@ class DocSerializer:
             pattern = f"**/*{type}"
             loader_cls: BaseLoader = LOADERS.get(p.suffix)
             logger.info(f'Loading {type} files.')
-            doc: Document = await loader_cls().aload_document(file_path=path)
+            doc: Document = await loader_cls().aload_document(
+                file_path=path,
+                sub_url_path=Path(path).absolute().relative_to(self.data_dir) # for the static file server
+            )
             yield doc
 
 

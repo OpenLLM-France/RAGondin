@@ -121,7 +121,7 @@ class QdrantDB(ABCVectorDB):
         search_tasks = [self.async_search(query=query, top_k=top_k_per_query, similarity_threshold=similarity_threshold) for query in queries]
         retrieved_results = await asyncio.gather(*search_tasks)
 
-        s = sum(retrieved_results, [])
+        # s = sum(retrieved_results, [])
 
         retrieved_chunks = {}
         # Process the retrieved documents
@@ -129,7 +129,6 @@ class QdrantDB(ABCVectorDB):
             if retrieved:
                 for document in retrieved:
                     retrieved_chunks[document.metadata["_id"]] = document
-        
         return list(retrieved_chunks.values())
     
 

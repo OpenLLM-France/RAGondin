@@ -8,7 +8,11 @@ import asyncio
 
 from .llm import LLM
 
-sys_prompt = """You are an expert at judging documents' relevancy with respect to a given user query/input."""
+sys_prompt = """
+
+You are an expert at judging documents' relevancy with respect to a given user query/input.
+* For CVs pay attention to the keys before judging them as relevant.
+"""
 
 class GradeDocuments(BaseModel):
     """Evaluates document's relevancy using a binary scoring system."""

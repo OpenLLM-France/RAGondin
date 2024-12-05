@@ -13,22 +13,23 @@ from typing import Any, AsyncIterator
 class LLM:
     def __init__(self, config, logger=None):
         self.logger = logger
-        portkey_headers = createHeaders(
-            api_key=config.llm['portkey_api_key'],
-            provider='openai',
-            virtual_key=config.llm['virtual_key'],
-            custom_host=config.llm['base_url']
-        )
-
+        # portkey_headers = createHeaders(
+        #     api_key=config.llm['portkey_api_key'],
+        #     provider='openai',
+        #     virtual_key=config.llm['virtual_key'],
+        #     custom_host=config.llm['base_url']
+        # )
+        # print(config.llm)
         self.client: ChatOpenAI = ChatOpenAI(
             model=config.llm["name"],
-            base_url=PORTKEY_GATEWAY_URL,
-            api_key='X',
+            base_url=config.llm['base_url'], # PORTKEY_GATEWAY_URL,
+            api_key=config.llm['api_key'], # 'X',
             timeout=60,
             temperature=config.llm["temperature"],
             max_tokens=config.llm["max_tokens"], 
             streaming=True,
-            default_headers=portkey_headers
+            # frequency_penalty=0.1
+            # default_headers=portkey_headers
         )   
          
     def run(self, 
