@@ -241,12 +241,11 @@ class SemanticSplitter(ABCChunker):
         i = 0
         filtered_chunks = []
         batch_size = 4
-
         chunks = [Document(page_content='')] + chunks
+
         for j in range(1, len(chunks), batch_size):
             b_chunks = chunks[j:j+batch_size]
             prev_chunks = chunks[j-1:j+batch_size-1]
-            
             b_chunks_w_context = self.contextualizer.contextualize(
                 prev_chunks=prev_chunks, b_chunks=b_chunks, 
                 pages=pages, source=source
