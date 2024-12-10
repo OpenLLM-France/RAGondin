@@ -43,26 +43,25 @@ class Grader:
         )
         self.logger = logger
 
+    async def _eval_document(self, user_input, doc: Document, n_workers=8):
+        sem = asyncio.Semaphore(n_workers)
+        async with sem:
+            query_tmpl = f"""User input: {user_input}\n Retrieved Document: {doc.page_content}"""
+            try:
+                messages = [
+                    ChatMessage(role=MessageRole.SYSTEM, content=sys_prompt),
+                    ChatMessage(role=MessageRole.USER, content=query_tmpl)
+                ]
+                res = await self.sllm.achat(messages=messages)
+
+                return res.raw.relevance_score
+            except Exception as e:
+                self.logger.info(f"An Exception occured: {e}")
+                return 'yes'
     
     async def grade(self, user_input: str, docs: list[Document], n_workers=8):
         n_workers = min(n_workers, len(docs))
-        sem = asyncio.Semaphore(n_workers)
-        async def eval_document(user_input, doc: Document):
-            async with sem:
-                query_tmpl = f"""User input: {user_input}\n Retrieved Document: {doc.page_content}"""
-                try:
-                    messages = [
-                        ChatMessage(role=MessageRole.SYSTEM, content=sys_prompt),
-                        ChatMessage(role=MessageRole.USER, content=query_tmpl)
-                    ]
-                    res = await self.sllm.achat(messages=messages)
-
-                    return res.raw.relevance_score
-                except Exception as e:
-                    self.logger.info(f"An Exception occured: {e}")
-                    return 'yes'
-        
-        tasks = [eval_document(user_input=user_input, doc=d) for d in docs]
+        tasks = [self._eval_document(user_input=user_input, doc=d, n_workers=8) for d in docs]
         grades = await asyncio.gather(*tasks)
 
         # filtering

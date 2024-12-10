@@ -28,7 +28,7 @@ class LLM:
             temperature=config.llm["temperature"],
             max_tokens=config.llm["max_tokens"], 
             streaming=True,
-            # frequency_penalty=0.1
+            # frequency_penalty=0.2
             # default_headers=portkey_headers
         )   
          
