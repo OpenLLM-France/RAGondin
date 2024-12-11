@@ -24,12 +24,6 @@ class GradeDocuments(BaseModel):
                     "- no: Document has minimal or no meaningful connection"
     )
 
-
-# Evaluation Criteria:
-# - 'yes': The document directly addresses the key concepts, provides substantive information, and closely aligns with the query's primary intent
-# - 'maybe': The document contains partial or tangential information related to the query, with some meaningful connections but not comprehensive coverage
-# - 'no': The document has minimal or no meaningful relationship to the query's core objectives
-
 class Grader:
     def __init__(self, config, logger=None) -> None:
         lc_llm = LLM(config=config, logger=None).client
@@ -43,8 +37,7 @@ class Grader:
         )
         self.logger = logger
 
-    async def _eval_document(self, user_input, doc: Document, n_workers=8):
-        sem = asyncio.Semaphore(n_workers)
+    async def _eval_document(self, user_input, doc: Document, sem: asyncio.Semaphore):
         async with sem:
             query_tmpl = f"""User input: {user_input}\n Retrieved Document: {doc.page_content}"""
             try:
@@ -61,9 +54,26 @@ class Grader:
     
     async def grade(self, user_input: str, docs: list[Document], n_workers=8):
         n_workers = min(n_workers, len(docs))
-        tasks = [self._eval_document(user_input=user_input, doc=d, n_workers=8) for d in docs]
+        sem = asyncio.Semaphore(n_workers)
+
+        tasks = [
+            asyncio.create_task(
+                self._eval_document(user_input=user_input, doc=d, sem=sem)
+            )
+            for d in docs
+        ]
         grades = await asyncio.gather(*tasks)
 
-        # filtering
-        relevants_docs = list(filter(lambda x: x[1] != 'no', zip(docs, grades)))
-        return [doc for doc, grade in relevants_docs] 
+        # Filter relevant documents
+        relevant_docs = [
+            doc for doc, grade in zip(docs, grades) if grade != 'no'
+        ]
+        return relevant_docs
+
+
+
+
+# Evaluation Criteria:
+# - 'yes': The document directly addresses the key concepts, provides substantive information, and closely aligns with the query's primary intent
+# - 'maybe': The document contains partial or tangential information related to the query, with some meaningful connections but not comprehensive coverage
+# - 'no': The document has minimal or no meaningful relationship to the query's core objectives
