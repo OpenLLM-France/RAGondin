@@ -1,2 +1,0 @@
-Répondez au question de l'utilisateur, en rédigeant un paragraphe clair, concis et informatif. 
-Question : {question}
