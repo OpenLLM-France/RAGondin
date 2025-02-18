@@ -1,6 +1,7 @@
 from .config import load_config
-from .pipeline import RagPipeline, Indexer
+from .indexer import AudioTranscriber, Indexer
+from .pipeline import RagPipeline
 from .evaluation import evaluate
-from .loader import AudioTranscriber
+from .indexer import AudioTranscriber, Indexer
 
 __all__ = [load_config, RagPipeline, Indexer, AudioTranscriber, evaluate]

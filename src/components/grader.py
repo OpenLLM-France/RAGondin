@@ -28,7 +28,6 @@ class Grader:
         llm = LangChainLLM(
             llm=lc_llm
         )
-
         # structured llm
         self.sllm = llm.as_structured_llm(
             output_cls=GradeDocuments
@@ -50,15 +49,12 @@ class Grader:
                 self.logger.info(f"An Exception occured: {e}")
                 return 'yes'
     
-    async def grade(self, user_input: str, docs: list[Document], n_workers=8):
+    async def grade(self, user_input: str, docs: list[Document], n_workers=6):
         n_workers = min(n_workers, len(docs))
+        # self.logger.info(f"{len(docs)} documents to grade.")
         sem = asyncio.Semaphore(n_workers)
-
         tasks = [
-            asyncio.create_task(
-                self._eval_document(user_input=user_input, doc=d, sem=sem)
-            )
-            for d in docs
+            self._eval_document(user_input=user_input, doc=d, sem=sem) for d in docs
         ]
         grades = await asyncio.gather(*tasks)
 
@@ -67,11 +63,3 @@ class Grader:
             doc for doc, grade in zip(docs, grades) if grade != 'no'
         ]
         return relevant_docs
-
-
-
-
-# Evaluation Criteria:
-# - 'yes': The document directly addresses the key concepts, provides substantive information, and closely aligns with the query's primary intent
-# - 'maybe': The document contains partial or tangential information related to the query, with some meaningful connections but not comprehensive coverage
-# - 'no': The document has minimal or no meaningful relationship to the query's core objectives

@@ -1,19 +1,14 @@
 import gc
 import sys
-
 import torch
-from .chunker import ABCChunker, ChunkerFactory
 from langchain_core.documents.base import Document
 from .llm import LLM
 from .utils import format_context, load_sys_template
 from .reranker import Reranker
 from .retriever import ABCRetriever, RetrieverFactory
-from .vectordb import ConnectorFactory, ABCVectorDB
-from .embeddings import HFEmbedder
-from omegaconf import OmegaConf
-from .loader import DocSerializer
+from .indexer import ABCVectorDB
+
 from loguru import logger
-from typing import AsyncGenerator
 from langchain_core.output_parsers import StrOutputParser
 from langchain_core.prompts import (
     MessagesPlaceholder, 
@@ -27,36 +22,8 @@ from pathlib import Path
 from collections import deque
 from .grader import Grader
 
-class Indexer:
-    """This class bridges static files with the vector store database.
-    """
-    def __init__(self, config: OmegaConf, logger, device=None) -> None:
-        embedder = HFEmbedder(embedder_config=config.embedder, device=device)
-        self.serializer = DocSerializer(data_dir=config.paths.root_dir / 'data')
-        self.chunker: ABCChunker = ChunkerFactory.create_chunker(config, embedder=embedder.get_embeddings())
-        self.vectordb = ConnectorFactory.create_vdb(config, logger=logger, embeddings=embedder.get_embeddings())
-        self.logger = logger
-        self.logger.info("Indexer initialized...")
-        
-
-    async def add_files2vdb(self, path):
-        """Add a files to the vector database in async mode"""
-        try:
-            doc_generator: AsyncGenerator[Document, None] = self.serializer.serialize_documents(path, recursive=True)
-            await self.vectordb.async_add_documents(
-                doc_generator=doc_generator, 
-                chunker=self.chunker, 
-                document_batch_size=4
-            )
-            self.logger.info(f"Documents from {path} added.")
-        except Exception as e:
-            raise Exception(f"An exception as occured: {e}")
-
-
 class RagPipeline:
     def __init__(self, config, vectordb: ABCVectorDB, logger=None) -> None:
-        # TODO: Turn VectorDB into an API and put a link.
-
         self.config = config
         self.logger = self.set_logger(config) if logger is None else logger
         self.vectordb: ABCVectorDB = vectordb

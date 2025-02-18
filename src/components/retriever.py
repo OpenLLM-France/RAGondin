@@ -3,8 +3,7 @@ from abc import abstractmethod, ABC
 import asyncio
 from pathlib import Path
 from .llm import LLM
-from .vectordb import QdrantDB, ABCVectorDB
-from loguru import logger
+from .indexer import ABCVectorDB, QdrantDB
 from langchain_core.prompts import ChatPromptTemplate
 from .utils import load_sys_template
 from langchain_openai import ChatOpenAI
