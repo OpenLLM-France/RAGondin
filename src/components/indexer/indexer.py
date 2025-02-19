@@ -26,7 +26,7 @@ class Indexer:
             await self.vectordb.async_add_documents(
                 doc_generator=doc_generator, 
                 chunker=self.chunker, 
-                document_batch_size=4
+                document_batch_size=1
             )
             self.logger.info(f"Documents from {path} added.")
         except Exception as e:

@@ -86,7 +86,6 @@ class QdrantDB(ABCVectorDB):
         if not name:
             raise ValueError("Collection name cannot be empty.")
         
-        
         if self.client.collection_exists(collection_name=name):
             self.vector_store = QdrantVectorStore(
                 client=self.client,

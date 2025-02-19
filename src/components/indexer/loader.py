@@ -4,8 +4,7 @@ import os
 from collections import defaultdict
 import gc
 from langchain_openai import ChatOpenAI
-import whisperx
-from ..utils import SingletonMeta
+from src.components.utils import SingletonMeta
 from pydub import AudioSegment
 import torch
 from pathlib import Path
@@ -384,15 +383,16 @@ class DoclingConverter(metaclass=SingletonMeta):
                 ]
             )
             try:
-                if (img.width > self.min_width_pixels or img.height > self.min_height_pixels):
+                if (img.width > self.min_width_pixels and img.height > self.min_height_pixels):
                     response = await self.vlm_endpoint.ainvoke([message])
-                    img.save(f"./temp_img/figure_{idx}_page_{page_no}.png")
-
                     image_description = response.content
+                    img.save(f"./temp_img/figure_page_{page_no}_{img.width}X{img.height}.png")
+                # else:
+                #     img.save(f"./temp_img/figure_page_{page_no}_{img.width}X{img.height}.png")
 
             except Exception as e:
                 print(f"Failed to describe this image: {e}")
-            
+
             # Convert image path to markdown format and combine with description
             markdown_content = (
                 f"\nDescription de l'image:\n"
@@ -419,7 +419,7 @@ class DoclingConverter(metaclass=SingletonMeta):
 
     async def convert_to_md(self, file_path) -> ConversionResult:
         loop = asyncio.get_event_loop()
-        return await loop.run_in_executor(None, self.converter.convert, file_path)
+        return await loop.run_in_executor(None, self.converter.convert, str(file_path))
     
     async def parse(self, file_path, page_seperator='[PAGE_SEP]'):
         result = await self.convert_to_md(file_path)
@@ -441,10 +441,8 @@ class DoclingoLoader(BaseLoader):
         self.loader_args = loader_args
         self.page_sep = page_sep
         self.converter = DoclingConverter()
-        self.markdown_content = None
     
     async def aload_document(self, file_path, sub_url_path: str = ''):
-        path = Path(file_path)
         content = await self.converter.parse(file_path, page_seperator=self.page_sep)
         return Document(
             page_content=content, 
@@ -459,6 +457,8 @@ class DoclingoLoader(BaseLoader):
 class DocSerializer:
     def __init__(self, data_dir=None) -> None:
         self.data_dir = data_dir
+    
+    # TODO: Add delete class obj
 
     async def serialize_documents(self, path: str | Path, recursive=True) -> AsyncGenerator[Document, None]:
         p = AsyncPath(path)
