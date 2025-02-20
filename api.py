@@ -102,8 +102,7 @@ async def hello():
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8082) # 8083
 
-
-# uvicorn api:app --reload --port 8082
+# uvicorn api:app --reload --port 8082 --host 0.0.0.0
 
 # @asynccontextmanager
 # async def lifespan(app: FastAPI):

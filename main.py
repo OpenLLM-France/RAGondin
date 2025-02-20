@@ -10,9 +10,7 @@ indexer = Indexer(config, logger)
 
 async def main():
     start = time.time()
-    # await indexer.add_files2vdb(path='./app/upload_dir/S2_RAG/Sources RAG/MARAP/PR_Memoire_Technique_VdM_18182_V8.odt')*
-    await indexer.add_files2vdb(path='./data/S2_RAG/Sources RAG/AI/LINAGORA Presentation LinTO DGE.pdf')
-    await indexer.add_files2vdb(path='./data/S2_RAG/Sources RAG/AI')
+    await indexer.add_files2vdb(path='./data/tuto/')
     # ragPipe = RagPipeline(config=config)
     # # await ragPipe.indexer.add_files2vdb("./app/upload_dir")
     end = time.time()
@@ -34,3 +32,8 @@ async def main():
     #     print("\n")
 
 asyncio.run(main())
+
+
+# docker run -p 6333:6333 -p 6334:6334 --name db_test -d\
+#     -v "$(pwd)/qdrant_storage:/qdrant/storage:z" \
+#     qdrant/qdrant
