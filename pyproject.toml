@@ -2,52 +2,27 @@
 name = "ragondin"
 version = "0.1.0"
 description = ""
-authors = ["Ahmath-GADJI <ahmathgadji27@gmail.com>","MChrys <chrys.beltran@outlook.fr>"]
+authors = ["Ahmath-GADJI <ahmathgadji27@gmail.com>\",\"MChrys <chrys.beltran@outlook.fr>"]
 readme = "README.md"
-packages = [ {include = "scripts"}] 
+
 [tool.poetry.dependencies]
-python = ">=3.12,<3.13"
-
-
-chainlit = "^1.3.2"
-loguru = "^0.7.2"
-pyyaml = "^6.0.2"
-langchain-core = "^0.3.17"
-langchain-community = "^0.3.7"
-langchain-openai = "^0.2.8"
-ragatouille = "^0.0.8.post4"
-whisperx = "^3.1.4"
-pyannote-audio = "3.1.1"
-ctranslate2 = "4.4.0"
-qdrant-client = "^1.12.1"
+python = "^3.12"
+langchain-core = "^0.3.37"
+langchain-community = "^0.3.18"
+langchain-openai = "^0.3.6"
 langchain-qdrant = "^0.2.0"
-pydub = "^0.25.1"
-pymupdf4llm = "^0.0.17"
-aiopath = "^0.7.7"
-langchain-experimental = "^0.3.3"
-fastembed-gpu = "^0.4.2"
+langchain-experimental = "^0.3.4"
+loguru = "^0.7.3"
+chainlit = "^2.2.1"
+pyyaml = "^6.0.2"
+ragatouille = "^0.0.9"
 hydra-core = "^1.3.2"
 python-dotenv = "^1.0.1"
-unstructured = "^0.16.5"
-python-docx = "^1.1.2"
-pypandoc = "^1.14"
-click = "^8.1.7"
-git-filter-repo = "^2.45.0"
-python-pptx = "^1.0.2"
-llama-index-llms-langchain = "^0.5.0"
-fastapi = {extras = ["standard"], version = "^0.115.5"}
-aiofiles = "23.1.0"
-portkey-ai = "^1.9.7"
-tokenizers = "<0.16"
-
-
-[tool.poetry.group.dev.dependencies]
-python-dotenv = "^1.0.1"
-gitpython = "^3.1.43"
-docker = "^7.1.0"
-
-[tool.poetry.scripts]
-compose_service = { callable = "scripts.compose_service:main", extras = ["dev"] }
+docling = "^2.23.0"
+pymupdf4llm = "^0.0.17"
+aiopath = "^0.7.7"
+psutil = "^7.0.0"
+llama-index-llms-langchain = "^0.6.0"
 
 
 [build-system]
