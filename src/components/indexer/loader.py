@@ -400,28 +400,32 @@ class CustomDocLoader(BaseLoader):
 #             )
 #             return markdown_content
 
-#     async def get_captions(self, pictures: list[PictureItem], n_semaphores=3):
-#         semaphore = asyncio.Semaphore(n_semaphores)
-#         tasks = []
+    async def get_captions(self, pictures: list[PictureItem], n_semaphores=3):
+        semaphore = asyncio.Semaphore(n_semaphores)
+        tasks = []
 
-#         for idx, picture in enumerate(pictures):
-#             tasks.append(
-#                 self.describe_imgage(idx, picture, semaphore)
-#             )
-#         try:
-#             results = await tqdm.gather(*tasks)  # asyncio.gather(*tasks)
-#         except asyncio.CancelledError:
-#             for task in tasks:
-#                 task.cancel()
+        for idx, picture in enumerate(pictures):
+            tasks.append(
+                self.describe_imgage(idx, picture, semaphore)
+            )
+        try:
+            results = await tqdm.gather(*tasks)  # asyncio.gather(*tasks)
+        except asyncio.CancelledError:
+            for task in tasks:
+                task.cancel()
             
 #             raise
 #         return results
 
+    async def convert_to_md(self, file_path) -> ConversionResult:
+        result = await asyncio.to_thread(self.converter.convert, str(file_path))
+        return result
 #     async def convert_to_md(self, file_path) -> ConversionResult:
 #         return await asyncio.to_thread(self.converter.convert, str(file_path))
     
 #     async def parse(self, file_path, page_seperator='[PAGE_SEP]'):
-#         result = await self.convert_to_md(file_path)
+#         # TODO: get rid of blocking tasks
+        result = await self.convert_to_md(file_path)
 #         n_pages = len(result.pages)
 #         s = f'{page_seperator}'.join([result.document.export_to_markdown(page_no=i) for i in range(1, n_pages+1)])
 
