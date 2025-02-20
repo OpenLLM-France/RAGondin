@@ -400,7 +400,7 @@ class DoclingConverter(metaclass=SingletonMeta):
             )
             return markdown_content
 
-    async def get_captions(self, pictures: list[PictureItem], n_semaphores=1):
+    async def get_captions(self, pictures: list[PictureItem], n_semaphores=3):
         semaphore = asyncio.Semaphore(n_semaphores)
         tasks = []
 
@@ -409,7 +409,7 @@ class DoclingConverter(metaclass=SingletonMeta):
                 self.describe_imgage(idx, picture, semaphore)
             )
         try:
-            results = await tqdm.gather(*tasks)  # asyncio.gather(*tasks)
+            results = await tqdm.gather(*tasks, total=len(tasks), desc='captioning ...')  # asyncio.gather(*tasks)
         except asyncio.CancelledError:
             for task in tasks:
                 task.cancel()
@@ -418,10 +418,11 @@ class DoclingConverter(metaclass=SingletonMeta):
         return results
 
     async def convert_to_md(self, file_path) -> ConversionResult:
-        loop = asyncio.get_event_loop()
-        return await loop.run_in_executor(None, self.converter.convert, str(file_path))
+        result = await asyncio.to_thread(self.converter.convert, str(file_path))
+        return result
     
     async def parse(self, file_path, page_seperator='[PAGE_SEP]'):
+        # TODO: get rid of blocking tasks
         result = await self.convert_to_md(file_path)
         n_pages = len(result.pages)
         s = f'{page_seperator}'.join([result.document.export_to_markdown(page_no=i) for i in range(1, n_pages+1)])
@@ -501,7 +502,7 @@ async def get_files(path, pattern, recursive) -> AsyncGenerator:
 
 # TODO create a Meta class that aggregates registery of supported documents from each child class
 LOADERS: Dict[str, BaseLoader] = {
-    '.pdf': DoclingoLoader, # CustomPyMuPDFLoader,
+    '.pdf': CustomPyMuPDFLoader, # DoclingoLoader, # 
     '.docx': CustomDocLoader,
     '.doc': CustomDocLoader,
     '.odt': CustomDocLoader,
