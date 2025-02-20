@@ -26,9 +26,8 @@ import pymupdf4llm
 from loguru import logger
 from aiopath import AsyncPath
 from typing import Dict
-
-# from docling_core.types.doc.document import PictureItem
-# from docling.datamodel.document import ConversionResult
+from docling_core.types.doc.document import PictureItem
+from docling.datamodel.document import ConversionResult
 
 from tqdm.asyncio import tqdm
 
@@ -306,101 +305,101 @@ class CustomDocLoader(BaseLoader):
         )
     
 
-# class DoclingConverter(metaclass=SingletonMeta):
-#     def __init__(self):
-#         try:
-#             from docling.document_converter import DocumentConverter
-#             from docling.datamodel.document import ConversionResult
-#             from docling.datamodel.base_models import InputFormat
-#             from docling.datamodel.pipeline_options import (
-#                 PdfPipelineOptions,
-#             )
-#             from docling.document_converter import DocumentConverter, PdfFormatOption
-#             from docling.backend.pypdfium2_backend import PyPdfiumDocumentBackend
-#             from docling.datamodel.pipeline_options import (
-#                 TableStructureOptions,
-#                 TableFormerMode
-#             )
+class DoclingConverter(metaclass=SingletonMeta):
+    def __init__(self):
+        try:
+            from docling.document_converter import DocumentConverter
+            from docling.datamodel.document import ConversionResult
+            from docling.datamodel.base_models import InputFormat
+            from docling.datamodel.pipeline_options import (
+                PdfPipelineOptions,
+            )
+            from docling.document_converter import DocumentConverter, PdfFormatOption
+            from docling.backend.pypdfium2_backend import PyPdfiumDocumentBackend
+            from docling.datamodel.pipeline_options import (
+                TableStructureOptions,
+                TableFormerMode
+            )
 
-#         except ImportError as e:
-#             logger.warning(f"Docling is not installed. {e}. Install it using `pip install docling`")
-#             raise e
+        except ImportError as e:
+            logger.warning(f"Docling is not installed. {e}. Install it using `pip install docling`")
+            raise e
         
-#         pipeline_options = PdfPipelineOptions(
-#             do_ocr = True,
-#             do_table_structure = True,
-#             generate_picture_images=True
-#         )
-#         pipeline_options.table_structure_options = TableStructureOptions(
-#             do_cell_matching=True,
-#             mode=TableFormerMode.ACCURATE
-#         )
+        pipeline_options = PdfPipelineOptions(
+            do_ocr = True,
+            do_table_structure = True,
+            generate_picture_images=True
+        )
+        pipeline_options.table_structure_options = TableStructureOptions(
+            do_cell_matching=True,
+            mode=TableFormerMode.ACCURATE
+        )
 
-#         common_settings = {
-#             'temperature': 0.2,
-#             'max_retries': 3,
-#             'timeout': 60,
-#         }
+        common_settings = {
+            'temperature': 0.2,
+            'max_retries': 3,
+            'timeout': 60,
+        }
 
-#         settings = {
-#             'api_key': 'empty',
-#             'model': 'zyoNoob/Qwen2.5-VL-7B-Instruct-AWQ',
-#             'base_url': 'http://localhost:8000/v1',
-#             **common_settings
-#         }
+        settings = {
+            'api_key': 'empty',
+            'model': 'zyoNoob/Qwen2.5-VL-7B-Instruct-AWQ',
+            'base_url': 'http://localhost:8000/v1',
+            **common_settings
+        }
 
-#         self.vlm_endpoint = ChatOpenAI(**settings).with_retry(stop_after_attempt=2)
-#         self.min_width_pixels = 100  # minimum width in pixels
-#         self.min_height_pixels = 100  # minimum height in pixels
+        self.vlm_endpoint = ChatOpenAI(**settings).with_retry(stop_after_attempt=2)
+        self.min_width_pixels = 100  # minimum width in pixels
+        self.min_height_pixels = 100  # minimum height in pixels
 
-#         self.converter = DocumentConverter(
-#             format_options={
-#                 InputFormat.PDF: PdfFormatOption(
-#                     pipeline_options=pipeline_options, backend=PyPdfiumDocumentBackend
-#                 )
-#             }
-#         )
+        self.converter = DocumentConverter(
+            format_options={
+                InputFormat.PDF: PdfFormatOption(
+                    pipeline_options=pipeline_options, backend=PyPdfiumDocumentBackend
+                )
+            }
+        )
 
-#     async def describe_imgage(self, idx, picture: PictureItem, semaphore: asyncio.Semaphore):
-#         async with semaphore:
-#             page_no = picture.prov[0].page_no    
-#             img = picture.image.pil_image
-#             img_b64 = picture._image_to_base64(pil_image=img)
-#             image_description = ""
+    async def describe_imgage(self, idx, picture: PictureItem, semaphore: asyncio.Semaphore):
+        async with semaphore:
+            page_no = picture.prov[0].page_no    
+            img = picture.image.pil_image
+            img_b64 = picture._image_to_base64(pil_image=img)
+            image_description = ""
 
-#             message = HumanMessage(
-#                 content=[
-#                     {
-#                         "type": "image_url",
-#                         "image_url": {
-#                             'url': f"data:image/png;base64,{img_b64}" #f"{picture.image.uri.path}" #
-#                         },
-#                     },
-#                     {
-#                         "type": "text", 
-#                         "text": "Provide a complete, structured and precise description of this image or figure in the same language (french) as its content."
-#                     }
-#                 ]
-#             )
-#             try:
-#                 if (img.width > self.min_width_pixels and img.height > self.min_height_pixels):
-#                     response = await self.vlm_endpoint.ainvoke([message])
-#                     image_description = response.content
-#                     img.save(f"./temp_img/figure_page_{page_no}_{img.width}X{img.height}.png")
-#                 # else:
-#                 #     img.save(f"./temp_img/figure_page_{page_no}_{img.width}X{img.height}.png")
+            message = HumanMessage(
+                content=[
+                    {
+                        "type": "image_url",
+                        "image_url": {
+                            'url': f"data:image/png;base64,{img_b64}" #f"{picture.image.uri.path}" #
+                        },
+                    },
+                    {
+                        "type": "text", 
+                        "text": "Provide a complete, structured and precise description of this image or figure in the same language (french) as its content."
+                    }
+                ]
+            )
+            try:
+                if (img.width > self.min_width_pixels and img.height > self.min_height_pixels):
+                    response = await self.vlm_endpoint.ainvoke([message])
+                    image_description = response.content
+                    img.save(f"./temp_img/figure_page_{page_no}_{img.width}X{img.height}.png")
+                # else:
+                #     img.save(f"./temp_img/figure_page_{page_no}_{img.width}X{img.height}.png")
 
-#             except Exception as e:
-#                 print(f"Failed to describe this image: {e}")
+            except Exception as e:
+                print(f"Failed to describe this image: {e}")
 
-#             # Convert image path to markdown format and combine with description
-#             markdown_content = (
-#                 f"\nDescription de l'image:\n"
-#                 f"{image_description}\n"
-#             )
-#             return markdown_content
+            # Convert image path to markdown format and combine with description
+            markdown_content = (
+                f"\nDescription de l'image:\n"
+                f"{image_description}\n"
+            )
+            return markdown_content
 
-    async def get_captions(self, pictures: list[PictureItem], n_semaphores=3):
+    async def get_captions(self, pictures: list[PictureItem], n_semaphores=6):
         semaphore = asyncio.Semaphore(n_semaphores)
         tasks = []
 
@@ -414,47 +413,44 @@ class CustomDocLoader(BaseLoader):
             for task in tasks:
                 task.cancel()
             
-#             raise
-#         return results
-
+            raise
+        return results
+    
     async def convert_to_md(self, file_path) -> ConversionResult:
-        result = await asyncio.to_thread(self.converter.convert, str(file_path))
-        return result
-#     async def convert_to_md(self, file_path) -> ConversionResult:
-#         return await asyncio.to_thread(self.converter.convert, str(file_path))
+        return await asyncio.to_thread(self.converter.convert, str(file_path))
     
-#     async def parse(self, file_path, page_seperator='[PAGE_SEP]'):
-#         # TODO: get rid of blocking tasks
+    async def parse(self, file_path, page_seperator='[PAGE_SEP]'):
+        # TODO: get rid of blocking tasks
         result = await self.convert_to_md(file_path)
-#         n_pages = len(result.pages)
-#         s = f'{page_seperator}'.join([result.document.export_to_markdown(page_no=i) for i in range(1, n_pages+1)])
+        n_pages = len(result.pages)
+        s = f'{page_seperator}'.join([result.document.export_to_markdown(page_no=i) for i in range(1, n_pages+1)])
 
-#         pictures = result.document.pictures
-#         descriptions = await self.get_captions(pictures)
+        pictures = result.document.pictures
+        descriptions = await self.get_captions(pictures)
 
-#         enriched_content = s
-#         for description in descriptions:
-#             enriched_content = enriched_content.replace('<!-- image -->', description, 1)
+        enriched_content = s
+        for description in descriptions:
+            enriched_content = enriched_content.replace('<!-- image -->', description, 1)
         
-#         return enriched_content
+        return enriched_content
 
 
-# class DoclingoLoader(BaseLoader):
-#     def __init__(self, page_sep: str='[PAGE_SEP]', **loader_args) -> None:
-#         self.loader_args = loader_args
-#         self.page_sep = page_sep
-#         self.converter = DoclingConverter()
+class DoclingoLoader(BaseLoader):
+    def __init__(self, page_sep: str='[PAGE_SEP]', **loader_args) -> None:
+        self.loader_args = loader_args
+        self.page_sep = page_sep
+        self.converter = DoclingConverter()
     
-#     async def aload_document(self, file_path, sub_url_path: str = ''):
-#         content = await self.converter.parse(file_path, page_seperator=self.page_sep)
-#         return Document(
-#             page_content=content, 
-#             metadata={
-#                 'source': str(file_path),
-#                 'sub_url_path': sub_url_path,
-#                 'page_sep': self.page_sep
-#             }
-#         )
+    async def aload_document(self, file_path, sub_url_path: str = ''):
+        content = await self.converter.parse(file_path, page_seperator=self.page_sep)
+        return Document(
+            page_content=content, 
+            metadata={
+                'source': str(file_path),
+                'sub_url_path': sub_url_path,
+                'page_sep': self.page_sep
+            }
+        )
 
 
 class DocSerializer:
@@ -504,7 +500,7 @@ async def get_files(path, pattern, recursive) -> AsyncGenerator:
 
 # TODO create a Meta class that aggregates registery of supported documents from each child class
 LOADERS: Dict[str, BaseLoader] = {
-    '.pdf': CustomPyMuPDFLoader, # DoclingoLoader, # 
+    '.pdf': DoclingoLoader, # CustomPyMuPDFLoader, # 
     '.docx': CustomDocLoader,
     '.doc': CustomDocLoader,
     '.odt': CustomDocLoader,

@@ -1,5 +1,5 @@
 import re
-from src.components.llm import LLM
+from ..llm import LLM
 from typing import Optional
 from abc import abstractmethod, ABC
 from langchain_openai import ChatOpenAI
@@ -219,7 +219,7 @@ class SemanticSplitter(ABCChunker):
 
         start_index = 0
         for page_num, page_txt in enumerate(pages, start=1):
-            text += ' ' + page_txt
+            text += '\n' + page_txt
             c = ' '.join(
                 re.split(self.splitter.sentence_split_regex, text)
             )
