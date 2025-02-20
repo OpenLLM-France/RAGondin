@@ -1,6 +1,6 @@
 defaults:
   - base
 
-base_url: http://91.134.49.99:8000/v1
+base_url: ${oc.env:QWEN_URL}
 model: Qwen2.5-VL-7B-Instruct
 api_key: ${oc.env:API_KEY}
