@@ -11,8 +11,3 @@ def load_config(config_path="../../.hydra_config", overrides=None)-> OmegaConf:
         config = compose(config_name="config", overrides=overrides)
         config.paths.root_dir = Path(config.paths.root_dir).absolute()
         return config
-
-# # Example usage
-# if __name__ == "__main__":
-#     config = load_config()
-#     print(config)

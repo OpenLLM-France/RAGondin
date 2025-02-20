@@ -5,10 +5,12 @@ from langchain_core.prompts import (
 )
 from langchain_core.messages import AIMessage, HumanMessage, BaseMessage
 from typing import Any, AsyncIterator
+from loguru import logger as L
 
 class LLM:
     def __init__(self, config, logger=None):
         self.logger = logger
+        L.warning(f'Params: {config.llm}')
         self.client: ChatOpenAI = ChatOpenAI(**config.llm)   
          
     def run(self, 

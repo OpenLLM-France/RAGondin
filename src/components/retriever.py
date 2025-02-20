@@ -61,7 +61,6 @@ class SingleRetreiver(BaseRetriever):
         super().__init__(criteria, top_k, similarity_threshold, logger, **extra_args)
    
 
-
 class MultiQueryRetriever(BaseRetriever):
     def __init__(
             self, 

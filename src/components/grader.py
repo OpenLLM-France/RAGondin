@@ -5,7 +5,6 @@ from langchain_openai import ChatOpenAI
 from langchain_core.documents.base import Document
 from llama_index.core.llms import ChatMessage, MessageRole
 import asyncio
-
 from .llm import LLM
 
 sys_prompt = """You are an expert at carefully judging documents' relevancy with respect to a given user query/input.

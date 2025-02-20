@@ -6,11 +6,8 @@ class SingletonMeta(type):
 
     def __call__(cls, *args, **kwargs):
         if cls not in cls._instances:
-            # print("1st creation")
             instance = super().__call__(*args, **kwargs)
             cls._instances[cls] = instance
-        # else:
-        #     print("Same one")
         return cls._instances[cls]
     
 
@@ -30,7 +27,6 @@ def format_context(docs: list[Document]) -> str:
 
     for i, doc in enumerate(docs, start=1):
         doc_id = f"[doc_{i}]"
-
         document = f"""
         document id: {doc_id}
         content: \n{doc.page_content.strip()}\n
@@ -51,5 +47,4 @@ def format_context(docs: list[Document]) -> str:
                 'content': doc.page_content
             }
         )
-
     return context, sources
