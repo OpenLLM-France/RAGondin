@@ -13,7 +13,7 @@ vectordb:
   host: localhost
   port: 6333
   connector_name: qdrant
-  collection_name: vdb95 # vdb95_no_context
+  collection_name: vdb95_test # vdb95_no_context
   hybrid_mode: true
 
 reranker:

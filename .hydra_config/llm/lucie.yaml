@@ -3,6 +3,4 @@ defaults:
 
 base_url: https://chat.ai.linagora.exaion.com/v1/
 name: lucie-7b
-# portkey_api_key: ${oc.env:PORTKEY_API_KEY}
-# virtual_key: ${oc.env:VIRTUAL_KEY}
 api_key: ${oc.env:API_KEY}
