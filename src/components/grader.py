@@ -21,6 +21,7 @@ class GradeDocuments(BaseModel):
                     "- no: Document has minimal or no meaningful connection"
     )
 
+
 class Grader:
     def __init__(self, config, logger=None) -> None:
         lc_llm = LLM(config=config, logger=None).client
@@ -50,7 +51,7 @@ class Grader:
     
     async def grade(self, user_input: str, docs: list[Document], n_workers=6):
         n_workers = min(n_workers, len(docs))
-        # self.logger.info(f"{len(docs)} documents to grade.")
+        self.logger.info(f"{len(docs)} documents to grade.")
         sem = asyncio.Semaphore(n_workers)
         tasks = [
             self._eval_document(user_input=user_input, doc=d, sem=sem) for d in docs
