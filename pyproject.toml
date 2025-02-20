@@ -16,7 +16,7 @@ langchain-core = "^0.3.17"
 langchain-community = "^0.3.7"
 langchain-openai = "^0.2.8"
 ragatouille = "^0.0.8.post4"
-whisperx = {git = "https://github.com/federicotorrielli/BetterWhisperX", branch="main"}
+whisperx = "^3.1.4"
 pyannote-audio = "3.1.1"
 ctranslate2 = "4.4.0"
 qdrant-client = "^1.12.1"
@@ -38,6 +38,7 @@ llama-index-llms-langchain = "^0.5.0"
 fastapi = {extras = ["standard"], version = "^0.115.5"}
 aiofiles = "23.1.0"
 portkey-ai = "^1.9.7"
+tokenizers = "<0.16"
 
 
 [tool.poetry.group.dev.dependencies]
