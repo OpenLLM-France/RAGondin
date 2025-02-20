@@ -1,5 +1,6 @@
 from abc import abstractmethod, ABC
-from langchain_community.embeddings import HuggingFaceBgeEmbeddings, HuggingFaceEmbeddings
+# from langchain_huggingface import HuggingFaceEmbeddings
+from langchain_community.embeddings import HuggingFaceEmbeddings
 import torch
 from omegaconf import OmegaConf
 
@@ -20,14 +21,6 @@ class ABCEmbedder(ABC):
         """
         pass
 
-
-# Dictionary mapping embedding model types to their corresponding classes
-HG_EMBEDDER_TYPE = {
-    "huggingface_bge": HuggingFaceBgeEmbeddings,
-    "huggingface": HuggingFaceEmbeddings
-}
-
-
 class HFEmbedder(ABCEmbedder):
     """Factory class for loading and managing HuggingFace embedding models.
 
@@ -44,32 +37,20 @@ class HFEmbedder(ABCEmbedder):
     """
 
     def __init__(self, embedder_config: OmegaConf, device=None) -> None:
-        # Extract model type from config
-        model_type = embedder_config["type"]
-
-        if model_type in HG_EMBEDDER_TYPE:
-            # Auto-select device if none specified
-            if device is None:
-                device = 'cuda' if torch.cuda.is_available() else 'cpu'
-            
-            try:
-                model_name = embedder_config["model_name"]
-                self.embedding = HG_EMBEDDER_TYPE[model_type](
-                    model_name=model_name,
-                    model_kwargs={"device": device, 'trust_remote_code': True},
-                    encode_kwargs={"normalize_embeddings": True}
-                )
-            except Exception as e:
-                raise ValueError(f"An error occurred during model initialization: {e}")
-        else:
-            raise ValueError(f"{model_type} is not a supported `model_type`")
+        if device is None:
+            device = 'cuda' if torch.cuda.is_available() else 'cpu'
+        
+        try:
+            self.embedding = HuggingFaceEmbeddings(
+                model_name=embedder_config["model_name"],
+                model_kwargs={"device": device, 'trust_remote_code': True},
+                encode_kwargs={"normalize_embeddings": True}
+            )
+        except Exception as e:
+            raise ValueError(f"An error occurred during model initialization: {e}")
+    
 
 
-    def get_embeddings(self) -> HuggingFaceBgeEmbeddings:
-        """Retrieve the initialized embedding model.
-
-        Returns:
-            HuggingFaceBgeEmbeddings: The configured embedding model instance
-            ready for generating embeddings.
-        """
+    def get_embeddings(self) -> HuggingFaceEmbeddings:
+        """Retrieve the initialized embedding model."""
         return self.embedding

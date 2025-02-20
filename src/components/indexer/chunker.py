@@ -1,5 +1,5 @@
 import re
-from ..llm import LLM
+from src.components.llm import LLM
 from typing import Optional
 from abc import abstractmethod, ABC
 from langchain_openai import ChatOpenAI
