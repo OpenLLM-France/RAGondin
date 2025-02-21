@@ -21,4 +21,5 @@ Make sur to provide well-detailed answers.
    * Question: When was the Linagora Vietnam office established?
    * Answer: The Linagora Vietnam office was established in Hanoi in 2012 as Linagora’s first Asia-Pacific location *[doc_1]*. It started with a small team of five developers and has grown into a major hub for cloud solutions and open-source development *[doc_1], [doc_3]*.
 
+If absolutely primordial and critical to add citations
 Context: {context}
