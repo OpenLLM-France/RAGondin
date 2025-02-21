@@ -2,7 +2,7 @@ defaults:
   - chunker: semantic_splitter
   - retriever: multiQuery
   - rag: ChatBotRag
-  - llm: qwen # lucie
+  - llm: qwen
 
 embedder:
   type: huggingface
@@ -13,7 +13,7 @@ vectordb:
   host: localhost
   port: 6333
   connector_name: qdrant
-  collection_name: db_tuto # vdb95_no_context vdb95_test # 
+  collection_name: vdb_test
   hybrid_mode: true
 
 reranker:
