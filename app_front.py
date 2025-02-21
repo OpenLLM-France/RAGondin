@@ -41,6 +41,7 @@ def format_elements(sources, only_txt=True):
     for doc in sources:
         url = quote(doc['url'], safe=':/')
         parsed_url = urlparse(doc['url'])
+        logger.info(url)
         doc_name = parsed_url.path.split('/')[-1]
         
         if only_txt:
@@ -58,7 +59,8 @@ def format_elements(sources, only_txt=True):
                 case _:
                     elem = cl.Text(content=doc["content"], name=doc['doc_id'], display='side', url=url) # TODO Maybe HTML (convert the File first)
 
-        s = f"{doc['doc_id']}: {doc_name}"
+        s = f"{doc['doc_id']}: {doc_name} ({doc["page"]})"
+
         elements.append(elem) 
         source_names.append(s)               
     return elements, source_names
@@ -112,6 +114,7 @@ async def on_message(message: cl.Message):
             ) as streaming_response:
                 metadata_sources = streaming_response.headers.get("X-Metadata-Sources")
                 sources = json.loads(metadata_sources)
+                print(sources)
 
                 if sources:
                     elements, source_names = format_elements(sources, only_txt=True)
@@ -186,4 +189,4 @@ if __name__ == "__main__":
     from chainlit.cli import run_chainlit
     run_chainlit(__file__)
 
-# chainlit run app_front.py --host 0.0.0.0 --port 8001 --root-path /chainlit
+# chainlit run app_front.py --host 0.0.0.0 --port 8081 --root-path /chainlit

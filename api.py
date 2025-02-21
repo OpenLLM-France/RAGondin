@@ -4,7 +4,7 @@ from fastapi import FastAPI, File, UploadFile, HTTPException, status, Request, D
 from enum import Enum
 import json
 # from chainlit.utils import mount_chainlit
-import sys, os
+import os
 from pydantic import BaseModel
 from langchain_core.messages import AIMessage, HumanMessage
 from fastapi.responses import StreamingResponse
@@ -100,7 +100,7 @@ async def hello():
 
 
 if __name__ == "__main__":
-    uvicorn.run(app, host="0.0.0.0", port=8082) # 8083
+    uvicorn.run('api:app', host="0.0.0.0", port=8082, reload=True) # 8083
 
 # uvicorn api:app --reload --port 8082 --host 0.0.0.0
 
