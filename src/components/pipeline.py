@@ -35,10 +35,7 @@ class RagPipeline:
         self.reranker_top_k = int(config.reranker["top_k"])
 
         self.prompts_dir = Path(config.paths.prompts_dir)
-
-        self.qa_sys_prompt: str = load_sys_template(
-            self.prompts_dir / config.prompt['rag_sys_pmpt']
-        )
+        self.rag_sys_prompt: str = load_sys_template(self.prompts_dir / config.prompt['rag_sys_pmpt'])
         
         self.context_pmpt_tmpl = config.prompt['context_pmpt_tmpl']
 
@@ -53,9 +50,7 @@ class RagPipeline:
         self.chat_history_depth = config.rag["chat_history_depth"]
 
         self._chat_history: deque = deque(maxlen=self.chat_history_depth)
-        self.llm_client = LLM(
-            config, self.logger, 
-        )
+        self.llm_client = LLM(config, self.logger)
 
     async def get_contextualized_docs(self, question: str, chat_history: list)-> list[Document]:
         """With this function, the new question is reformulated as a standalone question that takes into account the chat_history.
@@ -132,7 +127,7 @@ class RagPipeline:
             question=question, 
             chat_history=chat_history,
             context=context,
-            sys_pmpt_tmpl=self.qa_sys_prompt
+            sys_pmpt_tmpl=self.rag_sys_prompt
         )
     
         self.free_memory()
