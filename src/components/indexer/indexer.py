@@ -27,9 +27,18 @@ class Indexer:
                 doc_generator=doc_generator, 
                 chunker=self.chunker, 
                 document_batch_size=2,
-                max_concurrent_gpu_ops=5,
+                max_concurrent_gpu_ops=2,
                 max_queued_batches=1
             )
             self.logger.info(f"Documents from {path} added.")
         except Exception as e:
             raise Exception(f"An exception as occured: {e}")
+
+
+#   await self.vectordb.async_add_documents(
+#                 doc_generator=doc_generator, 
+#                 chunker=self.chunker, 
+#                 document_batch_size=3,
+#                 max_concurrent_gpu_ops=6,
+#                 max_queued_batches=2
+#             )

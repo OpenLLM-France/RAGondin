@@ -312,6 +312,8 @@ class DoclingConverter(metaclass=SingletonMeta):
             from docling.datamodel.document import ConversionResult
             from docling.datamodel.base_models import InputFormat
             from docling.datamodel.pipeline_options import (
+                AcceleratorDevice,
+                AcceleratorOptions,
                 PdfPipelineOptions,
             )
             from docling.document_converter import DocumentConverter, PdfFormatOption
@@ -333,6 +335,10 @@ class DoclingConverter(metaclass=SingletonMeta):
         pipeline_options.table_structure_options = TableStructureOptions(
             do_cell_matching=True,
             mode=TableFormerMode.ACCURATE
+        )
+
+        pipeline_options.accelerator_options = AcceleratorOptions(
+            num_threads=6, device=AcceleratorDevice.AUTO
         )
 
         common_settings = {
@@ -399,7 +405,7 @@ class DoclingConverter(metaclass=SingletonMeta):
             )
             return markdown_content
 
-    async def get_captions(self, pictures: list[PictureItem], n_semaphores=6):
+    async def get_captions(self, pictures: list[PictureItem], n_semaphores=2):
         semaphore = asyncio.Semaphore(n_semaphores)
         tasks = []
 
@@ -458,7 +464,6 @@ class DocSerializer:
         self.data_dir = data_dir
     
     # TODO: Add delete class obj
-
     async def serialize_documents(self, path: str | Path, recursive=True) -> AsyncGenerator[Document, None]:
         p = AsyncPath(path)
         if await p.is_file():

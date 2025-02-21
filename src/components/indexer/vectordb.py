@@ -155,7 +155,7 @@ class QdrantDB(ABCVectorDB):
         gpu_semaphore = asyncio.Semaphore(max_concurrent_gpu_ops) # Only allow max_concurrent_gpu_ops GPU operation at a time
         batch_queue = asyncio.Queue(maxsize=max_queued_batches)
 
-        async def chunk(doc):
+        async def chunk(doc, gpu_semaphore):
             async with gpu_semaphore:
                 chunks = await asyncio.to_thread(chunker.split_document, doc) # uses GPU
                 self.logger.info(f"Processed doc: {doc.metadata['source']}")
@@ -188,7 +188,7 @@ class QdrantDB(ABCVectorDB):
                     self.logger.info(f"Consumer {consumer_id} ended")
                     break
                 
-                tasks = [asyncio.create_task(chunk(doc)) for doc in batch]
+                tasks = [asyncio.create_task(chunk(doc, gpu_semaphore)) for doc in batch]
                 chunks_list = await asyncio.gather(*tasks, return_exceptions=True)
                 all_chunks = sum(chunks_list, [])
                 
