@@ -31,7 +31,6 @@ from docling.datamodel.document import ConversionResult
 
 from tqdm.asyncio import tqdm
 
-
 # from langchain_community.document_loaders import UnstructuredXMLLoader, PyPDFLoader
 # from langchain_community.document_loaders.csv_loader import CSVLoader
 # from langchain_community.document_loaders.text import TextLoader
@@ -44,8 +43,7 @@ class BaseLoader(ABC):
 
 
 class Custompymupdf4llm(BaseLoader):
-    def __init__(self, page_sep: str='[PAGE_SEP]', **loader_args) -> None:
-        self.loader_args = loader_args
+    def __init__(self, page_sep: str='[PAGE_SEP]', config=None, **kwargs) -> None:
         self.page_sep = page_sep
     
     async def aload_document(self, file_path, sub_url_path: str =''):
@@ -53,7 +51,6 @@ class Custompymupdf4llm(BaseLoader):
             file_path,
             write_images=False,
             page_chunks=True,
-            **self.loader_args
         )
         page_content = f'{self.page_sep}'.join([p['text'] for p in pages])
         return Document(
@@ -75,7 +72,7 @@ class AudioTranscriber(metaclass=SingletonMeta):
         )
         
 class VideoAudioLoader(BaseLoader):
-    def __init__(self, page_sep: str='[PAGE_SEP]', batch_size=4):    
+    def __init__(self, page_sep: str='[PAGE_SEP]', batch_size=4, config=None):    
         self.batch_size = batch_size
         self.page_sep = page_sep
         self.formats = [".wav", '.mp3', ".mp4"]
@@ -143,7 +140,7 @@ class CustomPPTLoader(BaseLoader):
         'EmailAddress': '',
         'FigureCaption': '*'
     }
-    def __init__(self, page_sep: str='[PAGE_SEP]', **loader_args) -> None:
+    def __init__(self, page_sep: str='[PAGE_SEP]', **kwargs) -> None:
         self.loader_args = loader_args
         self.page_sep = page_sep
     
@@ -211,14 +208,12 @@ class CustomPPTLoader(BaseLoader):
         )
 
 class CustomPyMuPDFLoader(BaseLoader):
-    def __init__(self, page_sep: str='[PAGE_SEP]', **loader_args) -> None:
-        self.loader_args = loader_args
+    def __init__(self, page_sep: str='[PAGE_SEP]', **kwargs) -> None:
         self.page_sep = page_sep
 
     async def aload_document(self, file_path, sub_url_path: str = ''):
         loader = PyMuPDFLoader(
             file_path=Path(file_path),
-            **self.loader_args
         )
         pages = await loader.aload()
         return Document(
@@ -231,8 +226,7 @@ class CustomPyMuPDFLoader(BaseLoader):
         )
 
 class CustomTextLoader(BaseLoader):
-    def __init__(self, page_sep: str='[PAGE_SEP]', **loader_args) -> None:
-        self.loader_args = loader_args
+    def __init__(self, page_sep: str='[PAGE_SEP]', **kwargs) -> None:
         self.page_sep = page_sep
 
     async def aload_document(self, file_path, sub_url_path: str = ''):
@@ -250,8 +244,7 @@ class CustomTextLoader(BaseLoader):
     
 
 class CustomHTMLLoader(BaseLoader):
-    def __init__(self, page_sep: str='[PAGE_SEP]', **loader_args) -> None:
-        self.loader_args = loader_args
+    def __init__(self, page_sep: str='[PAGE_SEP]', **kwargs) -> None:
         self.page_sep = page_sep
 
     async def aload_document(self, file_path, sub_url_path: str = ''):
@@ -275,8 +268,7 @@ class CustomDocLoader(BaseLoader):
             '.odt': UnstructuredODTLoader
         }
     
-    def __init__(self, page_sep: str='[PAGE_SEP]', **loader_args) -> None:
-        self.loader_args = loader_args
+    def __init__(self, page_sep: str='[PAGE_SEP]', **kwargs) -> None:
         self.page_sep = page_sep
     
     
@@ -290,7 +282,6 @@ class CustomDocLoader(BaseLoader):
         loader = cls_loader(
             file_path=str(file_path), 
             mode='single',
-            **self.loader_args
         )
         pages = await loader.aload()
         content = f'{self.page_sep}'.join([p.page_content for p in pages])
@@ -306,7 +297,7 @@ class CustomDocLoader(BaseLoader):
     
 
 class DoclingConverter(metaclass=SingletonMeta):
-    def __init__(self):
+    def __init__(self, llm_config=None):
         try:
             from docling.document_converter import DocumentConverter
             from docling.datamodel.document import ConversionResult
@@ -341,18 +332,13 @@ class DoclingConverter(metaclass=SingletonMeta):
             num_threads=6, device=AcceleratorDevice.AUTO
         )
 
-        common_settings = {
+        model_settings = {
             'temperature': 0.2,
             'max_retries': 3,
             'timeout': 60,
         }
-
-        settings = {
-            'api_key': 'empty',
-            'model': 'zyoNoob/Qwen2.5-VL-7B-Instruct-AWQ',
-            'base_url': 'http://localhost:8000/v1',
-            **common_settings
-        }
+        settings: dict = llm_config
+        settings.update(model_settings)
 
         self.vlm_endpoint = ChatOpenAI(**settings).with_retry(stop_after_attempt=2)
         self.min_width_pixels = 100  # minimum width in pixels
@@ -399,13 +385,17 @@ class DoclingConverter(metaclass=SingletonMeta):
                 print(f"Failed to describe this image: {e}")
 
             # Convert image path to markdown format and combine with description
-            markdown_content = (
-                f"\nDescription de l'image:\n"
-                f"{image_description}\n"
-            )
+            if image_description:
+                markdown_content = (
+                    f"\nDescription de l'image:\n"
+                    f"{image_description}\n"
+                )
+            else:
+                markdown_content = ''
+                
             return markdown_content
 
-    async def get_captions(self, pictures: list[PictureItem], n_semaphores=2):
+    async def get_captions(self, pictures: list[PictureItem], n_semaphores=10):
         semaphore = asyncio.Semaphore(n_semaphores)
         tasks = []
 
@@ -441,11 +431,11 @@ class DoclingConverter(metaclass=SingletonMeta):
         return enriched_content
 
 
-class DoclingoLoader(BaseLoader):
-    def __init__(self, page_sep: str='[PAGE_SEP]', **loader_args) -> None:
-        self.loader_args = loader_args
+class DoclingLoader(BaseLoader):
+    def __init__(self, page_sep: str='[PAGE_SEP]', **kwargs) -> None:
         self.page_sep = page_sep
-        self.converter = DoclingConverter()
+        llm_config = kwargs.get('llm_config')
+        self.converter = DoclingConverter(llm_config=llm_config)
     
     async def aload_document(self, file_path, sub_url_path: str = ''):
         content = await self.converter.parse(file_path, page_seperator=self.page_sep)
@@ -460,8 +450,9 @@ class DoclingoLoader(BaseLoader):
 
 
 class DocSerializer:
-    def __init__(self, data_dir=None) -> None:
+    def __init__(self, data_dir=None, **kwargs) -> None:
         self.data_dir = data_dir
+        self.kwargs = kwargs
     
     # TODO: Add delete class obj
     async def serialize_documents(self, path: str | Path, recursive=True) -> AsyncGenerator[Document, None]:
@@ -471,7 +462,9 @@ class DocSerializer:
             pattern = f"**/*{type}"
             loader_cls: BaseLoader = LOADERS.get(p.suffix)
             logger.info(f'Loading {type} files.')
-            doc: Document = await loader_cls().aload_document(
+            loader = loader_cls(**self.kwargs)  # Propagate kwargs here!
+
+            doc: Document = await loader.aload_document(
                 file_path=path,
                 sub_url_path=Path(path).absolute().relative_to(self.data_dir) # for the static file server
             )
@@ -486,7 +479,7 @@ class DocSerializer:
                 files = get_files(path, pattern, recursive) 
                 
                 async for file in files:
-                    loader = loader_cls()
+                    loader = loader_cls(**self.kwargs)
                     doc: Document = await loader.aload_document(
                         file_path=file,
                         sub_url_path=Path(file).absolute().relative_to(self.data_dir) # for the static file server
@@ -505,7 +498,7 @@ async def get_files(path, pattern, recursive) -> AsyncGenerator:
 
 # TODO create a Meta class that aggregates registery of supported documents from each child class
 LOADERS: Dict[str, BaseLoader] = {
-    '.pdf': DoclingoLoader, # CustomPyMuPDFLoader, # 
+    '.pdf': DoclingLoader, # CustomPyMuPDFLoader, # 
     '.docx': CustomDocLoader,
     '.doc': CustomDocLoader,
     '.odt': CustomDocLoader,

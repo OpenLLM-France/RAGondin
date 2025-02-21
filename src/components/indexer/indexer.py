@@ -12,8 +12,8 @@ class Indexer:
     """This class bridges static files with the vector store database.
     """
     def __init__(self, config, logger, device=None) -> None:
-        embedder = HFEmbedder(embedder_config=config.embedder, device=device)
-        self.serializer = DocSerializer(data_dir=config.paths.root_dir / 'data')
+        embedder = HFEmbedder(embedder_config=config.embedder, device=device)        
+        self.serializer = DocSerializer(data_dir=config.paths.root_dir / 'data', llm_config=config.llm)
         self.chunker: ABCChunker = ChunkerFactory.create_chunker(config, embedder=embedder.get_embeddings())
         self.vectordb = ConnectorFactory.create_vdb(config, logger=logger, embeddings=embedder.get_embeddings())
         self.logger = logger
@@ -27,8 +27,8 @@ class Indexer:
                 doc_generator=doc_generator, 
                 chunker=self.chunker, 
                 document_batch_size=2,
-                max_concurrent_gpu_ops=2,
-                max_queued_batches=1
+                max_concurrent_gpu_ops=7,
+                max_queued_batches=4
             )
             self.logger.info(f"Documents from {path} added.")
         except Exception as e:
