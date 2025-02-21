@@ -7,12 +7,11 @@ import asyncio
 from .llm import LLM
 
 sys_prompt = (
-    """You are an expert at carefully judging documents' relevancy with respect to a given user query/input."""
-    "=> For CVs pay attention to the keywords before judging them as relevant."""
+    """You are an expert at carefully judging documents' relevancy with respect to a user query/input."""
 )
 
 class DocumentGrade(BaseModel):
-    """Evaluates document's relevancy."""
+    """Evaluates document's relevancy with respect to a user query."""
     relevance_score: Literal['highly_relevant', 'somewhat_relevant', 'irrelevant'] = Field(
         description="Document relevance classification:\n")
 
@@ -31,11 +30,16 @@ class Grader:
                     f"""Retrieved Document: {doc.page_content}"""
                 )
 
-                template = ChatPromptTemplate([
-                    ('system', sys_prompt),
-                    ('user', query_template)
-                ])
-                result: DocumentGrade = await self.sllm.ainvoke(template)
+                template = ChatPromptTemplate.from_messages(
+                    [
+                        ('system', sys_prompt),
+                        ('user', query_template)
+                    ]
+                )
+                # Create a PromptValue from the template
+                prompt_value = template.invoke({"user_input": user_input, "doc": doc})
+                result: DocumentGrade = await self.sllm.ainvoke(prompt_value)
+                
                 return result.relevance_score
             except Exception as e:
                 self.logger.info(f"An Exception occured. Couldn't grade this document: {e}")
@@ -54,6 +58,7 @@ class Grader:
         relevant_docs = list(
             filter(lambda doc_grade: doc_grade[1] != 'no', zip(docs, grades))
         )
+        relevant_docs = [doc for doc, _ in relevant_docs]
         return relevant_docs
 
 
