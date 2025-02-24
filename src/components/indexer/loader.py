@@ -296,7 +296,7 @@ class CustomDocLoader(BaseLoader):
         )
     
 
-class DoclingConverter(metaclass=SingletonMeta):
+class DoclingConverter: # (metaclass=SingletonMeta):
     def __init__(self, llm_config=None):
         try:
             from docling.document_converter import DocumentConverter
@@ -377,7 +377,7 @@ class DoclingConverter(metaclass=SingletonMeta):
                 if (img.width > self.min_width_pixels and img.height > self.min_height_pixels):
                     response = await self.vlm_endpoint.ainvoke([message])
                     image_description = response.content
-                    img.save(f"./temp_img/figure_page_{page_no}_{img.width}X{img.height}.png")
+                    # img.save(f"./temp_img/figure_page_{page_no}_{img.width}X{img.height}.png")
                 # else:
                 #     img.save(f"./temp_img/figure_page_{page_no}_{img.width}X{img.height}.png")
 
