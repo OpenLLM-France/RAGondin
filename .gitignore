@@ -30,8 +30,14 @@ CR.md
 *.csv
 
 .venv/
-model_weights
+model_weights/
+model_weights/*
+!model_weights/.gitkeep # Keep the placeholder
+
+data/
 data/*
+!data/.gitkeep
+
 **/*.env.compose
 kotaemon
 ./temps_img
