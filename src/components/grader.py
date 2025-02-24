@@ -56,7 +56,7 @@ class Grader:
 
         # Filter out irrelevant documents
         relevant_docs = list(
-            filter(lambda doc_grade: doc_grade[1] != 'no', zip(docs, grades))
+            filter(lambda doc_grade: doc_grade[1] != 'irrelevant', zip(docs, grades))
         )
         relevant_docs = [doc for doc, _ in relevant_docs]
         return relevant_docs
