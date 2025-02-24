@@ -38,7 +38,7 @@ Supports three retrieval modes:
     * **ChatBotRAG**: Version that maintains conversation context  
 
 ## Configurations
-- `.env`: Stores your LLM API key (`API_KEY`)  and your `BASE_URL`
+- `.env`: Stores your LLM API key (`API_KEY`)  and your `BASE_URL` see the **`.env.example`**
 
 ## Usage
 
@@ -53,7 +53,6 @@ Requirements: Python3.12 and poetry installed
 
 ```bash
 # Create a new environment using Poetry
-poetry env use python3.12
 poetry config virtualenvs.in-project true
 
 # Install dependencies

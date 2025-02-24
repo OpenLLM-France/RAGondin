@@ -136,7 +136,7 @@ class RecursiveSplitter(ABCChunker):
         
         # TODO: We can apply apply this function 'split_text' once.
         for page_num, p in enumerate(pages, start=1):
-            text += ' ' + p
+            text += '\n' + p
             c = ' '.join(
                 self.splitter.split_text(text)
             )
