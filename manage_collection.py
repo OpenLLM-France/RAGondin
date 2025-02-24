@@ -6,7 +6,7 @@ import time
 import os
 from loguru import logger
 from qdrant_client import QdrantClient
-from src.components import load_config
+from src.components import load_config, Indexer
 
 config = load_config()
 
@@ -40,6 +40,13 @@ async def main():
         default=None,
     )
 
+    # Add a list of files argument for uploading to qdrant
+    parser.add_argument("-l", "--list",
+        type=str,
+        nargs='+',
+        help="List of file paths"
+    )
+
     args = parser.parse_args()
 
     # Load the config with potential overrides
@@ -47,8 +54,6 @@ async def main():
     print(config)
 
     if args.folder:
-        from src.components import Indexer
-
         collection = config.vectordb["collection_name"]
         logger.warning(f"Data will be upserted to the collection {collection}")
 
@@ -73,9 +78,26 @@ async def main():
         else:
             logger.info(f"This collection doesn't exist")
     
+
+    if args.list:
+        collection = config.vectordb["collection_name"]
+        logger.warning(f"Data will be upserted to the collection {collection}")
+
+        indexer = Indexer(config, logger)
+        
+        start = time.time()
+        await indexer.add_files2vdb(path=args.list)
+        end = time.time()
+
+        print(f"Execution time: {end - start:.4f} seconds")
+        logger.info(f"Documents loaded to collection named '{collection}'. ")
+
+
+    
 if __name__ == '__main__':
     asyncio.run(main())
-
+    # Example usage of the -l argument in the command line:
+    # ./manage_collection.py -l file1.txt file2.txt file3.txt -o vectordb.collection_name='vdb95'
 
 # ./manage_collection.py -f app/upload_dir/S2_RAG/ -o vectordb.collection_name='vdb90' -o chunker.breakpoint_threshold_amount=90
 
