@@ -7,13 +7,17 @@ defaults:
 embedder:
   type: huggingface
   model_name: HIT-TMG/KaLM-embedding-multilingual-mini-v1
+  
+  
+  # Alibaba-NLP/gte-Qwen2-1.5B-instruct
+  # HIT-TMG/KaLM-embedding-multilingual-mini-v1
   # powerful multilingual model => More language => token's decomposed heavily => More to embed => this model is better than Alibaba NLP models
 
 vectordb:
   host: localhost
   port: 6333
   connector_name: qdrant
-  collection_name: vdb_test # vdb_tuto # 
+  collection_name: vdb_1st_test # vdb_tuto # 
   hybrid_mode: true
 
 reranker:
