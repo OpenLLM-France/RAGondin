@@ -428,6 +428,11 @@ class DoclingConverter: # (metaclass=SingletonMeta):
         for description in descriptions:
             enriched_content = enriched_content.replace('<!-- image -->', description, 1)
         
+        saving_path = Path(file_path).with_suffix('.md')
+        t = enriched_content.replace(page_seperator, '\n')
+        with open(saving_path, 'w', encoding='utf-8') as f:
+            f.write(t)
+
         return enriched_content
 
 
@@ -455,11 +460,10 @@ class DocSerializer:
         self.kwargs = kwargs
     
     # TODO: Add delete class obj
-    async def serialize_documents(self, path: str | Path, recursive=True) -> AsyncGenerator[Document, None]:
+    async def serialize_document(self, path: str):
         p = AsyncPath(path)
         if await p.is_file():
             type = p.suffix
-            pattern = f"**/*{type}"
             loader_cls: BaseLoader = LOADERS.get(p.suffix)
             logger.info(f'Loading {type} files.')
             loader = loader_cls(**self.kwargs)  # Propagate kwargs here!
@@ -470,6 +474,16 @@ class DocSerializer:
             )
             yield doc
 
+    async def serialize_documents(self, path: str | Path | list[str], recursive=True) -> AsyncGenerator[Document, None]:
+        if isinstance(path, list): # list of file paths
+            for file_path in path:
+                async for doc in self.serialize_document(file_path):
+                    yield doc
+
+        p = AsyncPath(path)
+        if await p.is_file():
+            async for doc in self.serialize_document(path):
+                yield doc
 
         is_dir = await p.is_dir()
         if is_dir:

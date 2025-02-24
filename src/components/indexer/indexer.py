@@ -27,7 +27,7 @@ class Indexer:
                 doc_generator=doc_generator, 
                 chunker=self.chunker, 
                 document_batch_size=2,
-                max_concurrent_gpu_ops=4,
+                max_concurrent_gpu_ops=3,
                 max_queued_batches=2
             )
             self.logger.info(f"Documents from {path} added.")
