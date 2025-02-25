@@ -23,45 +23,29 @@ class ABCChunker(ABC):
         pass
 
 
-# templtate = """
-# <document>
-# {origin}
-# </document>
+template = """
+**Objectif** : Rédiger un texte de contextualisation pour le fragment suivant en intégrant les éléments fournis.
 
-# This is the chunk we want to situate within the document named `{source}`.
-# The document’s name itself may contain relevant information (such as "employees CV," "tutorials," etc.) that can help contextualize the content. 
+**Consignes de rédaction** :
+1. Prendre en compte :
+   - **Source** : Métadonnées du document (CV, vidéos, propositions clients, etc.)
+   - **Première page** : Structure/En-tête du document original
+   - **Fragment précédent** : Contenu adjacent pour assurer la continuité
 
-# <chunk>
-# {chunk}
-# </chunk>
+2. Contraintes :
+   - Langue : Utiliser la langue du fragment actuel
+   - Format de réponse : Texte brut uniquement (pas de titres/markdown)
+   - Longueur : 1 phrase à 1 paragraphe selon la pertinence
 
-# Please provide a brief, succinct context to situate this chunk within the document, specifically to improve search retrieval of this chunk. 
-# Respond only with the concise context in the same language as the provided document and chunk.
-# """
+**Contexte** :
+- Source : {source}
+- Première page :
+{first_page}
+- Fragment précédent :
+{prev_chunk}
 
-templtate = """
-<document>
-Title: {source}  
-# The document title may contain key metadata (e.g., "cv", "videos", "client proposals").
-First page of the document: {first_page}  
-Previous chunk: {prev_chunk}  
-</document>
-
-<current_chunk>
+**Fragment à contextualiser** :
 {chunk}
-</current_chunk>
-
-**Task:**  
-Provide a concise, one-sentence context that situates the *<current_chunk>* within the *<document>*, integrating relevant information from:  
-1. **Title** (e.g., type, or category information encoded in the filename).  
-2. **First page of the document**.  
-3. **Previous chunk**.  
-4. **Current chunk content**.  
-
-**Response Format:**  
-- Only provide a single, concise contextual sentence for the *<current_chunk>*.  
-- Write the response in the **same language** as the current chunk to enhance retrieval quality.  
-- Do not include any additional text or explanation.  
 """
 
 
@@ -72,7 +56,7 @@ class ChunkContextualizer:
         if self.contextual_retrieval:
             assert isinstance(llm, ChatOpenAI), f'The `llm` should be of type `ChatOpenAI` is contextual_retrieval is `True`'
             prompt = ChatPromptTemplate.from_template(
-                template=templtate
+                template=template
             )
             self.context_generator = (prompt | llm | StrOutputParser())
 
@@ -129,7 +113,8 @@ class RecursiveSplitter(ABCChunker):
     def split_document(self, doc: Document):
         text = ''
         page_idx = []
-        source = doc.metadata["source"]
+        metadata = doc.metadata
+        source = metadata["source"]
         page_sep = doc.metadata["page_sep"]
         pages: list[str] = doc.page_content.split(sep=page_sep)
         start_index = 0
@@ -181,11 +166,13 @@ class RecursiveSplitter(ABCChunker):
             
                 if len(chunk.page_content.strip()) > 1:
                     chunk.page_content = b_chunk_w_context
-                    metadata = doc.metadata
                     metadata.update({"page": page_idx[i]["page"]})
-                    chunk.metadata = metadata
+                    chunk.metadata = {
+                        "page": page_idx[i]["page"],
+                        "source": metadata["source"],
+                        'sub_url_path': metadata["sub_url_path"]
+                    }
                     filtered_chunks.append(chunk)
-
         return filtered_chunks
 
 

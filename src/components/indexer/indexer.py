@@ -19,7 +19,7 @@ class Indexer:
         self.logger = logger
         self.logger.info("Indexer initialized...")
         
-    async def add_files2vdb(self, path):
+    async def add_files2vdb(self, path: str | list[str]):
         """Add a files to the vector database in async mode"""
         try:
             doc_generator: AsyncGenerator[Document, None] = self.serializer.serialize_documents(path, recursive=True)
