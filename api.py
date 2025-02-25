@@ -94,16 +94,15 @@ async def get_answer(
     )
 
 
-@app.get("/hello/", summary="Toy endpoint to check that the api is up")
-async def hello():
-    return "hello"
+@app.get("/heath_check/", summary="Toy endpoint to check that the api is up")
+async def heath_check():
+    return "RAG API is up."
 
 
 if __name__ == "__main__":
-    uvicorn.run('api:app', host="0.0.0.0", port=8082, reload=True) # 8083
+    uvicorn.run('api:app', host="0.0.0.0", port=8082, reload=True, proxy_headers=True) # 8083
 
 # uvicorn api:app --reload --port 8082 --host 0.0.0.0
-
 # @asynccontextmanager
 # async def lifespan(app: FastAPI):
 #     # await ragPipe.indexer.add_files2vdb(UPLOAD_DIR)

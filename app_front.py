@@ -73,7 +73,7 @@ async def on_chat_start():
         history.clear()
         logger.info("New Chat Started")
         async with httpx.AsyncClient(timeout=httpx.Timeout(60.0)) as client:
-            response = await client.get(url=BASE_URL.format(method='hello'))
+            response = await client.get(url=BASE_URL.format(method='heath_check'))
             print(response.text)
     except:
         logger.warning("Make sur the fastapi is up!!")
@@ -114,10 +114,9 @@ async def on_message(message: cl.Message):
             ) as streaming_response:
                 metadata_sources = streaming_response.headers.get("X-Metadata-Sources")
                 sources = json.loads(metadata_sources)
-                print(sources)
 
                 if sources:
-                    elements, source_names = format_elements(sources, only_txt=True)
+                    elements, source_names = format_elements(sources, only_txt=False)
                     msg = cl.Message(content="", elements=elements)
                 else:
                     msg = cl.Message(content="")
