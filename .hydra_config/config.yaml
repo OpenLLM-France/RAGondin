@@ -1,5 +1,5 @@
 defaults:
-  - chunker: semantic_splitter
+  - chunker: recursive_splitter #semantic_splitter
   - retriever: multiQuery
   - rag: ChatBotRag
   - llm: qwen
