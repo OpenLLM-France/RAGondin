@@ -28,7 +28,7 @@ def format_context(docs: list[Document]) -> str:
     for i, doc in enumerate(docs, start=1):
         doc_id = f"[doc_{i}]"
         document = f"""
-        document id: {doc_id}
+        *source*: {doc_id}
         content: \n{doc.page_content.strip()}\n
         """
 
