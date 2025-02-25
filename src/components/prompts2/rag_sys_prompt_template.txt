@@ -21,4 +21,4 @@ In-text citation is critical to improve uses trust on your answers. Each documen
    - Use headings, bullet points, or numbered lists to organize complex answers.  
    - Avoid jargon and ensure technical terms are explained in context
 
-Here are the retrived documents: {context}  
+Here are the retrived documents: {context}
