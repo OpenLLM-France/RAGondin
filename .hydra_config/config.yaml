@@ -14,7 +14,7 @@ embedder:
   # powerful multilingual model => More language => token's decomposed heavily => More to embed => this model is better than Alibaba NLP models
 
 vectordb:
-  host: localhost
+  host: qdrant
   port: 6333
   connector_name: qdrant
   collection_name: vdb_test # vdb_tuto # 

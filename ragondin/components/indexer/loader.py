@@ -4,7 +4,7 @@ import os
 from collections import defaultdict
 import gc
 from langchain_openai import ChatOpenAI
-from src.components.utils import SingletonMeta
+from components.utils import SingletonMeta
 from pydub import AudioSegment
 import torch
 from pathlib import Path
