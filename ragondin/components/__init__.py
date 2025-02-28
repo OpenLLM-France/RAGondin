@@ -1,4 +1,4 @@
-from .config import load_config
+from config import load_config
 from .indexer import AudioTranscriber, Indexer
 from .pipeline import RagPipeline
 from .indexer import AudioTranscriber, Indexer

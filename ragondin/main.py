@@ -2,7 +2,7 @@ import time
 import asyncio
 from loguru import logger
 from pathlib import Path
-from src.components import RagPipeline, load_config, Indexer
+from components import RagPipeline, load_config, Indexer
 
 config = load_config()
 indexer = Indexer(config, logger)

@@ -12,7 +12,8 @@ from fastapi.staticfiles import StaticFiles
 import uvicorn
 from typing import Literal
 from pathlib import Path
-from src.components import RagPipeline, load_config, Indexer
+from components import RagPipeline, Indexer
+from config import load_config
 from loguru import logger
 from chainlit.utils import mount_chainlit
 
