@@ -3,7 +3,6 @@ from typing import Annotated
 from fastapi import FastAPI, File, UploadFile, HTTPException, status, Request, Depends
 from enum import Enum
 import json
-# from chainlit.utils import mount_chainlit
 import os
 from pydantic import BaseModel
 from langchain_core.messages import AIMessage, HumanMessage
@@ -15,6 +14,7 @@ from typing import Literal
 from pathlib import Path
 from src.components import RagPipeline, load_config, Indexer
 from loguru import logger
+from chainlit.utils import mount_chainlit
 
 APP_DIR = Path.cwd()
 DATA_DIR = APP_DIR / 'data'
@@ -93,16 +93,19 @@ async def get_answer(
         headers={"X-Metadata-Sources": src_json},
     )
 
-
 @app.get("/heath_check/", summary="Toy endpoint to check that the api is up")
 async def heath_check():
     return "RAG API is up."
 
 
-if __name__ == "__main__":
-    uvicorn.run('api:app', host="0.0.0.0", port=8082, reload=True, proxy_headers=True) # 8083
+mount_chainlit(app, './frontend/app_front.py', path="/chainlit") # mount the default front
 
-# uvicorn api:app --reload --port 8082 --host 0.0.0.0
+
+if __name__ == "__main__":
+    uvicorn.run('api:app', host="0.0.0.0", port=8083, reload=True, proxy_headers=True) # 8083
+    
+# uvicorn api:app --reload --port 8083 --host 0.0.0.0
+
 # @asynccontextmanager
 # async def lifespan(app: FastAPI):
 #     # await ragPipe.indexer.add_files2vdb(UPLOAD_DIR)
