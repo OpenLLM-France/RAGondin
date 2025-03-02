@@ -18,11 +18,12 @@ RAGondin is a project dedicated to experimenting with advanced RAG (Retrieval-Au
 The current branch handles the following file types: `pdf`, `docx`, `doc`, `odt`, `pptx`, `ppt`, `txt`. Other formats (csv, html, etc.) will be added in future releases.
 
 - **Chunking**  
-A **semantic chunker** is used to process all supported file types. Future releases will implement format-specific chunkers (e.g., specialized CSV chunking).
+Differents chunking strategies are implemented: **`semantic` and `recursive` chunking**.
+Currently **semantic chunker** is used to process all supported file types. Future releases will implement format-specific chunkers (e.g., specialized CSV chunking, Markdown chunker, etc).
 
 - **Indexing & Search**  
 After chunking, data is indexed in a **Qdrant** vector database using the multilingual embedding model `HIT-TMG/KaLM-embedding-multilingual-mini-v1` (ranked highly on the MTEB benchmark). The same model embeds user queries for semantic search (Dense Search).  
-    * **Hybrid Search**: Combines semantic search with keyword search (BM25) to handle domain-specific jargon and coded product names that might not exist in the embedding model's training data.
+    * **Hybrid Search**: Combines **`semantic search`** with keyword search (using **`BM25`**) to handle domain-specific jargon and coded product names that might not exist in the embedding model's training data.
 
 - **Retriever**  
 Supports three retrieval modes:  
@@ -30,8 +31,8 @@ Supports three retrieval modes:
     * **MultiQuery**: Generates augmented query variations using an LLM, then combines results  
     * **HyDE**: Generates a hypothetical answer using an LLM, then retrieves documents matching this answer  
 
-- **Grader**: Filters out irrelevant documents after retrieval  
-- **Reranker**: Uses a multilingual reranking model to reorder documents by relevance  
+- **Grader**: Filters out irrelevant documents after retrieval.  
+- **Reranker**: Uses a multilingual reranking model to reorder documents by relevance with respect to the user's query. This part is important because the retriever returns documents that are semantically similar to the query. However, similarity is not synonymous with relevance, so rerankers are essential for reordering documents and filtering out less relevant ones. This helps reduce hallucination.
 
 - **RAG Types**:  
     * **SimpleRAG**: Basic implementation without chat history  
@@ -59,15 +60,25 @@ poetry config virtualenvs.in-project true
 poetry install
 ```
 
-#### 3. Run the Chainlit app
+#### 3. Run the fastapi
 1. **Prepare Qdrant collection** (using `manage_collection.py`):
+> Before running the script, add the files you want to test the rag on the `./data` folder.
+
 ```bash
 # Create/update collection (default collection from .hydra_config/config.yaml)
-python3 manage_collection.py -f {folder_path} 
+python3 manage_collection.py -f './data' 
 
 # Specify collection name
-python3 manage_collection.py -f {folder_path} -c {collection_name}
+python3 manage_collection.py -f './data' -o vectordb.collection_name={collection_name}
+```
+See the **`.hydra_config/config.yaml`**. More parameters can be modified using CLI.
+For example, to deactivate the contextualized chunking, then you can use the following command
+```bash
+./manage_collection.py -f ./data/ -o vectordb.collection_name={collection_name} -o chunker.contextual_retrieval=false
+```
 
+To delete a vector db, you can the following command
+```bash
 # Delete collection
 python3 manage_collection.py -d {collection_name}
 ```
@@ -78,29 +89,7 @@ python3 manage_collection.py -d {collection_name}
 uvicorn api:app --reload --port 8082 --host 0.0.0.0
 ```
 
-```bash
-# launch the frontend
-chainlit run app_front.py --host 0.0.0.0 --port 8081 --root-path /chainlit
-```
-Access the chatbot interface at `http://localhost:8081/chainlit` (port may vary). The LLM will ground its responses in documents from your VectorDB.
-
-3. **Copilot Mode**:  
-Use the provided `test_copilot.html` template or create your own:
-```html
-<!doctype html>
-<head>
-<meta charset="utf-8" />
-</head>
-<body>
-<script src="http://localhost:8081/copilot/index.js"></script>
-<script>
-window.mountChainlitWidget({
-    chainlitServer: "http://localhost:8000",
-    theme: "dark"
-});
-</script>
-</body>
-```
+You can access the default frontend to chat with your documents. Navivate to the **'/chainlit'** route.
 
 ## Contribute
 Contributions are welcome! Please follow standard GitHub workflow:
