@@ -463,11 +463,11 @@ class DocSerializer:
     async def serialize_document(self, path: str):
         p = AsyncPath(path)
         if await p.is_file():
-            type = p.suffix
-            loader_cls: BaseLoader = LOADERS.get(p.suffix)
-            logger.info(f'Loading {type} files.')
-            loader = loader_cls(**self.kwargs)  # Propagate kwargs here!
+            type_ = p.suffix
+            loader_cls: BaseLoader = LOADERS.get(type_)
+            logger.info(f'Loading {type_} files.')
 
+            loader = loader_cls(**self.kwargs)  # Propagate kwargs here!
             doc: Document = await loader.aload_document(
                 file_path=path,
                 sub_url_path=Path(path).absolute().relative_to(self.data_dir) # for the static file server
@@ -479,28 +479,28 @@ class DocSerializer:
             for file_path in path:
                 async for doc in self.serialize_document(file_path):
                     yield doc
-
-        p = AsyncPath(path)
-        if await p.is_file():
-            async for doc in self.serialize_document(path):
-                yield doc
-
-        is_dir = await p.is_dir()
-        if is_dir:
-            for type, loader_cls in LOADERS.items():
-                pattern = f"**/*{type}"
-                logger.info(f'Loading {type} files.')
-                files = get_files(path, pattern, recursive) 
-                
-                async for file in files:
-                    loader = loader_cls(**self.kwargs)
-                    doc: Document = await loader.aload_document(
-                        file_path=file,
-                        sub_url_path=Path(file).absolute().relative_to(self.data_dir) # for the static file server
-                    )
-                    print(f"==> Serialized: {str(file)}")
+        else:
+            p = AsyncPath(path)
+            if await p.is_file():
+                async for doc in self.serialize_document(path):
                     yield doc
-                
+
+            is_dir = await p.is_dir()
+            if is_dir:
+                for type, loader_cls in LOADERS.items():
+                    pattern = f"**/*{type}"
+                    logger.info(f'Loading {type} files.')
+                    files = get_files(path, pattern, recursive) 
+                    
+                    async for file in files:
+                        loader = loader_cls(**self.kwargs)
+                        doc: Document = await loader.aload_document(
+                            file_path=file,
+                            sub_url_path=Path(file).absolute().relative_to(self.data_dir) # for the static file server
+                        )
+                        print(f"==> Serialized: {str(file)}")
+                        yield doc
+                    
 
 
 async def get_files(path, pattern, recursive) -> AsyncGenerator:

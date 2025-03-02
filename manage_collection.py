@@ -90,7 +90,7 @@ async def main():
         end = time.time()
 
         print(f"Execution time: {end - start:.4f} seconds")
-        logger.info(f"Documents loaded to collection named '{collection}'. ")
+        logger.info(f"Documents loaded to collection named '{collection}'.")
 
 
     
