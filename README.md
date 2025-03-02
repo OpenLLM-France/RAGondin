@@ -70,6 +70,11 @@ python3 manage_collection.py -f './data'
 
 # Specify collection name
 python3 manage_collection.py -f './data' -o vectordb.collection_name={collection_name}
+
+# Add list of files
+
+python3 manage_collection.py -l ./data/file1.pdf ./data/file2.pdf 
+
 ```
 See the **`.hydra_config/config.yaml`**. More parameters can be modified using CLI.
 For example, to deactivate the contextualized chunking, then you can use the following command
