@@ -98,12 +98,12 @@ async def heath_check():
     return "RAG API is up."
 
 
-mount_chainlit(app, './frontend/app_front.py', path="/chainlit") # mount the default front
+mount_chainlit(app, './app_front.py', path="/chainlit") # mount the default front
 
 
 if __name__ == "__main__":
     uvicorn.run('api:app', host="0.0.0.0", port=8083, reload=True, proxy_headers=True) # 8083
-    
+
 # uvicorn api:app --reload --port 8083 --host 0.0.0.0
 
 # @asynccontextmanager
