@@ -1,8 +1,0 @@
-experiments/test_data/.ipynb_checkpoints/regles_MESBG-checkpoint.pdf
-experiments/test_data/.ipynb_checkpoints/Compendium-2-checkpoint.pdf
-data/.ipynb_checkpoints/gpt4-checkpoint.pdf
-experiments/test_data/Développement-Personnel-pdf-1.pdf
-experiments/test_data/.ipynb_checkpoints/Convention_de_Regles-checkpoint.pdf
-experiments/test_data/Jeunesetréseauxsociaux-version-DEF-nov-2017.pdf
-experiments/test_data/diversite-organisation.pdf
-experiments/test_data/Article-sur-le-Cloud-Act.pdf
