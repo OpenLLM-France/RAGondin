@@ -99,7 +99,7 @@ async def heath_check():
     return "RAG API is up."
 
 
-mount_chainlit(app, './app_front.py', path="/chainlit") # mount the default front
+mount_chainlit(app, './chainlit/app_front.py', path="/chainlit") # mount the default front
 
 
 if __name__ == "__main__":

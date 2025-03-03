@@ -12,6 +12,10 @@ RUN apt-get update && apt-get install -y \
     make \
     && rm -rf /var/lib/apt/lists/*
 
+# install ffmpeg
+RUN apt update && \
+    apt install -y ffmpeg 
+
 # Set workdir inside the container
 
 
