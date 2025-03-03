@@ -29,7 +29,7 @@ COPY ragondin/ .
 
 # Copy assests & config
 COPY public/ /ragondin/public/
-COPY .hydra_config/ .hydra_config/
+COPY .hydra_config/ ../.hydra_config/
 ENV PYTHONPATH=/ragondin/
 
 

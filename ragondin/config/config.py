@@ -3,7 +3,7 @@ from omegaconf import OmegaConf
 from pathlib import Path
 from hydra import initialize, compose
 
-def load_config(config_path="../.hydra_config", overrides=None)-> OmegaConf:
+def load_config(config_path="../../.hydra_config", overrides=None)-> OmegaConf:
     load_dotenv()
     print(overrides)
         
