@@ -382,7 +382,7 @@ class DoclingConverter: # (metaclass=SingletonMeta):
                 #     img.save(f"./temp_img/figure_page_{page_no}_{img.width}X{img.height}.png")
 
             except Exception as e:
-                print(f"Failed to describe this image: {e}")
+                logger.error(f"Error while generating image description: {e}")
 
             # Convert image path to markdown format and combine with description
             if image_description:
@@ -420,14 +420,11 @@ class DoclingConverter: # (metaclass=SingletonMeta):
         result = await self.convert_to_md(file_path)
         n_pages = len(result.pages)
         s = f'{page_seperator}'.join([result.document.export_to_markdown(page_no=i) for i in range(1, n_pages+1)])
-
         pictures = result.document.pictures
         descriptions = await self.get_captions(pictures)
-
         enriched_content = s
         for description in descriptions:
             enriched_content = enriched_content.replace('<!-- image -->', description, 1)
-        
         saving_path = Path(file_path).with_suffix('.md')
         t = enriched_content.replace(page_seperator, '\n')
         with open(saving_path, 'w', encoding='utf-8') as f:
