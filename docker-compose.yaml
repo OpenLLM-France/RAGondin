@@ -10,7 +10,7 @@ services:
       dockerfile: Dockerfile
     volumes:
       - ./model_weights:/ragondin/model_weights
-      - ./data:/ragondin/data  # PDF data for RAG
+      - ./data:/ragondin/data # PDF data for RAG
     
     ports:
       - "${APP_PORT}:${APP_PORT}"
