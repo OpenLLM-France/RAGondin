@@ -6,7 +6,8 @@ from langchain_openai import ChatOpenAI
 from langchain_core.documents.base import Document
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import StrOutputParser
-from langchain_community.embeddings import HuggingFaceBgeEmbeddings, HuggingFaceEmbeddings
+from langchain_community.embeddings import HuggingFaceBgeEmbeddings
+from langchain_huggingface import HuggingFaceEmbeddings
 from langchain.callbacks import StdOutCallbackHandler
 from loguru import logger
 from langchain_core.runnables import RunnableLambda

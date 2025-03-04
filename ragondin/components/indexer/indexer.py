@@ -12,7 +12,7 @@ class Indexer:
     """This class bridges static files with the vector store database.
     """
     def __init__(self, config, logger, device=None) -> None:
-        embedder = HFEmbedder(embedder_config=config.embedder, device=device)        
+        embedder = HFEmbedder(embedder_config=config.embedder, device=device)
         self.serializer = DocSerializer(data_dir=config.paths.root_dir / 'data', llm_config=config.llm)
         self.chunker: ABCChunker = ChunkerFactory.create_chunker(config, embedder=embedder.get_embeddings())
         self.vectordb = ConnectorFactory.create_vdb(config, logger=logger, embeddings=embedder.get_embeddings())

@@ -42,3 +42,4 @@ data/*
 kotaemon
 ./temps_img
 .python-version
+.vscode

@@ -1,6 +1,5 @@
 from abc import abstractmethod, ABC
-# from langchain_huggingface import HuggingFaceEmbeddings
-from langchain_community.embeddings import HuggingFaceEmbeddings
+from langchain_huggingface import HuggingFaceEmbeddings
 import torch
 from omegaconf import OmegaConf
 

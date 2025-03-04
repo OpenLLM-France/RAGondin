@@ -1,4 +1,5 @@
 defaults:
+  - _self_  # TODO: Silences the hydra version migration warning (PLEASE REVIEW FOR BREAKING CHANGES)
   - chunker: recursive_splitter #semantic_splitter
   - retriever: multiQuery
   - rag: ChatBotRag

@@ -2,10 +2,12 @@ from abc import abstractmethod, ABC
 import asyncio
 from typing import Union
 from qdrant_client import QdrantClient, models
-from langchain_community.embeddings import HuggingFaceBgeEmbeddings, HuggingFaceEmbeddings
+from langchain_community.embeddings import HuggingFaceBgeEmbeddings
+from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_core.documents.base import Document
 from langchain_qdrant import QdrantVectorStore, FastEmbedSparse, RetrievalMode
 from .chunker import ABCChunker
+from loguru import logger
 
 
 # https://python-client.qdrant.tech/qdrant_client.qdrant_client
@@ -67,7 +69,7 @@ class QdrantDB(ABCVectorDB):
 
         self.sparse_embeddings = FastEmbedSparse(model_name="Qdrant/bm25") if hybrid_mode else None
         self.retrieval_mode = RetrievalMode.HYBRID if hybrid_mode else RetrievalMode.DENSE
-        print("RETRIEVE MODE ==>", self.retrieval_mode)
+        logger.info(f"VectorDB retrieval mode: {self.retrieval_mode}")
         
         # Initialize collection-related attributes
         self._collection_name = None

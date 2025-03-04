@@ -6,7 +6,7 @@ import time
 import os
 from loguru import logger
 from qdrant_client import QdrantClient
-from src.components import load_config, Indexer
+from components import load_config, Indexer
 
 config = load_config()
 
@@ -51,7 +51,6 @@ async def main():
 
     # Load the config with potential overrides
     config = load_config(overrides=args.override)
-    print(config)
 
     if args.folder:
         collection = config.vectordb["collection_name"]
@@ -63,7 +62,7 @@ async def main():
         await indexer.add_files2vdb(path=args.folder)
         end = time.time()
 
-        print(f"Execution time: {end - start:.4f} seconds")
+        logger.info(f"Execution time: {end - start:.4f} seconds")
         logger.info(f"Documents loaded to collection named '{collection}'. ")
     
     
@@ -89,7 +88,7 @@ async def main():
         await indexer.add_files2vdb(path=args.list)
         end = time.time()
 
-        print(f"Execution time: {end - start:.4f} seconds")
+        logger.info(f"Execution time: {end - start:.4f} seconds")
         logger.info(f"Documents loaded to collection named '{collection}'.")
 
 
