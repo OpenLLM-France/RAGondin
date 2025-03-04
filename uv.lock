@@ -1384,6 +1384,24 @@ wheels = [
 ]
 
 [[package]]
+name = "langchain-huggingface"
+version = "0.1.2"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "huggingface-hub" },
+    { name = "langchain-core" },
+    { name = "sentence-transformers" },
+    { name = "tokenizers", version = "0.19.1", source = { registry = "https://pypi.org/simple" }, marker = "platform_machine == 'x86_64' and sys_platform == 'darwin'" },
+    { name = "tokenizers", version = "0.21.0", source = { registry = "https://pypi.org/simple" }, marker = "platform_machine != 'x86_64' or sys_platform != 'darwin'" },
+    { name = "transformers", version = "4.42.4", source = { registry = "https://pypi.org/simple" }, marker = "platform_machine == 'x86_64' and sys_platform == 'darwin'" },
+    { name = "transformers", version = "4.49.0", source = { registry = "https://pypi.org/simple" }, marker = "platform_machine != 'x86_64' or sys_platform != 'darwin'" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/a1/0f/8277d993d5307f06523e72c9bc8a505ed028f7b1c1e5276d8e89044b6036/langchain_huggingface-0.1.2.tar.gz", hash = "sha256:4a66d5c449298fd353bd84c9ed01f9bf4303bf2e4ffce14aab8c55c584eee57c", size = 16129 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/9d/f8/77a303ddc492f6eed8bf0979f2bc6db4fa6eb1089c5e9f0f977dd87bc9c2/langchain_huggingface-0.1.2-py3-none-any.whl", hash = "sha256:7de5cfcae32bfb6a99c084fc16176f02583a4f8d94febb6bb45bed5b34699174", size = 21251 },
+]
+
+[[package]]
 name = "langchain-openai"
 version = "0.3.7"
 source = { registry = "https://pypi.org/simple" }
@@ -3139,6 +3157,7 @@ dependencies = [
     { name = "langchain-community" },
     { name = "langchain-core" },
     { name = "langchain-experimental" },
+    { name = "langchain-huggingface" },
     { name = "langchain-openai" },
     { name = "langchain-qdrant" },
     { name = "llama-index-llms-langchain" },
@@ -3162,6 +3181,7 @@ requires-dist = [
     { name = "langchain-community", specifier = ">=0.3.18" },
     { name = "langchain-core", specifier = ">=0.3.39" },
     { name = "langchain-experimental", specifier = ">=0.3.4" },
+    { name = "langchain-huggingface", specifier = ">=0.1.2" },
     { name = "langchain-openai", specifier = ">=0.3.7" },
     { name = "langchain-qdrant", specifier = ">=0.2.0" },
     { name = "llama-index-llms-langchain", specifier = ">=0.6.0" },
