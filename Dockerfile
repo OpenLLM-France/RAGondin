@@ -35,5 +35,3 @@ COPY ragondin/ .
 COPY public/ /ragondin/public/
 COPY .hydra_config/ ../.hydra_config/
 ENV PYTHONPATH=/ragondin/
-
-

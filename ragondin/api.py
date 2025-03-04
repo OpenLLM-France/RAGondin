@@ -16,6 +16,8 @@ from components import RagPipeline, Indexer
 from config import load_config
 from loguru import logger
 from chainlit.utils import mount_chainlit
+from routers.indexer import router as indexer_router
+from utils.dependencies import indexer
 
 APP_DIR = Path.cwd()
 DATA_DIR = APP_DIR / 'data'
@@ -28,7 +30,7 @@ config = load_config()
 logger.info(f"VectorDB host: {config.vectordb['host']}")
 logger.info(f"VectorDB port: {config.vectordb['port']}")
 
-indexer = Indexer(config, logger)
+# indexer = Indexer(config, logger)
 ragPipe = RagPipeline(config=config, vectordb=indexer.vectordb, logger=logger)
 
 class Tags(Enum):
@@ -100,6 +102,9 @@ async def heath_check():
 
 
 mount_chainlit(app, './chainlit/app_front.py', path="/chainlit") # mount the default front
+
+# Mount the indexer router
+app.include_router(indexer_router, prefix="/indexer")
 
 
 if __name__ == "__main__":
