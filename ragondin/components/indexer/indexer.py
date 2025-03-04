@@ -22,7 +22,6 @@ class Indexer:
     async def add_files2vdb(self, path: str | list[str]):
         """Add a files to the vector database in async mode"""
         try:
-            print("addfiles2vdb")
             doc_generator: AsyncGenerator[Document, None] = self.serializer.serialize_documents(path, recursive=True)
             await self.vectordb.async_add_documents(
                 doc_generator=doc_generator, 
