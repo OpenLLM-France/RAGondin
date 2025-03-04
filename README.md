@@ -46,6 +46,7 @@ Supports three retrieval modes:
 #### 1. Clone the repository:
 ```bash
 git clone https://github.com/OpenLLM-France/RAGondin.git
+cd RAGondin
 git checkout main
 ```
 
