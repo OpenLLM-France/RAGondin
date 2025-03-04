@@ -6,10 +6,7 @@ from langchain_core.documents.base import Document
 import asyncio
 from .llm import LLM
 
-sys_prompt = (
-    """You are an expert at carefully judging documents' relevancy with respect to a user query/input."""
-)
-
+sys_prompt = """You are an expert at carefully judging documents' relevancy with respect to a user query/input."""
 class DocumentGrade(BaseModel):
     """Evaluates document's relevancy with respect to a user query."""
     relevance_score: Literal['highly_relevant', 'somewhat_relevant', 'irrelevant'] = Field(
@@ -26,8 +23,8 @@ class Grader:
     async def _grade_doc(self, user_input, doc: Document, sem: asyncio.Semaphore):
         async with sem:
             try:
-                query_template = (f"""User query: {user_input}\n""" 
-                    f"""Retrieved Document: {doc.page_content}"""
+                query_template = ("""User query: {user_input}\n""" 
+                    """Retrieved Document: {content}"""
                 )
 
                 template = ChatPromptTemplate.from_messages(
@@ -37,7 +34,12 @@ class Grader:
                     ]
                 )
                 # Create a PromptValue from the template
-                prompt_value = template.invoke({"user_input": user_input, "doc": doc})
+                prompt_value = template.invoke(
+                    {
+                        "user_input": user_input,
+                        "content": doc.page_content
+                    }
+                )
                 result: DocumentGrade = await self.sllm.ainvoke(prompt_value)
                 
                 return result.relevance_score
@@ -47,8 +49,8 @@ class Grader:
     async def grade_docs(self, user_input: str, docs: list[Document], batch_size=6):
         batch_size = min(batch_size, len(docs))
         self.logger.info(f"{len(docs)} documents to assess relevancy.")
-        sem = asyncio.Semaphore(batch_size)
 
+        sem = asyncio.Semaphore(batch_size)
         tasks = [
             self._grade_doc(user_input=user_input, doc=d, sem=sem) for d in docs
         ]
