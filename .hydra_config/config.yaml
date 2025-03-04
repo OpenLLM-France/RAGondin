@@ -18,7 +18,7 @@ vectordb:
   host: ${oc.env:QDRANT_HOST, qdrant}
   port: ${oc.env:QDRANT_PORT, 6333}
   connector_name: qdrant
-  collection_name: vdb_test # vdb_tuto # 
+  collection_name: ${oc.env:COLLECTION_NAME, vdb_test}
   hybrid_mode: true
 
 reranker:
