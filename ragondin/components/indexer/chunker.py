@@ -118,9 +118,9 @@ class RecursiveSplitter(ABCChunker):
             llm: Optional[ChatOpenAI]=None,
             **args
         ):
-        super().__init__(contextual_retrieval=contextual_retrieval, llm=llm)
 
         from langchain.text_splitter import RecursiveCharacterTextSplitter
+        
         self.splitter = RecursiveCharacterTextSplitter(
             chunk_size=chunk_size,
             chunk_overlap=chunk_overlap,
@@ -177,7 +177,9 @@ class RecursiveSplitter(ABCChunker):
             if len(chunk.page_content.strip()) > 1:
                 chunk.page_content = chunk_w_context
                 metadata.update(
-                    {"page": page_idx[i]["page"]}
+                    {
+                        "page": page_idx[i]["page"]
+                    }
                 )
                 chunk.metadata = dict(metadata)
                 filtered_chunks.append(chunk) 
@@ -247,7 +249,11 @@ class SemanticSplitter(ABCChunker):
             
             if len(chunk.page_content.strip()) > 1:
                 chunk.page_content = chunk_w_context
-                metadata.update({"page": page_idx[i]["page"]})
+                metadata.update(
+                    {
+                        "page": page_idx[i]["page"]
+                    }
+                )
                 chunk.metadata = dict(metadata)
 
                 filtered_chunks.append(chunk)
@@ -281,5 +287,4 @@ class ChunkerFactory:
 
         # Include contextual retrieval if specified
         chunker_params['llm'] = LLM(config, logger=None).client
-        
         return chunker_class(**chunker_params)
