@@ -3,28 +3,20 @@ services:
     image: qdrant/qdrant
     volumes:
       - ./qdrant_storage:/qdrant/storage:z
-    ports:
-      - "6333:6333"
   chainlit-app:
     build: 
       dockerfile: Dockerfile
     volumes:
-      - ./model_weights:/ragondin/model_weights
-      - ./data:/ragondin/data # PDF data for RAG
-    
+      - ./model_weights:/app/model_weights
+      - ./data:/app/data # PDF data for RAG
     ports:
-      - "${APP_PORT}:${APP_PORT}"
+      - "${APP_PORT}:8080"
     env_file:
       - .env
     
     depends_on:
       - qdrant
 
-    
-    command: >
-      bash -c "
-        uv run uvicorn api:app --host ${APP_HOST} --port ${APP_PORT}
-      "
     deploy:
       resources:
         reservations:

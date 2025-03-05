@@ -6,9 +6,12 @@ from pathlib import Path
 from crud.qdrant import QdrantCRUD
 from models.indexer import SearchRequest, DeleteFilesRequest
 from utils.dependencies import get_qdrant_crud
+from config.config import load_config
 
+#load config
+config = load_config()
 
-
+# Create an APIRouter instance
 router = APIRouter()
 
 
@@ -16,7 +19,7 @@ router = APIRouter()
 async def add_files(files: List[UploadFile] = File(...), qdrant_crud: QdrantCRUD = Depends(get_qdrant_crud)):
     try:
         # Create a temporary directory to store files
-        temp_dir = Path("data/tmp")
+        temp_dir = Path(config.paths.data_dir)
         temp_dir.mkdir(parents=True, exist_ok=True)
         
         # Save the uploaded files to the temporary directory
