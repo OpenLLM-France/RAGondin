@@ -141,7 +141,7 @@ class CustomPPTLoader(BaseLoader):
         'FigureCaption': '*'
     }
     def __init__(self, page_sep: str='[PAGE_SEP]', **kwargs) -> None:
-        self.loader_args = loader_args
+        self.loader_args = kwargs
         self.page_sep = page_sep
     
     def group_by_hierarchy(self, docs: list[Document]):
@@ -321,7 +321,9 @@ class DoclingConverter: # (metaclass=SingletonMeta):
         pipeline_options = PdfPipelineOptions(
             do_ocr = True,
             do_table_structure = True,
-            generate_picture_images=True
+            generate_picture_images=True,
+            # generate_table_images=True,
+            # generate_page_images=True
         )
         pipeline_options.table_structure_options = TableStructureOptions(
             do_cell_matching=True,
@@ -369,7 +371,7 @@ class DoclingConverter: # (metaclass=SingletonMeta):
                     },
                     {
                         "type": "text", 
-                        "text": "Provide a complete, structured and precise description of this image or figure in the same language (french) as its content."
+                        "text": """Provide a complete, structured and precise description of this image or figure in the same language (french) as its content. If the image contains tables, render them in markdown."""
                     }
                 ]
             )
@@ -377,9 +379,9 @@ class DoclingConverter: # (metaclass=SingletonMeta):
                 if (img.width > self.min_width_pixels and img.height > self.min_height_pixels):
                     response = await self.vlm_endpoint.ainvoke([message])
                     image_description = response.content
-                    # img.save(f"./temp_img/figure_page_{page_no}_{img.width}X{img.height}.png")
-                # else:
                 #     img.save(f"./temp_img/figure_page_{page_no}_{img.width}X{img.height}.png")
+                # else:
+                #     img.save(f"./temp_img/no_figure_page_{page_no}_{img.width}X{img.height}.png")
 
             except Exception as e:
                 logger.error(f"Error while generating image description: {e}")
@@ -531,3 +533,6 @@ LOADERS: Dict[str, BaseLoader] = {
 
                     
 #     asyncio.run(main())
+
+
+# uv run ./manage_collection.py -l  -o chunker.contextual_retrieval=false
