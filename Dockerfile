@@ -21,13 +21,16 @@ ENV HF_HOME=/app/model_weights
 ENV HF_HUB_CACHE=/app/model_weights/hub
 
 
-# Set workdir inside the container
-WORKDIR /app/ragondin
+# Set workdir for uv
+WORKDIR /app
 
 # Install uv & setup venv
 COPY pyproject.toml uv.lock ./
 RUN pip3 install uv && \
     uv sync
+
+# Set workdir for source code
+WORKDIR /app/ragondin
 
 # Copy source code
 COPY ragondin/ .
@@ -37,3 +40,5 @@ COPY public/ /app/public/
 COPY prompts/ /app/prompts/
 COPY .hydra_config/ /app/.hydra_config/
 ENV PYTHONPATH=/app/ragondin/
+
+ENTRYPOINT ["uv", "run", "uvicorn", "api:app", "--host", "0.0.0.0", "--port", "8080"]
