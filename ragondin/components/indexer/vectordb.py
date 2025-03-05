@@ -159,7 +159,7 @@ class QdrantDB(ABCVectorDB):
 
         async def chunk(doc, gpu_semaphore):
             async with gpu_semaphore:
-                chunks = await asyncio.to_thread(chunker.split_document, doc) # uses GPU
+                chunks = await chunker.split_document(doc) # uses GPU
                 self.logger.info(f"Processed doc: {doc.metadata['source']}")
                 return chunks
 
@@ -190,7 +190,7 @@ class QdrantDB(ABCVectorDB):
                     self.logger.info(f"Consumer {consumer_id} ended")
                     break
                 
-                tasks = [asyncio.create_task(chunk(doc, gpu_semaphore)) for doc in batch]
+                tasks = [chunk(doc, gpu_semaphore) for doc in batch]
                 chunks_list = await asyncio.gather(*tasks, return_exceptions=True)
                 all_chunks = sum(chunks_list, [])
                 
