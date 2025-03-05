@@ -54,11 +54,9 @@ git checkout main
 Requirements: Python3.12 and poetry installed
 
 ```bash
-# Create a new environment using Poetry
-poetry config virtualenvs.in-project true
+# Create a new environment with all dependencies
 
-# Install dependencies
-poetry install
+uv sync
 ```
 
 #### 3. Run the fastapi
@@ -92,7 +90,7 @@ python3 manage_collection.py -d {collection_name}
 2. **Launch the app and the api**:
 ```bash
 # launch the api
-uvicorn api:app --reload --port 8082 --host 0.0.0.0
+docker-compose up
 ```
 
 You can access the default frontend to chat with your documents. Navivate to the **'/chainlit'** route.
