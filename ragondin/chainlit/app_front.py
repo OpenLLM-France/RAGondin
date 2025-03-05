@@ -22,20 +22,22 @@ def get_base_url():
     base_url = f"{parsed_url.scheme}://{parsed_url.netloc}/" + "{method}/"
     return base_url
 
-@cl.set_starters
-async def set_starters():
-    with open(APP_DIR / 'public' / 'conversation_starters.yaml') as file: # Load the YAML file
-        data = yaml.safe_load(file)
+
+# @cl.set_starters
+# async def set_starters():
+#     with open(APP_DIR / 'public' / 'conversation_starters.yaml') as file: # Load the YAML file
+#         data = yaml.safe_load(file)
         
-    return [
-        cl.Starter(
-            label=item["label"],
-            message=item["message"],
-            icon=item["icon"]
-        )
-        for item in data['starters']
-    ]
+#     return [
+#         cl.Starter(
+#             label=item["label"],
+#             message=item["message"],
+#             icon=item["icon"]
+#         )
+#         for item in data['starters']
+#     ]
      
+
 def format_elements(sources, only_txt=True):
     elements = []
     source_names = []
@@ -77,7 +79,8 @@ async def on_chat_start():
         async with httpx.AsyncClient(timeout=httpx.Timeout(60.0)) as client:
             response = await client.get(url=base_url.format(method='heath_check'))
             print(response.text)
-    except:
+    except Exception as e:
+        logger.error(f"An error happened: {e}")
         logger.warning("Make sur the fastapi is up!!")
     cl.user_session.set("base_url", base_url)
 
