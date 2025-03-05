@@ -16,15 +16,16 @@ RUN apt-get update && apt-get install -y \
 RUN apt update && \
     apt install -y ffmpeg 
 
+# Set environment variables for Hugging Face cache location
+ENV HF_HOME=/app/model_weights
+ENV HF_HUB_CACHE=/app/model_weights/hub
+
+
 # Set workdir inside the container
-
-
-# Copy only necessary files to reduce image size
-# Set the workdir early in the Dockerfile
-WORKDIR /ragondin
+WORKDIR /app/ragondin
 
 # Install uv & setup venv
-COPY pyproject.toml uv.lock /ragondin/
+COPY pyproject.toml uv.lock ./
 RUN pip3 install uv && \
     uv sync
 
@@ -32,6 +33,7 @@ RUN pip3 install uv && \
 COPY ragondin/ .
 
 # Copy assests & config
-COPY public/ /ragondin/public/
-COPY .hydra_config/ ../.hydra_config/
-ENV PYTHONPATH=/ragondin/
+COPY public/ /app/public/
+COPY prompts/ /app/prompts/
+COPY .hydra_config/ /app/.hydra_config/
+ENV PYTHONPATH=/app/ragondin/
