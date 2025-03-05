@@ -101,7 +101,7 @@ async def on_message(message: cl.Message):
                 sources = json.loads(metadata_sources)
 
                 if sources:
-                    elements, source_names = format_elements(sources, only_txt=False)
+                    elements, source_names = format_elements(sources, only_txt=True)
                     msg = cl.Message(content="", elements=elements)
                 else:
                     msg = cl.Message(content="")
