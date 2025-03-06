@@ -20,6 +20,9 @@ from langchain_community.document_loaders import UnstructuredWordDocumentLoader
 from langchain_community.document_loaders import TextLoader
 from langchain_community.document_loaders import UnstructuredHTMLLoader
 from langchain_core.messages import HumanMessage
+from marker.converters.pdf import PdfConverter
+from marker.models import create_model_dict
+from marker.config.parser import ConfigParser
 
 import pymupdf4llm
 from loguru import logger
@@ -468,6 +471,19 @@ class DoclingConverter:
             enriched_content = enriched_content.replace('<!-- image -->', description, 1)
 
         return enriched_content
+
+class DoclingLoader(BaseLoader, metaclass=SingletonABCMeta):
+    def __init__(self, page_sep: str='[PAGE_SEP]', **kwargs) -> None:
+        self.page_sep = page_sep
+        llm_config = kwargs.get('llm_config')
+        self.converter = DoclingConverter(llm_config=llm_config)
+    
+    async def aload_document(self, file_path, metadata: dict = None):
+        content = await self.converter.parse(file_path, page_seperator=self.page_sep)
+        return Document(
+            page_content=content, 
+            metadata=metadata
+        )
     
 class MarkerConverter(metaclass=SingletonMeta):
     def __init__(self) -> None:
@@ -553,6 +569,46 @@ class MarkerLoader(BaseLoader):
         result_dict = dict(zip(img_dict.keys(), results))
 
         return result_dict
+
+class MarkerLoader(BaseLoader):
+    def __init__(self, page_sep: str='------------------------------------------------\n\n', **kwargs) -> None:
+        self.page_sep = page_sep
+        self.converter = PdfConverter(
+            artifact_dict=create_model_dict(),
+            config={
+                    'output_format': 'markdown',
+                    'paginate_output': True,
+                }
+        )
+    
+    async def aload_document(self, file_path, sub_url_path: str = ''):
+        file_path = str(file_path)
+        print(f"==> Loading: {file_path}")
+        render = self.converter(file_path)
+
+        # Get enclosing folder
+        folder = file_path.replace('.pdf', '')
+        os.makedirs(folder, exist_ok=True)
+
+        # Save document
+        with open(file_path.replace('.pdf', '/markdown.md'), 'w', encoding='utf-8') as f:
+            f.write(render.markdown)
+        
+        # Save images
+        img_dict = render.images
+        for key, image in img_dict.items():
+            image.save(os.path.join(folder, key))
+
+
+
+        return Document(
+            page_content=render.markdown, 
+            metadata={
+                'source': str(file_path),
+                'sub_url_path': sub_url_path,
+                'page_sep': self.page_sep
+            }
+        )
 
 
 class DocSerializer:
@@ -652,10 +708,10 @@ async def get_files(path: str | list=True, recursive=True) -> AsyncGenerator:
 
 # TODO create a Meta class that aggregates registery of supported documents from each child class
 LOADERS: Dict[str, BaseLoader] = {
-    '.pdf': DoclingLoader,
-    # '.docx': CustomDocLoader,
-    # '.doc': CustomDocLoader,
-    # '.odt': CustomDocLoader,
+    '.pdf': MarkerLoader, # CustomPyMuPDFLoader, # 
+    '.docx': CustomDocLoader,
+    '.doc': CustomDocLoader,
+    '.odt': CustomDocLoader,
 
     # '.mp4': VideoAudioLoader,
     # '.pptx': CustomPPTLoader,
