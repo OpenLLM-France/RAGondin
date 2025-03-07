@@ -468,7 +468,7 @@ class MarkerLoader(BaseLoader):
     
     async def aload_document(self, file_path, sub_url_path: str = ''):
         file_path = str(file_path)
-        print(f"==> Loading: {file_path}")
+        logger.info(f"Loading {file_path}")
         render = self.converter(file_path)
 
         # Get enclosing folder
@@ -540,7 +540,7 @@ class DocSerializer:
                             file_path=file,
                             sub_url_path=Path(file).absolute().relative_to(self.data_dir) # for the static file server
                         )
-                        print(f"==> Serialized: {str(file)}")
+                        logger.info(f"Serialized {file}")
                         yield doc
                     
 
