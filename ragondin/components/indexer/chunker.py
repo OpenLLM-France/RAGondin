@@ -14,6 +14,7 @@ from langchain.callbacks import StdOutCallbackHandler
 from loguru import logger
 from langchain_core.runnables import RunnableLambda
 from omegaconf import OmegaConf
+from pathlib import Path
 from tqdm.asyncio import tqdm
 
 
@@ -65,7 +66,7 @@ class ChunkContextualizer:
             self.context_generator = (prompt | llm | StrOutputParser()).with_retry(
                     retry_if_exception_type=(Exception,),
                     wait_exponential_jitter=False,
-                    stop_after_attempt=3
+                    stop_after_attempt=2
                 )
     
     async def generate_context(self, first_page: str, prev_chunk: str, chunk: str, source: str, semaphore: asyncio.Semaphore):
@@ -102,7 +103,7 @@ class ChunkContextualizer:
                         semaphore=semaphore
                     )
                 )
-            contexts = await tqdm.gather(*tasks, total=len(tasks), desc="Contextualizing chunks")
+            contexts = await tqdm.gather(*tasks, total=len(tasks), desc=f"Contextualizing chunks of *{Path(source).name}*")
             chunk_format = "chunks' context: {chunk_context}\n\n=> chunk: {chunk}"
             return [chunk_format.format(chunk=chunk.page_content, chunk_context=task) for chunk, task in zip(chunks[1:], contexts)]
 

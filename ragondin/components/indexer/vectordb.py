@@ -23,7 +23,7 @@ class ABCVectorDB(ABC):
         pass
 
     @abstractmethod
-    async def async_add_documents(self, index_name, chunks, embeddings):
+    async def async_add_documents(self, chunks):
         pass
 
     @abstractmethod
@@ -96,7 +96,7 @@ class QdrantDB(ABCVectorDB):
                 sparse_embedding=self.sparse_embeddings,
                 retrieval_mode=self.retrieval_mode,
             ) 
-            self.logger.warning(f"The Collection named `{name}` loaded.")
+            self.logger.warning(f"Collection `{name}` LOADED.")
         else:
             self.vector_store = QdrantVectorStore.construct_instance(
                 embedding=self.embeddings,
@@ -105,7 +105,7 @@ class QdrantDB(ABCVectorDB):
                 client_options={'port': self.port, 'host':self.host},
                 retrieval_mode=self.retrieval_mode,
             )
-            self.logger.info(f"As the collection `{name}` is non-existant, it's created.")
+            self.logger.debug(f"Collection `{name}` CREATED.")
 
 
     async def get_collections(self) -> list[str]:
@@ -121,9 +121,7 @@ class QdrantDB(ABCVectorDB):
         # Gather all search tasks concurrently
         search_tasks = [self.async_search(query=query, top_k=top_k_per_query, similarity_threshold=similarity_threshold) for query in queries]
         retrieved_results = await asyncio.gather(*search_tasks)
-
-        # s = sum(retrieved_results, [])
-
+        
         retrieved_chunks = {}
         # Process the retrieved documents
         for retrieved in retrieved_results:
@@ -133,84 +131,9 @@ class QdrantDB(ABCVectorDB):
         return list(retrieved_chunks.values())
     
 
-    async def async_add_documents(self, 
-            doc_generator, 
-            chunker: ABCChunker, 
-            document_batch_size: int=6,
-            max_concurrent_gpu_ops: int=5,
-            max_queued_batches: int=2
-        ) -> None:
-        """
-        Asynchronously process documents through a GPU-based chunker using a producer-consumer pattern.
-        
-        This implementation maintains high GPU utilization by preparing batches ahead of time while
-        the current batch is being processed. It uses a queue system to manage document batches and
-        controls GPU memory usage through semaphores.
-
-        Args:
-            doc_generator: An async iterator yielding documents to process
-            chunker (BaseChunker): The chunker instance that will split documents using GPU or CPU
-            document_batch_size (int): Number of documents to process in each batch. Default: 6
-            max_concurrent_gpu_ops (int): Maximum number of concurrent GPU operations. Default: 5
-            max_queued_batches (int): Number of batches to prepare ahead in queue. Default: 2
-        """
-        gpu_semaphore = asyncio.Semaphore(max_concurrent_gpu_ops) # Only allow max_concurrent_gpu_ops GPU operation at a time
-        batch_queue = asyncio.Queue(maxsize=max_queued_batches)
-
-        async def chunk(doc, gpu_semaphore):
-            async with gpu_semaphore:
-                chunks = await chunker.split_document(doc) # uses GPU
-                self.logger.info(f"Processed doc: {doc.metadata['source']}")
-                return chunks
-
-        async def producer():
-            current_batch = []
-            try:
-                async for doc in doc_generator:
-                    current_batch.append(doc)
-                    if len(current_batch) == document_batch_size:
-                        await batch_queue.put(current_batch)
-                        current_batch = []
-                
-                # Put remaining documents
-                if current_batch:
-                    await batch_queue.put(current_batch)
-            
-            finally:
-                # Send one None for each consumer
-                for _ in range(max_queued_batches):
-                    await batch_queue.put(None)
-
-
-        async def consumer(consumer_id=0):
-            while True:
-                batch = await batch_queue.get()
-                if batch is None:  # End signal
-                    batch_queue.task_done()
-                    self.logger.info(f"Consumer {consumer_id} ended")
-                    break
-                
-                tasks = [chunk(doc, gpu_semaphore) for doc in batch]
-                chunks_list = await asyncio.gather(*tasks, return_exceptions=True)
-                all_chunks = sum(chunks_list, [])
-                
-                if all_chunks:
-                    await self.vector_store.aadd_documents(all_chunks)
-                    self.logger.info("INSERTED")
-                    
-                batch_queue.task_done()
-                
-        # Run producer and consumer concurrently
-        producer_task = asyncio.create_task(producer())
-        consumer_tasks = [asyncio.create_task(consumer(consumer_id=i)) for i in range(max_queued_batches)]
-
-        # Wait for producer to complete and queue to be empty
-        await producer_task
-        await batch_queue.join()
-        
-        # Wait for all consumers to complete
-        await asyncio.gather(*consumer_tasks)
-                
+    async def async_add_documents(self, chunks: list[Document]) -> None:
+        await self.vector_store.aadd_documents(chunks)
+        self.logger.debug("CHUNKS INSERTED")
 
 
 class ConnectorFactory:
@@ -225,7 +148,7 @@ class ConnectorFactory:
         name = dbconfig.pop("connector_name")
         vdb_cls = ConnectorFactory.CONNECTORS.get(name)
         if not vdb_cls:
-            raise ValueError(f"VectorDB '{name}' is not supported.")
+            raise ValueError(f"VECTORDB '{name}' is not supported.")
 
         dbconfig['embeddings'] = embeddings
         dbconfig['logger'] = logger

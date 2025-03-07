@@ -296,7 +296,7 @@ class CustomDocLoader(BaseLoader):
         )
     
 
-class DoclingConverter: # (metaclass=SingletonMeta):
+class DoclingConverter(metaclass=SingletonMeta):
     def __init__(self, llm_config=None):
         try:
             from docling.document_converter import DocumentConverter
@@ -331,7 +331,7 @@ class DoclingConverter: # (metaclass=SingletonMeta):
         )
 
         pipeline_options.accelerator_options = AcceleratorOptions(
-            num_threads=6, device=AcceleratorDevice.AUTO
+            num_threads=12, device=AcceleratorDevice.AUTO
         )
 
         model_settings = {
@@ -371,7 +371,7 @@ class DoclingConverter: # (metaclass=SingletonMeta):
                     },
                     {
                         "type": "text", 
-                        "text": """Provide a complete, structured and precise description of this image or figure in the same language (french) as its content. If the image contains tables, render them in markdown."""
+                        "text": """Provide a concise complete, structured and precise description of this image or figure in the same language (french) as its content. If the image contains tables, render them in markdown."""
                     }
                 ]
             )
@@ -406,7 +406,7 @@ class DoclingConverter: # (metaclass=SingletonMeta):
                 self.describe_imgage(idx, picture, semaphore)
             )
         try:
-            results = await tqdm.gather(*tasks)  # asyncio.gather(*tasks)
+            results = await tqdm.gather(*tasks, desc='Captioning imgs')  # asyncio.gather(*tasks)
         except asyncio.CancelledError:
             for task in tasks:
                 task.cancel()
@@ -423,7 +423,7 @@ class DoclingConverter: # (metaclass=SingletonMeta):
         n_pages = len(result.pages)
         s = f'{page_seperator}'.join([result.document.export_to_markdown(page_no=i) for i in range(1, n_pages+1)])
         pictures = result.document.pictures
-        descriptions = await self.get_captions(pictures)
+        descriptions = await self.get_captions(pictures, n_semaphores=6)
         enriched_content = s
         for description in descriptions:
             enriched_content = enriched_content.replace('<!-- image -->', description, 1)
@@ -459,69 +459,80 @@ class DocSerializer:
         self.kwargs = kwargs
     
     # TODO: Add delete class obj
-    async def serialize_document(self, path: str):
-        p = AsyncPath(path)
-        if await p.is_file():
+    async def serialize_document(self, path: str, semaphore: asyncio.Semaphore):
+        async with semaphore:
+            p = AsyncPath(path)
             type_ = p.suffix
             loader_cls: BaseLoader = LOADERS.get(type_)
-            logger.info(f'Loading {type_} files.')
-
+            logger.debug(f'LOADING: {p.name}')
             loader = loader_cls(**self.kwargs)  # Propagate kwargs here!
             doc: Document = await loader.aload_document(
                 file_path=path,
-                sub_url_path=Path(path).absolute().relative_to(self.data_dir) # for the static file server
+                sub_url_path=Path(path).resolve().relative_to(self.data_dir) # for the static file server
             )
-            yield doc
+            logger.debug(f"{p.name}: SERIALIZED")
+            return doc
 
-    async def serialize_documents(self, path: str | Path | list[str], recursive=True) -> AsyncGenerator[Document, None]:
-        if isinstance(path, list): # list of file paths
-            for file_path in path:
-                async for doc in self.serialize_document(file_path):
-                    yield doc
-        else:
-            p = AsyncPath(path)
+    async def serialize_documents(self, path: str | Path | list[str], recursive=True, n_concurrent_ops=3) -> AsyncGenerator[Document, None]:
+        semaphore = asyncio.Semaphore(n_concurrent_ops)
+        tasks = []
+        async for file in get_files(path, recursive):
+            tasks.append(
+                self.serialize_document(
+                    file,
+                    semaphore=semaphore
+                )
+            )
+        
+        for task in asyncio.as_completed(tasks):
+            doc = await task 
+            yield doc # yield doc as soon as it is ready
+
+async def get_files(path: str | list=True, recursive=True) -> AsyncGenerator:
+    """Get files from a directory or a list of files"""
+
+    if isinstance(path, list):
+        for file_path in path:
+            p = AsyncPath(file_path)
             if await p.is_file():
-                async for doc in self.serialize_document(path):
-                    yield doc
-
-            is_dir = await p.is_dir()
-            if is_dir:
-                for type, loader_cls in LOADERS.items():
-                    pattern = f"**/*{type}"
-                    logger.info(f'Loading {type} files.')
-                    files = get_files(path, pattern, recursive) 
-                    
-                    async for file in files:
-                        loader = loader_cls(**self.kwargs)
-                        doc: Document = await loader.aload_document(
-                            file_path=file,
-                            sub_url_path=Path(file).absolute().relative_to(self.data_dir) # for the static file server
-                        )
-                        print(f"==> Serialized: {str(file)}")
-                        yield doc
-                    
-
-
-async def get_files(path, pattern, recursive) -> AsyncGenerator:
-    p = AsyncPath(path)
-    async for file in (p.rglob(pattern) if recursive else p.glob(pattern)):
-        yield file
-
+                type_ = p.suffix
+                if type_ in SUPPORTED_TYPES: # check the file type
+                    yield p
+                else:
+                    logger.warning(f"Unsupported file type: {type_}: {p.name} will not be indexed.")
+    
+    else:
+        p = AsyncPath(path)
+        if await p.is_dir():
+            for pat in PATTERNS:
+                async for file in (p.rglob(pat) if recursive else p.glob(pat)):
+                    yield file
+        elif await p.is_file():
+            type_ = p.suffix
+            if type_ in SUPPORTED_TYPES: # check the file type
+                yield p
+            else:
+                logger.warning(f"Unsupported file type: {type_}: {p.name} will not be indexed.")
+        else:
+            raise ValueError(f"Path {path} is neither a file nor a directory")
+            
 
 
 # TODO create a Meta class that aggregates registery of supported documents from each child class
 LOADERS: Dict[str, BaseLoader] = {
     '.pdf': DoclingLoader, # CustomPyMuPDFLoader, # 
-    '.docx': CustomDocLoader,
-    '.doc': CustomDocLoader,
-    '.odt': CustomDocLoader,
+    # '.docx': CustomDocLoader,
+    # '.doc': CustomDocLoader,
+    # '.odt': CustomDocLoader,
 
     # '.mp4': VideoAudioLoader,
-    '.pptx': CustomPPTLoader,
-    '.txt': CustomTextLoader,
+    # '.pptx': CustomPPTLoader,
+    # '.txt': CustomTextLoader,
     #'.html': CustomHTMLLoader
 }
 
+SUPPORTED_TYPES = LOADERS.keys()
+PATTERNS = [f'**/*{type_}' for type_ in SUPPORTED_TYPES]
 
 # if __name__ == "__main__":
 #     async def main():
