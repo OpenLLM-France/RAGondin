@@ -627,7 +627,7 @@ class MarkerLoader(BaseLoader):
     
     async def aload_document(self, file_path, sub_url_path: str = ''):
         file_path = str(file_path)
-        print(f"==> Loading: {file_path}")
+        logger.info(f"Loading {file_path}")
         render = self.converter(file_path)
 
         # Get enclosing folder
