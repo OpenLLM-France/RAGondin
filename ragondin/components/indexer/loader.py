@@ -617,6 +617,7 @@ class MarkerLoader(BaseLoader):
 class MarkerLoader(BaseLoader):
     def __init__(self, page_sep: str='------------------------------------------------\n\n', **kwargs) -> None:
         self.page_sep = page_sep
+        llm_config = kwargs.get('llm_config')
         self.converter = PdfConverter(
             artifact_dict=create_model_dict(),
             config={
@@ -624,33 +625,90 @@ class MarkerLoader(BaseLoader):
                     'paginate_output': True,
                 }
         )
-    
+        model_settings = {
+            'temperature': 0.2,
+            'max_retries': 3,
+            'timeout': 60,
+        }
+        settings: dict = llm_config
+        settings.update(model_settings)
+
+        self.vlm_endpoint = ChatOpenAI(**settings).with_retry(stop_after_attempt=2)
+        self.min_width_pixels = 100  # minimum width in pixels
+        self.min_height_pixels = 100  # minimum height in pixels
+
+    async def get_image_description(self, image):
+        width, height = image.size
+
+        buffered = BytesIO()
+        image.save(buffered, format="PNG")
+        img_b64 = base64.b64encode(buffered.getvalue()).decode()
+        image_description = ""
+
+        message = HumanMessage(
+            content=[
+                {
+                    "type": "image_url",
+                    "image_url": {
+                        'url': f"data:image/png;base64,{img_b64}" #f"{picture.image.uri.path}" #
+                    },
+                },
+                {
+                    "type": "text", 
+                    "text": """Provide a complete, structured and precise description of this image or figure in the same language (french) as its content. If the image contains tables, render them in markdown."""
+                }
+            ]
+        )
+        try:
+            if (width > self.min_width_pixels and height > self.min_height_pixels):
+                response = await self.vlm_endpoint.ainvoke([message])
+                image_description = response.content
+            #     img.save(f"./temp_img/figure_page_{page_no}_{img.width}X{img.height}.png")
+            # else:
+            #     img.save(f"./temp_img/no_figure_page_{page_no}_{img.width}X{img.height}.png")
+
+        except Exception as e:
+            logger.error(f"Error while generating image description: {e}")
+
+        # Convert image path to markdown format and combine with description
+        if image_description:
+            markdown_content = (
+                f"\nDescription de l'image:\n"
+                f"{image_description}\n"
+            )
+        else:
+            markdown_content = ''
+            
+        return markdown_content
+
     async def aload_document(self, file_path, sub_url_path: str = ''):
         file_path = str(file_path)
         logger.info(f"Loading {file_path}")
+        start = time.time()
         render = self.converter(file_path)
+        conversion_time = time.time() - start
+        logger.info(f"Markdown conversion time: {conversion_time:.2f} s.")
 
-        # Get enclosing folder
-        folder = file_path.replace('.pdf', '')
-        os.makedirs(folder, exist_ok=True)
+        text = render.markdown
 
-        # Save document
-        with open(file_path.replace('.pdf', '/markdown.md'), 'w', encoding='utf-8') as f:
-            f.write(render.markdown)
-        
-        # Save images
+        # Parse and replace images with llm based descriptions
+        # Find all instances of markdown image tags
         img_dict = render.images
-        for key, image in img_dict.items():
-            image.save(os.path.join(folder, key))
+        logger.info(f"Found {len(img_dict)} images in the document.")
+        for key, image in tqdm(img_dict.items(), desc="Processing images", leave=True):
+            desc = await self.get_image_description(image)
+            tag = f'![]({key})'
+            text = text.replace(tag, desc)
 
-
+        end = time.time()
+        logger.info(f"Total conversion time for file {file_path}: {end - start:.2f} s.")
 
         return Document(
-            page_content=render.markdown, 
+            page_content=text, 
             metadata={
                 'source': str(file_path),
                 'sub_url_path': sub_url_path,
-                'page_sep': self.page_sep
+                'page_sep': self.page_sep,
             }
         )
 
@@ -752,7 +810,7 @@ async def get_files(path: str | list=True, recursive=True) -> AsyncGenerator:
 
 # TODO create a Meta class that aggregates registery of supported documents from each child class
 LOADERS: Dict[str, BaseLoader] = {
-    '.pdf': MarkerLoader, # CustomPyMuPDFLoader, # 
+    '.pdf': DoclingLoader, # CustomPyMuPDFLoader, # 
     '.docx': CustomDocLoader,
     '.doc': CustomDocLoader,
     '.odt': CustomDocLoader,
