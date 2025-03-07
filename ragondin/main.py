@@ -15,7 +15,7 @@ L = [
 async def main():
     start = time.time()
     # await indexer.add_files2vdb(path='./data/tuto/')
-    await indexer.add_files2vdb(L)
+    await indexer.add_files2vdb('../data/S2_RAG/Sources RAG/AI')
     # ragPipe = RagPipeline(config=config)
     # # await ragPipe.indexer.add_files2vdb("./app/upload_dir")
     end = time.time()

@@ -27,10 +27,6 @@ os.makedirs(UPLOAD_DIR, exist_ok=True)
 
 config = load_config()
 
-logger.info(f"VectorDB host: {config.vectordb['host']}")
-logger.info(f"VectorDB port: {config.vectordb['port']}")
-
-# indexer = Indexer(config, logger)
 ragPipe = RagPipeline(config=config, vectordb=indexer.vectordb, logger=logger)
 
 class Tags(Enum):

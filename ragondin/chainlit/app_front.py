@@ -44,7 +44,6 @@ def format_elements(sources, only_txt=True):
     for doc in sources:
         url = quote(doc['url'], safe=':/')
         parsed_url = urlparse(doc['url'])
-        logger.info(url)
         doc_name = parsed_url.path.split('/')[-1]
         
         if only_txt:
@@ -70,12 +69,12 @@ def format_elements(sources, only_txt=True):
 @cl.on_chat_start
 async def on_chat_start():
     base_url = get_base_url()
-    logger.info(f"BASE URL: {base_url}")
+    logger.debug(f"BASE URL: {base_url}")
 
     try:
         global history
         history.clear()
-        logger.info("New Chat Started")
+        logger.debug("New Chat Started")
         async with httpx.AsyncClient(timeout=httpx.Timeout(60.0)) as client:
             response = await client.get(url=base_url.format(method='heath_check'))
             print(response.text)

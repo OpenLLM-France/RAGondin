@@ -43,11 +43,10 @@ class BaseRetriever(ABCRetriever):
             ValueError(f"Invalid type. Choose from {CRITERIAS}")
         self.criteria = criteria
         self.logger = logger
-        self.logger.info("Retriever initialized...")
+        self.logger.info("Retriever initialized")
 
 
     async def retrieve(self, question: str, db: ABCVectorDB) -> list[Document]:
-        self.logger.info("Getting relevant documents.")
         chunks = await db.async_search(
             query=question, 
             top_k=self.top_k,
@@ -141,7 +140,7 @@ class HyDeRetriever(BaseRetriever):
         
 
     async def get_hyde(self, question: str):
-        self.logger.info(f"Generating HyDe Document")
+        self.logger.debug(f"Generating HyDe Document")
         hyde_document = await self.generate_hyde.ainvoke({"question": question})
         return hyde_document
     

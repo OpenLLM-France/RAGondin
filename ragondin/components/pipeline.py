@@ -46,7 +46,6 @@ class RagPipeline:
             self.grader = Grader(config, logger=self.logger)
 
         self.rag_mode = config.rag["mode"]
-
         self.chat_history_depth = config.rag["chat_history_depth"]
 
         self._chat_history: deque = deque(maxlen=self.chat_history_depth)
@@ -62,7 +61,6 @@ class RagPipeline:
             `chat_history` (list): The conversation history
         """        
         if self.rag_mode == "SimpleRag": # for the SimpleRag, we don't need the contextualize as questions are treated independently regardless of the chat_history
-            logger.info("Documents retreived...")
             docs = await self.retriever.retrieve(
                 question, 
                 db=self.vectordb
@@ -70,8 +68,6 @@ class RagPipeline:
             contextualized_question = question
 
         if self.rag_mode == "ChatBotRag":
-            logger.info("Contextualizing the question...")
-            
             template = load_sys_template(
                 self.prompts_dir / self.context_pmpt_tmpl # get the prompt for contextualizing
             )
@@ -87,16 +83,14 @@ class RagPipeline:
                 "query": question, 
                 "chat_history": chat_history,
             }
-
-            logger.info("Generating contextualized question for retreival...") 
             contextualized_question = await history_aware_retriever.ainvoke(input_) # TODO: this is the bootleneck, the model answers sometimes instead of reformulating  
-            logger.info("Contextualized question: ", contextualized_question)
-            logger.info("Documents retreived...")
+            logger.debug(f"Query: {contextualized_question}")
 
             docs = await self.retriever.retrieve(
                 contextualized_question, 
                 db=self.vectordb
             )
+            logger.debug(f"{len(docs)} Documents retreived")
             gc.collect()
             torch.cuda.empty_cache()
         return docs, contextualized_question
@@ -111,10 +105,11 @@ class RagPipeline:
         # 1. contextualize the question and retreive relevant documents
         docs, contextualized_question = await self.get_contextualized_docs(question, chat_history) 
 
-        # grade and filter irrelevant docs
-        docs = await self.grader.grade_docs(user_input=contextualized_question, docs=docs) if self.grader else docs
-
+        
         if docs:
+            # grade and filter irrelevant docs
+            docs = await self.grader.grade_docs(user_input=contextualized_question, docs=docs) if self.grader else docs
+
             # 2. rerank documents is asked
             if self.reranker:
                 docs = await self.reranker.rerank(contextualized_question, chunks=docs, k=self.reranker_top_k)

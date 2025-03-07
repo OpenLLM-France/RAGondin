@@ -23,7 +23,7 @@ class Reranker:
         # Semaphore to limit concurrent GPU operations
         self.semaphore = asyncio.Semaphore(5)  # Only allow 5 GPU operation at a time
         self.logger = logger
-        self.logger.info("Reranker initialized...")
+        self.logger.debug("Reranker initialized...")
 
     async def rerank(self, question: str, chunks: list[Document], k: int = 5) -> list[Document]:
         """
@@ -38,7 +38,7 @@ class Reranker:
             list[str]: Top k reranked document strings.
         """
 
-        logger.info("Reranking documents ...")
+        logger.debug("Reranking documents")
         async with self.semaphore:
             k = min(k, len(chunks)) # k must be <= the number of documents
             ranked_txt = await asyncio.to_thread(
