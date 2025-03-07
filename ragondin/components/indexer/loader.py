@@ -430,11 +430,9 @@ class DoclingLoader(BaseLoader):
             page_content=content, 
             metadata=metadata
         )
-
-class MarkerLoader(BaseLoader):
-    def __init__(self, page_sep: str='------------------------------------------------\n\n', **kwargs) -> None:
-        self.page_sep = page_sep
-        llm_config = kwargs.get('llm_config')
+    
+class MarkerConverter(metaclass=SingletonMeta):
+    def __init__(self) -> None:
         self.converter = PdfConverter(
             artifact_dict=create_model_dict(),
             config={
@@ -442,6 +440,16 @@ class MarkerLoader(BaseLoader):
                     'paginate_output': True,
                 }
         )
+
+    
+    async def convert_to_md(self, file_path):
+        return await asyncio.to_thread(self.converter, str(file_path))
+
+class MarkerLoader(BaseLoader):
+    def __init__(self, page_sep: str='------------------------------------------------\n\n', **kwargs) -> None:
+        self.page_sep = page_sep
+        llm_config = kwargs.get('llm_config')
+        self.converter = MarkerConverter()
         model_settings = {
             'temperature': 0.2,
             'max_retries': 3,
@@ -454,55 +462,56 @@ class MarkerLoader(BaseLoader):
         self.min_width_pixels = 100  # minimum width in pixels
         self.min_height_pixels = 100  # minimum height in pixels
 
-    async def get_image_description(self, image):
-        width, height = image.size
+    async def get_image_description(self, image, semaphore: asyncio.Semaphore):
+        async with semaphore:
+            width, height = image.size
 
-        buffered = BytesIO()
-        image.save(buffered, format="PNG")
-        img_b64 = base64.b64encode(buffered.getvalue()).decode()
-        image_description = ""
+            buffered = BytesIO()
+            image.save(buffered, format="PNG")
+            img_b64 = base64.b64encode(buffered.getvalue()).decode()
+            image_description = ""
 
-        message = HumanMessage(
-            content=[
-                {
-                    "type": "image_url",
-                    "image_url": {
-                        'url': f"data:image/png;base64,{img_b64}" #f"{picture.image.uri.path}" #
+            message = HumanMessage(
+                content=[
+                    {
+                        "type": "image_url",
+                        "image_url": {
+                            'url': f"data:image/png;base64,{img_b64}" #f"{picture.image.uri.path}" #
+                        },
                     },
-                },
-                {
-                    "type": "text", 
-                    "text": """Provide a complete, structured and precise description of this image or figure in the same language (french) as its content. If the image contains tables, render them in markdown."""
-                }
-            ]
-        )
-        try:
-            if (width > self.min_width_pixels and height > self.min_height_pixels):
-                response = await self.vlm_endpoint.ainvoke([message])
-                image_description = response.content
-            #     img.save(f"./temp_img/figure_page_{page_no}_{img.width}X{img.height}.png")
-            # else:
-            #     img.save(f"./temp_img/no_figure_page_{page_no}_{img.width}X{img.height}.png")
-
-        except Exception as e:
-            logger.error(f"Error while generating image description: {e}")
-
-        # Convert image path to markdown format and combine with description
-        if image_description:
-            markdown_content = (
-                f"\nDescription de l'image:\n"
-                f"{image_description}\n"
+                    {
+                        "type": "text", 
+                        "text": """Provide a complete, structured and precise description of this image or figure in the same language (french) as its content. If the image contains tables, render them in markdown."""
+                    }
+                ]
             )
-        else:
-            markdown_content = ''
-            
-        return markdown_content
+            try:
+                if (width > self.min_width_pixels and height > self.min_height_pixels):
+                    response = await self.vlm_endpoint.ainvoke([message])
+                    image_description = response.content
+                #     img.save(f"./temp_img/figure_page_{page_no}_{img.width}X{img.height}.png")
+                # else:
+                #     img.save(f"./temp_img/no_figure_page_{page_no}_{img.width}X{img.height}.png")
+
+            except Exception as e:
+                logger.error(f"Error while generating image description: {e}")
+
+            # Convert image path to markdown format and combine with description
+            if image_description:
+                markdown_content = (
+                    f"\nDescription de l'image:\n"
+                    f"{image_description}\n"
+                )
+            else:
+                markdown_content = ''
+                
+            return markdown_content
 
     async def aload_document(self, file_path, sub_url_path: str = ''):
         file_path = str(file_path)
         logger.info(f"Loading {file_path}")
         start = time.time()
-        render = self.converter(file_path)
+        render = await self.converter.convert_to_md(file_path)
         conversion_time = time.time() - start
         logger.info(f"Markdown conversion time: {conversion_time:.2f} s.")
 
@@ -512,8 +521,10 @@ class MarkerLoader(BaseLoader):
         # Find all instances of markdown image tags
         img_dict = render.images
         logger.info(f"Found {len(img_dict)} images in the document.")
-        for key, image in tqdm(img_dict.items(), desc="Processing images", leave=True):
-            desc = await self.get_image_description(image)
+
+        captions_dict = await self.get_captions(img_dict)
+
+        for key, desc in captions_dict.items():
             tag = f'![]({key})'
             text = text.replace(tag, desc)
 
@@ -528,6 +539,26 @@ class MarkerLoader(BaseLoader):
                 'page_sep': self.page_sep,
             }
         )
+    
+    async def get_captions(self, img_dict, n_semaphores=10):
+        semaphore = asyncio.Semaphore(n_semaphores)
+        tasks = []
+
+        for _, picture in img_dict.items():
+            tasks.append(
+                self.get_image_description(picture, semaphore)
+            )
+        try:
+            results = await tqdm.gather(*tasks, desc='Captioning imgs')  # asyncio.gather(*tasks)
+        except asyncio.CancelledError:
+            for task in tasks:
+                task.cancel()
+            
+            raise
+
+        result_dict = dict(zip(img_dict.keys(), results))
+
+        return result_dict
 
 
 class DocSerializer:
