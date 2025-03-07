@@ -10,6 +10,7 @@ services:
     volumes:
       - ./model_weights:/app/model_weights
       - ./data:/app/data # PDF data for RAG
+      - ./ragondin:/app/ragondin
     ports:
       - "${APP_PORT}:8080"
     env_file:

@@ -30,7 +30,7 @@ grader:
 
 verbose:
   verbose: true
-  level: INFO
+  level: DEBUG   # https://stackoverflow.com/questions/2031163/when-to-use-the-different-log-levels
 
 paths:
   prompts_dir: ${oc.env:PROMPTS_DIR, ../prompts}
