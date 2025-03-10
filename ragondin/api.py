@@ -22,8 +22,8 @@ from utils.dependencies import indexer
 APP_DIR = Path.cwd()
 DATA_DIR = APP_DIR / 'data'
 # Directory to store uploaded PDFs
-UPLOAD_DIR = APP_DIR / 'data' / "upload_dir"
-os.makedirs(UPLOAD_DIR, exist_ok=True)
+#UPLOAD_DIR = APP_DIR / 'data' / "upload_dir"
+#os.makedirs(UPLOAD_DIR, exist_ok=True)
 
 config = load_config()
 
@@ -31,7 +31,8 @@ ragPipe = RagPipeline(config=config, vectordb=indexer.vectordb, logger=logger)
 
 class Tags(Enum):
     VDB = "VectorDB operations"
-    LLM = "LLM Calls"
+    LLM = "LLM Calls",
+    INDEXER = "Indexer"
 
 class ChatMsg(BaseModel):
     role: Literal["user", "assistant"]
@@ -92,15 +93,15 @@ async def get_answer(
         headers={"X-Metadata-Sources": src_json},
     )
 
-@app.get("/heath_check/", summary="Toy endpoint to check that the api is up")
-async def heath_check():
+@app.get("/health_check/", summary="Toy endpoint to check that the api is up")
+async def health_check():
     return "RAG API is up."
 
 
 mount_chainlit(app, './chainlit/app_front.py', path="/chainlit") # mount the default front
 
 # Mount the indexer router
-app.include_router(indexer_router, prefix="/indexer")
+app.include_router(indexer_router, prefix="/indexer", tags=[Tags.INDEXER])
 
 
 if __name__ == "__main__":

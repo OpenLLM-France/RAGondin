@@ -7,6 +7,7 @@
 **/*chainlit.md
 .venv/
 qdrant_storage/
+vdb/volumes
 
 # other files and folders
 misc

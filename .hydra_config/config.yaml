@@ -15,10 +15,10 @@ embedder:
   # powerful multilingual model => More language => token's decomposed heavily => More to embed => this model is better than Alibaba NLP models
 
 vectordb:
-  host: ${oc.env:QDRANT_HOST, qdrant}
-  port: ${oc.env:QDRANT_PORT, 6333}
-  connector_name: qdrant
-  collection_name: ${oc.env:COLLECTION_NAME, vdb_test}
+  host: ${oc.env:VDB_HOST, milvus}
+  port: ${oc.env:VDB_PORT, 19530}
+  connector_name: ${oc.env:VDB_CONNECTOR_NAME, milvus}
+  default_collection_name: vdb_test
   hybrid_mode: true
 
 reranker:
@@ -30,7 +30,7 @@ grader:
 
 verbose:
   verbose: true
-  level: DEBUG   # https://stackoverflow.com/questions/2031163/when-to-use-the-different-log-levels
+  level: INFO
 
 paths:
   prompts_dir: ${oc.env:PROMPTS_DIR, ../prompts}
