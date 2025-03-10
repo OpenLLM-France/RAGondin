@@ -70,6 +70,7 @@ class Indexer:
             await asyncio.gather(*consumer_tasks)
 
             self.logger.debug(f"Documents {path} added.")        
+
         except Exception as e:
             raise Exception(f"An exception as occured: {e}")
     
