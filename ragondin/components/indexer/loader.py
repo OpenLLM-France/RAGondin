@@ -20,9 +20,6 @@ from langchain_community.document_loaders import UnstructuredWordDocumentLoader
 from langchain_community.document_loaders import TextLoader
 from langchain_community.document_loaders import UnstructuredHTMLLoader
 from langchain_core.messages import HumanMessage
-from marker.converters.pdf import PdfConverter
-from marker.models import create_model_dict
-from marker.config.parser import ConfigParser
 
 import pymupdf4llm
 from loguru import logger
@@ -50,8 +47,7 @@ import time
 class BaseLoader(ABC):
 
     def __init__(self, **kwargs) -> None:
-        self.config = kwargs.get('config')
-        llm_config = self.config["llm"]
+        llm_config = kwargs.get('llm_config')
         model_settings = {
             'temperature': 0.2,
             'max_retries': 3,
@@ -65,7 +61,7 @@ class BaseLoader(ABC):
         self.min_height_pixels = 100  # minimum height in pixels
 
     @abstractmethod
-    async def aload_document(self, file_path, sub_url_path: str ='', save_md=False):
+    async def aload_document(self, file_path, metadata: dict=None, save_md=False):
         pass
 
     def save_document(self, doc: Document, path: str):
@@ -73,6 +69,55 @@ class BaseLoader(ABC):
         with open(path, 'w', encoding='utf-8') as f:
             f.write(doc.page_content)
 
+    async def get_image_description(self, image, semaphore):
+        """
+        Creates a description for an image using the LLM model defined in the constructor
+        Args:
+            image (PIL.Image): Image to describe
+            semaphore (asyncio.Semaphore): Semaphore to control access to the LLM model
+            Returns:
+            str: Description of the image
+        """
+        async with semaphore:
+            width, height = image.size
+
+            buffered = BytesIO()
+            image.save(buffered, format="PNG")
+            img_b64 = base64.b64encode(buffered.getvalue()).decode()
+            image_description = ""
+
+            message = HumanMessage(
+                content=[
+                    {
+                        "type": "image_url",
+                        "image_url": {
+                            'url': f"data:image/png;base64,{img_b64}" #f"{picture.image.uri.path}" #
+                        },
+                    },
+                    {
+                        "type": "text", 
+                        "text": """Provide a complete, structured and precise description of this image or figure in the same language (french) as its content. If the image contains tables, render them in markdown."""
+                    }
+                ]
+            )
+            try:
+                if (width > self.min_width_pixels and height > self.min_height_pixels):
+                    response = await self.vlm_endpoint.ainvoke([message])
+                    image_description = response.content
+
+            except Exception as e:
+                logger.error(f"Error while generating image description: {e}")
+
+            # Convert image path to markdown format and combine with description
+            if image_description:
+                markdown_content = (
+                    f"\nDescription de l'image:\n"
+                    f"{image_description}\n"
+                )
+            else:
+                markdown_content = ''
+                
+            return markdown_content
     async def get_image_description(self, image, semaphore):
         """
         Creates a description for an image using the LLM model defined in the constructor
@@ -389,6 +434,7 @@ class DoclingConverter:
             num_threads=12, device=AcceleratorDevice.AUTO
         )
 
+
         self.converter = DocumentConverter(
             format_options={
                 InputFormat.PDF: PdfFormatOption(
@@ -396,56 +442,52 @@ class DoclingConverter:
                 )
             }
         )
+    
+    async def convert_to_md(self, file_path) -> ConversionResult:
+        return await asyncio.to_thread(self.converter.convert, str(file_path))
 
-    async def describe_imgage(self, idx, picture: PictureItem, semaphore: asyncio.Semaphore=llmSemaphore):
-        async with semaphore:
-            page_no = picture.prov[0].page_no    
-            img = picture.image.pil_image
-            img_b64 = picture._image_to_base64(pil_image=img)
-            image_description = ""
 
-            message = HumanMessage(
-                content=[
-                    {
-                        "type": "image_url",
-                        "image_url": {
-                            'url': f"data:image/png;base64,{img_b64}" #f"{picture.image.uri.path}" #
-                        },
-                    },
-                    {
-                        "type": "text", 
-                        "text": """Provide a complete, structured and precise description of this image or figure in the same language (french) as its content. If the image contains tables, render them in markdown."""
-                    }
-                ]
-            )
-            try:
-                if (img.width > self.min_width_pixels and img.height > self.min_height_pixels):
-                    response = await self.vlm_endpoint.ainvoke([message])
-                    image_description = response.content
-                #     img.save(f"./temp_img/figure_page_{page_no}_{img.width}X{img.height}.png")
-                # else:
-                #     img.save(f"./temp_img/no_figure_page_{page_no}_{img.width}X{img.height}.png")
+class DoclingLoader(BaseLoader):
+    def __init__(self, page_sep: str='[PAGE_SEP]', **kwargs) -> None:
+        super().__init__(**kwargs)
+        self.page_sep = page_sep
+        llm_config = kwargs.get('llm_config')
+        self.converter = DoclingConverter(llm_config=llm_config)
+    
+    async def aload_document(self, file_path, metadata, save_md=False):
 
-            except Exception as e:
-                logger.error(f"Error while generating image description: {e}")
+        # TODO: get rid of blocking tasks
+        result = await self.converter.convert_to_md(file_path)
 
-            # Convert image path to markdown format and combine with description
-            if image_description:
-                markdown_content = (
-                    f"\nDescription de l'image:\n"
-                    f"{image_description}\n"
-                )
-            else:
-                markdown_content = ''
-                
-            return markdown_content
+        n_pages = len(result.pages)
+        s = f'{self.page_sep}'.join([result.document.export_to_markdown(page_no=i) for i in range(1, n_pages+1)])
 
-    async def get_captions(self, pictures: list[PictureItem]):
+        pictures = result.document.pictures
+        descriptions = await self.get_captions(pictures, n_semaphores=6)
+
+        enriched_content = s
+        for description in descriptions:
+            enriched_content = enriched_content.replace('<!-- image -->', description, 1)
+
+        doc =  Document(
+            page_content=enriched_content, 
+            metadata=metadata
+        )
+
+        if save_md:
+            self.save_document(Document(page_content=enriched_content), str(file_path))
+
+        return doc
+        
+        
+    
+    async def get_captions(self, pictures: list[PictureItem], n_semaphores=10):
+        semaphore = asyncio.Semaphore(n_semaphores)
         tasks = []
 
         for picture in pictures:
             tasks.append(
-                self.describe_imgage(idx, picture)
+                self.get_image_description(picture.image.pil_image, semaphore)
             )
         try:
             results = await tqdm.gather(*tasks, desc='Captioning imgs')  # asyncio.gather(*tasks)
@@ -487,6 +529,10 @@ class DoclingLoader(BaseLoader, metaclass=SingletonABCMeta):
     
 class MarkerConverter(metaclass=SingletonMeta):
     def __init__(self) -> None:
+
+        from marker.converters.pdf import PdfConverter
+        from marker.models import create_model_dict
+
         self.converter = PdfConverter(
             artifact_dict=create_model_dict(),
             config={
@@ -494,74 +540,18 @@ class MarkerConverter(metaclass=SingletonMeta):
                     'paginate_output': True,
                 }
         )
-
     
     async def convert_to_md(self, file_path):
         return await asyncio.to_thread(self.converter, str(file_path))
 
 class MarkerLoader(BaseLoader):
     def __init__(self, page_sep: str='------------------------------------------------\n\n', **kwargs) -> None:
+
+        super().__init__(**kwargs)
         self.page_sep = page_sep
-        llm_config = kwargs.get('llm_config')
         self.converter = MarkerConverter()
-        model_settings = {
-            'temperature': 0.2,
-            'max_retries': 3,
-            'timeout': 60,
-        }
-        settings: dict = llm_config
-        settings.update(model_settings)
 
-        self.vlm_endpoint = ChatOpenAI(**settings).with_retry(stop_after_attempt=2)
-        self.min_width_pixels = 100  # minimum width in pixels
-        self.min_height_pixels = 100  # minimum height in pixels
-
-    async def get_image_description(self, image, semaphore: asyncio.Semaphore):
-        async with semaphore:
-            width, height = image.size
-
-            buffered = BytesIO()
-            image.save(buffered, format="PNG")
-            img_b64 = base64.b64encode(buffered.getvalue()).decode()
-            image_description = ""
-
-            message = HumanMessage(
-                content=[
-                    {
-                        "type": "image_url",
-                        "image_url": {
-                            'url': f"data:image/png;base64,{img_b64}" #f"{picture.image.uri.path}" #
-                        },
-                    },
-                    {
-                        "type": "text", 
-                        "text": """Provide a complete, structured and precise description of this image or figure in the same language (french) as its content. If the image contains tables, render them in markdown."""
-                    }
-                ]
-            )
-            try:
-                if (width > self.min_width_pixels and height > self.min_height_pixels):
-                    response = await self.vlm_endpoint.ainvoke([message])
-                    image_description = response.content
-                #     img.save(f"./temp_img/figure_page_{page_no}_{img.width}X{img.height}.png")
-                # else:
-                #     img.save(f"./temp_img/no_figure_page_{page_no}_{img.width}X{img.height}.png")
-
-            except Exception as e:
-                logger.error(f"Error while generating image description: {e}")
-
-            # Convert image path to markdown format and combine with description
-            if image_description:
-                markdown_content = (
-                    f"\nDescription de l'image:\n"
-                    f"{image_description}\n"
-                )
-            else:
-                markdown_content = ''
-                
-            return markdown_content
-
-    async def aload_document(self, file_path, sub_url_path: str = ''):
+    async def aload_document(self, file_path, metadata=None, save_md=False):
         file_path = str(file_path)
         logger.info(f"Loading {file_path}")
         start = time.time()
@@ -585,14 +575,15 @@ class MarkerLoader(BaseLoader):
         end = time.time()
         logger.info(f"Total conversion time for file {file_path}: {end - start:.2f} s.")
 
-        return Document(
+        doc =  Document(
             page_content=text, 
-            metadata={
-                'source': str(file_path),
-                'sub_url_path': sub_url_path,
-                'page_sep': self.page_sep,
-            }
+            metadata=metadata
         )
+
+        if save_md:
+            self.save_document(Document(page_content=text), str(file_path))
+
+        return doc
     
     async def get_captions(self, img_dict, n_semaphores=10):
         semaphore = asyncio.Semaphore(n_semaphores)
@@ -613,104 +604,6 @@ class MarkerLoader(BaseLoader):
         result_dict = dict(zip(img_dict.keys(), results))
 
         return result_dict
-
-class MarkerLoader(BaseLoader):
-    def __init__(self, page_sep: str='------------------------------------------------\n\n', **kwargs) -> None:
-        self.page_sep = page_sep
-        llm_config = kwargs.get('llm_config')
-        self.converter = PdfConverter(
-            artifact_dict=create_model_dict(),
-            config={
-                    'output_format': 'markdown',
-                    'paginate_output': True,
-                }
-        )
-        model_settings = {
-            'temperature': 0.2,
-            'max_retries': 3,
-            'timeout': 60,
-        }
-        settings: dict = llm_config
-        settings.update(model_settings)
-
-        self.vlm_endpoint = ChatOpenAI(**settings).with_retry(stop_after_attempt=2)
-        self.min_width_pixels = 100  # minimum width in pixels
-        self.min_height_pixels = 100  # minimum height in pixels
-
-    async def get_image_description(self, image):
-        width, height = image.size
-
-        buffered = BytesIO()
-        image.save(buffered, format="PNG")
-        img_b64 = base64.b64encode(buffered.getvalue()).decode()
-        image_description = ""
-
-        message = HumanMessage(
-            content=[
-                {
-                    "type": "image_url",
-                    "image_url": {
-                        'url': f"data:image/png;base64,{img_b64}" #f"{picture.image.uri.path}" #
-                    },
-                },
-                {
-                    "type": "text", 
-                    "text": """Provide a complete, structured and precise description of this image or figure in the same language (french) as its content. If the image contains tables, render them in markdown."""
-                }
-            ]
-        )
-        try:
-            if (width > self.min_width_pixels and height > self.min_height_pixels):
-                response = await self.vlm_endpoint.ainvoke([message])
-                image_description = response.content
-            #     img.save(f"./temp_img/figure_page_{page_no}_{img.width}X{img.height}.png")
-            # else:
-            #     img.save(f"./temp_img/no_figure_page_{page_no}_{img.width}X{img.height}.png")
-
-        except Exception as e:
-            logger.error(f"Error while generating image description: {e}")
-
-        # Convert image path to markdown format and combine with description
-        if image_description:
-            markdown_content = (
-                f"\nDescription de l'image:\n"
-                f"{image_description}\n"
-            )
-        else:
-            markdown_content = ''
-            
-        return markdown_content
-
-    async def aload_document(self, file_path, sub_url_path: str = ''):
-        file_path = str(file_path)
-        logger.info(f"Loading {file_path}")
-        start = time.time()
-        render = self.converter(file_path)
-        conversion_time = time.time() - start
-        logger.info(f"Markdown conversion time: {conversion_time:.2f} s.")
-
-        text = render.markdown
-
-        # Parse and replace images with llm based descriptions
-        # Find all instances of markdown image tags
-        img_dict = render.images
-        logger.info(f"Found {len(img_dict)} images in the document.")
-        for key, image in tqdm(img_dict.items(), desc="Processing images", leave=True):
-            desc = await self.get_image_description(image)
-            tag = f'![]({key})'
-            text = text.replace(tag, desc)
-
-        end = time.time()
-        logger.info(f"Total conversion time for file {file_path}: {end - start:.2f} s.")
-
-        return Document(
-            page_content=text, 
-            metadata={
-                'source': str(file_path),
-                'sub_url_path': sub_url_path,
-                'page_sep': self.page_sep,
-            }
-        )
 
 
 class DocSerializer:
@@ -810,7 +703,7 @@ async def get_files(path: str | list=True, recursive=True) -> AsyncGenerator:
 
 # TODO create a Meta class that aggregates registery of supported documents from each child class
 LOADERS: Dict[str, BaseLoader] = {
-    '.pdf': DoclingLoader, # CustomPyMuPDFLoader, # 
+    '.pdf': MarkerLoader, # CustomPyMuPDFLoader, # 
     '.docx': CustomDocLoader,
     '.doc': CustomDocLoader,
     '.odt': CustomDocLoader,
