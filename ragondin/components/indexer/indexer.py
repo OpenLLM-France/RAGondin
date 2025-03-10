@@ -69,7 +69,7 @@ class Indexer:
             # Wait for all consumers to complete
             await asyncio.gather(*consumer_tasks)
 
-            self.logger.info(f"Documents {Path(path).name} added.")
+            self.logger.debug(f"Documents {path} added.")        
         except Exception as e:
             raise Exception(f"An exception as occured: {e}")
     

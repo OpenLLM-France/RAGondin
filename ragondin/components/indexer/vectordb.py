@@ -115,7 +115,8 @@ class MilvusDB(ABCVectorDB):
             embedding_function=self.embeddings,
             auto_id=True,
             index_params=self.index_params,
-            builtin_function=self.sparse_embeddings
+            primary_field="id",
+            #builtin_function=self.sparse_embeddings
         ) 
         self.logger.info(f"The Collection named `{name}` loaded.")
 
@@ -125,14 +126,16 @@ class MilvusDB(ABCVectorDB):
         self._collection_name = name
 
     async def get_collections(self) -> list[str]:
-        return [c.name for c in self.client.list_collections()]
+        return self.client.list_collections()
     
     async def async_search(self, query: str, top_k: int = 5,similarity_threshold: int=0.80, collection_name : Optional[str] = None) -> list[Document]:
         if collection_name is None :
             if self.default_collection_name is None:
                 raise ValueError("Collection name not provided and no default collection name set.")
-            collection_name = self.default_collection_name
-        else :
+            self.collection_name = self.default_collection_name
+        elif not self.collection_exists(collection_name):
+            raise ValueError(f"Collection {collection_name} does not exist.")
+        else :    
             self.collection_name = collection_name
 
         docs_scores = await self.vector_store.asimilarity_search_with_relevance_scores(query=query, k=top_k, score_threshold=similarity_threshold)
@@ -169,9 +172,14 @@ class MilvusDB(ABCVectorDB):
             key = next(iter(filter))
             value = filter[key]
             
-            # Define filter expression in Milvus syntax
-            filter = f"{key} == '{value}'"
-            
+            # Adjust filter expression based on the type of value
+            if isinstance(value, str):
+                filter_expression = f"{key} == '{value}'"  # For strings, enclose in single quotes
+            elif isinstance(value, int):
+                filter_expression = f"{key} == {value}"  # For integers, leave as is
+            else:
+                raise ValueError(f"Unsupported filter value type: {type(value)}")
+                
             # Pagination parameters
             offset = 0
             results = []
@@ -179,8 +187,8 @@ class MilvusDB(ABCVectorDB):
             while True:
                 response = self.client.query(
                     collection_name=collection_name if collection_name else self.default_collection_name,
-                    filter=filter,
-                    output_fields=["pk"],  # Only fetch IDs
+                    filter=filter_expression,
+                    output_fields=["id"],  # Only fetch IDs
                     limit=limit,
                     offset=offset
                 )
@@ -188,11 +196,11 @@ class MilvusDB(ABCVectorDB):
                 if not response:
                     break  # No more results
 
-                results.extend([res["pk"] for res in response])
+                results.extend([res["id"] for res in response])
                 offset += len(response)  # Move offset forward
 
                 if limit == 1:
-                    return [response[0]["pk"]] if response else []                
+                    return [response[0]["id"]] if response else []                
 
             return results  # Return list of result IDs
 
@@ -229,7 +237,7 @@ class MilvusDB(ABCVectorDB):
         """
         Check if a collection exists in Milvus
         """
-        return self.client.collection_exists(collection_name)
+        return self.client.has_collection(collection_name)
 
 
 class QdrantDB(ABCVectorDB):
@@ -323,8 +331,10 @@ class QdrantDB(ABCVectorDB):
         if collection_name is None :
             if self.default_collection_name is None:
                 raise ValueError("Collection name not provided and no default collection name set.")
-            collection_name = self.default_collection_name
-        else :
+            self.collection_name = self.default_collection_name
+        elif not self.collection_exists(collection_name):
+            raise ValueError(f"Collection {collection_name} does not exist.")
+        else :    
             self.collection_name = collection_name
         docs_scores = await self.vector_store.asimilarity_search_with_relevance_scores(query=query, k=top_k, score_threshold=similarity_threshold)
         docs = [doc for doc, score in docs_scores]

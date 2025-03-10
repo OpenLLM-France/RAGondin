@@ -1,6 +1,6 @@
 from loguru import logger
 from typing import Optional, Any, List
-from fastapi import APIRouter, HTTPException, status, File, UploadFile, Depends, Form
+from fastapi import APIRouter, HTTPException, File, UploadFile, Depends, Form
 from fastapi.responses import JSONResponse
 from pathlib import Path
 from components import Indexer
@@ -39,16 +39,15 @@ async def add_files(
             if not isinstance(collection_name, str):
                 raise HTTPException(status_code=400, detail="collection_name must be a string.")
 
-
+        sub_dir = collection_name if collection_name else config.vectordb.default_collection_name
         # Create a temporary directory to store files
-        save_dir = Path(DATA_DIR) / collection_name
+        save_dir = Path(DATA_DIR) / sub_dir
         save_dir.mkdir(parents=True, exist_ok=True)
         
         # Save the uploaded files
         for i, file in enumerate(files):
             file_path = save_dir / Path(file.filename).name
             logger.info(f"Processing file: {file.filename} and saving to {file_path}")
-            logger.info(f"Metadata: {metadata[i]}")
             with open(file_path, "wb") as buffer:
                 buffer.write(await file.read())
             # Now pass the file path to the Indexer
@@ -67,7 +66,7 @@ async def search(query_params: SearchRequest, indexer: Indexer = Depends(get_ind
         collection_name = query_params.collection_name if query_params.collection_name else None
         logger.info(f"Searching for query: {query} in collection: {collection_name}")
         # Perform the search using the Indexer
-        results = await indexer.vectordb.async_search(query, top_k, collection_name)
+        results = await indexer.vectordb.async_search(query=query, top_k=top_k, collection_name=collection_name)
         
         # Transforming the results (assuming they are LangChain documents)
         documents = [{"page_content": doc.page_content, "metadata": doc.metadata} for doc in results]
@@ -75,6 +74,8 @@ async def search(query_params: SearchRequest, indexer: Indexer = Depends(get_ind
         # Return results
         return JSONResponse(content={f"Documents": documents}, status_code=200)
 
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
         # Handle errors
         raise HTTPException(status_code=500, detail=str(e))
