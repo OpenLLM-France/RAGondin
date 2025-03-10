@@ -19,6 +19,7 @@ vectordb:
   port: ${oc.env:VDB_PORT, 19530}
   connector_name: ${oc.env:VDB_CONNECTOR_NAME, milvus}
   default_collection_name: vdb_test
+  hybrid_mode: true
 
 reranker:
   model_name: jinaai/jina-colbert-v2
