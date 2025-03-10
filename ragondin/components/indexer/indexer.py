@@ -1,7 +1,6 @@
 import asyncio
-from omegaconf import OmegaConf
 from .loader import DocSerializer
-from typing import AsyncGenerator
+from typing import AsyncGenerator, Dict, Optional, Union, List
 from .embeddings import HFEmbedder
 from .chunker import ABCChunker, ChunkerFactory, SemanticSplitter, RecursiveSplitter
 from .vectordb import ConnectorFactory, ABCVectorDB
@@ -29,11 +28,11 @@ class Indexer:
         if isinstance(self.chunker, RecursiveSplitter):
                 chunks = await self.chunker.split_document(doc)
         
-        self.logger.debug(f"{Path(doc.metadata['source']).name} CHUNKED")
+        self.logger.info(f"{Path(doc.metadata['source']).name} CHUNKED")
         return chunks
         
         
-    async def add_files2vdb(self, path: str | list[str]):
+    async def add_files2vdb(self, path: str | list[str], metadata: Optional[Dict] = {}, collection_name : Optional[str] = None):
         """Add a files to the vector database in async mode"""
         n_concurrent_loading = 2
         n_concurrent_chunking = 2
@@ -43,7 +42,7 @@ class Indexer:
         batch_size = 3
 
         try:
-            doc_generator: AsyncGenerator[Document, None] = self.serializer.serialize_documents(path, recursive=True, n_concurrent_ops=n_concurrent_loading)
+            doc_generator: AsyncGenerator[Document, None] = self.serializer.serialize_documents(path, metadata= metadata,  recursive=True, n_concurrent_ops=n_concurrent_loading)
 
             # Run producer and consumer concurrently
             batch_queue = asyncio.Queue(maxsize=max_queued_batches)
@@ -56,7 +55,8 @@ class Indexer:
                     consumer(
                         consumer_id=i, batch_queue=batch_queue, 
                         logger=self.logger,
-                        vdb=self.vectordb
+                        vdb=self.vectordb,
+                        collection_name=collection_name
                     )
                 ) for i in range(max_queued_batches)
             ]
@@ -69,9 +69,34 @@ class Indexer:
             # Wait for all consumers to complete
             await asyncio.gather(*consumer_tasks)
 
-            self.logger.debug(f"Documents {Path(path).name} added.")
+            self.logger.info(f"Documents {Path(path).name} added.")
         except Exception as e:
             raise Exception(f"An exception as occured: {e}")
+    
+    def delete_files(self, filters: Union[Dict, List[Dict]], collection_name: Optional[str] = None):
+        deleted_files = []
+        not_found_files = []
+
+
+        for filter in filters:
+            try:
+                key = next(iter(filter))
+                value = filter[key]
+                # Get points associated with the file name
+                points = self.vectordb.get_file_points(filter, collection_name)
+                if not points:
+                    self.logger.info(f"No points found for {key}: {value}")
+                    not_found_files.append(filter)
+                    continue
+
+                # Delete the points
+                self.vectordb.delete_points(points, collection_name)
+                deleted_files.append(filter)
+
+            except Exception as e:
+                self.logger.error(f"Error in `delete_files` for {key} {value}: {e}")
+        
+        return deleted_files, not_found_files
 
     
 async def producer(doc_generator: AsyncGenerator[Document, None], chunker: callable, batch_queue: asyncio.Queue, document_batch_size: int=2, max_queued_batches: int=2, logger=None):
@@ -95,12 +120,12 @@ async def producer(doc_generator: AsyncGenerator[Document, None], chunker: calla
             await batch_queue.put(None)
 
 
-async def consumer(consumer_id, batch_queue: asyncio.Queue, logger, vdb: ABCVectorDB):
+async def consumer(consumer_id, batch_queue: asyncio.Queue, logger, vdb: ABCVectorDB, collection_name: Optional[str] = None):
     while True:
         batch = await batch_queue.get()
         if batch is None:  # End signal
             batch_queue.task_done()
-            logger.debug(f"Consumer {consumer_id} ended")
+            logger.info(f"Consumer {consumer_id} ended")
             break
         
         # tasks = [chunker(doc) for doc in batch]
@@ -109,5 +134,5 @@ async def consumer(consumer_id, batch_queue: asyncio.Queue, logger, vdb: ABCVect
         all_chunks = sum(batch, [])
         
         if all_chunks:
-            await vdb.async_add_documents(all_chunks)          
+            await vdb.async_add_documents(all_chunks, collection_name=collection_name)          
         batch_queue.task_done()

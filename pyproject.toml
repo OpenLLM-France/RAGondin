@@ -16,6 +16,7 @@ dependencies = [
     "langchain-core>=0.3.39",
     "langchain-experimental>=0.3.4",
     "langchain-huggingface>=0.1.2",
+    "langchain-milvus>=0.1.8",
     "langchain-openai>=0.3.7",
     "langchain-qdrant>=0.2.0",
     "llama-index-llms-langchain>=0.6.0",
