@@ -75,7 +75,7 @@ async def on_chat_start():
         history.clear()
         logger.info("New Chat Started")
         async with httpx.AsyncClient(timeout=httpx.Timeout(60.0)) as client:
-            response = await client.get(url=base_url.format(method='heath_check'))
+            response = await client.get(url=base_url.format(method='health_check'))
             print(response.text)
     except:
         logger.warning("Make sur the fastapi is up!!")
