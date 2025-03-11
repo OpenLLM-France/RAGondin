@@ -53,8 +53,8 @@ async def main():
     config = load_config(overrides=args.override)
 
     if args.folder:
-        collection = config.vectordb["default_collection_name"]
-        if config["vectordb"]["enable"]:
+        collection = config.vectordb["collection_name"]
+        if config.vectordb["enable"]:
             logger.warning(f"Data will be upserted to the collection {collection}")
 
         indexer = Indexer(config, logger)
@@ -79,8 +79,8 @@ async def main():
     
 
     if args.list:
-        collection = config.vectordb["default_collection_name"]
-        if config["vectordb"]["enable"]:
+        collection = config.vectordb["collection_name"]
+        if config.vectordb["enable"]:
             logger.warning(f"Data will be upserted to the collection {collection}")
 
         indexer = Indexer(config, logger)
@@ -97,9 +97,5 @@ async def main():
     
 if __name__ == '__main__':
     asyncio.run(main())
-    # Example usage of the -l argument in the command line:
-    # ./manage_collection.py -l file1.txt file2.txt file3.txt -o vectordb.collection_name='vdb95'
 
 # ./manage_collection.py -f app/upload_dir/S2_RAG/ -o vectordb.collection_name='vdb90' -o chunker.breakpoint_threshold_amount=90
-
-# ./manage_collection.py -f app/upload_dir/S2_RAG/ -o vectordb.collection_name='vdb95' -o chunker.breakpoint_threshold_amount=95
