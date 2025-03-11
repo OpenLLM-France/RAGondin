@@ -94,7 +94,6 @@ async def main():
         logger.info(f"Documents loaded to collection named '{collection}'.")
 
 
-    
 if __name__ == '__main__':
     asyncio.run(main())
 

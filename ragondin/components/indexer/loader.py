@@ -44,7 +44,6 @@ import time
 # from langchain_community.document_loaders import UnstructuredHTMLLoader
 
 class BaseLoader(ABC):
-
     def __init__(self, **kwargs) -> None:
         self.config = kwargs.get('config')
         llm_config = self.config["llm"]
@@ -395,7 +394,7 @@ class CustomDocLoader(BaseLoader):
     
 
 class DoclingConverter:
-    def __init__(self, llm_config=None):
+    def __init__(self):
         try:
             from docling.document_converter import DocumentConverter
             from docling.datamodel.document import ConversionResult
@@ -447,7 +446,7 @@ class DoclingConverter:
         return await asyncio.to_thread(self.converter.convert, str(file_path))
 
 
-class DoclingLoader(BaseLoader):
+class DoclingLoader(BaseLoader, metaclass=SingletonABCMeta):
     def __init__(self, page_sep: str='[PAGE_SEP]', **kwargs) -> None:
         super().__init__(**kwargs)
         self.page_sep = page_sep
@@ -480,7 +479,6 @@ class DoclingLoader(BaseLoader):
 
         return doc
         
-        
     
     async def get_captions(self, pictures: list[PictureItem], n_semaphores=10):
         semaphore = asyncio.Semaphore(n_semaphores)
@@ -511,23 +509,9 @@ class DoclingLoader(BaseLoader):
         enriched_content = s
         for description in descriptions:
             enriched_content = enriched_content.replace('<!-- image -->', description, 1)
-
         return enriched_content
     
-class DoclingLoader(BaseLoader, metaclass=SingletonABCMeta):
-    def __init__(self, page_sep: str='[PAGE_SEP]', **kwargs) -> None:
-        self.page_sep = page_sep
-        llm_config = kwargs.get('llm_config')
-        self.converter = DoclingConverter(llm_config=llm_config)
-    
-    async def aload_document(self, file_path, metadata: dict = None):
-        content = await self.converter.parse(file_path, page_seperator=self.page_sep)
-        return Document(
-            page_content=content, 
-            metadata=metadata
-        )
-    
-class MarkerConverter(metaclass=SingletonMeta):
+class MarkerConverter:
     def __init__(self) -> None:
 
         from marker.converters.pdf import PdfConverter
@@ -544,7 +528,7 @@ class MarkerConverter(metaclass=SingletonMeta):
     async def convert_to_md(self, file_path):
         return await asyncio.to_thread(self.converter, str(file_path))
 
-class MarkerLoader(BaseLoader):
+class MarkerLoader(BaseLoader, metaclass=SingletonABCMeta):
     def __init__(self, page_sep: str='------------------------------------------------\n\n', **kwargs) -> None:
 
         super().__init__(**kwargs)
@@ -605,7 +589,6 @@ class MarkerLoader(BaseLoader):
             raise
 
         result_dict = dict(zip(img_dict.keys(), results))
-
         return result_dict
 
 
@@ -706,7 +689,7 @@ async def get_files(path: str | list=True, recursive=True) -> AsyncGenerator:
 
 # TODO create a Meta class that aggregates registery of supported documents from each child class
 LOADERS: Dict[str, BaseLoader] = {
-    '.pdf': DoclingLoader, # CustomPyMuPDFLoader, # 
+    '.pdf': MarkerLoader, # CustomPyMuPDFLoader, # 
     '.docx': CustomDocLoader,
     '.doc': CustomDocLoader,
     '.odt': CustomDocLoader,
