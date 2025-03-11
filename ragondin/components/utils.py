@@ -1,5 +1,12 @@
+from abc import ABCMeta
+import asyncio
 from pathlib import Path
 from langchain_core.documents.base import Document
+
+import asyncio
+from collections import deque
+from typing import Optional
+# from config.config import load_config
 
 class SingletonMeta(type):
     _instances = {}
@@ -9,6 +16,30 @@ class SingletonMeta(type):
             instance = super().__call__(*args, **kwargs)
             cls._instances[cls] = instance
         return cls._instances[cls]
+
+class SingletonABCMeta(ABCMeta, SingletonMeta):
+    pass
+
+
+class LLMSemaphore(metaclass=SingletonMeta):
+    def __init__(self, max_concurrent_ops: int):
+        if max_concurrent_ops <= 0:
+            raise ValueError("max_concurrent_ops must be a positive integer")
+        self.max_concurrent_ops = max_concurrent_ops
+        self._semaphore = asyncio.Semaphore(max_concurrent_ops)
+
+    async def __aenter__(self):
+        await self._semaphore.acquire()
+        return self  # or return a resource if needed
+
+    async def __aexit__(self, exc_type, exc, tb):
+        self._semaphore.release()
+
+    async def acquire(self):
+        await self._semaphore.acquire()
+
+    def release(self):
+        self._semaphore.release()
     
 
 def load_sys_template(file_path: Path) -> tuple[str, str]:
@@ -48,3 +79,6 @@ def format_context(docs: list[Document]) -> str:
             }
         )
     return context, sources
+
+# Global variables
+llmSemaphore = LLMSemaphore(max_concurrent_ops=10)

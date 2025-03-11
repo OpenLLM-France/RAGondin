@@ -16,6 +16,7 @@ from langchain_core.runnables import RunnableLambda
 from omegaconf import OmegaConf
 from pathlib import Path
 from tqdm.asyncio import tqdm
+from ..utils import llmSemaphore
 
 
 class ABCChunker(ABC):
@@ -69,7 +70,7 @@ class ChunkContextualizer:
                     stop_after_attempt=2
                 )
     
-    async def generate_context(self, first_page: str, prev_chunk: str, chunk: str, source: str, semaphore: asyncio.Semaphore):
+    async def generate_context(self, first_page: str, prev_chunk: str, chunk: str, source: str, semaphore: asyncio.Semaphore=llmSemaphore):
         async with semaphore:
             try:
                 return await self.context_generator.ainvoke(
@@ -90,7 +91,6 @@ class ChunkContextualizer:
         
         try:
             tasks = []
-            semaphore = asyncio.Semaphore(n_concurrent_request)
             for i in range(1, len(chunks)):
                 prev_chunk = chunks[i-1]
                 curr_chunk = chunks[i]
@@ -100,7 +100,6 @@ class ChunkContextualizer:
                         prev_chunk=prev_chunk.page_content,
                         chunk=curr_chunk.page_content,
                         source=source,
-                        semaphore=semaphore
                     )
                 )
             contexts = await tqdm.gather(*tasks, total=len(tasks), desc=f"Contextualizing chunks of *{Path(source).name}*")

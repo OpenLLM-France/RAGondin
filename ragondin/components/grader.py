@@ -5,12 +5,13 @@ from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.documents.base import Document
 import asyncio
 from .llm import LLM
+from .utils import llmSemaphore
 
-sys_prompt = """You are an expert at carefully judging documents' relevancy with respect to a user query/input."""
+sys_prompt = """You are an expert at carefully judging documents' relevancy with respect to user's query."""
 class DocumentGrade(BaseModel):
     """Evaluates document's relevancy with respect to a user query.
     """
-    relevance_score: Literal['highly_relevant', 'irrelevant'] = Field(
+    relevance_score: Literal['highly_relevant', 'somewhat_relevant', 'irrelevant'] = Field(
         description="Document relevance classification:\n")
 
 
@@ -21,8 +22,8 @@ class Grader:
         self.sllm = llm.with_structured_output(DocumentGrade)
         self.logger = logger
 
-    async def _grade_doc(self, user_input, doc: Document, sem: asyncio.Semaphore):
-        async with sem:
+    async def _grade_doc(self, user_input, doc: Document, semaphore=llmSemaphore):
+        async with semaphore:
             try:
                 query_template = ("""User query: {user_input}\n""" 
                     """Retrieved Document: {content}"""
@@ -51,9 +52,8 @@ class Grader:
         batch_size = min(batch_size, len(docs))
         self.logger.debug(f"{len(docs)} documents to assess relevancy.")
 
-        sem = asyncio.Semaphore(batch_size)
         tasks = [
-            self._grade_doc(user_input=user_input, doc=d, sem=sem) for d in docs
+            self._grade_doc(user_input=user_input, doc=d) for d in docs
         ]
         grades: list[DocumentGrade] = await asyncio.gather(*tasks)
 
