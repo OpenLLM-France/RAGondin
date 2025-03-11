@@ -43,3 +43,6 @@ paths:
 prompt:
   rag_sys_pmpt: rag_sys_prompt_template.txt # rag_sys_pmpt_tmpl_ifa.txt
   context_pmpt_tmpl: contextualize_prompt_template.txt
+
+semaphore:
+  llm_semaphore: ${oc.decode:${oc.env:LLM_SEMAPHORE, 10}}
