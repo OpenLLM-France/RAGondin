@@ -30,7 +30,7 @@ from docling_core.types.doc.document import PictureItem
 from docling.datamodel.document import ConversionResult
 
 from tqdm.asyncio import tqdm
-from ..utils import llmSemaphore
+from ..utils import llmSemaphore, SingletonABCMeta
 
 # from langchain_community.document_loaders import UnstructuredXMLLoader, PyPDFLoader
 # from langchain_community.document_loaders.csv_loader import CSVLoader
@@ -269,7 +269,7 @@ class CustomDocLoader(BaseLoader):
         )
     
 
-class DoclingConverter(metaclass=SingletonMeta):
+class DoclingConverter:
     def __init__(self, llm_config=None):
         try:
             from docling.document_converter import DocumentConverter
@@ -409,7 +409,7 @@ class DoclingConverter(metaclass=SingletonMeta):
         return enriched_content
 
 
-class DoclingLoader(BaseLoader):
+class DoclingLoader(BaseLoader, metaclass=SingletonABCMeta):
     def __init__(self, page_sep: str='[PAGE_SEP]', **kwargs) -> None:
         self.page_sep = page_sep
         llm_config = kwargs.get('llm_config')
@@ -428,7 +428,6 @@ class DocSerializer:
         self.data_dir = data_dir
         self.kwargs = kwargs
     
-    # TODO: Add delete class obj
     async def serialize_document(self, path: str, semaphore: asyncio.Semaphore, metadata: Optional[Dict] = {}):
         p = AsyncPath(path)
         type_ = p.suffix
