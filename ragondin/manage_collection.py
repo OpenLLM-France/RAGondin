@@ -53,7 +53,7 @@ async def main():
     config = load_config(overrides=args.override)
 
     if args.folder:
-        collection = config.vectordb["collection_name"]
+        collection = config.vectordb["default_collection_name"]
         logger.warning(f"Data will be upserted to the collection {collection}")
 
         indexer = Indexer(config, logger)
@@ -79,7 +79,7 @@ async def main():
     
 
     if args.list:
-        collection = config.vectordb["collection_name"]
+        collection = config.vectordb["default_collection_name"]
         logger.warning(f"Data will be upserted to the collection {collection}")
 
         indexer = Indexer(config, logger)
