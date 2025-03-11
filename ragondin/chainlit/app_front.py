@@ -6,8 +6,6 @@ from loguru import logger
 import json
 import httpx
 
-APP_DIR = Path.cwd().absolute()
-
 headers = {
     "accept": "application/json", 
     "Content-Type": "application/json"
@@ -103,7 +101,7 @@ async def on_message(message: cl.Message):
                 sources = json.loads(metadata_sources)
 
                 if sources:
-                    elements, source_names = format_elements(sources, only_txt=True)
+                    elements, source_names = format_elements(sources, only_txt=False)
                     msg = cl.Message(content="", elements=elements)
                 else:
                     msg = cl.Message(content="")
@@ -129,14 +127,11 @@ if __name__ == "__main__":
     from chainlit.cli import run_chainlit
     run_chainlit(__file__)
 
-# chainlit run app_front.py --host 0.0.0.0 --port 8081 --root-path /chainlit
-
-
 
 ### Code for audio transcription that will be used later
 
-from io import BytesIO
-import torch
+# from io import BytesIO
+# import torch
 # from pydub import AudioSegment
 # import whisperx
 # from chainlit.element import ElementBased

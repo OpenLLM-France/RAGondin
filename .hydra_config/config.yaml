@@ -18,8 +18,12 @@ vectordb:
   host: ${oc.env:VDB_HOST, milvus}
   port: ${oc.env:VDB_PORT, 19530}
   connector_name: ${oc.env:VDB_CONNECTOR_NAME, milvus}
-  default_collection_name: vdb_test
+  collection_name: vdb_test
   hybrid_mode: true
+
+insertion:
+  n_concurrent_loading: 2 # Number of concurrent loading operations (2-3 is recommended, knowing that some loaders use gpu)
+  n_concurrent_chunking: 2 # Number of concurrent chunking operations
 
 reranker:
   model_name: jinaai/jina-colbert-v2
@@ -39,3 +43,6 @@ paths:
 prompt:
   rag_sys_pmpt: rag_sys_prompt_template.txt # rag_sys_pmpt_tmpl_ifa.txt
   context_pmpt_tmpl: contextualize_prompt_template.txt
+
+semaphore:
+  llm_semaphore: ${oc.decode:${oc.env:LLM_SEMAPHORE, 10}}
