@@ -47,4 +47,6 @@ prompt:
 
 loader:
   image_captioning: true
-  
+
+semaphore:
+  llm_semaphore: ${oc.decode:${oc.env:LLM_SEMAPHORE, 10}}

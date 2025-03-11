@@ -6,7 +6,9 @@ from langchain_core.documents.base import Document
 import asyncio
 from collections import deque
 from typing import Optional
-# from config.config import load_config
+from config.config import load_config
+
+config = load_config()
 
 class SingletonMeta(type):
     _instances = {}
@@ -81,4 +83,4 @@ def format_context(docs: list[Document]) -> str:
     return context, sources
 
 # Global variables
-llmSemaphore = LLMSemaphore(max_concurrent_ops=10)
+llmSemaphore = LLMSemaphore(max_concurrent_ops=config.semaphore.llm_semaphore)
