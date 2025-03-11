@@ -31,7 +31,7 @@ from docling.datamodel.document import ConversionResult
 from config import load_config
 
 from tqdm.asyncio import tqdm
-from ..utils import llmSemaphore
+from ..utils import llmSemaphore, SingletonABCMeta
 
 import re
 import base64
@@ -346,7 +346,7 @@ class CustomDocLoader(BaseLoader):
         )
     
 
-class DoclingConverter(metaclass=SingletonMeta):
+class DoclingConverter:
     def __init__(self, llm_config=None):
         try:
             from docling.document_converter import DocumentConverter
@@ -560,7 +560,6 @@ class DocSerializer:
         self.data_dir = data_dir
         self.kwargs = kwargs
     
-    # TODO: Add delete class obj
     async def serialize_document(self, path: str, semaphore: asyncio.Semaphore, metadata: Optional[Dict] = {}):
         p = AsyncPath(path)
         type_ = p.suffix

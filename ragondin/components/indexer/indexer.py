@@ -23,17 +23,15 @@ class Indexer(metaclass=SingletonMeta):
 
         self.n_concurrent_loading = config.insertion.get("n_concurrent_loading", 2) # Number of concurrent loading operations
         self.n_concurrent_chunking = config.insertion.get("n_concurrent_chunking", 2) # Number of concurrent chunking operations
-        self.max_queued_batches = config.insertion.get("max_queued_batches", 4) # Maximum number of batches that can be queued
-        self.batch_size = config.insertion.get("batch_size", 3) # Number of documents in each batch for vdb insertion
-    
+        self.enable_insertion = self.config.vectordb["enable"]
+
     async def chunk(self, doc, gpu_semaphore: asyncio.Semaphore) -> AsyncGenerator[Document, None]:
         if isinstance(self.chunker, SemanticSplitter):
             async with gpu_semaphore:
                 chunks = await self.chunker.split_document(doc)
-        
         else:
             chunks = await self.chunker.split_document(doc)
-        
+
         self.logger.info(f"{Path(doc.metadata['source']).name} CHUNKED")
         return chunks
         
@@ -41,53 +39,32 @@ class Indexer(metaclass=SingletonMeta):
     async def add_files2vdb(self, path: str | list[str], metadata: Optional[Dict] = {}, collection_name : Optional[str] = None):
         """Add a files to the vector database in async mode"""
         gpu_semaphore = asyncio.Semaphore(self.n_concurrent_chunking) # Only allow max_concurrent_gpu_ops GPU operation at a time
-        doc_generator: AsyncGenerator[Document, None] = self.serializer.serialize_documents(path, recursive=True, n_concurrent_ops=self.n_concurrent_loading)
-        batch_queue = asyncio.Queue(maxsize=self.max_queued_batches)
+        doc_generator: AsyncGenerator[Document, None] = self.serializer.serialize_documents(path, metadata=metadata, recursive=True, n_concurrent_ops=self.n_concurrent_loading)
 
+        chunk_tasks = []
         try:
-            producer_task = asyncio.create_task(
-                producer(doc_generator, lambda x: self.chunk(x, gpu_semaphore), batch_queue, document_batch_size=batch_size, max_queued_batches=max_queued_batches, logger=self.logger)
-            )
+            async for doc in doc_generator:
+                task = asyncio.create_task(self.chunk(doc, gpu_semaphore))
+                chunk_tasks.append(task)
 
-            consumer_tasks = [
-                asyncio.create_task(
-                    consumer(
-                        consumer_id=i, batch_queue=batch_queue, 
-                        logger=self.logger,
-                        vdb=self.vectordb if self.config["vectordb"]["enable"] else None,
-                        collection_name=collection_name
-                    )
-                ) for i in range(max_queued_batches)
-            ]
+            # Await all tasks concurrently
+            results = await asyncio.gather(*chunk_tasks)
+            all_chunks = sum(results, [])
 
-            # Wait for producer to complete and queue to be empty
-            await producer_task
-            
-            # Wait for queue to be empty and all tasks to be marked as done
-            await batch_queue.join()
+            if all_chunks:
+                if self.enable_insertion:
+                    await self.vectordb.async_add_documents(all_chunks, collection_name=collection_name)
+                    self.logger.debug(f"Documents {path} added.")
+                else:
+                    self.logger.debug(f"Documents {path} handled but not added to the database.")
 
-            await asyncio.gather(*consumer_tasks)
-
-            if self.config["vectordb"]["enable"]:
-                self.logger.debug(f"Documents {path} added.")
-            else:
-                self.logger.debug(f"Documents {path} handled but not added to the database.")        
-
+        
         except Exception as e:
             self.logger.error(f"An exception as occured: {e}")
-
-            # Cancel all tasks in case of error
-            producer_task.cancel()
-            for task in consumer_tasks:
-                task.cancel()
-            raise
             raise Exception(f"An exception as occured: {e}")
-    
-
     def delete_files(self, filters: Union[Dict, List[Dict]], collection_name: Optional[str] = None):
         deleted_files = []
         not_found_files = []
-
         if self.config["vectordb"]["enable"] == False:
             self.logger.error("Vector database is not enabled, however, the delete_files method was called.")
             return deleted_files, not_found_files
@@ -111,42 +88,3 @@ class Indexer(metaclass=SingletonMeta):
                 self.logger.error(f"Error in `delete_files` for {key} {value}: {e}")
         
         return deleted_files, not_found_files
-
-
-async def producer(doc_generator: AsyncGenerator[Document, None], chunker: callable, batch_queue: asyncio.Queue, document_batch_size: int=2, max_queued_batches: int=2, logger=None):
-    current_batch = []
-    try:
-        async for doc in doc_generator:
-            chunks = await chunker(doc)
-            current_batch.append(chunks)
-
-            if len(current_batch) == document_batch_size:
-                await batch_queue.put(current_batch)
-                current_batch = []
-        
-        # Put remaining documents
-        if current_batch:
-            await batch_queue.put(current_batch)
-    
-    finally:
-        # Send one None for each consumer
-        for _ in range(max_queued_batches):
-            await batch_queue.put(None)
-
-
-async def consumer(consumer_id, batch_queue: asyncio.Queue, logger, vdb: ABCVectorDB, collection_name: Optional[str] = None):
-    while True:
-        batch = await batch_queue.get()
-        if batch is None:  # End signal
-            batch_queue.task_done()
-            logger.debug(f"Consumer {consumer_id} ended")
-            break
-        
-        # tasks = [chunker(doc) for doc in batch]
-        # chunks_list = await asyncio.gather(*tasks, return_exceptions=True)
-        # all_chunks = sum(chunks_list, [])
-        all_chunks = sum(batch, [])
-        
-        if all_chunks and vdb:
-            await vdb.async_add_documents(all_chunks, collection_name=collection_name)          
-        batch_queue.task_done()
