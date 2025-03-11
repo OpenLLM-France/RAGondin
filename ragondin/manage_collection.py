@@ -54,19 +54,18 @@ async def main():
 
     if args.folder:
         collection = config.vectordb["default_collection_name"]
-        logger.warning(f"Data will be upserted to the collection {collection}")
+        if config["vectordb"]["enable"]:
+            logger.warning(f"Data will be upserted to the collection {collection}")
 
         indexer = Indexer(config, logger)
         
         start = time.time()
         await indexer.add_files2vdb(path=args.folder)
         end = time.time()
-
-        logger.info(f"Execution time: {end - start:.4f} seconds")
-        logger.info(f"Documents loaded to collection named '{collection}'. ")
-    
     
     if collection_name := args.delete:
+        end = 0
+        start = 0
         client = QdrantClient(
             port=config.vectordb["port"],
             host=config.vectordb["host"]
@@ -76,11 +75,13 @@ async def main():
             logger.info(f"collection '{collection_name}' deleted")
         else:
             logger.info(f"This collection doesn't exist")
+            return
     
 
     if args.list:
         collection = config.vectordb["default_collection_name"]
-        logger.warning(f"Data will be upserted to the collection {collection}")
+        if config["vectordb"]["enable"]:
+            logger.warning(f"Data will be upserted to the collection {collection}")
 
         indexer = Indexer(config, logger)
         
@@ -88,7 +89,8 @@ async def main():
         await indexer.add_files2vdb(path=args.list)
         end = time.time()
 
-        logger.info(f"Execution time: {end - start:.4f} seconds")
+    logger.info(f"Execution time: {end - start:.4f} seconds")
+    if config["vectordb"]["enable"]:
         logger.info(f"Documents loaded to collection named '{collection}'.")
 
 

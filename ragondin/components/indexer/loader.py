@@ -28,6 +28,8 @@ from typing import Dict
 from docling_core.types.doc.document import PictureItem
 from docling.datamodel.document import ConversionResult
 
+from config import load_config
+
 from tqdm.asyncio import tqdm
 
 import re
@@ -44,7 +46,8 @@ import time
 class BaseLoader(ABC):
 
     def __init__(self, **kwargs) -> None:
-        llm_config = kwargs.get('llm_config')
+        self.config = kwargs.get('config')
+        llm_config = self.config["llm"]
         model_settings = {
             'temperature': 0.2,
             'max_retries': 3,
@@ -407,8 +410,11 @@ class DoclingLoader(BaseLoader):
         n_pages = len(result.pages)
         s = f'{self.page_sep}'.join([result.document.export_to_markdown(page_no=i) for i in range(1, n_pages+1)])
 
-        pictures = result.document.pictures
-        descriptions = await self.get_captions(pictures, n_semaphores=6)
+        if self.config["loader"]["image_captioning"]:
+            pictures = result.document.pictures
+            descriptions = await self.get_captions(pictures, n_semaphores=6)
+        else:
+            logger.info("Image captioning disabled. Ignoring images.")
 
         enriched_content = s
         for description in descriptions:
@@ -462,20 +468,6 @@ class DoclingLoader(BaseLoader):
             enriched_content = enriched_content.replace('<!-- image -->', description, 1)
 
         return enriched_content
-
-
-class DoclingLoader(BaseLoader):
-    def __init__(self, page_sep: str='[PAGE_SEP]', **kwargs) -> None:
-        self.page_sep = page_sep
-        llm_config = kwargs.get('llm_config')
-        self.converter = DoclingConverter(llm_config=llm_config)
-    
-    async def aload_document(self, file_path, metadata: dict = None):
-        content = await self.converter.parse(file_path, page_seperator=self.page_sep)
-        return Document(
-            page_content=content, 
-            metadata=metadata
-        )
     
 class MarkerConverter(metaclass=SingletonMeta):
     def __init__(self) -> None:
@@ -513,14 +505,17 @@ class MarkerLoader(BaseLoader):
 
         # Parse and replace images with llm based descriptions
         # Find all instances of markdown image tags
-        img_dict = render.images
-        logger.info(f"Found {len(img_dict)} images in the document.")
+        if self.config["loader"]["image_captioning"]:
+            img_dict = render.images
+            logger.info(f"Found {len(img_dict)} images in the document.")
 
-        captions_dict = await self.get_captions(img_dict)
+            captions_dict = await self.get_captions(img_dict)
 
-        for key, desc in captions_dict.items():
-            tag = f'![]({key})'
-            text = text.replace(tag, desc)
+            for key, desc in captions_dict.items():
+                tag = f'![]({key})'
+                text = text.replace(tag, desc)
+        else:
+            logger.info("Image captioning disabled. Ignoring images.")
 
         end = time.time()
         logger.info(f"Total conversion time for file {file_path}: {end - start:.2f} s.")
@@ -631,7 +626,7 @@ async def get_files(path: str | list=True, recursive=True) -> AsyncGenerator:
 
 # TODO create a Meta class that aggregates registery of supported documents from each child class
 LOADERS: Dict[str, BaseLoader] = {
-    '.pdf': MarkerLoader, # CustomPyMuPDFLoader, # 
+    '.pdf': DoclingLoader, # CustomPyMuPDFLoader, # 
     '.docx': CustomDocLoader,
     '.doc': CustomDocLoader,
     '.odt': CustomDocLoader,
