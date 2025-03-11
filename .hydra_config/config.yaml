@@ -18,7 +18,7 @@ vectordb:
   host: ${oc.env:VDB_HOST, milvus}
   port: ${oc.env:VDB_PORT, 19530}
   connector_name: ${oc.env:VDB_CONNECTOR_NAME, milvus}
-  default_collection_name: vdb_test
+  collection_name: vdb_test
   hybrid_mode: true
 
 insertion:

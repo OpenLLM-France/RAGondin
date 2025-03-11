@@ -53,8 +53,6 @@ class ABCVectorDB(ABC):
         pass
 
 
-
-
 class MilvusDB(ABCVectorDB):
     "Concrete class to use a Milvus DB"
 
@@ -63,7 +61,7 @@ class MilvusDB(ABCVectorDB):
             host,
             port,
             embeddings: HuggingFaceBgeEmbeddings | HuggingFaceEmbeddings=None,
-            default_collection_name: str = None,
+            collection_name: str = None,
             logger = None,
             hybrid_mode=True):
 
@@ -94,9 +92,9 @@ class MilvusDB(ABCVectorDB):
         self.vector_store = None
 
         # Set the initial collection name (if provided)
-        if default_collection_name:
-            self.default_collection_name = default_collection_name
-            self.collection_name = default_collection_name
+        if collection_name:
+            self.default_collection_name = collection_name
+            self.collection_name = collection_name
 
     @property
     def collection_name(self):
@@ -250,7 +248,7 @@ class QdrantDB(ABCVectorDB):
             host, 
             port, 
             embeddings: HuggingFaceBgeEmbeddings | HuggingFaceEmbeddings=None,
-            default_collection_name: str = None, 
+            collection_name: str = None, 
             logger = None,
             hybrid_mode=True,
         ):
@@ -283,9 +281,9 @@ class QdrantDB(ABCVectorDB):
         self.vector_store = None
 
         # Set the initial collection name (if provided)
-        if default_collection_name:
-            self.default_collection_name = default_collection_name
-            self.collection_name = default_collection_name
+        if collection_name:
+            self.default_collection_name = collection_name
+            self.collection_name = collection_name
         
     @property
     def collection_name(self):

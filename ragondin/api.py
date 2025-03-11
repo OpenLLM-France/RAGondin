@@ -53,14 +53,6 @@ def source2url(s: dict, static_base_url: str):
     return s
 
 
-@app.get("/collections/",
-          summary="Get existant collections",
-          tags=[Tags.VDB]
-          )
-async def get_collections() -> list[str]:
-    return await indexer.vectordb.get_collections()
-
-
 @app.post("/generate/",
           summary="Given a question, this endpoint allows to generate an answer grounded on the documents in the VectorDB",
           tags=[Tags.LLM]

@@ -16,6 +16,11 @@ DATA_DIR = config.paths.data_dir
 router = APIRouter()
 
 
+@router.get("/collections/", summary="Get existant collections")
+async def get_collections(indexer: Indexer = Depends(get_indexer)) -> list[str]:
+    return await indexer.vectordb.get_collections()
+
+
 @router.post("/add-files/", response_model=None)
 async def add_files(
     files: List[UploadFile] = File(...),
