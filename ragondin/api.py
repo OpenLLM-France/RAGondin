@@ -19,13 +19,14 @@ from chainlit.utils import mount_chainlit
 from routers.indexer import router as indexer_router
 from utils.dependencies import indexer
 
-APP_DIR = Path.cwd()
-DATA_DIR = APP_DIR / 'data'
+#APP_DIR = Path.cwd()
+#DATA_DIR = APP_DIR / 'data'
 # Directory to store uploaded PDFs
 #UPLOAD_DIR = APP_DIR / 'data' / "upload_dir"
 #os.makedirs(UPLOAD_DIR, exist_ok=True)
 
 config = load_config()
+DATA_DIR = Path(config.paths.data_dir)
 
 ragPipe = RagPipeline(config=config, vectordb=indexer.vectordb, logger=logger)
 

@@ -115,7 +115,7 @@ class MilvusDB(ABCVectorDB):
             embedding_function=self.embeddings,
             auto_id=True,
             index_params=self.index_params,
-            primary_field="id",
+            primary_field="_id",
             #builtin_function=self.sparse_embeddings
         ) 
         self.logger.info(f"The Collection named `{name}` loaded.")
@@ -149,7 +149,6 @@ class MilvusDB(ABCVectorDB):
         # Gather all search tasks concurrently
         search_tasks = [self.async_search(query=query, top_k=top_k_per_query, similarity_threshold=similarity_threshold, collection_name=collection_name) for query in queries]
         retrieved_results = await asyncio.gather(*search_tasks)
-
         # Process the retrieved documents
         retrieved_chunks = {}
         for retrieved in retrieved_results:
@@ -188,7 +187,7 @@ class MilvusDB(ABCVectorDB):
                 response = self.client.query(
                     collection_name=collection_name if collection_name else self.default_collection_name,
                     filter=filter_expression,
-                    output_fields=["id"],  # Only fetch IDs
+                    output_fields=["_id"],  # Only fetch IDs
                     limit=limit,
                     offset=offset
                 )
@@ -196,11 +195,11 @@ class MilvusDB(ABCVectorDB):
                 if not response:
                     break  # No more results
 
-                results.extend([res["id"] for res in response])
+                results.extend([res["_id"] for res in response])
                 offset += len(response)  # Move offset forward
 
                 if limit == 1:
-                    return [response[0]["id"]] if response else []                
+                    return [response[0]["_id"]] if response else []                
 
             return results  # Return list of result IDs
 
@@ -347,7 +346,6 @@ class QdrantDB(ABCVectorDB):
         # Gather all search tasks concurrently
         search_tasks = [self.async_search(query=query, top_k=top_k_per_query, similarity_threshold=similarity_threshold, collection_name=collection_name) for query in queries]
         retrieved_results = await asyncio.gather(*search_tasks)
-        
         retrieved_chunks = {}
         # Process the retrieved documents
         for retrieved in retrieved_results:
