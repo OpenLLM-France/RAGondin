@@ -6,9 +6,10 @@ from .chunker import ABCChunker, ChunkerFactory, SemanticSplitter, RecursiveSpli
 from .vectordb import ConnectorFactory, ABCVectorDB
 from langchain_core.documents.base import Document
 from pathlib import Path
+from ..utils import SingletonMeta, SingletonABCMeta
 
 
-class Indexer:
+class Indexer(metaclass=SingletonMeta):
     """This class bridges static files with the vector store database.
     """
     def __init__(self, config, logger, device=None) -> None:
@@ -20,14 +21,18 @@ class Indexer:
         self.logger.info("Indexer initialized...")
         self.config = config
 
+        self.n_concurrent_loading = config.insertion.get("n_concurrent_loading", 2) # Number of concurrent loading operations
+        self.n_concurrent_chunking = config.insertion.get("n_concurrent_chunking", 2) # Number of concurrent chunking operations
+        self.max_queued_batches = config.insertion.get("max_queued_batches", 4) # Maximum number of batches that can be queued
+        self.batch_size = config.insertion.get("batch_size", 3) # Number of documents in each batch for vdb insertion
     
     async def chunk(self, doc, gpu_semaphore: asyncio.Semaphore) -> AsyncGenerator[Document, None]:
         if isinstance(self.chunker, SemanticSplitter):
             async with gpu_semaphore:
                 chunks = await self.chunker.split_document(doc)
         
-        if isinstance(self.chunker, RecursiveSplitter):
-                chunks = await self.chunker.split_document(doc)
+        else:
+            chunks = await self.chunker.split_document(doc)
         
         self.logger.info(f"{Path(doc.metadata['source']).name} CHUNKED")
         return chunks
@@ -35,19 +40,11 @@ class Indexer:
         
     async def add_files2vdb(self, path: str | list[str], metadata: Optional[Dict] = {}, collection_name : Optional[str] = None):
         """Add a files to the vector database in async mode"""
-        n_concurrent_loading = 2
-        n_concurrent_chunking = 2
-        gpu_semaphore = asyncio.Semaphore(n_concurrent_chunking) # Only allow max_concurrent_gpu_ops GPU operation at a time
-
-        max_queued_batches = 4
-        batch_size = 3
+        gpu_semaphore = asyncio.Semaphore(self.n_concurrent_chunking) # Only allow max_concurrent_gpu_ops GPU operation at a time
+        doc_generator: AsyncGenerator[Document, None] = self.serializer.serialize_documents(path, recursive=True, n_concurrent_ops=self.n_concurrent_loading)
+        batch_queue = asyncio.Queue(maxsize=self.max_queued_batches)
 
         try:
-            doc_generator: AsyncGenerator[Document, None] = self.serializer.serialize_documents(path, metadata= metadata,  recursive=True, n_concurrent_ops=n_concurrent_loading)
-
-            # Run producer and consumer concurrently
-            batch_queue = asyncio.Queue(maxsize=max_queued_batches)
-
             producer_task = asyncio.create_task(
                 producer(doc_generator, lambda x: self.chunk(x, gpu_semaphore), batch_queue, document_batch_size=batch_size, max_queued_batches=max_queued_batches, logger=self.logger)
             )
@@ -65,6 +62,8 @@ class Indexer:
 
             # Wait for producer to complete and queue to be empty
             await producer_task
+            
+            # Wait for queue to be empty and all tasks to be marked as done
             await batch_queue.join()
 
             await asyncio.gather(*consumer_tasks)
@@ -75,6 +74,13 @@ class Indexer:
                 self.logger.debug(f"Documents {path} handled but not added to the database.")        
 
         except Exception as e:
+            self.logger.error(f"An exception as occured: {e}")
+
+            # Cancel all tasks in case of error
+            producer_task.cancel()
+            for task in consumer_tasks:
+                task.cancel()
+            raise
             raise Exception(f"An exception as occured: {e}")
     
 
@@ -133,7 +139,7 @@ async def consumer(consumer_id, batch_queue: asyncio.Queue, logger, vdb: ABCVect
         batch = await batch_queue.get()
         if batch is None:  # End signal
             batch_queue.task_done()
-            logger.info(f"Consumer {consumer_id} ended")
+            logger.debug(f"Consumer {consumer_id} ended")
             break
         
         # tasks = [chunker(doc) for doc in batch]

@@ -22,6 +22,12 @@ vectordb:
   hybrid_mode: true
   enable: true
 
+insertion:
+  n_concurrent_loading: 2 # Number of concurrent loading operations (2-3 is recommended, knowing that some loaders use gpu)
+  n_concurrent_chunking: 2 # Number of concurrent chunking operations
+  max_queued_batches: 4 # Maximum number of batches that can be queued
+  batch_size: 3 # Number of documents in each batch for vdb insertion
+
 reranker:
   model_name: jinaai/jina-colbert-v2
   top_k: 7
