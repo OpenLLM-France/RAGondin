@@ -83,7 +83,7 @@ class RagPipeline:
                 "query": question, 
                 "chat_history": chat_history,
             }
-            contextualized_question = await history_aware_retriever.ainvoke(input_) # TODO: this is the bootleneck, the model answers sometimes instead of reformulating  
+            contextualized_question = await history_aware_retriever.ainvoke(input_)  
             logger.debug(f"Query: {contextualized_question}")
 
             docs = await self.retriever.retrieve(
