@@ -57,15 +57,16 @@ class Indexer(metaclass=SingletonMeta):
                     self.logger.debug(f"Documents {path} added.")
                 else:
                     self.logger.debug(f"Documents {path} handled but not added to the database.")
-
         
         except Exception as e:
             self.logger.error(f"An exception as occured: {e}")
             raise Exception(f"An exception as occured: {e}")
+    
+
     def delete_files(self, filters: Union[Dict, List[Dict]], collection_name: Optional[str] = None):
         deleted_files = []
         not_found_files = []
-        if self.config["vectordb"]["enable"] == False:
+        if not self.enable_insertion:
             self.logger.error("Vector database is not enabled, however, the delete_files method was called.")
             return deleted_files, not_found_files
 

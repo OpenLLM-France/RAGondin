@@ -90,7 +90,7 @@ async def main():
         end = time.time()
 
     logger.info(f"Execution time: {end - start:.4f} seconds")
-    if config["vectordb"]["enable"]:
+    if config.vectordb["enable"]:
         logger.info(f"Documents loaded to collection named '{collection}'.")
 
 
