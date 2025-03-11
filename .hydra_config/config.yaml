@@ -9,11 +9,6 @@ embedder:
   type: huggingface
   model_name: HIT-TMG/KaLM-embedding-multilingual-mini-v1
   
-  
-  # Alibaba-NLP/gte-Qwen2-1.5B-instruct
-  # HIT-TMG/KaLM-embedding-multilingual-mini-v1
-  # powerful multilingual model => More language => token's decomposed heavily => More to embed => this model is better than Alibaba NLP models
-
 vectordb:
   host: ${oc.env:VDB_HOST, milvus}
   port: ${oc.env:VDB_PORT, 19530}
@@ -32,7 +27,7 @@ reranker:
   top_k: 7
 
 grader:
-  grade_documents: true
+  grade_documents: false
 
 verbose:
   verbose: true
