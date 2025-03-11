@@ -47,7 +47,7 @@ Supports three retrieval modes:
 ```bash
 git clone https://github.com/OpenLLM-France/RAGondin.git
 cd RAGondin
-git checkout main
+git checkout dev
 ```
 
 #### 2. Create poetry environment and install dependencies:
@@ -55,11 +55,14 @@ Requirements: Python3.12 and poetry installed
 
 ```bash
 # Create a new environment with all dependencies
-
+uv init
 uv sync
 ```
 
-#### 3. Run the fastapi
+#### 3. Create a .env file
+
+Copy the content of **.env.exemple** to **.env**. Then add the **BASE_URL** and **API_KEY**.
+<!-- #### 3. Run the fastapi
 1. **Prepare Qdrant collection** (using `manage_collection.py`):
 > Before running the script, add the files you want to test the rag on the `./data` folder.
 
@@ -85,15 +88,24 @@ To delete a vector db, you can the following command
 ```bash
 # Delete collection
 python3 manage_collection.py -d {collection_name}
-```
+``` -->
 
-2. **Launch the app and the api**:
+#### 4.Deployment
+1. **Load all the documents that you want to extract the informations**
+
+Add the files (word, excel, pptx, pdf, etc.) into the './data/' folder or add it later on the web interface.
+
+2. **Launch the app**:
 ```bash
 # launch the api
-docker-compose up
+docker-compose up --build
 ```
 
-You can access the default frontend to chat with your documents. Navivate to the **'/chainlit'** route.
+3. **Add more files via the web interface**
+
+Type **http://localhost:8080/docs** and go to '/indexer/add-files/', click **Try it out** and add your files.
+
+Once finished, you can access the default frontend to chat with your documents. Navivate to the **http://localhost:8080/chainlit** route.
 
 ## Contribute
 Contributions are welcome! Please follow standard GitHub workflow:
