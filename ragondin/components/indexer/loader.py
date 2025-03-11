@@ -30,6 +30,7 @@ from docling_core.types.doc.document import PictureItem
 from docling.datamodel.document import ConversionResult
 
 from tqdm.asyncio import tqdm
+from ..utils import llmSemaphore, SingletonABCMeta
 
 # from langchain_community.document_loaders import UnstructuredXMLLoader, PyPDFLoader
 # from langchain_community.document_loaders.csv_loader import CSVLoader
@@ -268,7 +269,7 @@ class CustomDocLoader(BaseLoader):
         )
     
 
-class DoclingConverter(metaclass=SingletonMeta):
+class DoclingConverter:
     def __init__(self, llm_config=None):
         try:
             from docling.document_converter import DocumentConverter
@@ -290,10 +291,12 @@ class DoclingConverter(metaclass=SingletonMeta):
             logger.warning(f"Docling is not installed. {e}. Install it using `pip install docling`")
             raise e
         
+        img_scale = 2
         pipeline_options = PdfPipelineOptions(
             do_ocr = True,
             do_table_structure = True,
             generate_picture_images=True,
+            images_scale=img_scale
             # generate_table_images=True,
             # generate_page_images=True
         )
@@ -315,8 +318,8 @@ class DoclingConverter(metaclass=SingletonMeta):
         settings.update(model_settings)
 
         self.vlm_endpoint = ChatOpenAI(**settings).with_retry(stop_after_attempt=2)
-        self.min_width_pixels = 100  # minimum width in pixels
-        self.min_height_pixels = 100  # minimum height in pixels
+        self.min_width_pixels = 100 * img_scale  # minimum width in pixels
+        self.min_height_pixels = 100 * img_scale  # minimum height in pixels
 
         self.converter = DocumentConverter(
             format_options={
@@ -326,7 +329,7 @@ class DoclingConverter(metaclass=SingletonMeta):
             }
         )
 
-    async def describe_imgage(self, idx, picture: PictureItem, semaphore: asyncio.Semaphore):
+    async def describe_imgage(self, idx, picture: PictureItem, semaphore: asyncio.Semaphore=llmSemaphore):
         async with semaphore:
             page_no = picture.prov[0].page_no    
             img = picture.image.pil_image
@@ -343,7 +346,7 @@ class DoclingConverter(metaclass=SingletonMeta):
                     },
                     {
                         "type": "text", 
-                        "text": """Provide a concise complete, structured and precise description of this image or figure in the same language (french) as its content. If the image contains tables, render them in markdown."""
+                        "text": """Provide a complete, structured and precise description of this image or figure in the same language (french) as its content. If the image contains tables, render them in markdown."""
                     }
                 ]
             )
@@ -369,13 +372,12 @@ class DoclingConverter(metaclass=SingletonMeta):
                 
             return markdown_content
 
-    async def get_captions(self, pictures: list[PictureItem], n_semaphores=10):
-        semaphore = asyncio.Semaphore(n_semaphores)
+    async def get_captions(self, pictures: list[PictureItem]):
         tasks = []
 
         for idx, picture in enumerate(pictures):
             tasks.append(
-                self.describe_imgage(idx, picture, semaphore)
+                self.describe_imgage(idx, picture)
             )
         try:
             results = await tqdm.gather(*tasks, desc='Captioning imgs')  # asyncio.gather(*tasks)
@@ -395,7 +397,7 @@ class DoclingConverter(metaclass=SingletonMeta):
         n_pages = len(result.pages)
         s = f'{page_seperator}'.join([result.document.export_to_markdown(page_no=i) for i in range(1, n_pages+1)])
         pictures = result.document.pictures
-        descriptions = await self.get_captions(pictures, n_semaphores=6)
+        descriptions = await self.get_captions(pictures)
         enriched_content = s
         for description in descriptions:
             enriched_content = enriched_content.replace('<!-- image -->', description, 1)
@@ -407,7 +409,7 @@ class DoclingConverter(metaclass=SingletonMeta):
         return enriched_content
 
 
-class DoclingLoader(BaseLoader):
+class DoclingLoader(BaseLoader, metaclass=SingletonABCMeta):
     def __init__(self, page_sep: str='[PAGE_SEP]', **kwargs) -> None:
         self.page_sep = page_sep
         llm_config = kwargs.get('llm_config')
@@ -426,22 +428,44 @@ class DocSerializer:
         self.data_dir = data_dir
         self.kwargs = kwargs
     
-    # TODO: Add delete class obj
     async def serialize_document(self, path: str, semaphore: asyncio.Semaphore, metadata: Optional[Dict] = {}):
-        async with semaphore:
-            p = AsyncPath(path)
-            type_ = p.suffix
-            loader_cls: BaseLoader = LOADERS.get(type_)
+        p = AsyncPath(path)
+        type_ = p.suffix
+        loader_cls: BaseLoader = LOADERS.get(type_)
+        sub_url_path = Path(path).resolve().relative_to(self.data_dir) # for the static file server
+    
+        if type_ == '.pdf': # for loaders that uses gpu
+            async with semaphore:
+                logger.debug(f'LOADING: {p.name}')
+                loader = loader_cls(**self.kwargs)
+                metadata={
+                    'source': str(path),
+                    'file_name': p.name,
+                    'sub_url_path': str(sub_url_path),
+                    'page_sep': loader.page_sep,
+                    **metadata
+                }
+                doc: Document = await loader.aload_document(
+                    file_path=path,
+                    metadata=metadata
+                )
+        else:
             logger.debug(f'LOADING: {p.name}')
-            sub_url_path = Path(path).absolute().relative_to(self.data_dir)
             loader = loader_cls(**self.kwargs)  # Propagate kwargs here!
-            metadata={**{'source': str(path),'file_name': p.name ,'sub_url_path': str(sub_url_path),'page_sep': loader.page_sep},**metadata}
+            metadata={
+                'source': str(path),
+                'file_name': p.name,
+                'sub_url_path': str(sub_url_path),
+                'page_sep': loader.page_sep,
+                **metadata
+            }
             doc: Document = await loader.aload_document(
                 file_path=path,
                 metadata=metadata
             )
-            logger.debug(f"{p.name}: SERIALIZED")
-            return doc
+
+        logger.info(f"{p.name}: SERIALIZED")
+        return doc
 
     async def serialize_documents(self, path: str | Path | list[str], metadata: Optional[Dict] = {}, recursive=True, n_concurrent_ops=3) -> AsyncGenerator[Document, None]:
         semaphore = asyncio.Semaphore(n_concurrent_ops)
@@ -457,6 +481,10 @@ class DocSerializer:
         
         for task in asyncio.as_completed(tasks):
             doc = await task 
+    
+            torch.cuda.empty_cache()
+            torch.cuda.ipc_collect()
+            
             yield doc # yield doc as soon as it is ready
 
 async def get_files(path: str | list=True, recursive=True) -> AsyncGenerator:
@@ -491,7 +519,7 @@ async def get_files(path: str | list=True, recursive=True) -> AsyncGenerator:
 
 # TODO create a Meta class that aggregates registery of supported documents from each child class
 LOADERS: Dict[str, BaseLoader] = {
-    '.pdf': DoclingLoader, # CustomPyMuPDFLoader, # 
+    '.pdf': DoclingLoader,
     # '.docx': CustomDocLoader,
     # '.doc': CustomDocLoader,
     # '.odt': CustomDocLoader,
@@ -504,17 +532,3 @@ LOADERS: Dict[str, BaseLoader] = {
 
 SUPPORTED_TYPES = LOADERS.keys()
 PATTERNS = [f'**/*{type_}' for type_ in SUPPORTED_TYPES]
-
-# if __name__ == "__main__":
-#     async def main():
-#         loader = DocSerializer()
-#         dir_path = "../../data/"  # Replace with your actual directory path
-#         docs = loader.serialize_documents(dir_path)
-#         async for d in docs:
-#             pass
-
-                    
-#     asyncio.run(main())
-
-
-# uv run ./manage_collection.py -l  -o chunker.contextual_retrieval=false
