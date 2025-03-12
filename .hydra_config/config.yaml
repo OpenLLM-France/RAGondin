@@ -21,11 +21,6 @@ insertion:
   n_concurrent_loading: 2 # Number of concurrent loading operations (2-3 is recommended, knowing that some loaders use gpu)
   n_concurrent_chunking: 2 # Number of concurrent chunking operations
 
-
-insertion:
-  n_concurrent_loading: 2 # Number of concurrent loading operations (2-3 is recommended, knowing that some loaders use gpu)
-  n_concurrent_chunking: 2 # Number of concurrent chunking operations
-
 reranker:
   model_name: jinaai/jina-colbert-v2
   top_k: 7
@@ -47,6 +42,11 @@ prompt:
 
 loader:
   image_captioning: true
+  file_loaders:
+    pdf: DoclingLoader
+    docx: CustomDocLoader
+    doc: CustomDocLoader
+    odt: CustomDocLoader
 
 semaphore:
   llm_semaphore: ${oc.decode:${oc.env:LLM_SEMAPHORE, 10}}
