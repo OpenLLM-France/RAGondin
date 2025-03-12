@@ -31,12 +31,12 @@ from config import load_config
 
 from tqdm.asyncio import tqdm
 from ..utils import llmSemaphore, SingletonABCMeta
-
 import re
 import base64
 from io import BytesIO
 
 import time
+
 
 # from langchain_community.document_loaders import UnstructuredXMLLoader, PyPDFLoader
 # from langchain_community.document_loaders.csv_loader import CSVLoader
@@ -432,8 +432,6 @@ class DoclingConverter:
         pipeline_options.accelerator_options = AcceleratorOptions(
             num_threads=12, device=AcceleratorDevice.AUTO
         )
-
-
         self.converter = DocumentConverter(
             format_options={
                 InputFormat.PDF: PdfFormatOption(
@@ -445,7 +443,6 @@ class DoclingConverter:
     async def convert_to_md(self, file_path) -> ConversionResult:
         return await asyncio.to_thread(self.converter.convert, str(file_path))
 
-
 class DoclingLoader(BaseLoader, metaclass=SingletonABCMeta):
     def __init__(self, page_sep: str='[PAGE_SEP]', **kwargs) -> None:
         super().__init__(**kwargs)
@@ -454,6 +451,7 @@ class DoclingLoader(BaseLoader, metaclass=SingletonABCMeta):
     
     async def aload_document(self, file_path, metadata, save_md=False):
         result = await self.converter.convert_to_md(file_path)
+
 
         n_pages = len(result.pages)
         s = f'{self.page_sep}'.join([result.document.export_to_markdown(page_no=i) for i in range(1, n_pages+1)])
@@ -475,7 +473,6 @@ class DoclingLoader(BaseLoader, metaclass=SingletonABCMeta):
 
         if save_md:
             self.save_document(Document(page_content=enriched_content), str(file_path))
-
         return doc
         
     
@@ -486,6 +483,7 @@ class DoclingLoader(BaseLoader, metaclass=SingletonABCMeta):
         for picture in pictures:
             tasks.append(
                 self.get_image_description(picture.image.pil_image, semaphore)
+
             )
         try:
             results = await tqdm.gather(*tasks, desc='Captioning imgs')  # asyncio.gather(*tasks)
@@ -529,7 +527,6 @@ class MarkerConverter:
 
 class MarkerLoader(BaseLoader, metaclass=SingletonABCMeta):
     def __init__(self, page_sep: str='------------------------------------------------\n\n', **kwargs) -> None:
-
         super().__init__(**kwargs)
         self.page_sep = page_sep
         self.converter = MarkerConverter()

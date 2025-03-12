@@ -10,6 +10,7 @@ from config.config import load_config
 import atexit
 
 
+
 config = load_config()
 
 class SingletonMeta(type):
@@ -36,6 +37,7 @@ class LLMSemaphore(metaclass=SingletonMeta):
     async def __aenter__(self):
         await self._semaphore.acquire()
         return self
+
 
     async def __aexit__(self, exc_type, exc, tb):
         self._semaphore.release()
