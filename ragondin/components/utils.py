@@ -1,6 +1,7 @@
 from abc import ABCMeta
 import asyncio
 from pathlib import Path
+import threading
 from langchain_core.documents.base import Document
 
 import asyncio
@@ -15,11 +16,14 @@ config = load_config()
 
 class SingletonMeta(type):
     _instances = {}
+    _lock = threading.Lock()  # Ensures thread safety
 
     def __call__(cls, *args, **kwargs):
-        if cls not in cls._instances:
-            instance = super().__call__(*args, **kwargs)
-            cls._instances[cls] = instance
+        if cls not in cls._instances:  # First check (not thread-safe yet)
+            with cls._lock:  # Prevents multiple threads from creating instances
+                if cls not in cls._instances:  # Second check (double-checked locking)
+                    instance = super().__call__(*args, **kwargs)
+                    cls._instances[cls] = instance
         return cls._instances[cls]
 
 class SingletonABCMeta(ABCMeta, SingletonMeta):
