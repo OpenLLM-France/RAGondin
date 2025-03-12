@@ -44,3 +44,4 @@ kotaemon
 ./temps_img
 .python-version
 .vscode
+.DS_Store

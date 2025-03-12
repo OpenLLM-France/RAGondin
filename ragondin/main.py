@@ -38,7 +38,6 @@ async def main():
 
 asyncio.run(main())
 
-
 # docker run -p 6333:6333 -p 6334:6334 --name db_test -d\
 #     -v "$(pwd)/qdrant_storage:/qdrant/storage:z" \
 #     qdrant/qdrant

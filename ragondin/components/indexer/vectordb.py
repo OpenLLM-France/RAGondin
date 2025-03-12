@@ -438,9 +438,15 @@ class ConnectorFactory:
 
     @staticmethod
     def create_vdb(config, logger, embeddings) -> ABCVectorDB:
+
+        if config["vectordb"]["enable"] == False:
+            logger.info("Vector database is not enabled. Skipping initialization.")
+            return None
+
         # Extract parameters
         dbconfig = dict(config.vectordb)
         name = dbconfig.pop("connector_name")
+        dbconfig.pop("enable")
         vdb_cls = ConnectorFactory.CONNECTORS.get(name)
         if not vdb_cls:
             raise ValueError(f"VECTORDB '{name}' is not supported.")
