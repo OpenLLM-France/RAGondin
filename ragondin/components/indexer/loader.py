@@ -36,7 +36,6 @@ from io import BytesIO
 
 import time
 
-
 # from langchain_community.document_loaders import UnstructuredXMLLoader, PyPDFLoader
 # from langchain_community.document_loaders.csv_loader import CSVLoader
 # from langchain_community.document_loaders.text import TextLoader
@@ -444,11 +443,6 @@ class DoclingLoader(BaseLoader, metaclass=SingletonABCMeta):
             Asynchronously converts a document to markdown format.
             Args:
                 file_path (str): The path to the document file.
-        async parse(file_path, page_seperator='[PAGE_SEP]'):
-            Asynchronously parses a document, converting it to markdown and enriching it with image captions.
-            Args:
-                file_path (str): The path to the document file.
-                page_seperator (str): The separator used between pages in the markdown output.
     """
     def __init__(self, page_sep: str='[PAGE_SEP]', **kwargs) -> None:
         super().__init__(**kwargs)
@@ -501,17 +495,6 @@ class DoclingLoader(BaseLoader, metaclass=SingletonABCMeta):
     
     async def convert_to_md(self, file_path) -> ConversionResult:
         return await asyncio.to_thread(self.converter.convert, str(file_path))
-    
-    async def parse(self, file_path, page_seperator='[PAGE_SEP]'):
-        result = await self.convert_to_md(file_path)
-        n_pages = len(result.pages)
-        s = f'{page_seperator}'.join([result.document.export_to_markdown(page_no=i) for i in range(1, n_pages+1)])
-        pictures = result.document.pictures
-        descriptions = await self.get_captions(pictures)
-        enriched_content = s
-        for description in descriptions:
-            enriched_content = enriched_content.replace('<!-- image -->', description, 1)
-        return enriched_content
     
 class MarkerConverter(metaclass=SingletonMeta):
     """
@@ -655,6 +638,7 @@ class DocSerializer:
                     'page_sep': loader.page_sep,
                     **metadata
                 }
+                
                 doc: Document = await loader.aload_document(
                     file_path=path,
                     metadata=metadata,
