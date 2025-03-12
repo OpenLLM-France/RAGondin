@@ -67,7 +67,7 @@ class BaseLoader(ABC):
         with open(path, 'w', encoding='utf-8') as f:
             f.write(doc.page_content)
 
-    async def get_image_description(self, image, semaphore):
+    async def get_image_description(self, image, semaphore:asyncio.Semaphore=llmSemaphore):
         """
         Creates a description for an image using the LLM model defined in the constructor
         Args:
@@ -116,6 +116,7 @@ class BaseLoader(ABC):
                 markdown_content = ''
                 
             return markdown_content
+
 
 class Custompymupdf4llm(BaseLoader):
     def __init__(self, page_sep: str='[PAGE_SEP]', config=None, **kwargs) -> None:
@@ -356,7 +357,7 @@ class CustomDocLoader(BaseLoader):
         )
     
 
-class DoclingConverter:
+class DoclingConverter(metaclass=SingletonMeta):
     """
     A class to handle document conversion using the Docling library.
     Attributes:
@@ -419,7 +420,7 @@ class DoclingConverter:
     async def convert_to_md(self, file_path) -> ConversionResult:
         return await asyncio.to_thread(self.converter.convert, str(file_path))
 
-class DoclingLoader(BaseLoader, metaclass=SingletonABCMeta):
+class DoclingLoader(BaseLoader):
     """
     DoclingLoader is responsible for loading and processing documents, converting them to markdown format,
     and optionally enriching them with image captions.
@@ -466,7 +467,7 @@ class DoclingLoader(BaseLoader, metaclass=SingletonABCMeta):
 
         if self.config["loader"]["image_captioning"]:
             pictures = result.document.pictures
-            descriptions = await self.get_captions(pictures, n_semaphores=6)
+            descriptions = await self.get_captions(pictures)
             for description in descriptions:
                 enriched_content = enriched_content.replace('<!-- image -->', description, 1)
         else:
@@ -481,14 +482,12 @@ class DoclingLoader(BaseLoader, metaclass=SingletonABCMeta):
         return doc
         
     
-    async def get_captions(self, pictures: list[PictureItem], n_semaphores=10):
-        semaphore = asyncio.Semaphore(n_semaphores)
+    async def get_captions(self, pictures: list[PictureItem]):
         tasks = []
 
         for picture in pictures:
             tasks.append(
-                self.get_image_description(picture.image.pil_image, semaphore)
-
+                self.get_image_description(picture.image.pil_image)
             )
         try:
             results = await tqdm.gather(*tasks, desc='Captioning imgs')  # asyncio.gather(*tasks)
@@ -560,6 +559,7 @@ class MarkerLoader(BaseLoader):
     """
     def __init__(self, page_sep: str='------------------------------------------------\n\n', **kwargs) -> None:
         super().__init__(**kwargs)
+
         self.page_sep = page_sep
         self.converter = MarkerConverter()
 
@@ -600,13 +600,12 @@ class MarkerLoader(BaseLoader):
 
         return doc
     
-    async def get_captions(self, img_dict, n_semaphores=10):
-        semaphore = asyncio.Semaphore(n_semaphores)
+    async def get_captions(self, img_dict):
         tasks = []
 
         for _, picture in img_dict.items():
             tasks.append(
-                self.get_image_description(picture, semaphore)
+                self.get_image_description(picture)
             )
         try:
             results = await tqdm.gather(*tasks, desc='Captioning imgs')  # asyncio.gather(*tasks)
