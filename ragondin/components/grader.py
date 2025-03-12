@@ -49,6 +49,17 @@ class Grader:
                 self.logger.debug(f"An Exception occured. Couldn't grade this document: {e}")
     
     async def grade_docs(self, user_input: str, docs: list[Document], batch_size=6):
+        """
+        Grades a list of documents based on their relevancy to the user input.
+
+        Args:
+            user_input (str): The input string provided by the user.
+            docs (list[Document]): A list of Document objects to be graded.
+            batch_size (int, optional): The number of documents to process in a batch. Defaults to 6.
+
+        Returns:
+            list[Document]: A list of relevant Document objects.
+        """
         batch_size = min(batch_size, len(docs))
         self.logger.debug(f"{len(docs)} documents to assess relevancy.")
 
