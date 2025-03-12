@@ -24,7 +24,7 @@ from langchain_core.messages import HumanMessage
 import pymupdf4llm
 from loguru import logger
 from aiopath import AsyncPath
-from typing import Dict
+from typing import Dict, List
 from docling_core.types.doc.document import PictureItem
 from docling.datamodel.document import ConversionResult
 

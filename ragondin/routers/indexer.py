@@ -1,10 +1,9 @@
 from loguru import logger
 from typing import Optional, Any, List
-from fastapi import APIRouter, HTTPException, File, UploadFile, Depends, Form
+from fastapi import APIRouter, HTTPException, File, UploadFile, Depends, Form, Query
 from fastapi.responses import JSONResponse
 from pathlib import Path
 from components import Indexer
-from models.indexer import SearchRequest, DeleteFilesRequest
 from utils.dependencies import get_indexer
 from config.config import load_config
 import json
@@ -16,68 +15,60 @@ DATA_DIR = config.paths.data_dir
 router = APIRouter()
 
 
-@router.get("/collections/", summary="Get existant collections")
-async def get_collections(indexer: Indexer = Depends(get_indexer)) -> list[str]:
-    return await indexer.vectordb.get_collections()
-
-
-@router.post("/add-files/", response_model=None)
+@router.post("/{partition}/{file_id}", response_model=None)
 async def add_files(
-    files: List[UploadFile] = File(...),
+    partition: str,
+    file_id: str, 
+    file: UploadFile = File(...),
     metadata: Optional[Any] = Form(...),
-    collection_name: Optional[str] = Form(None),
     indexer: Indexer = Depends(get_indexer)):
     try:
         # Load metadata
         metadata = json.loads(metadata)
         if metadata is None:
-            metadata = [{}] * len(files)
-        elif isinstance(metadata, list):
-            if len(metadata) != len(files):
-                raise HTTPException(status_code=400, detail="Number of metadata entries should match the number of files.")
-        elif isinstance(metadata, dict):
-            metadata = [metadata]
-        else:
-            raise HTTPException(status_code=400, detail="Metadata should be a dictionary or a list of dictionaries.")
-        # Load collection name from the request
-        if collection_name:
-            if not isinstance(collection_name, str):
-                raise HTTPException(status_code=400, detail="collection_name must be a string.")
+            metadata = {}
+        elif not isinstance(metadata, dict):
+            raise HTTPException(status_code=400, detail="Metadata should be a dictionary")
+        
+        # CHeck partition
+        if not isinstance(partition, str):
+            raise HTTPException(status_code=400, detail="partition must be a string.")
+            
+        # Add file_id to metadata
+        metadata["file_id"] = file_id
 
-        sub_dir = collection_name if collection_name else config.vectordb.default_collection_name
         # Create a temporary directory to store files
-        save_dir = Path(DATA_DIR) / sub_dir
+        save_dir = Path(DATA_DIR)
         save_dir.mkdir(parents=True, exist_ok=True)
         
-        # Save the uploaded files
-        for i, file in enumerate(files):
-            file_path = save_dir / Path(file.filename).name
-            logger.info(f"Processing file: {file.filename} and saving to {file_path}")
-            with open(file_path, "wb") as buffer:
-                buffer.write(await file.read())
-            # Now pass the file path to the Indexer
-            await indexer.add_files2vdb(path=file_path, metadata=metadata[i], collection_name=collection_name)
+        # Save the uploaded file
+        file_path = save_dir / Path(file.filename).name
+        logger.info(f"Processing file: {file.filename} and saving to {file_path}")
+        with open(file_path, "wb") as buffer:
+            buffer.write(await file.read())
+        # Now pass the file path to the Indexer
+        await indexer.add_files2vdb(path=file_path, metadata=metadata, partition=partition)
 
-        return JSONResponse(content={"message": f"Files processed and added to the vector database : {[file.filename for file in files]}"}, status_code=200)
+        return JSONResponse(content={"message": f"File processed and added to the vector database : {file.filename}"}, status_code=200)
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-@router.post("/search/", response_model=None)
-async def search(query_params: SearchRequest, indexer: Indexer = Depends(get_indexer)):
+@router.get("/", response_model=None)
+async def search_multiple_partitions(
+    partitions: List[str] = Query(..., description="Comma-separated list of partitions to search"),
+    query: str = Query(..., description="Text to search semantically"),
+    top_k: int = Query(5, description="Number of top results to return"),
+    indexer: Indexer = Depends(get_indexer),
+):
     try:
-        # Extract query and top_k from request
-        query = query_params.query
-        top_k = query_params.top_k
-        collection_name = query_params.collection_name if query_params.collection_name else None
-        logger.info(f"Searching for query: {query} in collection: {collection_name}")
         # Perform the search using the Indexer
-        results = await indexer.vectordb.async_search(query=query, top_k=top_k, collection_name=collection_name)
+        results = await indexer.asearch(query=query, top_k=top_k, partition=partitions)
         
         # Transforming the results (assuming they are LangChain documents)
         documents = [{"page_content": doc.page_content, "metadata": doc.metadata} for doc in results]
         
         # Return results
-        return JSONResponse(content={f"Documents": documents}, status_code=200)
+        return JSONResponse(content={"Documents": documents}, status_code=200)
 
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
@@ -86,41 +77,75 @@ async def search(query_params: SearchRequest, indexer: Indexer = Depends(get_ind
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.delete("/delete-files/",response_model=None)
-async def delete_files(request : DeleteFilesRequest, indexer: Indexer = Depends(get_indexer)):
-    """
-    Delete points in Vector DB associated with the given file names.
-
-    Args:
-        file_names (List[str]): A list of file names whose points are to be deleted.
-
-    Returns:
-        JSONResponse: A confirmation message including details of files processed.
-    """
-    # Check filters format
-    filters = request.filters
-    if isinstance(filters, dict):
-        if len(filters) != 1:
-            raise HTTPException(status_code=400, detail="Each filter must be a dictionary with exactly one key-value pair.")
-        filters = [filters]
-    elif isinstance(filters, list):
-        for f in filters:
-            if not isinstance(f, dict) or len(f) != 1:
-                raise HTTPException(status_code=400, detail="Each filter must be a dictionary with exactly one key-value pair.")
-    else:
-        raise HTTPException(status_code=400, detail="Filters must be a dictionary or a list of dictionaries.")
-        
+@router.get("/{partition}", response_model=None)
+async def search_one_partition(
+    partition : str,
+    query: str = Query(..., description="Text to search semantically"),
+    top_k: int = Query(5, description="Number of top results to return"),
+    indexer: Indexer = Depends(get_indexer)
+    ):
     try:
-        collection_name = request.collection_name if request.collection_name else None
-        deleted_files, not_found_files = indexer.delete_files(filters, collection_name)
-        return {
-            "message": "File processing completed.",
-            "files_deleted": deleted_files,
-            "files_not_found": not_found_files,
-        }
+        # Perform the search using the Indexer
+        results = await indexer.asearch(query=query, top_k=top_k, partition=partition)
+        
+        # Transforming the results (assuming they are LangChain documents)
+        documents = [{"page_content": doc.page_content, "metadata": doc.metadata} for doc in results]
+        
+        # Return results
+        return JSONResponse(content={"Documents": documents}, status_code=200)
 
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
         # Handle errors
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.get("/{partition}/{file_id}", response_model=None)
+async def search_file(
+    partition : str,
+    file_id: str,
+    query: str = Query(..., description="Text to search semantically"),
+    top_k: int = Query(5, description="Number of top results to return"),
+    indexer: Indexer = Depends(get_indexer)
+    ):
+    try:
+        # Perform the search using the Indexer
+        results = await indexer.asearch(query=query, top_k=top_k, partition=partition, filter= {"file_id": file_id})
+        
+        # Transforming the results (assuming they are LangChain documents)
+        documents = [{"page_content": doc.page_content, "metadata": doc.metadata} for doc in results]
+        
+        # Return results
+        return JSONResponse(content={"Documents": documents}, status_code=200)
+
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        # Handle errors
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.delete("/{partition}/{file_id}", response_model=None)
+async def delete_file(
+    partition: str,
+    file_id: str,
+    indexer: Indexer = Depends(get_indexer)):
+    """
+    Delete a file in a specific partition.
+    """    
+    try:
+        deleted = indexer.delete_file(file_id, partition)
+        if deleted:
+            return JSONResponse(
+                content={"message": "File successfully deleted", "file_id": file_id},
+                status_code=200
+            )
+        else:
+            return JSONResponse(
+                content={"message": "File not found", "file_id": file_id},
+                status_code=404
+            )
+    except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
 

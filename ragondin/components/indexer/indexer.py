@@ -39,6 +39,7 @@ class Indexer(metaclass=SingletonMeta):
 
         self.n_concurrent_loading = config.insertion.get("n_concurrent_loading", 2) # Number of concurrent loading operations
         self.n_concurrent_chunking = config.insertion.get("n_concurrent_chunking", 2) # Number of concurrent chunking operations
+        self.default_partition = "_default"
         self.enable_insertion = self.config.vectordb["enable"]
 
     async def chunk(self, doc, gpu_semaphore: asyncio.Semaphore) -> AsyncGenerator[Document, None]:
@@ -65,7 +66,7 @@ class Indexer(metaclass=SingletonMeta):
         return chunks
         
         
-    async def add_files2vdb(self, path: str | list[str], metadata: Optional[Dict] = {}, collection_name : Optional[str] = None):
+    async def add_files2vdb(self, path: str | list[str], metadata: Optional[Dict] = {}, partition : Optional[str] = None):
         """
         Add files to the vector database in async mode.
         This method serializes documents from the given path(s) and processes them in chunks using GPU operations.
@@ -79,8 +80,9 @@ class Indexer(metaclass=SingletonMeta):
         Returns:
             None
         """
+        partition = self._check_partition(partition)
         gpu_semaphore = asyncio.Semaphore(self.n_concurrent_chunking) # Only allow max_concurrent_gpu_ops GPU operation at a time
-        doc_generator: AsyncGenerator[Document, None] = self.serializer.serialize_documents(path, metadata=metadata, recursive=True, n_concurrent_ops=self.n_concurrent_loading)
+        doc_generator: AsyncGenerator[Document, None] = self.serializer.serialize_documents(path, metadata={**metadata, "partition": partition}, recursive=True, n_concurrent_ops=self.n_concurrent_loading)
 
         chunk_tasks = []
         try:
@@ -94,7 +96,7 @@ class Indexer(metaclass=SingletonMeta):
 
             if all_chunks:
                 if self.enable_insertion:
-                    await self.vectordb.async_add_documents(all_chunks, collection_name=collection_name)
+                    await self.vectordb.async_add_documents(all_chunks)
                     self.logger.debug(f"Documents {path} added.")
                 else:
                     self.logger.debug(f"Documents {path} handled but not added to the database.")
@@ -105,7 +107,7 @@ class Indexer(metaclass=SingletonMeta):
         
     
 
-    def delete_files(self, filters: Union[Dict, List[Dict]], collection_name: Optional[str] = None):
+    def delete_file(self, file_id : str, partition: Optional[str] = None):
         """
         Deletes files from the vector database based on the provided filters.
         Args:
@@ -118,29 +120,46 @@ class Indexer(metaclass=SingletonMeta):
         Raises:
             Exception: If an error occurs during the deletion process, it is logged and the function continues with the next filter.
         """
-        deleted_files = []
-        not_found_files = []
+        partition = self._check_partition(partition)
         if not self.enable_insertion:
             self.logger.error("Vector database is not enabled, however, the delete_files method was called.")
-            return deleted_files, not_found_files
+            return
 
 
-        for filter in filters:
-            try:
-                key = next(iter(filter))
-                value = filter[key]
-                # Get points associated with the file name
-                points = self.vectordb.get_file_points(filter, collection_name)
-                if not points:
-                    self.logger.info(f"No points found for {key}: {value}")
-                    not_found_files.append(filter)
-                    continue
-
-                # Delete the points
-                self.vectordb.delete_points(points, collection_name)
-                deleted_files.append(filter)
-
-            except Exception as e:
-                self.logger.error(f"Error in `delete_files` for {key} {value}: {e}")
+        try:
+            # Get points associated with the file name
+            points = self.vectordb.get_file_points(file_id, partition)
+            if not points:
+                self.logger.info(f"No points found for file_id: {file_id}")
+                return
+            # Delete the points
+            self.vectordb.delete_points(points, partition)
+            self.logger.info(f"File {file_id} deleted.")
+        except Exception as e:
+            self.logger.error(f"Error in `delete_files` for file_id {file_id}: {e}")
         
-        return deleted_files, not_found_files
+        return True
+    
+    async def asearch(self, query: str, top_k: int = 5,similarity_threshold: int=0.80, partition : Optional[str | List[str] ] = None, filter: Optional[Dict] = None) -> List[Document]:
+        partition = self._check_partition_list(partition)
+        results = await self.vectordb.async_search(query=query, top_k=top_k, similarity_threshold=similarity_threshold, partition=partition, filter=filter)
+        return results
+
+
+    def _check_partition(self, partition: Optional[str]):
+        if partition is None :
+            self.logger.warning("Partition not provided. Using default partition.")
+            partition = self.default_partition
+        elif not isinstance(partition, str):
+            raise ValueError("Partition should be a string.")
+        return partition
+
+    def _check_partition_list(self, partition: Optional[str]):
+        if partition is None :
+            self.logger.warning("Partition not provided. Using default partition.")
+            partition = [self.default_partition]
+        elif isinstance(partition, str):
+            partition = [partition]
+        elif (not isinstance(partition, list)) or  (not all(isinstance(p, str) for p in partition)):
+            raise ValueError("Partition should be a string or a list of strings.")
+        return partition
