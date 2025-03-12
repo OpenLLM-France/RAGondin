@@ -61,7 +61,21 @@ async def get_answer(
     new_user_input: str, chat_history: list[ChatMsg]=None,
     static_base_url: str = Depends(static_base_url_dependency)
     ):
-
+    """
+    Asynchronously generates an answer to a user's input based on chat history and returns a streaming response.
+    Args:
+        new_user_input (str): The new input from the user.
+        chat_history (list[ChatMsg], optional): The history of chat messages. Defaults to None.
+        static_base_url (str, optional): The base URL for static resources. Defaults to the value provided by static_base_url_dependency.
+    Returns:
+        StreamingResponse: A streaming response containing the generated answer and metadata sources.
+    Raises:
+        Any exceptions raised by the dependencies or the ragPipe.run method.
+    Notes:
+        - The function converts the chat history into a list of HumanMessage or AIMessage objects.
+        - It runs the ragPipe pipeline to generate an answer stream, context, and sources.
+        - The sources are converted to URLs using the static_base_url and included in the response headers as JSON.
+    """
     msgs: list[HumanMessage | AIMessage] = None
     if chat_history:
         msgs = [mapping[chat_msg.role](content=chat_msg.content) for chat_msg in chat_history]
@@ -72,6 +86,15 @@ async def get_answer(
     src_json = json.dumps(sources)
 
     async def send_chunk():
+        """
+        Asynchronously sends chunks of data from an answer stream.
+
+        This coroutine function iterates over an asynchronous stream of tokens
+        and yields the content of each token.
+
+        Yields:
+            str: The content of each token from the answer stream.
+        """
         async for token in answer_stream:
             yield token.content
           
