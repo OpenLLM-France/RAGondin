@@ -41,6 +41,10 @@ import time
 # from langchain_community.document_loaders.text import TextLoader
 # from langchain_community.document_loaders import UnstructuredHTMLLoader
 
+import pandas as pd
+
+log = pd.DataFrame(columns=['file', 'tot_time', 'time_convert', 'time_caption'])
+
 class BaseLoader(ABC):
     def __init__(self, **kwargs) -> None:
         self.config = kwargs.get('config')
@@ -450,7 +454,10 @@ class DoclingLoader(BaseLoader, metaclass=SingletonABCMeta):
         self.converter = DoclingConverter()
     
     async def aload_document(self, file_path, metadata, save_md=False):
+        start_time = time.time()
+
         result = await self.converter.convert_to_md(file_path)
+        conversion_time = time.time() - start_time
 
 
         n_pages = len(result.pages)
@@ -470,8 +477,14 @@ class DoclingLoader(BaseLoader, metaclass=SingletonABCMeta):
             page_content=enriched_content, 
             metadata=metadata
         )
+        caption_time = time.time() - start_time - conversion_time
+
         if save_md:
             self.save_document(Document(page_content=enriched_content), str(file_path))
+
+        total_time = time.time() - start_time
+        log.loc[len(log)] = [file_path, total_time, conversion_time, caption_time]
+    
         return doc
         
     
@@ -549,9 +562,10 @@ class MarkerLoader(BaseLoader):
     async def aload_document(self, file_path, metadata=None, save_md=False):
         file_path = str(file_path)
         logger.info(f"Loading {file_path}")
-        start = time.time()
+
+        start_time = time.time()
         render = await self.converter.convert_to_md(file_path)
-        conversion_time = time.time() - start
+        conversion_time = time.time() - start_time
         logger.info(f"Markdown conversion time: {conversion_time:.2f} s.")
 
         text = render.markdown
@@ -570,8 +584,7 @@ class MarkerLoader(BaseLoader):
         else:
             logger.info("Image captioning disabled. Ignoring images.")
 
-        end = time.time()
-        logger.info(f"Total conversion time for file {file_path}: {end - start:.2f} s.")
+        caption_time = time.time() - start_time - conversion_time
 
         doc =  Document(
             page_content=text, 
@@ -580,6 +593,10 @@ class MarkerLoader(BaseLoader):
 
         if save_md:
             self.save_document(Document(page_content=text), str(file_path))
+
+        total_time = time.time() - start_time
+        logger.info(f"Total conversion time for file {file_path}: {total_time:.2f} s.")
+        log.loc[len(log)] = [file_path, total_time, conversion_time, caption_time]
 
         return doc
     
@@ -693,6 +710,9 @@ class DocSerializer:
                 torch.cuda.ipc_collect()
             
             yield doc # yield doc as soon as it is ready
+
+        # Once all tasks are done save the log
+        log.to_csv(f'../logs/{self.config["loader"]["file_loaders"]["pdf"]}_{self.config["loader"]["image_captioning"]}_{self.config["insertion"]["n_concurrent_loading"]}_{self.config["insertion"]["n_concurrent_chunking"]}.csv', index=False)
 
 async def get_files(loaders: Dict[str, BaseLoader], path: str | list=True, recursive=True) -> AsyncGenerator:
     """Get files from a directory or a list of files"""

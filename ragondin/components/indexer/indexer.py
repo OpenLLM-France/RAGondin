@@ -8,7 +8,11 @@ from langchain_core.documents.base import Document
 from pathlib import Path
 from ..utils import SingletonMeta, SingletonABCMeta
 
-
+import json
+import time
+log = {
+    "chunking_times": {},
+}
 class Indexer(metaclass=SingletonMeta):
     """This class bridges static files with the vector store database.
     """
@@ -55,11 +59,16 @@ class Indexer(metaclass=SingletonMeta):
         Returns:
             AsyncGenerator[Document, None]: An asynchronous generator yielding the chunks of the document.
         """
+        start = time.time()
         if isinstance(self.chunker, SemanticSplitter):
             async with gpu_semaphore:
                 chunks = await self.chunker.split_document(doc)
+                
         else:
             chunks = await self.chunker.split_document(doc)
+
+        end = time.time()
+        log["chunking_times"][f"{doc.metadata['source']}"] = end - start
 
         self.logger.info(f"{Path(doc.metadata['source']).name} CHUNKED")
         return chunks
@@ -79,6 +88,7 @@ class Indexer(metaclass=SingletonMeta):
         Returns:
             None
         """
+        start = time.time()
         gpu_semaphore = asyncio.Semaphore(self.n_concurrent_chunking) # Only allow max_concurrent_gpu_ops GPU operation at a time
         doc_generator: AsyncGenerator[Document, None] = self.serializer.serialize_documents(path, metadata=metadata, recursive=True, n_concurrent_ops=self.n_concurrent_loading)
 
@@ -98,10 +108,17 @@ class Indexer(metaclass=SingletonMeta):
                     self.logger.debug(f"Documents {path} added.")
                 else:
                     self.logger.debug(f"Documents {path} handled but not added to the database.")
+
         
         except Exception as e:
             self.logger.error(f"An exception as occured: {e}")
             raise Exception(f"An exception as occured: {e}")
+        
+        end = time.time()
+        log["add_files2vdb_times"] = end - start
+
+        with open(f"../logs/{self.config["loader"]["file_loaders"]["pdf"]}_{self.config["loader"]["image_captioning"]}_{self.config["insertion"]["n_concurrent_loading"]}_{self.config["insertion"]["n_concurrent_chunking"]}.json", "w") as f:
+            json.dump(log, f)
         
     
 
