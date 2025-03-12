@@ -27,7 +27,6 @@ from aiopath import AsyncPath
 from typing import Dict
 from docling_core.types.doc.document import PictureItem
 from docling.datamodel.document import ConversionResult
-from config import load_config
 
 from tqdm.asyncio import tqdm
 from ..utils import llmSemaphore, SingletonABCMeta
@@ -117,55 +116,6 @@ class BaseLoader(ABC):
                 markdown_content = ''
                 
             return markdown_content
-    async def get_image_description(self, image, semaphore):
-        """
-        Creates a description for an image using the LLM model defined in the constructor
-        Args:
-            image (PIL.Image): Image to describe
-            semaphore (asyncio.Semaphore): Semaphore to control access to the LLM model
-            Returns:
-            str: Description of the image
-        """
-        async with semaphore:
-            width, height = image.size
-
-            buffered = BytesIO()
-            image.save(buffered, format="PNG")
-            img_b64 = base64.b64encode(buffered.getvalue()).decode()
-            image_description = ""
-
-            message = HumanMessage(
-                content=[
-                    {
-                        "type": "image_url",
-                        "image_url": {
-                            'url': f"data:image/png;base64,{img_b64}" #f"{picture.image.uri.path}" #
-                        },
-                    },
-                    {
-                        "type": "text", 
-                        "text": """Provide a complete, structured and precise description of this image or figure in the same language (french) as its content. If the image contains tables, render them in markdown."""
-                    }
-                ]
-            )
-            try:
-                if (width > self.min_width_pixels and height > self.min_height_pixels):
-                    response = await self.vlm_endpoint.ainvoke([message])
-                    image_description = response.content
-
-            except Exception as e:
-                logger.error(f"Error while generating image description: {e}")
-
-            # Convert image path to markdown format and combine with description
-            if image_description:
-                markdown_content = (
-                    f"\nDescription de l'image:\n"
-                    f"{image_description}\n"
-                )
-            else:
-                markdown_content = ''
-                
-            return markdown_content
 
 class Custompymupdf4llm(BaseLoader):
     def __init__(self, page_sep: str='[PAGE_SEP]', config=None, **kwargs) -> None:
@@ -204,7 +154,8 @@ class VideoAudioLoader(BaseLoader):
 
     def free_memory(self):
         gc.collect()
-        torch.cuda.empty_cache()
+        if torch.cuda.is_available():
+            torch.cuda.empty_cache()
 
     async def aload_document(self, file_path, metadata: dict = None):
         path = Path(file_path)
@@ -511,21 +462,20 @@ class DoclingLoader(BaseLoader, metaclass=SingletonABCMeta):
         n_pages = len(result.pages)
         s = f'{self.page_sep}'.join([result.document.export_to_markdown(page_no=i) for i in range(1, n_pages+1)])
 
+        enriched_content = s
+
         if self.config["loader"]["image_captioning"]:
             pictures = result.document.pictures
             descriptions = await self.get_captions(pictures, n_semaphores=6)
+            for description in descriptions:
+                enriched_content = enriched_content.replace('<!-- image -->', description, 1)
         else:
             logger.info("Image captioning disabled. Ignoring images.")
-
-        enriched_content = s
-        for description in descriptions:
-            enriched_content = enriched_content.replace('<!-- image -->', description, 1)
 
         doc =  Document(
             page_content=enriched_content, 
             metadata=metadata
         )
-
         if save_md:
             self.save_document(Document(page_content=enriched_content), str(file_path))
         return doc
@@ -563,7 +513,7 @@ class DoclingLoader(BaseLoader, metaclass=SingletonABCMeta):
             enriched_content = enriched_content.replace('<!-- image -->', description, 1)
         return enriched_content
     
-class MarkerConverter:
+class MarkerConverter(metaclass=SingletonMeta):
     """
     A class used to convert files to markdown format using a PDF converter.
     Attributes
@@ -591,7 +541,7 @@ class MarkerConverter:
     async def convert_to_md(self, file_path):
         return await asyncio.to_thread(self.converter, str(file_path))
 
-class MarkerLoader(BaseLoader, metaclass=SingletonABCMeta):
+class MarkerLoader(BaseLoader):
     """
     MarkerLoader is a class responsible for loading and converting documents into markdown format,
     with optional image captioning using a language model.
@@ -684,11 +634,14 @@ class DocSerializer:
     def __init__(self, data_dir=None, **kwargs) -> None:
         self.data_dir = data_dir
         self.kwargs = kwargs
+        self.config = kwargs.get('config')
+
+        self.loader_classes = get_loaders(self.config)
     
     async def serialize_document(self, path: str, semaphore: asyncio.Semaphore, metadata: Optional[Dict] = {}):
         p = AsyncPath(path)
         type_ = p.suffix
-        loader_cls: BaseLoader = LOADERS.get(type_)
+        loader_cls: BaseLoader = self.loader_classes.get(type_)
         sub_url_path = Path(path).resolve().relative_to(self.data_dir) # for the static file server
     
         if type_ == '.pdf': # for loaders that uses gpu
@@ -704,7 +657,8 @@ class DocSerializer:
                 }
                 doc: Document = await loader.aload_document(
                     file_path=path,
-                    metadata=metadata
+                    metadata=metadata,
+                    save_md=True
                 )
         else:
             logger.debug(f'LOADING: {p.name}')
@@ -738,7 +692,7 @@ class DocSerializer:
         """
         semaphore = asyncio.Semaphore(n_concurrent_ops)
         tasks = []
-        async for file in get_files(path, recursive):
+        async for file in get_files(self.loader_classes, path, recursive):
             tasks.append(
                 self.serialize_document(
                     file,
@@ -750,20 +704,24 @@ class DocSerializer:
         for task in asyncio.as_completed(tasks):
             doc = await task 
     
-            torch.cuda.empty_cache()
-            torch.cuda.ipc_collect()
+            if torch.cuda.is_available():
+                torch.cuda.empty_cache()
+                torch.cuda.ipc_collect()
             
             yield doc # yield doc as soon as it is ready
 
-async def get_files(path: str | list=True, recursive=True) -> AsyncGenerator:
+async def get_files(loaders: Dict[str, BaseLoader], path: str | list=True, recursive=True) -> AsyncGenerator:
     """Get files from a directory or a list of files"""
+
+    supported_types = loaders.keys()
+    patterns = [f'**/*{type_}' for type_ in supported_types]
 
     if isinstance(path, list):
         for file_path in path:
             p = AsyncPath(file_path)
             if await p.is_file():
                 type_ = p.suffix
-                if type_ in SUPPORTED_TYPES: # check the file type
+                if type_ in supported_types: # check the file type
                     yield p
                 else:
                     logger.warning(f"Unsupported file type: {type_}: {p.name} will not be indexed.")
@@ -771,32 +729,29 @@ async def get_files(path: str | list=True, recursive=True) -> AsyncGenerator:
     else:
         p = AsyncPath(path)
         if await p.is_dir():
-            for pat in PATTERNS:
+            for pat in patterns:
                 async for file in (p.rglob(pat) if recursive else p.glob(pat)):
                     yield file
         elif await p.is_file():
             type_ = p.suffix
-            if type_ in SUPPORTED_TYPES: # check the file type
+            if type_ in supported_types: # check the file type
                 yield p
             else:
                 logger.warning(f"Unsupported file type: {type_}: {p.name} will not be indexed.")
         else:
             raise ValueError(f"Path {path} is neither a file nor a directory")
-            
+        
+def get_loaders(config):
+    
+    loader_defaults = config["loader"]["file_loaders"]
+    loader_classes = {}
 
-
-# TODO create a Meta class that aggregates registery of supported documents from each child class
-LOADERS: Dict[str, BaseLoader] = {
-    '.pdf': MarkerLoader, # CustomPyMuPDFLoader, # 
-    '.docx': CustomDocLoader,
-    '.doc': CustomDocLoader,
-    '.odt': CustomDocLoader,
-
-    # '.mp4': VideoAudioLoader,
-    # '.pptx': CustomPPTLoader,
-    # '.txt': CustomTextLoader,
-    #'.html': CustomHTMLLoader
-}
-
-SUPPORTED_TYPES = LOADERS.keys()
-PATTERNS = [f'**/*{type_}' for type_ in SUPPORTED_TYPES]
+    for type_, class_name in loader_defaults.items():
+        cls = globals().get(class_name, None)
+        if cls:
+            loader_classes[f'.{type_}'] = cls
+        else:
+            raise ImportError(f"Class '{class_name}' not found. Program will crash if a file needs to be handled by this loader.")
+        
+    logger.debug(f"Loaders loaded: {loader_classes.keys()}")
+    return loader_classes
