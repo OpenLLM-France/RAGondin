@@ -56,6 +56,16 @@ template = """
 
 
 class ChunkContextualizer:
+    """ChunkContextualizer is a class that provides functionality to generate context for chunks of text using a language model.
+    Attributes:
+        contextual_retrieval (bool): Indicates whether contextual retrieval is enabled.
+        context_generator (Optional[Callable]): A callable for generating context if contextual retrieval is enabled.
+    Methods:
+        __init__(contextual_retrieval: bool = False, llm: Optional[ChatOpenAI] = None):
+            Initializes the ChunkContextualizer with optional contextual retrieval and language model.
+        generate_context(first_page: str, prev_chunk: str, chunk: str, source: str, semaphore: asyncio.Semaphore = llmSemaphore) -> str:
+        contextualize(chunks: list[Document], pages: list[str], source: str, n_concurrent_request: int = 5) -> list[str]:
+    """
     def __init__(self, contextual_retrieval: bool = False, llm: Optional[ChatOpenAI] = None):
         self.contextual_retrieval = contextual_retrieval
         self.context_generator = None
@@ -71,6 +81,19 @@ class ChunkContextualizer:
                 )
     
     async def generate_context(self, first_page: str, prev_chunk: str, chunk: str, source: str, semaphore: asyncio.Semaphore=llmSemaphore):
+        """
+        Asynchronously generates context for a given chunk of text.
+
+        Args:
+            first_page (str): The first page of the document.
+            prev_chunk (str): The previous chunk of text.
+            chunk (str): The current chunk of text to be contextualized.
+            source (str): The source of the document.
+            semaphore (asyncio.Semaphore, optional): A semaphore to limit concurrent access. Defaults to llmSemaphore.
+
+        Returns:
+            str: The generated context for the given chunk of text. Returns an empty string if an error occurs.
+        """
         async with semaphore:
             try:
                 return await self.context_generator.ainvoke(
@@ -86,6 +109,18 @@ class ChunkContextualizer:
                 return ''
 
     async def contextualize(self, chunks: list[Document], pages: list[str], source: str, n_concurrent_request: int=5) -> list[str]:
+        """
+        Contextualizes a list of document chunks by generating context for each chunk based on the previous chunk.
+        Args:
+            chunks (list[Document]): A list of Document objects representing the chunks to be contextualized.
+            pages (list[str]): A list of strings representing the pages of the document.
+            source (str): The source of the document.
+            n_concurrent_request (int, optional): The number of concurrent requests to be made. Defaults to 5.
+        Returns:
+            list[str]: A list of strings where each string is the contextualized content of a chunk.
+        Raises:
+            Exception: If an error occurs during the contextualization process, it logs a warning with the error message.
+        """
         if not self.contextual_retrieval:
             return [chunk.page_content for chunk in chunks]
         
@@ -110,6 +145,16 @@ class ChunkContextualizer:
             logger.warning(f"Error when contextualizing chunks from `{source}`: {e}")
 
 class RecursiveSplitter(ABCChunker):
+    """
+    RecursiveSplitter is a class that splits a document into chunks and contextualizes them.
+    Attributes:
+        splitter (RecursiveCharacterTextSplitter): An instance of RecursiveCharacterTextSplitter used to split text into chunks.
+        contextualizer (ChunkContextualizer): An instance of ChunkContextualizer used to add context to the chunks.
+    Methods:
+        __init__(chunk_size: int=200, chunk_overlap: int=20, contextual_retrieval: bool=True, llm: Optional[ChatOpenAI]=None, **args):
+            Initializes the RecursiveSplitter with the specified chunk size, chunk overlap, and other parameters.
+        async split_document(doc: Document) -> list[Document]:
+    """
     def __init__(
             self, 
             chunk_size: int=200, 
@@ -130,6 +175,20 @@ class RecursiveSplitter(ABCChunker):
         self.contextualizer = ChunkContextualizer(contextual_retrieval=contextual_retrieval, llm=llm)
 
     async def split_document(self, doc: Document):
+        """
+        Splits a document into chunks and contextualizes them.
+        Args:
+            doc (Document): The document to be split and contextualized.
+        Returns:
+            list[Document]: A list of filtered and contextualized document chunks.
+        The function performs the following steps:
+        1. Splits the document into pages based on the page separator.
+        2. Concatenates the pages and tracks the start and end indices of each page.
+        3. Preprocesses the full text by splitting it using the splitter.
+        4. Creates document chunks from the full text.
+        5. Contextualizes the chunks with additional context.
+        6. Filters and updates the chunks with metadata and contextualized content.
+        """
         text = ''
         page_idx = []
         metadata = doc.metadata
@@ -186,6 +245,16 @@ class RecursiveSplitter(ABCChunker):
         return filtered_chunks      
     
 class SemanticSplitter(ABCChunker):
+    """
+    SemanticSplitter is a class that splits a document into semantically meaningful chunks and contextualizes them.
+    Attributes:
+        splitter (SemanticChunker): An instance of SemanticChunker used to split the document.
+        contextualizer (ChunkContextualizer): An instance of ChunkContextualizer used to add context to the chunks.
+    Methods:
+        __init__(min_chunk_size: int = 1000, embeddings = None, breakpoint_threshold_amount=85, contextual_retrieval: bool=False, llm: Optional[ChatOpenAI]=None, **args):
+            Initializes the SemanticSplitter with the given parameters.
+        async split_document(doc: Document) -> List[Document]:
+    """
     def __init__(self, 
             min_chunk_size: int = 1000, 
             embeddings = None, 
@@ -206,6 +275,17 @@ class SemanticSplitter(ABCChunker):
         self.contextualizer = ChunkContextualizer(contextual_retrieval=contextual_retrieval, llm=llm)
 
     async def split_document(self, doc: Document):
+        """
+        Splits a document into chunks and contextualizes them.
+        Args:
+            doc (Document): The document to be split. It should have the following attributes:
+                - metadata (dict): Metadata associated with the document. It should contain:
+                    - "source" (str): The source of the document.
+                    - "page_sep" (str): The separator used to split the document into pages.
+                - page_content (str): The content of the document.
+        Returns:
+            List[Document]: A list of chunked and contextualized documents with updated metadata.
+        """
         text = ''
         page_idx = []
         metadata = doc.metadata
@@ -269,6 +349,18 @@ class ChunkerFactory:
 
     @staticmethod
     def create_chunker(config:OmegaConf, embedder: Optional[HuggingFaceBgeEmbeddings | HuggingFaceEmbeddings]=None) -> ABCChunker:
+        def create_chunker(config: OmegaConf, embedder: Optional[HuggingFaceBgeEmbeddings | HuggingFaceEmbeddings] = None) -> ABCChunker:
+            """
+            Create and initialize a chunker based on the provided configuration.
+            Args:
+                config (OmegaConf): Configuration object containing chunker parameters.
+                embedder (Optional[HuggingFaceBgeEmbeddings | HuggingFaceEmbeddings]): Optional embedder to be used if the chunker type is 'semantic_splitter'.
+            Returns:
+                ABCChunker: An instance of the specified chunker class.
+            Raises:
+                ValueError: If the specified chunker name is not recognized.
+                AttributeError: If the chunker type is 'semantic_splitter' and the embedder parameter is not provided.
+            """
         # Extract parameters
         chunker_params = OmegaConf.to_container(config.chunker, resolve=True)
         name = chunker_params.pop("name")

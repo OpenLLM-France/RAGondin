@@ -13,6 +13,22 @@ class Indexer(metaclass=SingletonMeta):
     """This class bridges static files with the vector store database.
     """
     def __init__(self, config, logger, device=None) -> None:
+        """
+        Initializes the Indexer class with the given configuration, logger, and optional device.
+
+        Args:
+            config (Config): Configuration object containing settings for the embedder, paths, llm, and insertion.
+            logger (Logger): Logger object for logging information.
+            device (str, optional): Device to be used by the embedder. Defaults to None.
+
+        Attributes:
+            serializer (DocSerializer): Serializer for document data.
+            chunker (ABCChunker): Chunker object created using the ChunkerFactory.
+            vectordb (VectorDB): Vector database connector created using the ConnectorFactory.
+            logger (Logger): Logger object for logging information.
+            n_concurrent_loading (int): Number of concurrent loading operations. Defaults to 2.
+            n_concurrent_chunking (int): Number of concurrent chunking operations. Defaults to 2.
+        """
         embedder = HFEmbedder(embedder_config=config.embedder, device=device)
         self.serializer = DocSerializer(data_dir=config.paths.data_dir, llm_config=config.llm)
         self.chunker: ABCChunker = ChunkerFactory.create_chunker(config, embedder=embedder.get_embeddings())
@@ -24,6 +40,19 @@ class Indexer(metaclass=SingletonMeta):
         self.n_concurrent_chunking = config.insertion.get("n_concurrent_chunking", 2) # Number of concurrent chunking operations
 
     async def chunk(self, doc, gpu_semaphore: asyncio.Semaphore) -> AsyncGenerator[Document, None]:
+        """
+        Asynchronously chunks a document using the specified chunker.
+
+        If the chunker is an instance of `SemanticSplitter`, it will use a GPU semaphore
+        to manage access to GPU resources while splitting the document.
+
+        Args:
+            doc (Document): The document to be chunked.
+            gpu_semaphore (asyncio.Semaphore): A semaphore to control access to GPU resources.
+
+        Returns:
+            AsyncGenerator[Document, None]: An asynchronous generator yielding the chunks of the document.
+        """
         if isinstance(self.chunker, SemanticSplitter):
             async with gpu_semaphore:
                 chunks = await self.chunker.split_document(doc)
@@ -35,7 +64,19 @@ class Indexer(metaclass=SingletonMeta):
         
         
     async def add_files2vdb(self, path: str | list[str], metadata: Optional[Dict] = {}, collection_name : Optional[str] = None):
-        """Add a files to the vector database in async mode"""
+        """
+        Add files to the vector database in async mode.
+        This method serializes documents from the given path(s) and processes them in chunks using GPU operations.
+        The processed chunks are then added to the vector database.
+        Args:
+            path (str | list[str]): The path or list of paths to the files to be added.
+            metadata (Optional[Dict], optional): Metadata to be associated with the documents. Defaults to an empty dictionary.
+            collection_name (Optional[str], optional): The name of the collection in the vector database. Defaults to None.
+        Raises:
+            Exception: If an error occurs during the document processing or adding to the vector database.
+        Returns:
+            None
+        """
         gpu_semaphore = asyncio.Semaphore(self.n_concurrent_chunking) # Only allow max_concurrent_gpu_ops GPU operation at a time
         doc_generator: AsyncGenerator[Document, None] = self.serializer.serialize_documents(path, metadata=metadata, recursive=True, n_concurrent_ops=self.n_concurrent_loading)
 
@@ -59,6 +100,18 @@ class Indexer(metaclass=SingletonMeta):
         
     
     def delete_files(self, filters: Union[Dict, List[Dict]], collection_name: Optional[str] = None):
+        """
+        Deletes files from the vector database based on the provided filters.
+        Args:
+            filters (Union[Dict, List[Dict]]): A dictionary or list of dictionaries containing the filters to identify files to be deleted.
+            collection_name (Optional[str]): The name of the collection from which files should be deleted. Defaults to None.
+        Returns:
+            Tuple[List[Dict], List[Dict]]: A tuple containing two lists:
+                - deleted_files: A list of filters for the files that were successfully deleted.
+                - not_found_files: A list of filters for the files that were not found in the database.
+        Raises:
+            Exception: If an error occurs during the deletion process, it is logged and the function continues with the next filter.
+        """
         deleted_files = []
         not_found_files = []
 

@@ -19,6 +19,19 @@ def is_valid_directory(path):
 
 
 async def main():
+    """
+    Main function to handle command-line arguments and perform operations on Qdrant vector database.
+    This function supports the following operations:
+    1. Adding local files from a specified folder to the Qdrant vector database.
+    2. Deleting a specified collection from the Qdrant vector database.
+    3. Adding a list of specified files to the Qdrant vector database.
+    Command-line arguments:
+        -f, --folder: Path to the folder containing files to be uploaded to Qdrant.
+        -d, --delete: Name of the collection to delete from Qdrant.
+        -o, --override: Overrides for the Hydra configuration (e.g., vectordb.collection_name='vdb95'). Can be used multiple times.
+        -l, --list: List of file paths to be uploaded to Qdrant.
+    The function loads the configuration with potential overrides, and based on the provided arguments, it performs the corresponding operations on the Qdrant vector database.
+    """
     parser = argparse.ArgumentParser(description='Adds local files from a folder to qdrant vector db')
     # Add a folder argument for uploading to qdrant
     parser.add_argument("-f", "--folder",

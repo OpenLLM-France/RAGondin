@@ -239,6 +239,18 @@ class CustomHTMLLoader(BaseLoader):
 
 
 class CustomDocLoader(BaseLoader):
+    """
+    Custom document loader that supports asynchronous loading of various document formats.
+    Attributes:
+        doc_loaders (dict): A dictionary mapping file extensions to their respective loader classes.
+        page_sep (str): A string used to separate pages in the loaded document.
+    Methods:
+        __init__(page_sep: str='[PAGE_SEP]', **kwargs) -> None:
+            Initializes the CustomDocLoader with an optional page separator.
+        aload_document(file_path: str, metadata: dict = None) -> Document:
+            Asynchronously loads a document from the given file path and returns a Document object.
+            Raises a ValueError if the file format is not supported.
+    """
     doc_loaders = {
             ".docx": UnstructuredWordDocumentLoader,
             '.doc': UnstructuredWordDocumentLoader,
@@ -270,6 +282,25 @@ class CustomDocLoader(BaseLoader):
     
 
 class DoclingConverter:
+    """
+    A class to handle document conversion and image description using the Docling library.
+    Attributes:
+        vlm_endpoint (ChatOpenAI): The endpoint for the language model.
+        min_width_pixels (int): Minimum width in pixels for images to be processed.
+        min_height_pixels (int): Minimum height in pixels for images to be processed.
+        converter (DocumentConverter): The document converter instance.
+    Methods:
+        __init__(llm_config=None):
+            Initializes the DoclingConverter with the given language model configuration.
+        async describe_imgage(idx, picture, semaphore=llmSemaphore):
+            Asynchronously describes an image using the language model.
+        async get_captions(pictures):
+            Asynchronously gets captions for a list of pictures.
+        async convert_to_md(file_path) -> ConversionResult:
+            Asynchronously converts a document to markdown format.
+        async parse(file_path, page_seperator='[PAGE_SEP]'):
+            Asynchronously parses a document, converts it to markdown, and enriches it with image descriptions.
+    """
     def __init__(self, llm_config=None):
         try:
             from docling.document_converter import DocumentConverter
@@ -410,6 +441,22 @@ class DoclingConverter:
 
 
 class DoclingLoader(BaseLoader, metaclass=SingletonABCMeta):
+    """
+    DoclingLoader is a class responsible for loading and converting documents using the DoclingConverter.
+    Attributes:
+        page_sep (str): The separator used to denote pages in the document. Default is '[PAGE_SEP]'.
+        converter (DoclingConverter): An instance of DoclingConverter initialized with the provided llm_config.
+    Methods:
+        __init__(page_sep: str='[PAGE_SEP]', **kwargs) -> None:
+            Initializes the DoclingLoader with the specified page separator and additional keyword arguments.
+        async aload_document(file_path: str, metadata: dict = None) -> Document:
+            Asynchronously loads and converts a document from the specified file path.
+            Args:
+                file_path (str): The path to the document file to be loaded.
+                metadata (dict, optional): Additional metadata to be associated with the document. Default is None.
+            Returns:
+                Document: A Document object containing the parsed content and associated metadata.
+    """
     def __init__(self, page_sep: str='[PAGE_SEP]', **kwargs) -> None:
         self.page_sep = page_sep
         llm_config = kwargs.get('llm_config')
@@ -424,6 +471,16 @@ class DoclingLoader(BaseLoader, metaclass=SingletonABCMeta):
 
 
 class DocSerializer:
+    """
+    A class used to serialize documents asynchronously.
+    Attributes:
+        data_dir (str, optional): The directory where the data is stored.
+        kwargs (dict): Additional keyword arguments to pass to the loader.
+    Methods:
+        serialize_document(path: str, semaphore: asyncio.Semaphore, metadata: Optional[Dict] = {}) -> Document:
+            Asynchronously serializes a single document from the given path.
+        serialize_documents(path: str | Path | list[str], metadata: Optional[Dict] = {}, recursive=True, n_concurrent_ops=3) -> AsyncGenerator[Document, None]:
+    """
     def __init__(self, data_dir=None, **kwargs) -> None:
         self.data_dir = data_dir
         self.kwargs = kwargs
@@ -468,6 +525,16 @@ class DocSerializer:
         return doc
 
     async def serialize_documents(self, path: str | Path | list[str], metadata: Optional[Dict] = {}, recursive=True, n_concurrent_ops=3) -> AsyncGenerator[Document, None]:
+        """
+        Asynchronously serializes documents from the given path(s).
+        Args:
+            path (str | Path | list[str]): The path or list of paths to the documents to be serialized.
+            metadata (Optional[Dict], optional): Additional metadata to include with each document. Defaults to {}.
+            recursive (bool, optional): Whether to search for files recursively in the given path(s). Defaults to True.
+            n_concurrent_ops (int, optional): The number of concurrent operations to allow. Defaults to 3.
+        Yields:
+            AsyncGenerator[Document, None]: An asynchronous generator that yields serialized Document objects.
+        """
         semaphore = asyncio.Semaphore(n_concurrent_ops)
         tasks = []
         async for file in get_files(path, recursive):
