@@ -406,6 +406,19 @@ class CustomDocLoader(BaseLoader):
     
 
 class DoclingConverter:
+    """
+    A class to handle document conversion using the Docling library.
+    Attributes:
+    -----------
+    converter : DocumentConverter
+        An instance of the DocumentConverter class from the Docling library configured with specific pipeline options.
+    Methods:
+    --------
+    __init__():
+        Initializes the DoclingConverter with specific pipeline options for PDF conversion.
+    async convert_to_md(file_path) -> ConversionResult:
+        Asynchronously converts a document at the given file path to Markdown format.
+    """
     def __init__(self):
         try:
             from docling.document_converter import DocumentConverter
@@ -456,6 +469,36 @@ class DoclingConverter:
         return await asyncio.to_thread(self.converter.convert, str(file_path))
 
 class DoclingLoader(BaseLoader, metaclass=SingletonABCMeta):
+    """
+    DoclingLoader is responsible for loading and processing documents, converting them to markdown format,
+    and optionally enriching them with image captions.
+    Attributes:
+        page_sep (str): The separator used between pages in the markdown output.
+        converter (DoclingConverter): An instance of the DoclingConverter class used for document conversion.
+    Methods:
+        __init__(page_sep: str='[PAGE_SEP]', **kwargs) -> None:
+            Initializes the DoclingLoader with the given page separator and additional keyword arguments.
+        async aload_document(file_path, metadata, save_md=False):
+            Asynchronously loads and processes a document, converting it to markdown and optionally saving it.
+            Args:
+                file_path (str): The path to the document file.
+                metadata (dict): Metadata associated with the document.
+                save_md (bool): Whether to save the markdown content to a file.
+        async get_captions(pictures: list[PictureItem], n_semaphores=10):
+            Asynchronously retrieves captions for a list of pictures using a specified number of semaphores.
+            Args:
+                pictures (list[PictureItem]): A list of PictureItem objects to caption.
+                n_semaphores (int): The number of semaphores to use for concurrent captioning.
+        async convert_to_md(file_path) -> ConversionResult:
+            Asynchronously converts a document to markdown format.
+            Args:
+                file_path (str): The path to the document file.
+        async parse(file_path, page_seperator='[PAGE_SEP]'):
+            Asynchronously parses a document, converting it to markdown and enriching it with image captions.
+            Args:
+                file_path (str): The path to the document file.
+                page_seperator (str): The separator used between pages in the markdown output.
+    """
     def __init__(self, page_sep: str='[PAGE_SEP]', **kwargs) -> None:
         super().__init__(**kwargs)
         self.page_sep = page_sep
@@ -521,6 +564,17 @@ class DoclingLoader(BaseLoader, metaclass=SingletonABCMeta):
         return enriched_content
     
 class MarkerConverter:
+    """
+    A class used to convert files to markdown format using a PDF converter.
+    Attributes
+    ----------
+    converter : PdfConverter
+        An instance of PdfConverter initialized with specific configuration.
+    Methods
+    -------
+    convert_to_md(file_path)
+        Asynchronously converts the given file to markdown format.
+    """
     def __init__(self) -> None:
 
         from marker.converters.pdf import PdfConverter
@@ -538,6 +592,22 @@ class MarkerConverter:
         return await asyncio.to_thread(self.converter, str(file_path))
 
 class MarkerLoader(BaseLoader, metaclass=SingletonABCMeta):
+    """
+    MarkerLoader is a class responsible for loading and converting documents into markdown format,
+    with optional image captioning using a language model.
+    Attributes:
+        page_sep (str): Separator used for pages in the document.
+        converter (MarkerConverter): Instance of MarkerConverter for converting documents to markdown.
+    Methods:
+        __init__(page_sep: str='------------------------------------------------\n\n', **kwargs) -> None:
+            Initializes the MarkerLoader with the given page separator and additional keyword arguments.
+        async aload_document(file_path, metadata=None, save_md=False):
+            Asynchronously loads a document from the specified file path, converts it to markdown,
+            optionally replaces image tags with descriptions, and returns a Document object.
+        async get_captions(img_dict, n_semaphores=10):
+            Asynchronously generates captions for images in the document using a language model,
+            with a specified number of semaphores for concurrency control.
+    """
     def __init__(self, page_sep: str='------------------------------------------------\n\n', **kwargs) -> None:
         super().__init__(**kwargs)
         self.page_sep = page_sep
