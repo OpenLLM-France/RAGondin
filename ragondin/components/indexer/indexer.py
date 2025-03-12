@@ -30,14 +30,16 @@ class Indexer(metaclass=SingletonMeta):
             n_concurrent_chunking (int): Number of concurrent chunking operations. Defaults to 2.
         """
         embedder = HFEmbedder(embedder_config=config.embedder, device=device)
-        self.serializer = DocSerializer(data_dir=config.paths.data_dir, llm_config=config.llm)
+        self.serializer = DocSerializer(data_dir=config.paths.data_dir, config=config)
         self.chunker: ABCChunker = ChunkerFactory.create_chunker(config, embedder=embedder.get_embeddings())
         self.vectordb = ConnectorFactory.create_vdb(config, logger=logger, embeddings=embedder.get_embeddings())
         self.logger = logger
         self.logger.info("Indexer initialized...")
+        self.config = config
 
         self.n_concurrent_loading = config.insertion.get("n_concurrent_loading", 2) # Number of concurrent loading operations
         self.n_concurrent_chunking = config.insertion.get("n_concurrent_chunking", 2) # Number of concurrent chunking operations
+        self.enable_insertion = self.config.vectordb["enable"]
 
     async def chunk(self, doc, gpu_semaphore: asyncio.Semaphore) -> AsyncGenerator[Document, None]:
         """
@@ -91,14 +93,18 @@ class Indexer(metaclass=SingletonMeta):
             all_chunks = sum(results, [])
 
             if all_chunks:
-                await self.vectordb.async_add_documents(all_chunks, collection_name=collection_name)
-                self.logger.debug(f"Documents {path} added.")
+                if self.enable_insertion:
+                    await self.vectordb.async_add_documents(all_chunks, collection_name=collection_name)
+                    self.logger.debug(f"Documents {path} added.")
+                else:
+                    self.logger.debug(f"Documents {path} handled but not added to the database.")
         
         except Exception as e:
             self.logger.error(f"An exception as occured: {e}")
             raise Exception(f"An exception as occured: {e}")
         
     
+
     def delete_files(self, filters: Union[Dict, List[Dict]], collection_name: Optional[str] = None):
         """
         Deletes files from the vector database based on the provided filters.
@@ -114,6 +120,10 @@ class Indexer(metaclass=SingletonMeta):
         """
         deleted_files = []
         not_found_files = []
+        if not self.enable_insertion:
+            self.logger.error("Vector database is not enabled, however, the delete_files method was called.")
+            return deleted_files, not_found_files
+
 
         for filter in filters:
             try:

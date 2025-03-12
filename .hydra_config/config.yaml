@@ -9,17 +9,18 @@ embedder:
   type: huggingface
   model_name: HIT-TMG/KaLM-embedding-multilingual-mini-v1
   
-  
-  # Alibaba-NLP/gte-Qwen2-1.5B-instruct
-  # HIT-TMG/KaLM-embedding-multilingual-mini-v1
-  # powerful multilingual model => More language => token's decomposed heavily => More to embed => this model is better than Alibaba NLP models
-
 vectordb:
   host: ${oc.env:VDB_HOST, milvus}
   port: ${oc.env:VDB_PORT, 19530}
   connector_name: ${oc.env:VDB_CONNECTOR_NAME, milvus}
   collection_name: vdb_test
   hybrid_mode: true
+  enable: true
+
+insertion:
+  n_concurrent_loading: 2 # Number of concurrent loading operations (2-3 is recommended, knowing that some loaders use gpu)
+  n_concurrent_chunking: 2 # Number of concurrent chunking operations
+
 
 insertion:
   n_concurrent_loading: 2 # Number of concurrent loading operations (2-3 is recommended, knowing that some loaders use gpu)
@@ -30,7 +31,7 @@ reranker:
   top_k: 7
 
 grader:
-  grade_documents: true
+  grade_documents: false
 
 verbose:
   verbose: true
@@ -43,6 +44,9 @@ paths:
 prompt:
   rag_sys_pmpt: rag_sys_prompt_template.txt # rag_sys_pmpt_tmpl_ifa.txt
   context_pmpt_tmpl: contextualize_prompt_template.txt
+
+loader:
+  image_captioning: true
 
 semaphore:
   llm_semaphore: ${oc.decode:${oc.env:LLM_SEMAPHORE, 10}}
