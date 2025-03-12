@@ -21,6 +21,7 @@ dependencies = [
     "langchain-qdrant>=0.2.0",
     "llama-index-llms-langchain>=0.6.0",
     "loguru>=0.7.3",
+    "marker-pdf>=0.2.17",
     "psutil>=7.0.0",
     "pydub>=0.25.1",
     "pymupdf4llm>=0.0.17",

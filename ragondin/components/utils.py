@@ -7,6 +7,8 @@ import asyncio
 from collections import deque
 from typing import Optional
 from config.config import load_config
+import atexit
+
 
 config = load_config()
 
@@ -29,10 +31,11 @@ class LLMSemaphore(metaclass=SingletonMeta):
             raise ValueError("max_concurrent_ops must be a positive integer")
         self.max_concurrent_ops = max_concurrent_ops
         self._semaphore = asyncio.Semaphore(max_concurrent_ops)
+        atexit.register(self.cleanup)
 
     async def __aenter__(self):
         await self._semaphore.acquire()
-        return self  # or return a resource if needed
+        return self
 
     async def __aexit__(self, exc_type, exc, tb):
         self._semaphore.release()
@@ -42,6 +45,11 @@ class LLMSemaphore(metaclass=SingletonMeta):
 
     def release(self):
         self._semaphore.release()
+    
+    def cleanup(self):
+        """ Ensure semaphore is released at shutdown """
+        while self._semaphore.locked():
+            self._semaphore.release()
     
 
 def load_sys_template(file_path: Path) -> tuple[str, str]:

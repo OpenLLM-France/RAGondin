@@ -450,8 +450,7 @@ class DoclingLoader(BaseLoader, metaclass=SingletonABCMeta):
     def __init__(self, page_sep: str='[PAGE_SEP]', **kwargs) -> None:
         super().__init__(**kwargs)
         self.page_sep = page_sep
-        llm_config = kwargs.get('llm_config')
-        self.converter = DoclingConverter(llm_config=llm_config)
+        self.converter = DoclingConverter()
     
     async def aload_document(self, file_path, metadata, save_md=False):
         result = await self.converter.convert_to_md(file_path)
