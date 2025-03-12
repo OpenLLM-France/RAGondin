@@ -45,3 +45,4 @@ kotaemon
 .python-version
 .vscode
 .DS_Store
+logs/

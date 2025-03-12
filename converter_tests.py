@@ -5,6 +5,8 @@ os.chdir("ragondin")
 arguments = {
     "loader.image_captioning": ["true", "false"],
     "loader.file_loaders.pdf": ["MarkerLoader", "DoclingLoader"],
+    "insertion.n_concurrent_loading": ["1", "2", "3", "4"],
+    "insertion.n_concurrent_chunking": ["1", "2", "3", "4"],
 }
 
 def generate_combinations(arguments):
@@ -19,6 +21,7 @@ def add_arg(cmd, key, value):
     return f"{cmd} -{key} {value}"
 
 combinations = generate_combinations(arguments)
+print(combinations)
 
 cmd = f"uv run python manage_collection.py -f ../data"
 cmd = add_arg(cmd, "o", "vectordb.enable=false")
