@@ -68,7 +68,7 @@ Copy the content of **.env.exemple** to **.env**. Then add the **BASE_URL** and 
 
 ```bash
 # Create/update collection (default collection from .hydra_config/config.yaml)
-uv run python3 manage_collection.py -f './data' 
+python3 manage_collection.py -f './data' 
 
 # Specify collection name
 python3 manage_collection.py -f './data' -o vectordb.collection_name={collection_name}
