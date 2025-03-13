@@ -37,11 +37,11 @@ class ABCVectorDB(ABC):
         pass
     
     @abstractmethod
-    def get_file_points(self, filter: dict, partition):
+    def get_file_points(self, file_id: dict, partition: Optional[str] = None, limit: int = 100):
         pass
     
     @abstractmethod
-    def delete_points(self, points: list, partition: Optional[str] = None):
+    def delete_points(self, points: list):
         pass
     
     @abstractmethod
@@ -153,7 +153,7 @@ class MilvusDB(ABCVectorDB):
     async def get_collections(self) -> list[str]:
         return self.client.list_collections()
     
-    async def async_search(self, query: str, top_k: int = 5,similarity_threshold: int=0.80, collection_name : Optional[str] = None) -> list[Document]:
+    async def async_search(self, query: str, top_k: int = 5,similarity_threshold: int=0.80, partition : Optional[str] = None, filter: Optional[dict] = {}) -> list[Document]:
         """
         Perform an asynchronous search on the vector store with a given query.
 
@@ -170,15 +170,14 @@ class MilvusDB(ABCVectorDB):
             ValueError: If no collection name is provided and no default collection name is set.
             ValueError: If the specified collection does not exist.
         """
-        if collection_name is None :
-            if self.default_collection_name is None:
-                raise ValueError("Collection name not provided and no default collection name set.")
-            self.collection_name = self.default_collection_name
-        elif not self.collection_exists(collection_name):
-            raise ValueError(f"Collection {collection_name} does not exist.")
-        else :    
-            self.collection_name = collection_name
+        if partition is None :
+            self.logger.warning("Partition not provided. Using default partition.")
+            partition = self.default_partition
+        expr = f"partition in {partition}"
 
+        for key, value in filter.items():
+            expr += f" and {key} == '{value}'"
+        
         docs_scores = await self.vector_store.asimilarity_search_with_relevance_scores(query=query, k=top_k, score_threshold=similarity_threshold, expr=expr)
         docs = [doc for doc, score in docs_scores]
         return docs
@@ -220,7 +219,7 @@ class MilvusDB(ABCVectorDB):
         await self.vector_store.aadd_documents(chunks)
         self.logger.info("CHUNKS INSERTED")
     
-    def get_file_points(self, file_id: str, partition : Optional[List[str]] = None, limit: int = 100):
+    def get_file_points(self, file_id: str, partition : Optional[str] = None, limit: int = 100):
         """
         Retrieve file points from the vector database based on a filter.
         Args:
@@ -236,7 +235,7 @@ class MilvusDB(ABCVectorDB):
         
         try:
             # Adjust filter expression based on the type of value
-            filter_expression = f"partition in {partition} and file_id == '{file_id}'"
+            filter_expression = f"partition == '{partition}' and file_id == '{file_id}'"
   
             # Pagination parameters
             offset = 0

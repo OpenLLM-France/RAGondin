@@ -16,18 +16,17 @@ router = APIRouter()
 
 
 @router.post("/{partition}/{file_id}", response_model=None)
-async def add_files(
+async def add_file(
     partition: str,
     file_id: str, 
     file: UploadFile = File(...),
-    metadata: Optional[Any] = Form(...),
+    metadata: Optional[Any] = Form(None),
     indexer: Indexer = Depends(get_indexer)):
     try:
         # Load metadata
+        metadata = metadata or "{}" 
         metadata = json.loads(metadata)
-        if metadata is None:
-            metadata = {}
-        elif not isinstance(metadata, dict):
+        if not isinstance(metadata, dict):
             raise HTTPException(status_code=400, detail="Metadata should be a dictionary")
         
         # CHeck partition

@@ -133,14 +133,15 @@ class Indexer(metaclass=SingletonMeta):
                 self.logger.info(f"No points found for file_id: {file_id}")
                 return
             # Delete the points
-            self.vectordb.delete_points(points, partition)
+            self.vectordb.delete_points(points)
             self.logger.info(f"File {file_id} deleted.")
         except Exception as e:
             self.logger.error(f"Error in `delete_files` for file_id {file_id}: {e}")
+            raise
         
         return True
     
-    async def asearch(self, query: str, top_k: int = 5,similarity_threshold: int=0.80, partition : Optional[str | List[str] ] = None, filter: Optional[Dict] = None) -> List[Document]:
+    async def asearch(self, query: str, top_k: int = 5,similarity_threshold: int=0.80, partition : Optional[str | List[str] ] = None, filter: Optional[Dict] = {}) -> List[Document]:
         partition = self._check_partition_list(partition)
         results = await self.vectordb.async_search(query=query, top_k=top_k, similarity_threshold=similarity_threshold, partition=partition, filter=filter)
         return results
