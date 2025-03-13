@@ -1,4 +1,0 @@
-type: ''
-criteria: similarity
-top_k: 15
-similarity_threshold: 0.6
