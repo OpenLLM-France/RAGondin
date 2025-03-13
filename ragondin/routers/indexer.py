@@ -23,6 +23,9 @@ async def add_file(
     metadata: Optional[Any] = Form(None),
     indexer: Indexer = Depends(get_indexer)):
     try:
+        # Check if file exists
+        if indexer.vectordb.file_exists(file_id, partition):
+            raise HTTPException(status_code=404, detail=f"File {file_id} already exists in partition {partition}")
         # Load metadata
         metadata = metadata or "{}" 
         metadata = json.loads(metadata)
@@ -48,7 +51,7 @@ async def add_file(
         # Now pass the file path to the Indexer
         await indexer.add_files2vdb(path=file_path, metadata=metadata, partition=partition)
 
-        return JSONResponse(content={"message": f"File processed and added to the vector database : {file.filename}"}, status_code=200)
+        return JSONResponse(content={"message": f"File processed and added to the vector database : {file_id}"}, status_code=200)
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -147,6 +150,82 @@ async def delete_file(
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+@router.put("/{partition}/{file_id}", response_model=None)
+async def put_file(
+    partition: str,
+    file_id: str, 
+    file: UploadFile = File(...),
+    metadata: Optional[Any] = Form(None),
+    indexer: Indexer = Depends(get_indexer)):
+    try:
+        # Check if file exists
+        if not indexer.vectordb.file_exists(file_id, partition):
+            raise HTTPException(status_code=404, detail=f"File {file_id} not found in partition {partition}")
+        
+        # Delete the existing file
+        indexer.delete_file(file_id, partition)
+        logger.info(f"File {file_id} deleted.")
+
+        # Load metadata
+        metadata = metadata or "{}" 
+        metadata = json.loads(metadata)
+        if not isinstance(metadata, dict):
+            raise HTTPException(status_code=400, detail="Metadata should be a dictionary")
+        
+        # CHeck partition
+        if not isinstance(partition, str):
+            raise HTTPException(status_code=400, detail="partition must be a string.")
+            
+        # Add file_id to metadata
+        metadata["file_id"] = file_id
+
+        # Create a temporary directory to store files
+        save_dir = Path(DATA_DIR)
+        save_dir.mkdir(parents=True, exist_ok=True)
+        
+        # Save the uploaded file
+        file_path = save_dir / Path(file.filename).name
+        logger.info(f"Processing file: {file.filename} and saving to {file_path}")
+        with open(file_path, "wb") as buffer:
+            buffer.write(await file.read())
+        # Now pass the file path to the Indexer
+        await indexer.add_files2vdb(path=file_path, metadata=metadata, partition=partition)
+
+        return JSONResponse(content={"message": f"File processed and added to the vector database : {file_id}"}, status_code=200)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.patch("/{partition}/{file_id}", response_model=None)
+async def patch_file(
+    partition: str,
+    file_id: str, 
+    metadata: Optional[Any] = Form(None),
+    indexer: Indexer = Depends(get_indexer)):
+    try:
+        # Check if file exists
+        if not indexer.vectordb.file_exists(file_id, partition):
+            raise HTTPException(status_code=404, detail=f"File {file_id} not found in partition {partition}")
+
+        # Load metadata
+        metadata = metadata or "{}" 
+        metadata = json.loads(metadata)
+        if not isinstance(metadata, dict):
+            raise HTTPException(status_code=400, detail="Metadata should be a dictionary")
+        
+        # CHeck partition
+        if not isinstance(partition, str):
+            raise HTTPException(status_code=400, detail="partition must be a string.")
+            
+        # Add file_id to metadata
+        metadata["file_id"] = file_id
+
+        # Update the metadata
+        await indexer.update_file_metadata(file_id, metadata, partition)
+
+        return JSONResponse(content={"message": f"File metadata updated : {file_id}"}, status_code=200)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 @router.post("/sync-db/", response_model=None)
 async def sync_db(indexer: Indexer = Depends(get_indexer)):

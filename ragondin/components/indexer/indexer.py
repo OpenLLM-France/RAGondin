@@ -141,6 +141,41 @@ class Indexer(metaclass=SingletonMeta):
         
         return True
     
+    async def update_file_metadata(self, file_id: str, metadata: Dict, partition: Optional[str] = None):
+        """
+        Updates the metadata of a file in the vector database.
+        Args:
+            file_id (str): The ID of the file to be updated.
+            metadata (Dict): The new metadata to be associated with the file.
+            collection_name (Optional[str]): The name of the collection in which the file is stored. Defaults to None.
+        Returns:
+            None
+        """
+        partition = self._check_partition(partition)
+        if not self.enable_insertion:
+            self.logger.error("Vector database is not enabled, however, the update_file_metadata method was called.")
+            return
+
+        try:
+            # Get existing chunks associated with the file name
+            docs = self.vectordb.get_file_chunks(file_id, partition)
+
+            # Update the metadata
+            for doc in docs:
+                doc.metadata.update(metadata)
+            
+            # Delete the existing chunks
+            self.delete_file(file_id, partition)
+
+            # Add the updated chunks
+            if self.enable_insertion:
+                await self.vectordb.async_add_documents(docs)
+
+            self.logger.info(f"Metadata for file {file_id} updated.")
+        except Exception as e:
+            self.logger.error(f"Error in `update_file_metadata` for file_id {file_id}: {e}")
+            raise
+    
     async def asearch(self, query: str, top_k: int = 5,similarity_threshold: int=0.80, partition : Optional[str | List[str] ] = None, filter: Optional[Dict] = {}) -> List[Document]:
         partition = self._check_partition_list(partition)
         results = await self.vectordb.async_search(query=query, top_k=top_k, similarity_threshold=similarity_threshold, partition=partition, filter=filter)

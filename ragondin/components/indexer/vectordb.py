@@ -3,6 +3,7 @@ import asyncio
 from typing import Union, Optional, List, Dict
 from qdrant_client import QdrantClient, models
 from pymilvus import MilvusClient
+from langchain_core.documents import Document
 from langchain_milvus import Milvus, BM25BuiltInFunction
 from langchain_community.embeddings import HuggingFaceBgeEmbeddings
 from langchain_huggingface import HuggingFaceEmbeddings
@@ -153,7 +154,7 @@ class MilvusDB(ABCVectorDB):
     async def get_collections(self) -> list[str]:
         return self.client.list_collections()
     
-    async def async_search(self, query: str, top_k: int = 5,similarity_threshold: int=0.80, partition : Optional[str] = None, filter: Optional[dict] = {}) -> list[Document]:
+    async def async_search(self, query: str, top_k: int = 5,similarity_threshold: int=0.80, partition : Optional[list[str]] = None, filter: Optional[dict] = {}) -> list[Document]:
         """
         Perform an asynchronous search on the vector store with a given query.
 
@@ -172,7 +173,7 @@ class MilvusDB(ABCVectorDB):
         """
         if partition is None :
             self.logger.warning("Partition not provided. Using default partition.")
-            partition = self.default_partition
+            partition = [self.default_partition]
         expr = f"partition in {partition}"
 
         for key, value in filter.items():
@@ -182,7 +183,7 @@ class MilvusDB(ABCVectorDB):
         docs = [doc for doc, score in docs_scores]
         return docs
     
-    async def async_multy_query_search(self, queries: list[str], top_k_per_query: int = 5, similarity_threshold: int=0.80, partition : Optional[List[str]] = None) -> list[Document]:
+    async def async_multy_query_search(self, queries: list[str], top_k_per_query: int = 5, similarity_threshold: int=0.80, partition : list[str] = None ) -> list[Document]:
         """
         Perform multiple asynchronous search queries concurrently and return the results.
         Args:
@@ -219,7 +220,7 @@ class MilvusDB(ABCVectorDB):
         await self.vector_store.aadd_documents(chunks)
         self.logger.info("CHUNKS INSERTED")
     
-    def get_file_points(self, file_id: str, partition : Optional[str] = None, limit: int = 100):
+    def get_file_points(self, file_id: str, partition : str, limit: int = 100):
         """
         Retrieve file points from the vector database based on a filter.
         Args:
@@ -264,6 +265,45 @@ class MilvusDB(ABCVectorDB):
         except Exception as e:
             self.logger.error(f"Couldn't get file points for file_id {file_id}: {e}")
             raise
+    
+    def get_file_chunks(self, file_id: str, partition : Optional[str] = None, limit: int = 100):
+        """
+        Retrieve file points from the vector database based on a filter.
+        Args:
+            filter (dict): A dictionary containing the filter key and value.
+            collection_name (Optional[str], optional): The name of the collection to query. Defaults to None.
+            limit (int, optional): The maximum number of results to return per query. Defaults to 100.
+        Returns:
+            list: A list of Documents that match the filter criteria.
+        """
+        try:
+            # Adjust filter expression based on the type of value
+            filter_expression = f"partition == '{partition}' and file_id == '{file_id}'"
+  
+            # Pagination parameters
+            offset = 0
+            results = []
+
+            while True:
+                response = self.client.query(
+                    collection_name=self.collection_name,
+                    filter=filter_expression,
+                    limit=limit,
+                    offset=offset
+                )
+
+                if not response:
+                    break  # No more results
+
+                results.extend(response)
+                offset += len(response)  # Move offset forward
+           
+            docs = [Document(page_content=res['text'], metadata={key:value for key, value in res.items() if key not in ['text', 'vector', '_id']}) for res in results]
+            return docs  # Return list of result IDs
+
+        except Exception as e:
+            self.logger.error(f"Couldn't get file points for file_id {file_id}: {e}")
+            raise     
 
     def delete_points(self, points: list):
         """
@@ -278,16 +318,16 @@ class MilvusDB(ABCVectorDB):
             self.logger.error(f"Error in `delete_points`: {e}")
         pass
 
-    def file_exists(self, file_name: str, partition: Optional[List[str]] = None):
+    def file_exists(self, file_id: str, partition: Optional[List[str]] = None):
         """
         Check if a file exists in Milvus
         """
         try:
             # Get points associated with the file name
-            points = self.get_file_points({"file_name": file_name}, partition, limit=1)
+            points = self.get_file_points(file_id=file_id, partition=partition, limit=1)
             return True if points else False
         except Exception as e:
-            self.logger.error(f"Error in `file_exists` for {file_name}: {e}")
+            self.logger.error(f"Error in `file_exists` for file_id {file_id}: {e}")
             return False
     
     def collection_exists(self, collection_name: str):
