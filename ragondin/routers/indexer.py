@@ -31,10 +31,6 @@ async def add_file(
         metadata = json.loads(metadata)
         if not isinstance(metadata, dict):
             raise HTTPException(status_code=400, detail="Metadata should be a dictionary")
-        
-        # CHeck partition
-        if not isinstance(partition, str):
-            raise HTTPException(status_code=400, detail="partition must be a string.")
             
         # Add file_id to metadata
         metadata["file_id"] = file_id

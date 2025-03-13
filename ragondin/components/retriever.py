@@ -23,7 +23,7 @@ class ABCRetriever(ABC):
         pass
 
     @abstractmethod
-    async def retrieve(self, question: str, db: QdrantDB) -> list[Document]:
+    async def retrieve(self, partition: list[str], question: str, db: ABCVectorDB) -> list[Document]:
         pass
 
 
@@ -46,9 +46,10 @@ class BaseRetriever(ABCRetriever):
         self.logger.info("Retriever initialized")
 
 
-    async def retrieve(self, question: str, db: ABCVectorDB) -> list[Document]:
+    async def retrieve(self, partition: list[str], question: str, db: ABCVectorDB) -> list[Document]:
         chunks = await db.async_search(
             query=question, 
+            partition=partition,
             top_k=self.top_k,
             similarity_threshold=self.similarity_threshold
         )
@@ -102,7 +103,7 @@ class MultiQueryRetriever(BaseRetriever):
             raise KeyError(f"An Error has occured: {e}")
 
     
-    async def retrieve(self, question: str, db: QdrantDB) -> list[Document]:
+    async def retrieve(self, partition:list[str], question: str, db: QdrantDB) -> list[Document]:
         # generate different perspectives of the question
         generated_questions = await self.generate_queries.ainvoke(
             {
@@ -111,7 +112,8 @@ class MultiQueryRetriever(BaseRetriever):
             }
         )
         chunks = await db.async_multy_query_search(
-            queries=generated_questions, 
+            queries=generated_questions,
+            partition=partition,
             top_k_per_query=self.top_k,
             similarity_threshold=self.similarity_threshold
         )
@@ -145,13 +147,13 @@ class HyDeRetriever(BaseRetriever):
         return hyde_document
     
 
-    async def retrieve(self, question: str, db: ABCVectorDB) -> list[Document]:
+    async def retrieve(self,partition:list[str], question: str, db: ABCVectorDB) -> list[Document]:
         hyde = await self.get_hyde(question)
         queries = [hyde]
         if self.combine:
             queries.append(question)
         
-        return await db.async_multy_query_search(queries=queries, top_k_per_query=self.top_k, similarity_threshold=self.similarity_threshold)
+        return await db.async_multy_query_search(queries=queries,partition=partition, top_k_per_query=self.top_k, similarity_threshold=self.similarity_threshold)
    
 
 class RetrieverFactory:

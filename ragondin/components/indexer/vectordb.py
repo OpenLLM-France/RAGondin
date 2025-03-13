@@ -34,7 +34,7 @@ class ABCVectorDB(ABC):
         pass
     
     @abstractmethod
-    async def async_multy_query_search(self, queries: list[str], top_k_per_query: int = 5) -> list[Document]:
+    async def async_multy_query_search(self, partition: list[str], queries: list[str], top_k_per_query: int = 5) -> list[Document]:
         pass
     
     @abstractmethod
@@ -154,7 +154,7 @@ class MilvusDB(ABCVectorDB):
     async def get_collections(self) -> list[str]:
         return self.client.list_collections()
     
-    async def async_search(self, query: str, top_k: int = 5,similarity_threshold: int=0.80, partition : Optional[list[str]] = None, filter: Optional[dict] = {}) -> list[Document]:
+    async def async_search(self, query: str, partition: list[str],top_k: int = 5,similarity_threshold: int=0.80, filter: Optional[dict] = {}) -> list[Document]:
         """
         Perform an asynchronous search on the vector store with a given query.
 
@@ -171,9 +171,6 @@ class MilvusDB(ABCVectorDB):
             ValueError: If no collection name is provided and no default collection name is set.
             ValueError: If the specified collection does not exist.
         """
-        if partition is None :
-            self.logger.warning("Partition not provided. Using default partition.")
-            partition = [self.default_partition]
         expr = f"partition in {partition}"
 
         for key, value in filter.items():
@@ -183,7 +180,7 @@ class MilvusDB(ABCVectorDB):
         docs = [doc for doc, score in docs_scores]
         return docs
     
-    async def async_multy_query_search(self, queries: list[str], top_k_per_query: int = 5, similarity_threshold: int=0.80, partition : list[str] = None ) -> list[Document]:
+    async def async_multy_query_search(self, partition : list[str], queries: list[str], top_k_per_query: int = 5, similarity_threshold: int=0.80) -> list[Document]:
         """
         Perform multiple asynchronous search queries concurrently and return the results.
         Args:
@@ -195,7 +192,7 @@ class MilvusDB(ABCVectorDB):
             list[Document]: A list of unique documents retrieved from the search queries.
         """
         # Gather all search tasks concurrently
-        search_tasks = [self.async_search(query=query, top_k=top_k_per_query, similarity_threshold=similarity_threshold, partition=partition) for query in queries]
+        search_tasks = [self.async_search(query=query, partition=partition, top_k=top_k_per_query, similarity_threshold=similarity_threshold) for query in queries]
         retrieved_results = await asyncio.gather(*search_tasks)
         # Process the retrieved documents
         retrieved_chunks = {}
@@ -318,7 +315,7 @@ class MilvusDB(ABCVectorDB):
             self.logger.error(f"Error in `delete_points`: {e}")
         pass
 
-    def file_exists(self, file_id: str, partition: Optional[List[str]] = None):
+    def file_exists(self, file_id: str, partition: str):
         """
         Check if a file exists in Milvus
         """

@@ -80,7 +80,7 @@ class Indexer(metaclass=SingletonMeta):
         Returns:
             None
         """
-        partition = self._check_partition(partition)
+        partition = self._check_partition_str(partition)
         gpu_semaphore = asyncio.Semaphore(self.n_concurrent_chunking) # Only allow max_concurrent_gpu_ops GPU operation at a time
         doc_generator: AsyncGenerator[Document, None] = self.serializer.serialize_documents(path, metadata={**metadata, "partition": partition}, recursive=True, n_concurrent_ops=self.n_concurrent_loading)
 
@@ -107,7 +107,7 @@ class Indexer(metaclass=SingletonMeta):
         
     
 
-    def delete_file(self, file_id : str, partition: Optional[str] = None):
+    def delete_file(self, file_id : str, partition: str):
         """
         Deletes files from the vector database based on the provided filters.
         Args:
@@ -120,7 +120,6 @@ class Indexer(metaclass=SingletonMeta):
         Raises:
             Exception: If an error occurs during the deletion process, it is logged and the function continues with the next filter.
         """
-        partition = self._check_partition(partition)
         if not self.enable_insertion:
             self.logger.error("Vector database is not enabled, however, the delete_files method was called.")
             return
@@ -141,7 +140,7 @@ class Indexer(metaclass=SingletonMeta):
         
         return True
     
-    async def update_file_metadata(self, file_id: str, metadata: Dict, partition: Optional[str] = None):
+    async def update_file_metadata(self, file_id: str, metadata: dict, partition: str):
         """
         Updates the metadata of a file in the vector database.
         Args:
@@ -150,8 +149,7 @@ class Indexer(metaclass=SingletonMeta):
             collection_name (Optional[str]): The name of the collection in which the file is stored. Defaults to None.
         Returns:
             None
-        """
-        partition = self._check_partition(partition)
+        """        
         if not self.enable_insertion:
             self.logger.error("Vector database is not enabled, however, the update_file_metadata method was called.")
             return
@@ -178,11 +176,11 @@ class Indexer(metaclass=SingletonMeta):
     
     async def asearch(self, query: str, top_k: int = 5,similarity_threshold: int=0.80, partition : Optional[str | List[str] ] = None, filter: Optional[Dict] = {}) -> List[Document]:
         partition = self._check_partition_list(partition)
-        results = await self.vectordb.async_search(query=query, top_k=top_k, similarity_threshold=similarity_threshold, partition=partition, filter=filter)
+        results = await self.vectordb.async_search(query=query, partition=partition, top_k=top_k, similarity_threshold=similarity_threshold, filter=filter)
         return results
 
 
-    def _check_partition(self, partition: Optional[str]):
+    def _check_partition_str(self, partition: Optional[str]):
         if partition is None :
             self.logger.warning("Partition not provided. Using default partition.")
             partition = self.default_partition
