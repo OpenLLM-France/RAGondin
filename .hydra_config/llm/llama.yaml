@@ -1,0 +1,6 @@
+defaults:
+  - base
+
+base_url: ${oc.env:BASE_URL}
+model: meta-llama-31-8b-it
+api_key: ${oc.env:API_KEY}
