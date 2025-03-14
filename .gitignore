@@ -46,3 +46,4 @@ kotaemon
 .vscode
 .DS_Store
 logs/
+old_logs/
