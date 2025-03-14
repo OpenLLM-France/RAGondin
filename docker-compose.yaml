@@ -29,10 +29,12 @@ services:
             - driver: nvidia
               count: all 
               capabilities: [gpu]
+    profiles:
+      - ''  # Empty string gives default behavior (but does not run when cpu requested)
 
   # No GPU (docker compose --profile cpu up)
   chainlit-app-cpu:
     <<: *chainlit_template
     deploy: {}
     profiles:
-      - cpu
+      - 'cpu'
