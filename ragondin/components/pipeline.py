@@ -51,7 +51,7 @@ class RagPipeline:
         self._chat_history: deque = deque(maxlen=self.chat_history_depth)
         self.llm_client = LLM(config, self.logger)
 
-    async def get_contextualized_docs(self, question: str, chat_history: list)-> list[Document]:
+    async def get_contextualized_docs(self, partition: list[str], question: str, chat_history: list)-> list[Document]:
         """With this function, the new question is reformulated as a standalone question that takes into account the chat_history.
         The new contextualized question is better suited for retreival. 
         This contextualisation allows to have a RAG agent that also takes into account history, so chatbot RAG.
@@ -62,7 +62,8 @@ class RagPipeline:
         """        
         if self.rag_mode == "SimpleRag": # for the SimpleRag, we don't need the contextualize as questions are treated independently regardless of the chat_history
             docs = await self.retriever.retrieve(
-                question, 
+                partition=partition,
+                question=question, 
                 db=self.vectordb
             )
             contextualized_question = question
@@ -87,7 +88,8 @@ class RagPipeline:
             logger.debug(f"Query: {contextualized_question}")
 
             docs = await self.retriever.retrieve(
-                contextualized_question, 
+                partition=partition,
+                question=contextualized_question, 
                 db=self.vectordb
             )
             logger.debug(f"{len(docs)} Documents retreived")
@@ -96,14 +98,14 @@ class RagPipeline:
         return docs, contextualized_question
     
 
-    async def run(self, question: str="", chat_history: list[AIMessage | HumanMessage]=None):
+    async def run(self, partition : list[str], question: str="", chat_history: list[AIMessage | HumanMessage]=None):
         if chat_history: # when the user provides chat_history (in api_mode)
             chat_history = chat_history[-self.chat_history_depth:]
         else:
             chat_history = list(self._chat_history) # use the saved chat history
       
         # 1. contextualize the question and retreive relevant documents
-        docs, contextualized_question = await self.get_contextualized_docs(question, chat_history) 
+        docs, contextualized_question = await self.get_contextualized_docs(partition=partition, question=question, chat_history=chat_history) 
 
         
         if docs:

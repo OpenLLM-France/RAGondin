@@ -11,13 +11,15 @@ headers = {
     "Content-Type": "application/json"
 }
 
+PARTITION = "_default"
+
 history = []
 
 def get_base_url():
     from chainlit.context import get_context
     referer = get_context().session.http_referer
     parsed_url = urlparse(referer) # Parse the referer URL
-    base_url = f"{parsed_url.scheme}://{parsed_url.netloc}/" + "{method}/"
+    base_url = f"{parsed_url.scheme}://{parsed_url.netloc}/" + "{partition}/{method}/"
     return base_url
 
 
@@ -92,7 +94,7 @@ async def on_message(message: cl.Message):
         async with httpx.AsyncClient(timeout=httpx.Timeout(60.0), http2=True) as client:
             async with client.stream(
                 'POST',
-                base_url.format(method='generate'), 
+                base_url.format(partition=PARTITION, method='generate'), 
                 params=params, 
                 headers=headers,
                 json=history

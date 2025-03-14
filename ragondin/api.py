@@ -53,19 +53,19 @@ def source2url(s: dict, static_base_url: str):
     return s
 
 
-@app.post("/generate/",
+@app.post("/{partition}/generate/",
           summary="Given a question, this endpoint allows to generate an answer grounded on the documents in the VectorDB",
           tags=[Tags.LLM]
           )
 async def get_answer(
+    partition: str,
     new_user_input: str, chat_history: list[ChatMsg]=None,
     static_base_url: str = Depends(static_base_url_dependency)
     ):
-
     msgs: list[HumanMessage | AIMessage] = None
     if chat_history:
         msgs = [mapping[chat_msg.role](content=chat_msg.content) for chat_msg in chat_history]
-    answer_stream, context, sources = await ragPipe.run(question=new_user_input, chat_history=msgs)
+    answer_stream, context, sources = await ragPipe.run(partition=[partition], question=new_user_input, chat_history=msgs)
     # print(sources)
     
     sources = list(map(lambda x: source2url(x, static_base_url), sources))
