@@ -141,7 +141,9 @@ class MilvusDB(ABCVectorDB):
             auto_id=True,
             index_params=self.index_params,
             primary_field="_id",
-            enable_dynamic_field=True
+            enable_dynamic_field=True,
+            partition_key_field="partition",
+
             #builtin_function=self.sparse_embeddings
         ) 
         self.logger.info(f"The Collection named `{name}` loaded.")
