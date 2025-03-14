@@ -20,8 +20,6 @@ __pycache__/
 
 # Ignore some local files
 *.pdf
-*.ipynb
-**/*.ipynb
 CR.md
 
 
