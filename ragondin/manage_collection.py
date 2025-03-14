@@ -66,9 +66,14 @@ async def main():
     config = load_config(overrides=args.override)
 
     if args.folder:
+<<<<<<< Updated upstream
         collection = config.vectordb["collection_name"]
         if config.vectordb["enable"]:
             logger.warning(f"Data will be upserted to the collection {collection}")
+=======
+        collection = config.vectordb["default_collection_name"]
+        logger.warning(f"Data will be upserted to the collection {collection}")
+>>>>>>> Stashed changes
 
         indexer = Indexer(config, logger)
         
@@ -92,9 +97,14 @@ async def main():
     
 
     if args.list:
+<<<<<<< Updated upstream
         collection = config.vectordb["collection_name"]
         if config.vectordb["enable"]:
             logger.warning(f"Data will be upserted to the collection {collection}")
+=======
+        collection = config.vectordb["default_collection_name"]
+        logger.warning(f"Data will be upserted to the collection {collection}")
+>>>>>>> Stashed changes
 
         indexer = Indexer(config, logger)
         
