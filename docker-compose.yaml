@@ -1,20 +1,27 @@
 include:
   - vdb/${VDB_HOST}.yaml
+
+x-chainlit-app: &chainlit_template
+  build: 
+    dockerfile: Dockerfile
+  volumes:
+    - ./model_weights:/app/model_weights
+    - ./data:/app/data # PDF data for RAG
+    - ./ragondin:/app/ragondin # For dev mode
+  ports:
+    - "${APP_PORT}:8080"
+  env_file:
+    - .env
+  
+  depends_on:
+    - ${VDB_HOST}
+
+
 services:
+
+  # GPU - default 
   chainlit-app:
-    build: 
-      dockerfile: Dockerfile
-    volumes:
-      - ./model_weights:/app/model_weights
-      - ./data:/app/data # PDF data for RAG
-      - ./ragondin:/app/ragondin # For dev mode
-    ports:
-      - "${APP_PORT}:8080"
-    env_file:
-      - .env
-    
-    depends_on:
-      - ${VDB_HOST}
+    <<: *chainlit_template
     deploy:
       resources:
         reservations:
@@ -22,3 +29,10 @@ services:
             - driver: nvidia
               count: all 
               capabilities: [gpu]
+
+  # No GPU (docker compose --profile cpu up)
+  chainlit-app-cpu:
+    <<: *chainlit_template
+    deploy: {}
+    profiles:
+      - cpu
