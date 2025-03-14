@@ -2,8 +2,7 @@ include:
   - vdb/${VDB_HOST}.yaml
 services:
   chainlit-app:
-    build: 
-      dockerfile: Dockerfile
+    image: ragondin:format-openai
     volumes:
       - ./model_weights:/app/model_weights
       - ./data:/app/data # PDF data for RAG
