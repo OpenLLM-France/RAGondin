@@ -8,7 +8,6 @@ from aiopath import AsyncPath
 from typing import Dict
 
 from langchain_core.documents.base import Document
-
 from components.indexer.loaders.BaseLoader import BaseLoader
 
 class DocSerializer:
@@ -146,6 +145,5 @@ def get_loaders(config):
         except (ModuleNotFoundError, AttributeError) as e:
             logger.error(f"Error loading {class_name}: {e}")
 
-        
     logger.debug(f"Loaders loaded: {loader_classes.keys()}")
     return loader_classes
