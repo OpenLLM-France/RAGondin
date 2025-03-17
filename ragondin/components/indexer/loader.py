@@ -1,14 +1,17 @@
 from abc import abstractmethod, ABC
 import asyncio
+import html
 import os
 from collections import defaultdict
 import gc
 from langchain_openai import ChatOpenAI
+from openai import OpenAI
+import pptx
 from components.utils import SingletonMeta
 from pydub import AudioSegment
 import torch
 from pathlib import Path
-from typing import AsyncGenerator, Optional, Dict
+from typing import AsyncGenerator, Optional, Dict, Union
 from langchain_core.documents.base import Document
 from langchain_community.document_loaders import (
     PyMuPDFLoader, 
@@ -35,6 +38,7 @@ import base64
 from io import BytesIO
 from PIL import Image
 from markitdown import MarkItDown
+from components.indexer.utils.pptx_converter import PPTXConverter
 
 import time
 
@@ -523,19 +527,6 @@ class MarkItDownLoader(BaseLoader):
         settings (dict): Configuration settings for the ChatOpenAI model.
         llm (ChatOpenAI): An instance of the ChatOpenAI class for language model interactions.
         semaphore (asyncio.Semaphore): A semaphore to limit the number of concurrent tasks.
-    Methods:
-        __init__(page_sep: str='[PAGE_SEP]', **kwargs) -> None:
-            Initializes the MarkItDownLoader with the given page separator and additional keyword arguments.
-        aload_document(file_path, metadata, save_md=False):
-            Asynchronously loads and processes a document, optionally saving it in Markdown format.
-        get_image_description(img_b64: str, image_ext, semaphore: asyncio.Semaphore):
-            Asynchronously generates a description for a given image using the language model.
-        get_captions(images):
-            Asynchronously generates captions for a list of images.
-        get_images_from_zip(input_file):
-            Asynchronously extracts images from a ZIP file and returns them in the correct order.
-        parse(file_path, page_seperator='[PAGE_SEP]'):
-            Asynchronously parses a document, converts it to Markdown, and processes images within the document.
     """
     def __init__(self, page_sep: str='[PAGE_SEP]', **kwargs) -> None:
         super().__init__(**kwargs)
@@ -550,7 +541,7 @@ class MarkItDownLoader(BaseLoader):
             images = self.get_images_from_zip(file_path)
             captions = await self.get_captions(images)
             for caption in captions:
-                result = re.sub(r"!\[[^!]*(\n){0,2}[^!]*\]\(data:image/.{3,4};base64...\)", caption.replace("\\","/"), string=result, count=1)
+                result = re.sub(r"!\[[^!]*(\n){0,2}[^!]*\]\(data:image/.{0-6};base64...\)", caption.replace("\\","/"), string=result, count=1)
         else:
             logger.info("Image captioning disabled. Ignoring images.")
 
@@ -596,23 +587,75 @@ class MarkItDownLoader(BaseLoader):
         images = self.get_images_from_zip(file_path)
         captions = await self.get_captions(images)
         for caption in captions:
-            result = re.sub(r"!\[[^!]*(\n){0,2}[^!]*\]\(data:image/.{3,4};base64...\)", caption,string=result, count=1)
+            result = re.sub(r"!\[[^!]*(\n){0,2}[^!]*\]\(data:image/.{0-6};base64...\)", caption.replace("\\","/"),string=result, count=1)
         return result
 
-# class MarkItDownConverter:
-#     def __init__(self):
-#         try:
-#             from markitdown import MarkItDown
-#         except ImportError as e:
-#             logger.warning(f"MarkItDown is not installed. {e}. Install it using `pip install markitdown`")
-#             raise e
+class MarkItDown_DocLoader(BaseLoader):
+    def __init__(self, page_sep: str='[PAGE_SEP]', **kwargs) -> None:
+        super().__init__(**kwargs)
+        from spire.doc import Document, FileFormat
+        from spire.doc.common import FileFormat
+        self.page_sep = page_sep
+        self.MDLoader = MarkItDownLoader(page_sep=page_sep, **kwargs)
+
+    async def aload_document(self, file_path, metadata , save_md=False):
+        '''
+        Here we convert the document to docx format, save it in local and then use the MarkItDownLoader 
+        to convert it to markdown'''
+        document = Document()
+        document.LoadFromFile(file_path)
+        file_path = "converted/sample.docx"
+        document.SaveToFile(file_path, FileFormat.Docx2016)
+        result_string = await self.MDLoader.aload_document(file_path, metadata, save_md)
+        os.remove(file_path)
+        document.Close()
+        return result_string
+
+    async def parse(self, file_path, page_seperator='[PAGE_SEP]'):
+        document = Document()
+        document.LoadFromFile(file_path)
+        file_path = "converted/sample.docx"
+        document.SaveToFile(file_path, FileFormat.Docx2016)
+        result_string = await self.MDLoader.parse(file_path, page_seperator)
+        os.remove(file_path)
+        document.Close()
+        return result_string
+
+class PPTXLoader(BaseLoader):
+    def __init__(self, page_sep: str='[PAGE_SEP]', **kwargs) -> None:
+        super().__init__(**kwargs)
+        self.page_sep = page_sep
+        self.image_placeholder=r"<image>"
+
+        self.converter = PPTXConverter(
+            image_placeholder=self.image_placeholder,
+            page_separator=page_sep
+        )
     
-#     async def convert(self, input_file: str):
-#         mdcontent = self.converter.convert(input_file).text_content
-#         return mdcontent
-    
-#     async def convert_to_md(self, file_path):
-#         return await asyncio.to_thread(self.convert, str(file_path))
+    async def get_captions(self, images):
+        tasks = [
+            self.get_image_description(image=img)
+            for img in images
+        ]
+        return await tqdm.gather(*tasks, desc="Generating captions")
+
+
+    async def aload_document(self, file_path, metadata, save_md):
+        md_content, imgs = self.converter.convert(local_path=file_path)
+        images_captions = await self.get_captions(imgs)
+
+        for caption in images_captions:
+            md_content = re.sub(self.image_placeholder, caption, md_content, count = 1)
+
+        doc = Document(
+            page_content=md_content,
+            metadata=metadata
+        )
+        if save_md:
+            self.save_document(Document(page_content=md_content), str(file_path))
+        return doc
+
+   
 
 class MarkerConverter(metaclass=SingletonMeta):
     """
