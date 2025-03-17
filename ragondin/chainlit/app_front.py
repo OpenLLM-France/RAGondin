@@ -6,6 +6,7 @@ from loguru import logger
 import json
 import httpx
 
+PARTITION="all"
 
 headers = {
     "accept": "application/json", 
@@ -14,7 +15,9 @@ headers = {
 
 history = []
 
-BASE_URL = "http://0.0.0.0:8080/{method}/" # this file is in the docker along with the fastapi running at port 8080
+BASE_URL = "http://0.0.0.0:8080"
+
+# this file is in the docker along with the fastapi running at port 8080
 
 
 # @cl.set_starters
@@ -69,7 +72,7 @@ async def on_chat_start():
         history.clear()
         logger.debug("New Chat Started")
         async with httpx.AsyncClient(timeout=httpx.Timeout(60.0)) as client:
-            response = await client.get(url=BASE_URL.format(method='health_check'))
+            response = await client.get(url=f"{BASE_URL}/health_check")
             print(response.text)
     except Exception as e:
         logger.error(f"An error happened: {e}")
@@ -86,7 +89,7 @@ async def on_message(message: cl.Message):
         async with httpx.AsyncClient(timeout=httpx.Timeout(60.0), http2=True) as client:
             async with client.stream(
                 'POST',
-                BASE_URL.format(method='generate'), 
+                f"{BASE_URL}/{PARTITION}/generate",
                 params=params, 
                 headers=headers,
                 json=history

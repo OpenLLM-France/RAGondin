@@ -17,6 +17,7 @@ from config import load_config
 from loguru import logger
 from chainlit.utils import mount_chainlit
 from routers.indexer import router as indexer_router
+from routers.search import router as search_router
 from utils.dependencies import indexer
 
 config = load_config()
@@ -27,7 +28,8 @@ ragPipe = RagPipeline(config=config, vectordb=indexer.vectordb, logger=logger)
 class Tags(Enum):
     VDB = "VectorDB operations"
     LLM = "LLM Calls",
-    INDEXER = "Indexer"
+    INDEXER = "Indexer",
+    SEARCH = "Semantic Search",
 
 class ChatMsg(BaseModel):
     role: Literal["user", "assistant"]
@@ -43,7 +45,7 @@ app.mount('/static', StaticFiles(directory=DATA_DIR.resolve(), check_dir=True), 
 
 
 def static_base_url_dependency(request: Request) -> str:
-    return f"{request.url.scheme}://{request.client.host}:{request.url.port}/static"
+    return f"{request.url.scheme}://{request.url.hostname}:{request.url.port}/static"
 
 
 def source2url(s: dict, static_base_url: str):
@@ -53,11 +55,12 @@ def source2url(s: dict, static_base_url: str):
     return s
 
 
-@app.post("/generate/",
+@app.post("/{partition}/generate/",
           summary="Given a question, this endpoint allows to generate an answer grounded on the documents in the VectorDB",
           tags=[Tags.LLM]
           )
 async def get_answer(
+    partition: str,
     new_user_input: str, chat_history: list[ChatMsg]=None,
     static_base_url: str = Depends(static_base_url_dependency)
     ):
@@ -79,9 +82,8 @@ async def get_answer(
     msgs: list[HumanMessage | AIMessage] = None
     if chat_history:
         msgs = [mapping[chat_msg.role](content=chat_msg.content) for chat_msg in chat_history]
-    answer_stream, context, sources = await ragPipe.run(question=new_user_input, chat_history=msgs)
+    answer_stream, context, sources = await ragPipe.run(partition=[partition], question=new_user_input, chat_history=msgs)    
     # print(sources)
-    
     sources = list(map(lambda x: source2url(x, static_base_url), sources))
     src_json = json.dumps(sources)
 
@@ -113,9 +115,7 @@ mount_chainlit(app, './chainlit/app_front.py', path="/chainlit") # mount the def
 
 # Mount the indexer router
 app.include_router(indexer_router, prefix="/indexer", tags=[Tags.INDEXER])
-
+app.include_router(search_router, prefix="/extracts", tags=[Tags.SEARCH])
 
 if __name__ == "__main__":
-    uvicorn.run('api:app', host="0.0.0.0", port=8083, reload=True, proxy_headers=True) # 8083
-
-# uvicorn api:app --reload --port 8083 --host 0.0.0.0
+    uvicorn.run('api:app', host="0.0.0.0", port=8083, reload=True, proxy_headers=True)
