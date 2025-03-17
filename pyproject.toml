@@ -23,10 +23,12 @@ dependencies = [
     "loguru>=0.7.3",
     "marker-pdf>=0.2.17",
     "openai>=1.64.0",
+    "markitdown>=0.0.2",
     "psutil>=7.0.0",
     "pydub>=0.25.1",
     "pymupdf4llm>=0.0.17",
     "python-dotenv>=1.0.1",
     "pyyaml>=6.0.2",
     "ragatouille>=0.0.9",
+    "whisperx>=3.3.1",
 ]

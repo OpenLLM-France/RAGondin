@@ -1,5 +1,5 @@
 import asyncio
-from .loader import DocSerializer
+from .loaders.loader import DocSerializer
 from typing import AsyncGenerator, Dict, Optional, Union, List
 from .embeddings import HFEmbedder
 from .chunker import ABCChunker, ChunkerFactory, SemanticSplitter, RecursiveSplitter
@@ -29,6 +29,7 @@ class Indexer(metaclass=SingletonMeta):
             n_concurrent_loading (int): Number of concurrent loading operations. Defaults to 2.
             n_concurrent_chunking (int): Number of concurrent chunking operations. Defaults to 2.
         """
+
         embedder = HFEmbedder(embedder_config=config.embedder, device=device)
         self.serializer = DocSerializer(data_dir=config.paths.data_dir, config=config)
         self.chunker: ABCChunker = ChunkerFactory.create_chunker(config, embedder=embedder.get_embeddings())
