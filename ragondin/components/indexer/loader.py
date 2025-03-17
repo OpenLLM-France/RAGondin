@@ -33,6 +33,8 @@ from ..utils import llmSemaphore, SingletonABCMeta
 import re
 import base64
 from io import BytesIO
+from PIL import Image
+from markitdown import MarkItDown
 
 import time
 
@@ -537,33 +539,18 @@ class MarkItDownLoader(BaseLoader):
     """
     def __init__(self, page_sep: str='[PAGE_SEP]', **kwargs) -> None:
         super().__init__(**kwargs)
-        from dotenv import load_dotenv
-        
+       
         self.page_sep = page_sep
-        self.converter = MarkItDownConverter()
-        self.settings = {
-            'temperature': 0.2,
-            'max_retries': 3,
-            'timeout': 60,
-            'api_key': api_key,
-            'base_url': base_url,
-            'model': "Qwen2.5-VL-7B-Instruct"
-        }
-        self.llm = ChatOpenAI(**self.settings)
-        load_dotenv()
-        api_key = os.getenv('API_KEY')
-        base_url = os.getenv('BASE_URL')
-        
-        self.semaphore = asyncio.Semaphore(10)
+        self.converter = MarkItDown()
 
     async def aload_document(self, file_path, metadata, save_md=False):
-        result = await self.converter.convert_to_md(file_path)
+        result = self.converter.convert(file_path).text_content
 
         if self.config['loader']['image_captioning']:
             images = self.get_images_from_zip(file_path)
             captions = await self.get_captions(images)
             for caption in captions:
-                result = re.sub(r"!\[[^!]*(\n){0,2}[^!]*\]\(data:image/.{3,4};base64...\)", caption,string=result, count=1)
+                result = re.sub(r"!\[[^!]*(\n){0,2}[^!]*\]\(data:image/.{3,4};base64...\)", caption.replace("\\","/"), string=result, count=1)
         else:
             logger.info("Image captioning disabled. Ignoring images.")
 
@@ -575,42 +562,14 @@ class MarkItDownLoader(BaseLoader):
             self.save_document(Document(page_content=result), str(file_path))
         return doc
 
-    async def get_image_description(self, img_b64: str, image_ext, semaphore: asyncio.Semaphore):
-        message = HumanMessage(
-            content=[
-                {
-                    "type": "image_url",
-                    "image_url": {
-                        'url': f"data:image/{image_ext};base64,{img_b64}" #f"{picture.image.uri.path}" #
-                    },
-                },
-                {
-                    "type": "text", 
-                    "text": """Provide a complete, structured and precise description of this image or figure in the same language (french) as its content. If the image contains tables, render them in markdown."""
-                }
-            ]
-        )
-
-        output = await self.llm.ainvoke([message])
-        image_description = output.content
-        markdown_content = (
-            f"\nDescription de l'image:\n"
-            f"{image_description}\n"
-        )
-        return markdown_content
-
     async def get_captions(self, images):
         tasks = [
-            self.caption(
-                img_b64=img,
-                image_ext=image_ext,
-                semaphore=self.semaphore
-            )
+            self.get_image_description(image=img)
             for img, image_ext in images
         ]
         return await tqdm.gather(*tasks, desc="Generating captions")
     
-    async def get_images_from_zip(self, input_file):
+    def get_images_from_zip(self, input_file):
         import zipfile
         with zipfile.ZipFile(input_file, 'r') as docx:
             file_names = docx.namelist()
@@ -622,7 +581,7 @@ class MarkItDownLoader(BaseLoader):
             for image_file in image_files:
                 image_data = docx.read(image_file)
                 image_extension = image_file.split('.')[-1].lower()
-                image = base64.b64encode(image_data).decode('utf-8')
+                image = Image.open(BytesIO(image_data))
                 images_not_in_order.append((image, image_extension))
                 order.append(image_file.split('media/image')[1].split(f'.{image_extension}')[0])
             
@@ -640,22 +599,20 @@ class MarkItDownLoader(BaseLoader):
             result = re.sub(r"!\[[^!]*(\n){0,2}[^!]*\]\(data:image/.{3,4};base64...\)", caption,string=result, count=1)
         return result
 
-class MarkItDownConverter(metaclass=SingletonMeta):
-    def __init__(self):
-        try:
-            from markitdown import MarkItDown
-        except ImportError as e:
-            logger.warning(f"MarkItDown is not installed. {e}. Install it using `pip install markitdown`")
-            raise e
-        
-        self.converter = MarkItDown()
+# class MarkItDownConverter:
+#     def __init__(self):
+#         try:
+#             from markitdown import MarkItDown
+#         except ImportError as e:
+#             logger.warning(f"MarkItDown is not installed. {e}. Install it using `pip install markitdown`")
+#             raise e
     
-    async def converter(self, input_file: str):
-        mdcontent = self.converter.convert(input_file).text_content
-        return mdcontent
+#     async def convert(self, input_file: str):
+#         mdcontent = self.converter.convert(input_file).text_content
+#         return mdcontent
     
-    async def convert_to_md(self, file_path):
-        return await asyncio.to_thread(self.converter, str(file_path))
+#     async def convert_to_md(self, file_path):
+#         return await asyncio.to_thread(self.convert, str(file_path))
 
 class MarkerConverter(metaclass=SingletonMeta):
     """
@@ -816,7 +773,7 @@ class DocSerializer:
             }
             doc: Document = await loader.aload_document(
                 file_path=path,
-                sub_url_path=Path(path).resolve().relative_to(self.data_dir), # for the static file server
+                metadata=metadata,
                 save_md=True
             )
 
