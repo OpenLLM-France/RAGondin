@@ -19,7 +19,6 @@ async def search_multiple_partitions(
     indexer: Indexer = Depends(get_indexer),
 ):
     try:
-        logger.info(f"Searching for '{text}' in partitions: {partitions}")
         # Perform the search using the Indexer
         results = await indexer.asearch(query=text, top_k=top_k, partition=partitions)
         

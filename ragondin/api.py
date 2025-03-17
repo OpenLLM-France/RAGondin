@@ -45,7 +45,7 @@ app.mount('/static', StaticFiles(directory=DATA_DIR.resolve(), check_dir=True), 
 
 
 def static_base_url_dependency(request: Request) -> str:
-    return f"{request.url.scheme}://{request.client.host}:{request.url.port}/static"
+    return f"{request.url.scheme}://{request.url.hostname}:{request.url.port}/static"
 
 
 def source2url(s: dict, static_base_url: str):
@@ -96,6 +96,4 @@ app.include_router(search_router, prefix="/extracts", tags=[Tags.SEARCH])
 
 
 if __name__ == "__main__":
-    uvicorn.run('api:app', host="0.0.0.0", port=8083, reload=True, proxy_headers=True) # 8083
-
-# uvicorn api:app --reload --port 8083 --host 0.0.0.0
+    uvicorn.run('api:app', host="0.0.0.0", port=8083, reload=True, proxy_headers=True)

@@ -11,7 +11,7 @@ headers = {
     "Content-Type": "application/json"
 }
 
-PARTITION = "_default"
+PARTITION = "all/"
 
 history = []
 
@@ -19,7 +19,7 @@ def get_base_url():
     from chainlit.context import get_context
     referer = get_context().session.http_referer
     parsed_url = urlparse(referer) # Parse the referer URL
-    base_url = f"{parsed_url.scheme}://{parsed_url.netloc}/" + "{partition}/{method}/"
+    base_url = f"{parsed_url.scheme}://{parsed_url.netloc}/" + "{partition}{method}/"
     return base_url
 
 
@@ -51,6 +51,7 @@ def format_elements(sources, only_txt=True):
             
         else:
             source = Path(url)
+            logger.debug(f"Url: {url}")
             match source.suffix:
                 case '.pdf':
                     elem = cl.Pdf(name=doc['doc_id'], url=url, page=doc["page"], display='side')
@@ -76,7 +77,7 @@ async def on_chat_start():
         history.clear()
         logger.debug("New Chat Started")
         async with httpx.AsyncClient(timeout=httpx.Timeout(60.0)) as client:
-            response = await client.get(url=base_url.format(method='heath_check'))
+            response = await client.get(url=base_url.format(partition = "",method='health_check'))
             print(response.text)
     except Exception as e:
         logger.error(f"An error happened: {e}")
@@ -103,7 +104,7 @@ async def on_message(message: cl.Message):
                 sources = json.loads(metadata_sources)
 
                 if sources:
-                    elements, source_names = format_elements(sources, only_txt=True)
+                    elements, source_names = format_elements(sources, only_txt=False)
                     msg = cl.Message(content="", elements=elements)
                 else:
                     msg = cl.Message(content="")
