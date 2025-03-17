@@ -173,10 +173,17 @@ class MilvusDB(ABCVectorDB):
             ValueError: If no collection name is provided and no default collection name is set.
             ValueError: If the specified collection does not exist.
         """
-        expr = f"partition in {partition}"
+        
+        expr_parts = []
+
+        if partition != ["all"]:
+            expr_parts.append(f"partition in {partition}")
 
         for key, value in filter.items():
-            expr += f" and {key} == '{value}'"
+            expr_parts.append(f"{key} == '{value}'")
+
+        # Join all parts with " and " only if there are multiple conditions
+        expr = " and ".join(expr_parts) if expr_parts else ""
         
         docs_scores = await self.vector_store.asimilarity_search_with_relevance_scores(query=query, k=top_k, score_threshold=similarity_threshold, expr=expr)
         docs = [doc for doc, score in docs_scores]
@@ -302,7 +309,27 @@ class MilvusDB(ABCVectorDB):
 
         except Exception as e:
             self.logger.error(f"Couldn't get file points for file_id {file_id}: {e}")
-            raise     
+            raise
+
+    def get_chunk_by_id(self, chunk_id: str):
+        """
+        Retrieve a chunk by its ID.
+        Args:
+            chunk_id (str): The ID of the chunk to retrieve.
+        Returns:
+            Document: The retrieved chunk.
+        """
+        try:
+            response = self.client.query(
+                collection_name=self.collection_name,
+                filter=f"_id == {chunk_id}",
+                limit=1
+            )
+            if response:
+                return Document(page_content=response[0]['text'], metadata={key:value for key, value in response[0].items() if key not in ['text', 'vector']})
+            return None
+        except Exception as e:
+            self.logger.error(f"Couldn't get chunk by ID {chunk_id}: {e}") 
 
     def delete_points(self, points: list):
         """

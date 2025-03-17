@@ -15,7 +15,7 @@ DATA_DIR = config.paths.data_dir
 router = APIRouter()
 
 
-@router.post("/{partition}/{file_id}", response_model=None)
+@router.post("/partition/{partition}/file/{file_id}", response_model=None)
 async def add_file(
     partition: str,
     file_id: str, 
@@ -51,79 +51,8 @@ async def add_file(
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-@router.get("/", response_model=None)
-async def search_multiple_partitions(
-    partitions: List[str] = Query(..., description="Comma-separated list of partitions to search"),
-    query: str = Query(..., description="Text to search semantically"),
-    top_k: int = Query(5, description="Number of top results to return"),
-    indexer: Indexer = Depends(get_indexer),
-):
-    try:
-        # Perform the search using the Indexer
-        results = await indexer.asearch(query=query, top_k=top_k, partition=partitions)
-        
-        # Transforming the results (assuming they are LangChain documents)
-        documents = [{"page_content": doc.page_content, "metadata": doc.metadata} for doc in results]
-        
-        # Return results
-        return JSONResponse(content={"Documents": documents}, status_code=200)
 
-    except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
-    except Exception as e:
-        # Handle errors
-        raise HTTPException(status_code=500, detail=str(e))
-
-
-@router.get("/{partition}", response_model=None)
-async def search_one_partition(
-    partition : str,
-    query: str = Query(..., description="Text to search semantically"),
-    top_k: int = Query(5, description="Number of top results to return"),
-    indexer: Indexer = Depends(get_indexer)
-    ):
-    try:
-        # Perform the search using the Indexer
-        results = await indexer.asearch(query=query, top_k=top_k, partition=partition)
-        
-        # Transforming the results (assuming they are LangChain documents)
-        documents = [{"page_content": doc.page_content, "metadata": doc.metadata} for doc in results]
-        
-        # Return results
-        return JSONResponse(content={"Documents": documents}, status_code=200)
-
-    except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
-    except Exception as e:
-        # Handle errors
-        raise HTTPException(status_code=500, detail=str(e))
-
-@router.get("/{partition}/{file_id}", response_model=None)
-async def search_file(
-    partition : str,
-    file_id: str,
-    query: str = Query(..., description="Text to search semantically"),
-    top_k: int = Query(5, description="Number of top results to return"),
-    indexer: Indexer = Depends(get_indexer)
-    ):
-    try:
-        # Perform the search using the Indexer
-        results = await indexer.asearch(query=query, top_k=top_k, partition=partition, filter= {"file_id": file_id})
-        
-        # Transforming the results (assuming they are LangChain documents)
-        documents = [{"page_content": doc.page_content, "metadata": doc.metadata} for doc in results]
-        
-        # Return results
-        return JSONResponse(content={"Documents": documents}, status_code=200)
-
-    except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
-    except Exception as e:
-        # Handle errors
-        raise HTTPException(status_code=500, detail=str(e))
-
-
-@router.delete("/{partition}/{file_id}", response_model=None)
+@router.delete("/partition/{partition}/file/{file_id}", response_model=None)
 async def delete_file(
     partition: str,
     file_id: str,
@@ -146,7 +75,7 @@ async def delete_file(
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-@router.put("/{partition}/{file_id}", response_model=None)
+@router.put("/partition/{partition}/file/{file_id}", response_model=None)
 async def put_file(
     partition: str,
     file_id: str, 
@@ -192,7 +121,7 @@ async def put_file(
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.patch("/{partition}/{file_id}", response_model=None)
+@router.patch("/partition/{partition}/file/{file_id}", response_model=None)
 async def patch_file(
     partition: str,
     file_id: str, 

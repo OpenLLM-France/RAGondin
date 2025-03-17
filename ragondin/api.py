@@ -17,6 +17,7 @@ from config import load_config
 from loguru import logger
 from chainlit.utils import mount_chainlit
 from routers.indexer import router as indexer_router
+from routers.search import router as search_router
 from utils.dependencies import indexer
 
 config = load_config()
@@ -27,7 +28,8 @@ ragPipe = RagPipeline(config=config, vectordb=indexer.vectordb, logger=logger)
 class Tags(Enum):
     VDB = "VectorDB operations"
     LLM = "LLM Calls",
-    INDEXER = "Indexer"
+    INDEXER = "Indexer",
+    SEARCH = "Semantic Search"
 
 class ChatMsg(BaseModel):
     role: Literal["user", "assistant"]
@@ -90,6 +92,7 @@ mount_chainlit(app, './chainlit/app_front.py', path="/chainlit") # mount the def
 
 # Mount the indexer router
 app.include_router(indexer_router, prefix="/indexer", tags=[Tags.INDEXER])
+app.include_router(search_router, prefix="/extracts", tags=[Tags.SEARCH])
 
 
 if __name__ == "__main__":
