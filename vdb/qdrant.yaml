@@ -2,7 +2,7 @@ services:
   qdrant:
     image: qdrant/qdrant
     volumes:
-      - qdrant_storage:/qdrant/storage:z
+      - ./qdrant_storage:/qdrant/storage:z
 
 volumes:
   qdrant_storage:
