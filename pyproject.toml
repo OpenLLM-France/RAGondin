@@ -30,4 +30,6 @@ dependencies = [
     "pyyaml>=6.0.2",
     "ragatouille>=0.0.9",
     "whisperx>=3.3.1",
+    "spire-doc>=13.1.0",
+    "markitdown>=0.0.2"
 ]
