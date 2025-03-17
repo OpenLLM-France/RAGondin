@@ -1,18 +1,17 @@
-import asyncio
-import base64
 import re
-from abc import ABC, abstractmethod
-from io import BytesIO
+import base64
+import asyncio
 
+from io import BytesIO
 from loguru import logger
+from abc import ABC, abstractmethod
+
 from langchain_openai import ChatOpenAI
-from langchain_core.documents.base import Document
 from langchain_core.messages import HumanMessage
+from langchain_core.documents.base import Document
+
 
 from ...utils import llmSemaphore
-
-
-
 
 class BaseLoader(ABC):
     def __init__(self, **kwargs) -> None:

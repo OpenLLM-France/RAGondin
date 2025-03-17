@@ -1,12 +1,15 @@
-from components.indexer.loaders.BaseLoader import BaseLoader
-from docling.datamodel.document import ConversionResult
-from docling_core.types.doc.document import PictureItem
-from langchain_core.documents.base import Document
+import asyncio
 
 from loguru import logger
-from components.utils import SingletonMeta
-import asyncio
 from tqdm.asyncio import tqdm
+
+from langchain_core.documents.base import Document
+from docling.datamodel.document import ConversionResult
+from docling_core.types.doc.document import PictureItem
+
+from components.utils import SingletonMeta
+from components.indexer.loaders.BaseLoader import BaseLoader
+
 
 class DoclingConverter(metaclass=SingletonMeta):
     """

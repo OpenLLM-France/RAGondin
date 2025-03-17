@@ -1,12 +1,14 @@
 import asyncio
 import torch
+import importlib
+
+from loguru import logger
 from pathlib import Path
 from typing import AsyncGenerator, Optional, Dict
-from langchain_core.documents.base import Document
-from loguru import logger
 from aiopath import AsyncPath
 from typing import Dict
-import importlib
+
+from langchain_core.documents.base import Document
 
 from components.indexer.loaders.BaseLoader import BaseLoader
 

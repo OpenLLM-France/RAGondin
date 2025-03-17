@@ -1,13 +1,17 @@
-from pathlib import Path
-from components.indexer.loaders.BaseLoader import BaseLoader
-from langchain_core.documents.base import Document
-import whisperx
-import torch
 import gc
 import os
-from pydub import AudioSegment
-from components.indexer.loaders.AudioTranscriber import AudioTranscriber
+import torch
+import whisperx
+
+
+from pathlib import Path
 from loguru import logger
+from pydub import AudioSegment
+
+from langchain_core.documents.base import Document
+
+from components.indexer.loaders.BaseLoader import BaseLoader
+from components.indexer.loaders.AudioTranscriber import AudioTranscriber
 
 class VideoAudioLoader(BaseLoader):
     def __init__(self, page_sep: str='[PAGE_SEP]', batch_size=4, config=None):    

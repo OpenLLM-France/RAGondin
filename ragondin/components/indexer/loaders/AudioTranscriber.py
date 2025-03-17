@@ -1,5 +1,6 @@
-from components.utils import SingletonMeta
 import whisperx
+
+from components.utils import SingletonMeta
 
 class AudioTranscriber(metaclass=SingletonMeta):
     def __init__(self, device='cpu', compute_type='float32', model_name='large-v2', language='fr'):
