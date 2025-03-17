@@ -10,9 +10,10 @@ from langchain_openai import ChatOpenAI
 from langchain_core.messages import HumanMessage
 from langchain_core.documents.base import Document
 
-
 from ...utils import llmSemaphore
 
+
+IMAGE_DESCRIPTION_PROMPT = """Provide a complete, structured and precise description of this image or figure in the same language (french) as its content. If the image contains tables, render them in markdown."""
 class BaseLoader(ABC):
     def __init__(self, **kwargs) -> None:
         self.config = kwargs.get('config')
@@ -65,7 +66,7 @@ class BaseLoader(ABC):
                     },
                     {
                         "type": "text", 
-                        "text": """Provide a complete, structured and precise description of this image or figure in the same language (french) as its content. If the image contains tables, render them in markdown."""
+                        "text": IMAGE_DESCRIPTION_PROMPT
                     }
                 ]
             )
