@@ -106,11 +106,25 @@ class MilvusDB(ABCVectorDB):
         self.host = host
         self.uri = f"http://{host}:{port}"
         self.client = MilvusClient(uri=self.uri)
-        self.sparse_embeddings = BM25BuiltInFunction() if hybrid_mode else None
-        #self.retrieval_mode = RetrievalMode.HYBRID if hybrid_mode else RetrievalMode.DENSE
-        self.index_params = {"metric_type": "IP"}
-        #logger.info(f"VectorDB retrieval mode: {self.retrieval_mode}")
 
+        self.sparse_embeddings = None
+        if hybrid_mode:
+            self.sparse_embeddings = BM25BuiltInFunction(
+                enable_match=True
+            )
+
+        index_params = None
+        if hybrid_mode:
+            index_params = [
+                {"metric_type": "BM25"},  # For sparse vector
+                {"metric_type": "IP"}  # For dense vector
+            ]
+        else:
+            index_params = {"metric_type": "COSINE"}
+
+        self.hybrid_mode = hybrid_mode
+        self.index_params = index_params
+        # logger.info(f"VectorDB retrieval mode: {elf.retrieval_mode}")
         # Initialize collection-related attributes
         self.default_collection_name = None
         self._collection_name = None
@@ -138,9 +152,11 @@ class MilvusDB(ABCVectorDB):
             embedding_function=self.embeddings,
             auto_id=True,
             index_params=self.index_params,
-            primary_field="_id",
+            primary_field="id",
             enable_dynamic_field=True,
-            #builtin_function=self.sparse_embeddings
+            builtin_function=self.sparse_embeddings,
+            vector_field=["sparse", "vector"] if self.hybrid_mode else None,
+            consistency_level='Strong'
         ) 
         self.logger.info(f"The Collection named `{name}` loaded.")
 
@@ -152,7 +168,7 @@ class MilvusDB(ABCVectorDB):
     async def get_collections(self) -> list[str]:
         return self.client.list_collections()
     
-    async def async_search(self, query: str, top_k: int = 5,similarity_threshold: int=0.80, collection_name : Optional[str] = None) -> list[Document]:
+    async def async_search(self, query: str, top_k: int = 5, similarity_threshold: int=0.80, collection_name : Optional[str] = None) -> list[Document]:
         """
         Perform an asynchronous search on the vector store with a given query.
 
@@ -178,7 +194,27 @@ class MilvusDB(ABCVectorDB):
         else :    
             self.collection_name = collection_name
 
-        docs_scores = await self.vector_store.asimilarity_search_with_relevance_scores(query=query, k=top_k, score_threshold=similarity_threshold)
+        if self.hybrid_mode:
+            docs_scores = await self.vector_store.asimilarity_search_with_score(
+                query=query,
+                k=top_k,
+                fetch_k=top_k,
+                ranker_type="weighted",
+                ranker_params={"weights": [0.8, 0.2]},
+            )
+
+            # docs_scores = await self.vector_store.asimilarity_search_with_score(
+            #     query=query,
+            #     k=top_k,
+            #     fetch_k=top_k,
+            #     ranker_type="rrf",
+            # )
+        else:
+            docs_scores = await self.vector_store.asimilarity_search_with_relevance_scores(
+                query=query, k=top_k, 
+                score_threshold=similarity_threshold
+            )
+        
         docs = [doc for doc, score in docs_scores]
         return docs
     
@@ -204,7 +240,7 @@ class MilvusDB(ABCVectorDB):
         for retrieved in retrieved_results:
             if retrieved:
                 for document in retrieved:
-                    retrieved_chunks[document.metadata["_id"]] = document
+                    retrieved_chunks[document.metadata["id"]] = document
         return list(retrieved_chunks.values())
     
     async def async_add_documents(self, chunks: list[Document], collection_name : Optional[str] = None) -> None:
@@ -481,7 +517,7 @@ class QdrantDB(ABCVectorDB):
         for retrieved in retrieved_results:
             if retrieved:
                 for document in retrieved:
-                    retrieved_chunks[document.metadata["_id"]] = document
+                    retrieved_chunks[document.metadata["id"]] = document
         return list(retrieved_chunks.values())
     
 
