@@ -1,5 +1,4 @@
 from .indexer import *
 from .vectordb import *
-from .loader import AudioTranscriber
-
+from .loaders import *
 __all__ = []
