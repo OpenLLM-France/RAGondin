@@ -1,6 +1,8 @@
 from pathlib import Path
-from langchain_community.document_loaders import PyMuPDFLoader
+
 from langchain_core.documents.base import Document
+from langchain_community.document_loaders import PyMuPDFLoader
+
 from components.indexer.loaders.BaseLoader import BaseLoader
 
 class CustomPyMuPDFLoader(BaseLoader):

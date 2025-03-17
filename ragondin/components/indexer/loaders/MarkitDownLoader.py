@@ -1,15 +1,18 @@
-from components.indexer.loaders.BaseLoader import BaseLoader
-from langchain_core.documents.base import Document
-from components.utils import SingletonMeta
-from langchain_openai import ChatOpenAI
-from loguru import logger
 import re
-import base64
 import os
+import base64
+import asyncio
+
+from loguru import logger
 from tqdm.asyncio import tqdm
+
+from langchain_openai import ChatOpenAI
 from langchain_core.messages import HumanMessage
 from langchain_core.documents.base import Document
-import asyncio
+
+from components.utils import SingletonMeta
+from components.indexer.loaders.BaseLoader import BaseLoader
+
 
 class MarkItDownLoader(BaseLoader):
     """

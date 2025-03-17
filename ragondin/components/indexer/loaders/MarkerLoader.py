@@ -1,11 +1,13 @@
-import asyncio
 import time
+import asyncio
+
 from loguru import logger
-from components.utils import SingletonMeta
-from components.indexer.loaders.BaseLoader import BaseLoader
-from langchain_core.documents.base import Document
 from tqdm.asyncio import tqdm
 
+from langchain_core.documents.base import Document
+
+from components.utils import SingletonMeta
+from components.indexer.loaders.BaseLoader import BaseLoader
 
 class MarkerConverter(metaclass=SingletonMeta):
     """
