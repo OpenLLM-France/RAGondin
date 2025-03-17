@@ -6,19 +6,9 @@ from langchain_core.documents.base import Document
 from loguru import logger
 from aiopath import AsyncPath
 from typing import Dict
+import importlib
 
 from components.indexer.loaders.BaseLoader import BaseLoader
-from components.indexer.loaders.AudioTranscriber import AudioTranscriber
-from components.indexer.loaders.CustomDocLoader import CustomDocLoader
-from components.indexer.loaders.CustomHTMLLoader import CustomHTMLLoader
-from components.indexer.loaders.CustomPPTLoader import CustomPPTLoader
-from components.indexer.loaders.Custompymupdf4llm import Custompymupdf4llm
-from components.indexer.loaders.CustomPyMuPDFLoader import CustomPyMuPDFLoader
-from components.indexer.loaders.CustomTextLoader import CustomTextLoader
-from components.indexer.loaders.DoclingLoader import DoclingLoader
-from components.indexer.loaders.MarkerLoader import MarkerLoader
-from components.indexer.loaders.MarkitDownLoader import MarkItDownLoader
-from components.indexer.loaders.VideoAudioLoader import VideoAudioLoader
 
 class DocSerializer:
     """
@@ -147,11 +137,14 @@ def get_loaders(config):
     loader_classes = {}
 
     for type_, class_name in loader_defaults.items():
-        cls = globals().get(class_name, None)
-        if cls:
-            loader_classes[f'.{type_}'] = cls
-        else:
-            raise ImportError(f"Class '{class_name}' not found. Program will crash if a file needs to be handled by this loader.")
+        try:
+            module = importlib.import_module(f"components.indexer.loaders.{class_name}")
+            cls = getattr(module, class_name)
+            loader_classes[f".{type_}"] = cls
+            logger.debug(f"Loaded {class_name} for {type_}")
+        except (ModuleNotFoundError, AttributeError) as e:
+            logger.error(f"Error loading {class_name}: {e}")
+
         
     logger.debug(f"Loaders loaded: {loader_classes.keys()}")
     return loader_classes
