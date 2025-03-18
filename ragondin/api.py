@@ -50,14 +50,6 @@ class Tags(Enum):
     INDEXER = "Indexer"
     OPENAI = "OpenAI Compatible API"
 
-class ChatMsg(BaseModel):
-    role: Literal["user", "assistant"]
-    content: str
-
-mapping = {
-    "user": HumanMessage, 
-    "assistant": AIMessage
-}
 
 app = FastAPI()
 app.state.app_state = app_state
