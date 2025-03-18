@@ -18,6 +18,7 @@ from loguru import logger
 from chainlit.utils import mount_chainlit
 from routers.indexer import router as indexer_router
 from routers.search import router as search_router
+from routers.openai import router as openai_router
 from utils.dependencies import indexer
 
 config = load_config()
@@ -30,6 +31,14 @@ class Tags(Enum):
     LLM = "LLM Calls",
     INDEXER = "Indexer",
     SEARCH = "Semantic Search",
+    OPENAI= "OpenAI Compatible API"
+
+class AppState:
+    def __init__(self, config):
+        self.config = config
+        self.model_name = config.llm.model
+        self.ragpipe = ragPipe
+        self.data_dir = Path(config.paths.data_dir)
 
 class ChatMsg(BaseModel):
     role: Literal["user", "assistant"]
@@ -41,6 +50,7 @@ mapping = {
 }
 
 app = FastAPI()
+app.state.app_state = AppState(config)
 app.mount('/static', StaticFiles(directory=DATA_DIR.resolve(), check_dir=True), name='static')
 
 
@@ -115,7 +125,10 @@ mount_chainlit(app, './chainlit/app_front.py', path="/chainlit") # mount the def
 
 # Mount the indexer router
 app.include_router(indexer_router, prefix="/indexer", tags=[Tags.INDEXER])
+# Mount the search router
 app.include_router(search_router, prefix="/extracts", tags=[Tags.SEARCH])
+# Mount the openai router
+app.include_router(openai_router, prefix="/v1", tags=[Tags.OPENAI])
 
 if __name__ == "__main__":
     uvicorn.run('api:app', host="0.0.0.0", port=8083, reload=True, proxy_headers=True)
