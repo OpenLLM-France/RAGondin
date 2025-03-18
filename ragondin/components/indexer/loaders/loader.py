@@ -1,7 +1,6 @@
 import asyncio
 import torch
 import importlib
-
 from loguru import logger
 from pathlib import Path
 from typing import AsyncGenerator, Optional, Dict
@@ -140,7 +139,6 @@ def get_loaders(config):
     for type_, class_name in loader_defaults.items():
         try:
             module = importlib.import_module(f"components.indexer.loaders.{class_name}")
-            print("Hello", module)
             cls = getattr(module, class_name)
             loader_classes[f".{type_}"] = cls
             logger.debug(f"Loaded {class_name} for {type_}")
