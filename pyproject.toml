@@ -34,3 +34,8 @@ dependencies = [
     "markitdown>=0.0.2",
     "openai>=1.64.0",
 ]
+
+[dependency-groups]
+dev = [
+    "ruff>=0.11.0",
+]

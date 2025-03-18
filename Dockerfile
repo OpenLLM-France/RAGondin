@@ -27,7 +27,7 @@ WORKDIR /app
 # Install uv & setup venv
 COPY pyproject.toml uv.lock ./
 RUN pip3 install uv && \
-    uv sync
+    uv sync --no-dev
 
 # Set workdir for source code
 WORKDIR /app/ragondin
