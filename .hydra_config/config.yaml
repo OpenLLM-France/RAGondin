@@ -44,8 +44,8 @@ loader:
   image_captioning: true
   file_loaders:
     docx: MarkItDownLoader
-    # pdf: DoclingLoader
-    # doc: DocLoader
+    pdf: DoclingLoader
+    doc: DocLoader
     pptx: PPTXLoader
     # odt: CustomDocLoader
 
