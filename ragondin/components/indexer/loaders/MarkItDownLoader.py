@@ -11,7 +11,7 @@ from markitdown import MarkItDown
 
 from langchain_core.documents.base import Document
 
-from components.indexer.loaders.BaseLoader import BaseLoader
+from .base import BaseLoader
 
 
 class MarkItDownLoader(BaseLoader):

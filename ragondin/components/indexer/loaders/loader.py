@@ -9,7 +9,7 @@ from aiopath import AsyncPath
 from typing import Dict
 
 from langchain_core.documents.base import Document
-from components.indexer.loaders.BaseLoader import BaseLoader
+from .base import BaseLoader
 
 class DocSerializer:
     """
@@ -63,7 +63,7 @@ class DocSerializer:
             }
             doc: Document = await loader.aload_document(
                 file_path=path,
-                sub_url_path=Path(path).resolve().relative_to(self.data_dir), # for the static file server
+                metadata=metadata,
                 save_md=True
             )
 
@@ -140,6 +140,7 @@ def get_loaders(config):
     for type_, class_name in loader_defaults.items():
         try:
             module = importlib.import_module(f"components.indexer.loaders.{class_name}")
+            print("Hello", module)
             cls = getattr(module, class_name)
             loader_classes[f".{type_}"] = cls
             logger.debug(f"Loaded {class_name} for {type_}")

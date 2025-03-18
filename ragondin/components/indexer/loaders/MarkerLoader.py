@@ -7,7 +7,7 @@ from tqdm.asyncio import tqdm
 from langchain_core.documents.base import Document
 
 from components.utils import SingletonMeta
-from components.indexer.loaders.BaseLoader import BaseLoader
+from .base import BaseLoader
 
 class MarkerConverter(metaclass=SingletonMeta):
     """

@@ -3,7 +3,7 @@ from pathlib import Path
 from langchain_core.documents.base import Document
 from langchain_community.document_loaders import TextLoader
 
-from components.indexer.loaders.BaseLoader import BaseLoader
+from .base import BaseLoader
 
 class CustomTextLoader(BaseLoader):
     def __init__(self, page_sep: str='[PAGE_SEP]', **kwargs) -> None:

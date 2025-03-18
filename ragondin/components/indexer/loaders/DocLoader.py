@@ -1,10 +1,11 @@
-from ragondin.components.indexer.loader import MarkItDownLoader
-from ragondin.components.indexer.loaders import BaseLoader
+from .MarkItDownLoader import MarkItDownLoader
+
+from .base import BaseLoader
 from spire.doc import Document, FileFormat
 
 import os
 
-class MarkItDown_DocLoader(BaseLoader):
+class DocLoader(BaseLoader):
     def __init__(self, page_sep: str='[PAGE_SEP]', **kwargs) -> None:
         super().__init__(**kwargs)
         self.page_sep = page_sep

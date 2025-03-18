@@ -4,7 +4,7 @@ from collections import defaultdict
 from langchain_core.documents.base import Document
 from langchain_community.document_loaders import UnstructuredPowerPointLoader
 
-from components.indexer.loaders.BaseLoader import BaseLoader
+from .base import BaseLoader
 
 class CustomPPTLoader(BaseLoader):
     doc_loaders = {

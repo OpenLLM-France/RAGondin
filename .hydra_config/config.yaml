@@ -43,9 +43,9 @@ prompt:
 loader:
   image_captioning: true
   file_loaders:
-    pdf: DoclingLoader
     docx: MarkItDownLoader
-    doc: MarkItDown_DocLoader
+    pdf: DoclingLoader
+    # doc: DocLoader
     pptx: PPTXLoader
     # odt: CustomDocLoader
 
