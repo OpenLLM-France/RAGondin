@@ -43,10 +43,11 @@ prompt:
 loader:
   image_captioning: true
   file_loaders:
-    pdf: DoclingLoader
-    docx: CustomDocLoader
-    doc: CustomDocLoader
-    odt: CustomDocLoader
+    docx: MarkItDownLoader
+    # pdf: DoclingLoader
+    # doc: DocLoader
+    pptx: PPTXLoader
+    # odt: CustomDocLoader
 
 semaphore:
   llm_semaphore: ${oc.decode:${oc.env:LLM_SEMAPHORE, 10}}

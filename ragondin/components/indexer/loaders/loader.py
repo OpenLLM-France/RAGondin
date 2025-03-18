@@ -8,7 +8,7 @@ from aiopath import AsyncPath
 from typing import Dict
 
 from langchain_core.documents.base import Document
-from components.indexer.loaders.BaseLoader import BaseLoader
+from .base import BaseLoader
 
 class DocSerializer:
     """
@@ -62,7 +62,7 @@ class DocSerializer:
             }
             doc: Document = await loader.aload_document(
                 file_path=path,
-                sub_url_path=Path(path).resolve().relative_to(self.data_dir), # for the static file server
+                metadata=metadata,
                 save_md=True
             )
 

@@ -8,7 +8,7 @@ from docling.datamodel.document import ConversionResult
 from docling_core.types.doc.document import PictureItem
 
 from components.utils import SingletonMeta
-from components.indexer.loaders.BaseLoader import BaseLoader
+from .base import BaseLoader
 
 
 class DoclingConverter(metaclass=SingletonMeta):
