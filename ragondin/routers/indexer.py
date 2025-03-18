@@ -4,7 +4,6 @@ from fastapi import APIRouter, HTTPException, File, UploadFile, Depends, Form
 from fastapi.responses import JSONResponse
 from pathlib import Path
 from components import Indexer
-from models.indexer import SearchRequest, DeleteFilesRequest
 from utils.dependencies import get_indexer
 from config.config import load_config
 import json

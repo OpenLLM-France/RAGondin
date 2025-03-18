@@ -14,9 +14,12 @@ headers = {
 }
 
 history = []
-
-BASE_URL = "http://0.0.0.0:8080"
-
+def get_base_url():
+    from chainlit.context import get_context
+    referer = get_context().session.http_referer
+    parsed_url = urlparse(referer) # Parse the referer URL
+    base_url = f"{parsed_url.scheme}://{parsed_url.netloc}"
+    return base_url
 # this file is in the docker along with the fastapi running at port 8080
 
 
@@ -48,6 +51,7 @@ def format_elements(sources, only_txt=True):
             
         else:
             source = Path(url)
+            logger.debug(f"Source: {url}")
             match source.suffix:
                 case '.pdf':
                     elem = cl.Pdf(name=doc['doc_id'], url=url, page=doc["page"], display='side')
@@ -65,22 +69,24 @@ def format_elements(sources, only_txt=True):
 
 @cl.on_chat_start
 async def on_chat_start():
-    logger.debug(f"BASE URL: {BASE_URL}")
+    base_url = get_base_url()
+    logger.debug(f"BASE URL: {base_url}")
 
     try:
         global history
         history.clear()
         logger.debug("New Chat Started")
         async with httpx.AsyncClient(timeout=httpx.Timeout(60.0)) as client:
-            response = await client.get(url=f"{BASE_URL}/health_check")
+            response = await client.get(url=f"{base_url}/health_check")
             print(response.text)
     except Exception as e:
         logger.error(f"An error happened: {e}")
         logger.warning("Make sur the fastapi is up!!")
-    cl.user_session.set("BASE URL", BASE_URL)
+    cl.user_session.set("BASE URL", base_url)
 
 @cl.on_message
 async def on_message(message: cl.Message):
+    base_url = get_base_url()
     user_message = message.content
     params = {
             "new_user_input": user_message
@@ -89,7 +95,7 @@ async def on_message(message: cl.Message):
         async with httpx.AsyncClient(timeout=httpx.Timeout(60.0), http2=True) as client:
             async with client.stream(
                 'POST',
-                f"{BASE_URL}/{PARTITION}/generate",
+                f"{base_url}/{PARTITION}/generate",
                 params=params, 
                 headers=headers,
                 json=history

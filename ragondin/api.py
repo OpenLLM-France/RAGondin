@@ -55,7 +55,7 @@ def source2url(s: dict, static_base_url: str):
     return s
 
 
-@app.post("/{partition}/generate/",
+@app.post("/{partition}/generate",
           summary="Given a question, this endpoint allows to generate an answer grounded on the documents in the VectorDB",
           tags=[Tags.LLM]
           )
@@ -106,7 +106,7 @@ async def get_answer(
         headers={"X-Metadata-Sources": src_json},
     )
 
-@app.get("/health_check/", summary="Toy endpoint to check that the api is up")
+@app.get("/health_check", summary="Toy endpoint to check that the api is up")
 async def health_check():
     return "RAG API is up."
 
