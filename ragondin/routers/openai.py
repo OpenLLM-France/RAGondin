@@ -32,7 +32,7 @@ def get_app_state(request: Request):
     return request.app.state.app_state
 
 def static_base_url_dependency(request: Request) -> str:
-    return f"{request.url.scheme}://{request.client.host}:{request.url.port}/static"
+    return f"{request.url.scheme}://{request.url.hostname}:{request.url.port}/static"
 
 def source2url(s: dict, static_base_url: str):
     s['url'] = f"{static_base_url}/{s['sub_url_path']}"

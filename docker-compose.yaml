@@ -1,7 +1,7 @@
 include:
   - vdb/${VDB_HOST}.yaml
 
-x-chainlit-app: &chainlit_template
+x-ragondin: &ragondin_template
   build: 
     dockerfile: Dockerfile
   volumes:
@@ -20,8 +20,8 @@ x-chainlit-app: &chainlit_template
 services:
 
   # GPU - default 
-  chainlit-app:
-    <<: *chainlit_template
+  ragondin:
+    <<: *ragondin_template
     deploy:
       resources:
         reservations:
@@ -33,8 +33,8 @@ services:
       - ''  # Empty string gives default behavior (but does not run when cpu requested)
 
   # No GPU (docker compose --profile cpu up)
-  chainlit-app-cpu:
-    <<: *chainlit_template
+  ragondin-cpu:
+    <<: *ragondin_template
     deploy: {}
     profiles:
       - 'cpu'
