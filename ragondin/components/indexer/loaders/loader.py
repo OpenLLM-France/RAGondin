@@ -3,12 +3,65 @@ import importlib
 from pathlib import Path
 from typing import AsyncGenerator, Dict, Optional
 
+import ray
 import torch
 from aiopath import AsyncPath
 from langchain_core.documents.base import Document
 from loguru import logger
 
 from .base import BaseLoader
+
+ray.init(dashboard_host="0.0.0.0", ignore_reinit_error=True)
+
+
+@ray.remote
+def serialize_document(
+    path: str, data_dir: str, loader_classes, kwargs, metadata: Optional[dict] = {}
+):
+    """
+    Ray remote function that runs an async function synchronously using asyncio.run()
+    """
+
+    async def _serialize(
+        path: str, data_dir: str, loader_classes, kwargs, metadata: Optional[dict] = {}
+    ):
+        p = AsyncPath(path)
+        type_ = p.suffix
+        loader_cls: BaseLoader = loader_classes.get(type_)
+        sub_url_path = (
+            Path(path).resolve().relative_to(data_dir)
+        )  # for the static file server
+        if type_ == ".pdf":  # for loaders that uses gpu
+            logger.debug(f"LOADING: {p.name}")
+            loader = loader_cls(**kwargs)
+            metadata = {
+                "source": str(path),
+                "file_name": p.name,
+                "sub_url_path": str(sub_url_path),
+                "page_sep": loader.page_sep,
+                **metadata,
+            }
+            doc: Document = await loader.aload_document(
+                file_path=path, metadata=metadata, save_md=True
+            )
+        else:
+            logger.debug(f"LOADING: {p.name}")
+            loader = loader_cls(**kwargs)  # Propagate kwargs here!
+            metadata = {
+                "source": str(path),
+                "file_name": p.name,
+                "sub_url_path": str(sub_url_path),
+                "page_sep": loader.page_sep,
+                **metadata,
+            }
+            doc: Document = await loader.aload_document(
+                file_path=path, metadata=metadata, save_md=True
+            )
+
+        logger.info(f"{p.name}: SERIALIZED")
+        return doc
+
+    return asyncio.run(_serialize(path, data_dir, loader_classes, kwargs, metadata))
 
 
 class DocSerializer:
@@ -30,53 +83,11 @@ class DocSerializer:
 
         self.loader_classes = get_loaders(self.config)
 
-    async def serialize_document(
-        self, path: str, semaphore: asyncio.Semaphore, metadata: Optional[Dict] = {}
-    ):
-        p = AsyncPath(path)
-        type_ = p.suffix
-        loader_cls: BaseLoader = self.loader_classes.get(type_)
-        sub_url_path = (
-            Path(path).resolve().relative_to(self.data_dir)
-        )  # for the static file server
-
-        if type_ == ".pdf":  # for loaders that uses gpu
-            async with semaphore:
-                logger.debug(f"LOADING: {p.name}")
-                loader = loader_cls(**self.kwargs)
-                metadata = {
-                    "source": str(path),
-                    "file_name": p.name,
-                    "sub_url_path": str(sub_url_path),
-                    "page_sep": loader.page_sep,
-                    **metadata,
-                }
-                doc: Document = await loader.aload_document(
-                    file_path=path, metadata=metadata, save_md=True
-                )
-        else:
-            logger.debug(f"LOADING: {p.name}")
-            loader = loader_cls(**self.kwargs)  # Propagate kwargs here!
-            metadata = {
-                "source": str(path),
-                "file_name": p.name,
-                "sub_url_path": str(sub_url_path),
-                "page_sep": loader.page_sep,
-                **metadata,
-            }
-            doc: Document = await loader.aload_document(
-                file_path=path, metadata=metadata, save_md=True
-            )
-
-        logger.info(f"{p.name}: SERIALIZED")
-        return doc
-
     async def serialize_documents(
         self,
         path: str | Path | list[str],
         metadata: Optional[Dict] = {},
         recursive=True,
-        n_concurrent_ops=3,
     ) -> AsyncGenerator[Document, None]:
         """
         Asynchronously serializes documents from the given path(s).
@@ -88,21 +99,24 @@ class DocSerializer:
         Yields:
             AsyncGenerator[Document, None]: An asynchronous generator that yields serialized Document objects.
         """
-        semaphore = asyncio.Semaphore(n_concurrent_ops)
-        tasks = []
-        async for file in get_files(self.loader_classes, path, recursive):
-            tasks.append(
-                self.serialize_document(file, semaphore=semaphore, metadata=metadata)
+        file_paths = [
+            file async for file in get_files(self.loader_classes, path, recursive)
+        ]
+
+        # Submit tasks to Ray
+        tasks = [
+            serialize_document.remote(
+                file, self.data_dir, self.loader_classes, self.kwargs, metadata
             )
+            for file in file_paths
+        ]
 
-        for task in asyncio.as_completed(tasks):
-            doc = await task
-
+        # Retrieve results asynchronously
+        for doc in ray.get(tasks):  # Blocks until all tasks complete
             if torch.cuda.is_available():
                 torch.cuda.empty_cache()
                 torch.cuda.ipc_collect()
-
-            yield doc  # yield doc as soon as it is ready
+            yield doc  # Yield processed documents
 
 
 async def get_files(
