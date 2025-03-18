@@ -107,11 +107,23 @@ class MilvusDB(ABCVectorDB):
         self.host = host
         self.uri = f"http://{host}:{port}"
         self.client = MilvusClient(uri=self.uri)
-        self.sparse_embeddings = BM25BuiltInFunction() if hybrid_mode else None
-        #self.retrieval_mode = RetrievalMode.HYBRID if hybrid_mode else RetrievalMode.DENSE
-        self.index_params = {"metric_type": "IP"}
-        #logger.info(f"VectorDB retrieval mode: {self.retrieval_mode}")
+        self.sparse_embeddings = None
+        if hybrid_mode:
+            self.sparse_embeddings = BM25BuiltInFunction(
+                enable_match=True
+            )
 
+        index_params = None
+        if hybrid_mode:
+            index_params = [
+                {"metric_type": "BM25"},  # For sparse vector
+                {"metric_type": "IP"}  # For dense vector
+            ]
+        else:
+            index_params = {"metric_type": "COSINE"}
+
+        self.hybrid_mode = hybrid_mode
+        self.index_params = index_params
         # Initialize collection-related attributes
         self.default_collection_name = None
         self._collection_name = None
@@ -143,8 +155,9 @@ class MilvusDB(ABCVectorDB):
             primary_field="_id",
             enable_dynamic_field=True,
             partition_key_field="partition",
-
-            #builtin_function=self.sparse_embeddings
+            builtin_function=self.sparse_embeddings,
+            vector_field=["sparse", "vector"] if self.hybrid_mode else None,
+            consistency_level='Strong',
         ) 
         self.logger.info(f"The Collection named `{name}` loaded.")
 
@@ -185,7 +198,23 @@ class MilvusDB(ABCVectorDB):
         # Join all parts with " and " only if there are multiple conditions
         expr = " and ".join(expr_parts) if expr_parts else ""
         
-        docs_scores = await self.vector_store.asimilarity_search_with_relevance_scores(query=query, k=top_k, score_threshold=similarity_threshold, expr=expr)
+        if self.hybrid_mode:
+            docs_scores = await self.vector_store.asimilarity_search_with_score(
+                query=query,
+                k=top_k,
+                fetch_k=top_k,
+                ranker_type="weighted",
+                ranker_params={"weights": [0.8, 0.2]},
+                expr=expr
+            )
+        else:
+            docs_scores = await self.vector_store.asimilarity_search_with_relevance_scores(
+                query=query,
+                k=top_k, 
+                score_threshold=similarity_threshold,
+                expr=expr
+            )
+        
         docs = [doc for doc, score in docs_scores]
         return docs
     

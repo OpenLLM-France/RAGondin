@@ -29,7 +29,7 @@ async def search_multiple_partitions(
         ]
         
         # Return results
-        return JSONResponse(content={"Documents": documents}, status_code=200)
+        return JSONResponse(content=f"Documents: {documents}", status_code=200)
 
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
@@ -57,7 +57,7 @@ async def search_one_partition(
         ]
         
         # Return results
-        return JSONResponse(content={"Documents": documents}, status_code=200)
+        return JSONResponse(content=f"Documents: {documents}", status_code=200)
 
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
@@ -86,7 +86,7 @@ async def search_file(
         ]
         
         # Return results
-        return JSONResponse(content={"Documents": documents}, status_code=200)
+        return JSONResponse(content=f"Documents: {documents}", status_code=200)
 
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))

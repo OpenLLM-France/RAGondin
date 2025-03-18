@@ -1,4 +1,4 @@
-temperature: 0.3
+temperature: 0.2
 timeout: 60
 max_retries: 2
 # frequency_penalty: 0.2
