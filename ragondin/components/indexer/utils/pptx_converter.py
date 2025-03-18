@@ -1,13 +1,8 @@
 
-import re
 import html
 from io import BytesIO
-from PIL import Image
-from .base import BaseLoader
-
-from langchain_core.documents.base import Document
 import pptx
-from tqdm.asyncio import tqdm
+from PIL import Image
 
 class PPTXConverter:
     def __init__(self, image_placeholder=r"<image>", page_separator: str='[PAGE_SEP]'):
@@ -15,7 +10,6 @@ class PPTXConverter:
         self.page_separator = page_separator
     
     def convert(self, local_path):
-
         md_content = ""
         presentation = pptx.Presentation(local_path)
         slide_num = 0
@@ -106,41 +100,3 @@ class PPTXConverter:
         header = markdown_table[0]
         separator = "|" + "|".join(["---"] * len(data[0])) + "|"
         return md + "\n".join([header, separator] + markdown_table[1:])
-
-
-
-class PPTXLoader(BaseLoader):
-    def __init__(self, page_sep: str='[PAGE_SEP]', **kwargs) -> None:
-        super().__init__(**kwargs)
-        self.page_sep = page_sep
-        self.image_placeholder=r"<image>"
-
-        self.converter = PPTXConverter(
-            image_placeholder=self.image_placeholder,
-            page_separator=page_sep
-        )
-    
-    async def get_captions(self, images):
-        tasks = [
-            self.get_image_description(image=img)
-            for img in images
-        ]
-        return await tqdm.gather(*tasks, desc="Generating captions")
-
-
-    async def aload_document(self, file_path, metadata=None, save_md=False):
-        md_content, imgs = self.converter.convert(local_path=file_path)
-        images_captions = await self.get_captions(imgs)
-
-        for caption in images_captions:
-            md_content = re.sub(self.image_placeholder, caption, md_content, count = 1)
-
-        doc = Document(
-            page_content=md_content,
-            metadata=metadata
-        )
-        if save_md:
-            self.save_document(Document(page_content=md_content), str(file_path))
-        return doc
-
-   
