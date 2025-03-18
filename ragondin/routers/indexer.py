@@ -77,7 +77,7 @@ async def search(query_params: SearchRequest, indexer: Indexer = Depends(get_ind
         documents = [{"page_content": doc.page_content, "metadata": doc.metadata} for doc in results]
         
         # Return results
-        return JSONResponse(content={f"Documents": documents}, status_code=200)
+        return JSONResponse(content=f"Documents: {documents}", status_code=200)
 
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
