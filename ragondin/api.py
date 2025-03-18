@@ -88,7 +88,7 @@ mount_chainlit(app, './chainlit/app_front.py', path="/chainlit") # mount the def
 app.include_router(indexer_router, prefix="/indexer", tags=[Tags.INDEXER])
 
 # Mount the OpenAI compatible API router
-app.include_router(openai_router, prefix="/v1", tags=[Tags.OPENAI])
+app.include_router(openai_router, prefix="", tags=[Tags.OPENAI])
 
 if __name__ == "__main__":
     uvicorn.run('api:app', host="0.0.0.0", port=8083, reload=True, proxy_headers=True) # 8083
