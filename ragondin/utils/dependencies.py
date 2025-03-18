@@ -7,5 +7,6 @@ config = load_config()
 # Initialize components once
 indexer = Indexer(config, logger)
 
+
 def get_indexer():
     return indexer

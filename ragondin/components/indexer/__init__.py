@@ -1,4 +1,5 @@
 from .indexer import *
-from .vectordb import *
 from .loaders import *
+from .vectordb import *
+
 __all__ = []

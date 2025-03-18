@@ -1,14 +1,17 @@
-
 import html
 from io import BytesIO
+
 import pptx
 from PIL import Image
 
+
 class PPTXConverter:
-    def __init__(self, image_placeholder=r"<image>", page_separator: str='[PAGE_SEP]'):
+    def __init__(
+        self, image_placeholder=r"<image>", page_separator: str = "[PAGE_SEP]"
+    ):
         self.image_placeholder = image_placeholder
         self.page_separator = page_separator
-    
+
     def convert(self, local_path):
         md_content = ""
         presentation = pptx.Presentation(local_path)

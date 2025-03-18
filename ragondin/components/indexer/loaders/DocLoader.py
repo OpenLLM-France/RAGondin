@@ -1,21 +1,22 @@
-from .MarkItDownLoader import MarkItDownLoader
-
-from .base import BaseLoader
-from spire.doc import Document, FileFormat
-
 import os
 import tempfile
 
+from spire.doc import Document, FileFormat
+
+from .base import BaseLoader
+from .MarkItDownLoader import MarkItDownLoader
+
+
 class DocLoader(BaseLoader):
-    def __init__(self, page_sep: str='[PAGE_SEP]', **kwargs) -> None:
+    def __init__(self, page_sep: str = "[PAGE_SEP]", **kwargs) -> None:
         super().__init__(**kwargs)
         self.page_sep = page_sep
         self.MDLoader = MarkItDownLoader(page_sep=page_sep, **kwargs)
 
-    async def aload_document(self, file_path, metadata , save_md=False):
-        '''
-        Here we convert the document to docx format, save it in local and then use the MarkItDownLoader 
-        to convert it to markdown'''
+    async def aload_document(self, file_path, metadata, save_md=False):
+        """
+        Here we convert the document to docx format, save it in local and then use the MarkItDownLoader
+        to convert it to markdown"""
         document = Document()
         document.LoadFromFile(str(file_path))
         file_path = "converted/sample2.docx"
@@ -27,7 +28,7 @@ class DocLoader(BaseLoader):
         document.Close()
         return result_string
 
-    async def parse(self, file_path, page_seperator='[PAGE_SEP]'):
+    async def parse(self, file_path, page_seperator="[PAGE_SEP]"):
         document = Document()
         document.LoadFromFile(str(file_path))
         file_path = "converted/sample.docx"

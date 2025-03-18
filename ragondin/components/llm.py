@@ -1,24 +1,23 @@
+from typing import AsyncIterator
+
+from langchain_core.messages import AIMessage, BaseMessage, HumanMessage
+from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 from langchain_openai import ChatOpenAI
-from langchain_core.prompts import (
-    MessagesPlaceholder, 
-    ChatPromptTemplate
-)
-from langchain_core.messages import AIMessage, HumanMessage, BaseMessage
-from typing import Any, AsyncIterator
-from loguru import logger as L
+
 
 class LLM:
     def __init__(self, config, logger=None):
         self.logger = logger
-        self.client: ChatOpenAI = ChatOpenAI(**config.llm)   
-         
-    def run(self, 
-            question: str, context: str, 
-            chat_history: list[AIMessage | HumanMessage], 
-            sys_pmpt_tmpl: str
-        )-> AsyncIterator[BaseMessage]:
+        self.client: ChatOpenAI = ChatOpenAI(**config.llm)
 
-        """This method runs the LLM given the user's input (`question`), `chat_history`, and the system prompt template (`sys_prompt_tmpl`) 
+    def run(
+        self,
+        question: str,
+        context: str,
+        chat_history: list[AIMessage | HumanMessage],
+        sys_pmpt_tmpl: str,
+    ) -> AsyncIterator[BaseMessage]:
+        """This method runs the LLM given the user's input (`question`), `chat_history`, and the system prompt template (`sys_prompt_tmpl`)
 
         Args:
             question (str): The input from the user; not necessarily a question.
@@ -33,14 +32,14 @@ class LLM:
             [
                 ("system", sys_pmpt_tmpl),
                 MessagesPlaceholder("chat_history"),
-                ("human", "{input}")
+                ("human", "{input}"),
             ]
         )
         rag_chain = qa_prompt | self.client.with_retry(stop_after_attempt=3)
 
         input_ = {
-            "input": question, 
+            "input": question,
             "context": context,
-            "chat_history": chat_history, 
+            "chat_history": chat_history,
         }
         return rag_chain.astream(input_)

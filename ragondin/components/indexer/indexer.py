@@ -1,17 +1,19 @@
 import asyncio
-from .loaders.loader import DocSerializer
-from typing import AsyncGenerator, Dict, Optional, Union, List
-from .embeddings import HFEmbedder
-from .chunker import ABCChunker, ChunkerFactory, SemanticSplitter, RecursiveSplitter
-from .vectordb import ConnectorFactory, ABCVectorDB
-from langchain_core.documents.base import Document
 from pathlib import Path
-from ..utils import SingletonMeta, SingletonABCMeta
+from typing import AsyncGenerator, Dict, List, Optional
+
+from langchain_core.documents.base import Document
+
+from ..utils import SingletonMeta
+from .chunker import ABCChunker, ChunkerFactory, SemanticSplitter
+from .embeddings import HFEmbedder
+from .loaders.loader import DocSerializer
+from .vectordb import ConnectorFactory
 
 
 class Indexer(metaclass=SingletonMeta):
-    """This class bridges static files with the vector store database.
-    """
+    """This class bridges static files with the vector store database."""
+
     def __init__(self, config, logger, device=None) -> None:
         """
         Initializes the Indexer class with the given configuration, logger, and optional device.
@@ -31,18 +33,28 @@ class Indexer(metaclass=SingletonMeta):
         """
         embedder = HFEmbedder(embedder_config=config.embedder, device=device)
         self.serializer = DocSerializer(data_dir=config.paths.data_dir, config=config)
-        self.chunker: ABCChunker = ChunkerFactory.create_chunker(config, embedder=embedder.get_embeddings())
-        self.vectordb = ConnectorFactory.create_vdb(config, logger=logger, embeddings=embedder.get_embeddings())
+        self.chunker: ABCChunker = ChunkerFactory.create_chunker(
+            config, embedder=embedder.get_embeddings()
+        )
+        self.vectordb = ConnectorFactory.create_vdb(
+            config, logger=logger, embeddings=embedder.get_embeddings()
+        )
         self.logger = logger
         self.logger.info("Indexer initialized...")
         self.config = config
 
-        self.n_concurrent_loading = config.insertion.get("n_concurrent_loading", 2) # Number of concurrent loading operations
-        self.n_concurrent_chunking = config.insertion.get("n_concurrent_chunking", 2) # Number of concurrent chunking operations
+        self.n_concurrent_loading = config.insertion.get(
+            "n_concurrent_loading", 2
+        )  # Number of concurrent loading operations
+        self.n_concurrent_chunking = config.insertion.get(
+            "n_concurrent_chunking", 2
+        )  # Number of concurrent chunking operations
         self.default_partition = "_default"
         self.enable_insertion = self.config.vectordb["enable"]
 
-    async def chunk(self, doc, gpu_semaphore: asyncio.Semaphore) -> AsyncGenerator[Document, None]:
+    async def chunk(
+        self, doc, gpu_semaphore: asyncio.Semaphore
+    ) -> AsyncGenerator[Document, None]:
         """
         Asynchronously chunks a document using the specified chunker.
 
@@ -64,9 +76,13 @@ class Indexer(metaclass=SingletonMeta):
 
         self.logger.info(f"{Path(doc.metadata['source']).name} CHUNKED")
         return chunks
-        
-        
-    async def add_files2vdb(self, path: str | list[str], metadata: Optional[Dict] = {}, partition : Optional[str] = None):
+
+    async def add_files2vdb(
+        self,
+        path: str | list[str],
+        metadata: Optional[Dict] = {},
+        partition: Optional[str] = None,
+    ):
         """
         Add files to the vector database in async mode.
         This method serializes documents from the given path(s) and processes them in chunks using GPU operations.
@@ -81,8 +97,17 @@ class Indexer(metaclass=SingletonMeta):
             None
         """
         partition = self._check_partition_str(partition)
-        gpu_semaphore = asyncio.Semaphore(self.n_concurrent_chunking) # Only allow max_concurrent_gpu_ops GPU operation at a time
-        doc_generator: AsyncGenerator[Document, None] = self.serializer.serialize_documents(path, metadata={**metadata, "partition": partition}, recursive=True, n_concurrent_ops=self.n_concurrent_loading)
+        gpu_semaphore = asyncio.Semaphore(
+            self.n_concurrent_chunking
+        )  # Only allow max_concurrent_gpu_ops GPU operation at a time
+        doc_generator: AsyncGenerator[Document, None] = (
+            self.serializer.serialize_documents(
+                path,
+                metadata={**metadata, "partition": partition},
+                recursive=True,
+                n_concurrent_ops=self.n_concurrent_loading,
+            )
+        )
 
         chunk_tasks = []
         try:
@@ -99,15 +124,15 @@ class Indexer(metaclass=SingletonMeta):
                     await self.vectordb.async_add_documents(all_chunks)
                     self.logger.debug(f"Documents {path} added.")
                 else:
-                    self.logger.debug(f"Documents {path} handled but not added to the database.")
-        
+                    self.logger.debug(
+                        f"Documents {path} handled but not added to the database."
+                    )
+
         except Exception as e:
             self.logger.error(f"An exception as occured: {e}")
             raise Exception(f"An exception as occured: {e}")
-        
-    
 
-    def delete_file(self, file_id : str, partition: str):
+    def delete_file(self, file_id: str, partition: str):
         """
         Deletes files from the vector database based on the provided filters.
         Args:
@@ -121,9 +146,10 @@ class Indexer(metaclass=SingletonMeta):
             Exception: If an error occurs during the deletion process, it is logged and the function continues with the next filter.
         """
         if not self.enable_insertion:
-            self.logger.error("Vector database is not enabled, however, the delete_files method was called.")
+            self.logger.error(
+                "Vector database is not enabled, however, the delete_files method was called."
+            )
             return
-
 
         try:
             # Get points associated with the file name
@@ -137,9 +163,9 @@ class Indexer(metaclass=SingletonMeta):
         except Exception as e:
             self.logger.error(f"Error in `delete_files` for file_id {file_id}: {e}")
             raise
-        
+
         return True
-    
+
     async def update_file_metadata(self, file_id: str, metadata: dict, partition: str):
         """
         Updates the metadata of a file in the vector database.
@@ -149,9 +175,11 @@ class Indexer(metaclass=SingletonMeta):
             collection_name (Optional[str]): The name of the collection in which the file is stored. Defaults to None.
         Returns:
             None
-        """        
+        """
         if not self.enable_insertion:
-            self.logger.error("Vector database is not enabled, however, the update_file_metadata method was called.")
+            self.logger.error(
+                "Vector database is not enabled, however, the update_file_metadata method was called."
+            )
             return
 
         try:
@@ -161,7 +189,7 @@ class Indexer(metaclass=SingletonMeta):
             # Update the metadata
             for doc in docs:
                 doc.metadata.update(metadata)
-            
+
             # Delete the existing chunks
             self.delete_file(file_id, partition)
 
@@ -171,17 +199,31 @@ class Indexer(metaclass=SingletonMeta):
 
             self.logger.info(f"Metadata for file {file_id} updated.")
         except Exception as e:
-            self.logger.error(f"Error in `update_file_metadata` for file_id {file_id}: {e}")
+            self.logger.error(
+                f"Error in `update_file_metadata` for file_id {file_id}: {e}"
+            )
             raise
-    
-    async def asearch(self, query: str, top_k: int = 5,similarity_threshold: int=0.80, partition : Optional[str | List[str] ] = None, filter: Optional[Dict] = {}) -> List[Document]:
+
+    async def asearch(
+        self,
+        query: str,
+        top_k: int = 5,
+        similarity_threshold: int = 0.80,
+        partition: Optional[str | List[str]] = None,
+        filter: Optional[Dict] = {},
+    ) -> List[Document]:
         partition = self._check_partition_list(partition)
-        results = await self.vectordb.async_search(query=query, partition=partition, top_k=top_k, similarity_threshold=similarity_threshold, filter=filter)
+        results = await self.vectordb.async_search(
+            query=query,
+            partition=partition,
+            top_k=top_k,
+            similarity_threshold=similarity_threshold,
+            filter=filter,
+        )
         return results
 
-
     def _check_partition_str(self, partition: Optional[str]):
-        if partition is None :
+        if partition is None:
             self.logger.warning("Partition not provided. Using default partition.")
             partition = self.default_partition
         elif not isinstance(partition, str):
@@ -189,11 +231,13 @@ class Indexer(metaclass=SingletonMeta):
         return partition
 
     def _check_partition_list(self, partition: Optional[str]):
-        if partition is None :
+        if partition is None:
             self.logger.warning("Partition not provided. Using default partition.")
             partition = [self.default_partition]
         elif isinstance(partition, str):
             partition = [partition]
-        elif (not isinstance(partition, list)) or  (not all(isinstance(p, str) for p in partition)):
+        elif (not isinstance(partition, list)) or (
+            not all(isinstance(p, str) for p in partition)
+        ):
             raise ValueError("Partition should be a string or a list of strings.")
         return partition

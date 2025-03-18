@@ -1,13 +1,13 @@
-import time
 import asyncio
+import time
 
+from components.utils import SingletonMeta
+from langchain_core.documents.base import Document
 from loguru import logger
 from tqdm.asyncio import tqdm
 
-from langchain_core.documents.base import Document
-
-from components.utils import SingletonMeta
 from .base import BaseLoader
+
 
 class MarkerConverter(metaclass=SingletonMeta):
     """
@@ -21,21 +21,22 @@ class MarkerConverter(metaclass=SingletonMeta):
     convert_to_md(file_path)
         Asynchronously converts the given file to markdown format.
     """
-    def __init__(self) -> None:
 
+    def __init__(self) -> None:
         from marker.converters.pdf import PdfConverter
         from marker.models import create_model_dict
 
         self.converter = PdfConverter(
             artifact_dict=create_model_dict(),
             config={
-                    'output_format': 'markdown',
-                    'paginate_output': True,
-                }
+                "output_format": "markdown",
+                "paginate_output": True,
+            },
         )
-    
+
     async def convert_to_md(self, file_path):
         return await asyncio.to_thread(self.converter, str(file_path))
+
 
 class MarkerLoader(BaseLoader):
     """
@@ -54,7 +55,12 @@ class MarkerLoader(BaseLoader):
             Asynchronously generates captions for images in the document using a language model,
             with a specified number of semaphores for concurrency control.
     """
-    def __init__(self, page_sep: str='------------------------------------------------\n\n', **kwargs) -> None:
+
+    def __init__(
+        self,
+        page_sep: str = "------------------------------------------------\n\n",
+        **kwargs,
+    ) -> None:
         super().__init__(**kwargs)
 
         self.page_sep = page_sep
@@ -79,7 +85,7 @@ class MarkerLoader(BaseLoader):
             captions_dict = await self.get_captions(img_dict)
 
             for key, desc in captions_dict.items():
-                tag = f'![]({key})'
+                tag = f"![]({key})"
                 text = text.replace(tag, desc)
         else:
             logger.info("Image captioning disabled. Ignoring images.")
@@ -87,29 +93,26 @@ class MarkerLoader(BaseLoader):
         end = time.time()
         logger.info(f"Total conversion time for file {file_path}: {end - start:.2f} s.")
 
-        doc =  Document(
-            page_content=text, 
-            metadata=metadata
-        )
+        doc = Document(page_content=text, metadata=metadata)
 
         if save_md:
             self.save_document(Document(page_content=text), str(file_path))
 
         return doc
-    
+
     async def get_captions(self, img_dict):
         tasks = []
 
         for _, picture in img_dict.items():
-            tasks.append(
-                self.get_image_description(picture)
-            )
+            tasks.append(self.get_image_description(picture))
         try:
-            results = await tqdm.gather(*tasks, desc='Captioning imgs')  # asyncio.gather(*tasks)
+            results = await tqdm.gather(
+                *tasks, desc="Captioning imgs"
+            )  # asyncio.gather(*tasks)
         except asyncio.CancelledError:
             for task in tasks:
                 task.cancel()
-            
+
             raise
 
         result_dict = dict(zip(img_dict.keys(), results))
