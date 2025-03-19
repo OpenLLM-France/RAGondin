@@ -214,12 +214,20 @@ class MilvusDB(ABCVectorDB):
         expr = " and ".join(expr_parts) if expr_parts else ""
 
         if self.hybrid_mode:
+            # docs_scores = await self.vector_store.asimilarity_search_with_score(
+            #     query=query,
+            #     k=top_k,
+            #     fetch_k=top_k,
+            #     ranker_type="weighted",
+            #     ranker_params={"weights": [0.8, 0.2]},
+            #     expr=expr,
+            # )
+
             docs_scores = await self.vector_store.asimilarity_search_with_score(
                 query=query,
                 k=top_k,
                 fetch_k=top_k,
-                ranker_type="weighted",
-                ranker_params={"weights": [0.8, 0.2]},
+                ranker_type="rrf",
                 expr=expr,
             )
         else:

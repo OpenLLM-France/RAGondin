@@ -54,7 +54,7 @@ async def main():
         indexer = Indexer(config, logger)
 
         start = time.time()
-        await indexer.add_files2vdb(path=args.list, partition=None)
+        await indexer.add_files2vdb(path=args.list, partition=indexer.default_partition)
         end = time.time()
 
     logger.info(f"Execution time: {end - start:.4f} seconds")

@@ -117,7 +117,9 @@ class Indexer(metaclass=SingletonMeta):
 
             # Await all tasks concurrently
             results = await asyncio.gather(*chunk_tasks)
-            all_chunks = sum(results, [])
+            all_chunks = sum(
+                results, []
+            )  # TODO: Here we upsert a lot of data once and it can lead to longer processing thus data availability. Batching to tune.
 
             if all_chunks:
                 if self.enable_insertion:
