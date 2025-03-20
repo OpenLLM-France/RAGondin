@@ -7,7 +7,7 @@ from config.config import load_config
 from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
 from fastapi.responses import JSONResponse
 from loguru import logger
-from utils.dependencies import get_indexer
+from utils.dependencies import get_indexer, vectordb
 
 # load config
 config = load_config()
@@ -26,7 +26,7 @@ async def add_file(
 ):
     try:
         # Check if file exists
-        if indexer.vectordb.file_exists(file_id, partition):
+        if vectordb.file_exists(file_id, partition):
             raise HTTPException(
                 status_code=404,
                 detail=f"File {file_id} already exists in partition {partition}",
@@ -52,7 +52,7 @@ async def add_file(
         with open(file_path, "wb") as buffer:
             buffer.write(await file.read())
         # Now pass the file path to the Indexer
-        await indexer.add_files2vdb(
+        await indexer.add_files2vdb.remote(
             path=file_path, metadata=metadata, partition=partition
         )
 
@@ -99,7 +99,7 @@ async def put_file(
 ):
     try:
         # Check if file exists
-        if not indexer.vectordb.file_exists(file_id, partition):
+        if not vectordb.file_exists(file_id, partition):
             raise HTTPException(
                 status_code=404,
                 detail=f"File {file_id} not found in partition {partition}",
@@ -157,7 +157,7 @@ async def patch_file(
 ):
     try:
         # Check if file exists
-        if not indexer.vectordb.file_exists(file_id, partition):
+        if not vectordb.file_exists(file_id, partition):
             raise HTTPException(
                 status_code=404,
                 detail=f"File {file_id} not found in partition {partition}",
@@ -205,9 +205,7 @@ async def sync_db(indexer: Indexer = Depends(get_indexer)):
 
                 for file_path in collection_path.iterdir():
                     if file_path.is_file() and file_path.suffix != ".md":
-                        if indexer.vectordb.file_exists(
-                            file_path.name, collection_name
-                        ):
+                        if vectordb.file_exists(file_path.name, collection_name):
                             up_to_date_files.append(file_path.name)
                         else:
                             missing_files.append(file_path.name)

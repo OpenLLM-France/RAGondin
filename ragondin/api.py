@@ -16,12 +16,12 @@ from pydantic import BaseModel
 from routers.indexer import router as indexer_router
 from routers.openai import router as openai_router
 from routers.search import router as search_router
-from utils.dependencies import indexer
+from utils.dependencies import vectordb
 
 config = load_config()
 DATA_DIR = Path(config.paths.data_dir)
 
-ragPipe = RagPipeline(config=config, vectordb=indexer.vectordb, logger=logger)
+ragPipe = RagPipeline(config=config, vectordb=vectordb, logger=logger)
 
 
 class Tags(Enum):

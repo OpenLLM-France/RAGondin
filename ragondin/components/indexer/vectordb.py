@@ -721,7 +721,7 @@ class QdrantDB(ABCVectorDB):
         Delete points from Qdrant
         """
         try:
-            self.indexer.vectordb.client.delete(
+            self.client.delete(
                 collection_name=collection_name
                 if collection_name
                 else self.default_collection_name,

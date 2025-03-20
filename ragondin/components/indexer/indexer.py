@@ -2,6 +2,7 @@ import asyncio
 from pathlib import Path
 from typing import AsyncGenerator, Dict, List, Optional
 
+import ray
 from langchain_core.documents.base import Document
 
 from ..utils import SingletonMeta
@@ -10,7 +11,10 @@ from .embeddings import HFEmbedder
 from .loaders.loader import DocSerializer
 from .vectordb import ConnectorFactory
 
+ray.init(dashboard_host="0.0.0.0", ignore_reinit_error=True)
 
+
+@ray.remote(num_gpus=1)
 class Indexer(metaclass=SingletonMeta):
     """This class bridges static files with the vector store database."""
 
@@ -100,6 +104,7 @@ class Indexer(metaclass=SingletonMeta):
         gpu_semaphore = asyncio.Semaphore(
             self.n_concurrent_chunking
         )  # Only allow max_concurrent_gpu_ops GPU operation at a time
+        self.logger.info(f"Starting serialization of documents from {path}...")
         doc_generator: AsyncGenerator[Document, None] = (
             self.serializer.serialize_documents(
                 path,
@@ -110,14 +115,16 @@ class Indexer(metaclass=SingletonMeta):
 
         chunk_tasks = []
         try:
+            self.logger.info("Starting chunking")
+
             async for doc in doc_generator:
-                task = asyncio.create_task(self.chunk(doc, gpu_semaphore))
-                chunk_tasks.append(task)
+                # task = asyncio.create_task(self.chunk(doc, gpu_semaphore))
+                chunk_tasks.append(await self.chunk(doc, gpu_semaphore))
 
             # Await all tasks concurrently
-            results = await asyncio.gather(*chunk_tasks)
-            all_chunks = sum(results, [])
-
+            # results = await asyncio.gather(*chunk_tasks)
+            all_chunks = sum(chunk_tasks, [])
+            self.logger.info(f"Chunking completed for {path}")
             if all_chunks:
                 if self.enable_insertion:
                     await self.vectordb.async_add_documents(all_chunks)
