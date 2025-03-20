@@ -6,6 +6,7 @@ import os
 import time
 from components import Indexer, load_config
 from loguru import logger
+from components.indexer.loaders import MarkerBatch
 
 
 def is_valid_directory(path):
@@ -45,9 +46,10 @@ async def main():
         indexer = Indexer(config, logger)
 
         start = time.time()
-        await indexer.add_files2vdb(
-            path=args.folder, partition=indexer.default_partition
-        )
+        # await indexer.add_files2vdb(
+        #     path=args.folder, partition=indexer.default_partition
+        # )
+        MarkerBatch.MarkerBatchConvert(args.folder,)
         end = time.time()
 
     if args.list:
