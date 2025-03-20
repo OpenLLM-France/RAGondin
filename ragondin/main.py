@@ -1,8 +1,7 @@
-import asyncio
 import time
-
-from components import Indexer, load_config
+import asyncio
 from loguru import logger
+from components import Indexer, load_config
 
 config = load_config()
 indexer = Indexer(config, logger)

@@ -29,27 +29,19 @@ class ABCChunker(ABC):
 
 
 template = """
-**Objectif** : Rédiger un texte de contextualisation pour le fragment suivant en intégrant les éléments fournis.
+Objectif : Générer une contextualisation (1 à 3 phrases) pour mieux situer le chunk suivant afin d'améliorer le retrieval lors d'un recherche.
 
-**Consignes de rédaction** :
-1. Prendre en compte :
-   - **Source** : Métadonnées du document (CV, vidéos, propositions clients, etc.)
-   - **Première page** : Structure/En-tête du document original
-   - **Fragment précédent** : Contenu adjacent pour assurer la continuité
+Données à prendre en compte :
+- Source du document : {source}
+- Première page du document : {first_page}
+- chunk de texte précédent : {prev_chunk}
 
-2. Contraintes :
-   - Langue : Utiliser la langue du fragment actuel
-   - Format de réponse : Texte brut uniquement (pas de titres/markdown)
-   - Longueur : 1 phrase à 1 paragraphe selon la pertinence
+Instructions :
+- Utiliser la langue du chunk.
+- Fournir une réponse en texte brut (sans titres ni markdown).
+- La contextualisation doit situer clairement l'apparition du chunk dans son contexte d'origine.
 
-**Contexte** :
-- Source : {source}
-- Première page :
-{first_page}
-- Fragment précédent :
-{prev_chunk}
-
-**Fragment à contextualiser** :
+Voici le chunk à contextualiser :
 {chunk}
 """
 
@@ -59,11 +51,6 @@ class ChunkContextualizer:
     Attributes:
         contextual_retrieval (bool): Indicates whether contextual retrieval is enabled.
         context_generator (Optional[Callable]): A callable for generating context if contextual retrieval is enabled.
-    Methods:
-        __init__(contextual_retrieval: bool = False, llm: Optional[ChatOpenAI] = None):
-            Initializes the ChunkContextualizer with optional contextual retrieval and language model.
-        generate_context(first_page: str, prev_chunk: str, chunk: str, source: str, semaphore: asyncio.Semaphore = llmSemaphore) -> str:
-        contextualize(chunks: list[Document], pages: list[str], source: str, n_concurrent_request: int = 5) -> list[str]:
     """
 
     def __init__(
@@ -90,19 +77,6 @@ class ChunkContextualizer:
         source: str,
         semaphore: asyncio.Semaphore = llmSemaphore,
     ):
-        """
-        Asynchronously generates context for a given chunk of text.
-
-        Args:
-            first_page (str): The first page of the document.
-            prev_chunk (str): The previous chunk of text.
-            chunk (str): The current chunk of text to be contextualized.
-            source (str): The source of the document.
-            semaphore (asyncio.Semaphore, optional): A semaphore to limit concurrent access. Defaults to llmSemaphore.
-
-        Returns:
-            str: The generated context for the given chunk of text. Returns an empty string if an error occurs.
-        """
         async with semaphore:
             try:
                 return await self.context_generator.ainvoke(
@@ -124,19 +98,9 @@ class ChunkContextualizer:
         chunks: list[Document],
         pages: list[str],
         source: str,
-        n_concurrent_request: int = 5,
     ) -> list[str]:
         """
         Contextualizes a list of document chunks by generating context for each chunk based on the previous chunk.
-        Args:
-            chunks (list[Document]): A list of Document objects representing the chunks to be contextualized.
-            pages (list[str]): A list of strings representing the pages of the document.
-            source (str): The source of the document.
-            n_concurrent_request (int, optional): The number of concurrent requests to be made. Defaults to 5.
-        Returns:
-            list[str]: A list of strings where each string is the contextualized content of a chunk.
-        Raises:
-            Exception: If an error occurs during the contextualization process, it logs a warning with the error message.
         """
         if not self.contextual_retrieval:
             return [chunk.page_content for chunk in chunks]
@@ -244,7 +208,6 @@ class RecursiveSplitter(ABCChunker):
             [Document(page_content="")] + chunks,
             pages,
             source=source,
-            n_concurrent_request=5,
         )
 
         i = 0
@@ -339,7 +302,6 @@ class SemanticSplitter(ABCChunker):
             [Document(page_content="")] + chunks,
             pages,
             source=source,
-            n_concurrent_request=5,
         )
 
         i = 0

@@ -9,7 +9,9 @@ from pydantic import BaseModel, Field
 from .llm import LLM
 from .utils import llmSemaphore
 
-sys_prompt = """You are an expert at carefully judging documents' relevancy with respect to user's query."""
+sys_prompt = """You are an expert at carefully judging documents' relevancy for RAG with respect to user's query.
+For specific question, pay attention to keywords the user to assess relevancy
+"""
 
 
 class DocumentGrade(BaseModel):
@@ -49,20 +51,19 @@ class Grader:
                 self.logger.debug(
                     f"An Exception occured. Couldn't grade this document: {e}"
                 )
+                return "irrelevant"  # Return a default value
 
-    async def grade_docs(self, user_input: str, docs: list[Document], batch_size=6):
+    async def grade_docs(self, user_input: str, docs: list[Document]):
         """
         Grades a list of documents based on their relevancy to the user input.
 
         Args:
             user_input (str): The input string provided by the user.
             docs (list[Document]): A list of Document objects to be graded.
-            batch_size (int, optional): The number of documents to process in a batch. Defaults to 6.
 
         Returns:
             list[Document]: A list of relevant Document objects.
         """
-        batch_size = min(batch_size, len(docs))
         self.logger.debug(f"{len(docs)} documents to assess relevancy.")
 
         tasks = [self._grade_doc(user_input=user_input, doc=d) for d in docs]

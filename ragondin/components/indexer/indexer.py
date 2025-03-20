@@ -105,7 +105,6 @@ class Indexer(metaclass=SingletonMeta):
                 path,
                 metadata={**metadata, "partition": partition},
                 recursive=True,
-                n_concurrent_ops=self.n_concurrent_loading,
             )
         )
 
