@@ -66,12 +66,12 @@ def source2url(s: dict, static_base_url: str):
 
 
 @app.post(
-    "/{partition}/generate",
+    "/{namespace}/generate",
     summary="Given a question, this endpoint allows to generate an answer grounded on the documents in the VectorDB",
     tags=[Tags.LLM],
 )
 async def get_answer(
-    partition: str,
+    namespace: str,
     new_user_input: str,
     chat_history: list[ChatMsg] = None,
     static_base_url: str = Depends(static_base_url_dependency),
@@ -98,7 +98,7 @@ async def get_answer(
             for chat_msg in chat_history
         ]
     answer_stream, context, sources = await ragPipe.run(
-        partition=[partition], question=new_user_input, chat_history=msgs
+        partition=[namespace], question=new_user_input, chat_history=msgs
     )
     # print(sources)
     sources = list(map(lambda x: source2url(x, static_base_url), sources))
@@ -136,7 +136,7 @@ mount_chainlit(
 # Mount the indexer router
 app.include_router(indexer_router, prefix="/indexer", tags=[Tags.INDEXER])
 # Mount the search router
-app.include_router(search_router, prefix="/extracts", tags=[Tags.SEARCH])
+app.include_router(search_router, prefix="/search", tags=[Tags.SEARCH])
 # Mount the openai router
 app.include_router(openai_router, prefix="/v1", tags=[Tags.OPENAI])
 
