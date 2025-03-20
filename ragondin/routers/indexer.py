@@ -16,9 +16,9 @@ DATA_DIR = config.paths.data_dir
 router = APIRouter()
 
 
-@router.post("/partition/{partition}/file/{file_id}", response_model=None)
+@router.post("/namespace/{namespace}/file/{file_id}", response_model=None)
 async def add_file(
-    partition: str,
+    namespace: str,
     file_id: str,
     file: UploadFile = File(...),
     metadata: Optional[Any] = Form(None),
@@ -26,10 +26,10 @@ async def add_file(
 ):
     try:
         # Check if file exists
-        if indexer.vectordb.file_exists(file_id, partition):
+        if indexer.vectordb.file_exists(file_id, namespace):
             raise HTTPException(
                 status_code=404,
-                detail=f"File {file_id} already exists in partition {partition}",
+                detail=f"File {file_id} already exists in partition {namespace}",
             )
         # Load metadata
         metadata = metadata or "{}"
@@ -53,7 +53,7 @@ async def add_file(
             buffer.write(await file.read())
         # Now pass the file path to the Indexer
         await indexer.add_files2vdb(
-            path=file_path, metadata=metadata, partition=partition
+            path=file_path, metadata=metadata, partition=namespace
         )
 
         return JSONResponse(
@@ -66,15 +66,15 @@ async def add_file(
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.delete("/partition/{partition}/file/{file_id}", response_model=None)
+@router.delete("/namespace/{namespace}/file/{file_id}", response_model=None)
 async def delete_file(
-    partition: str, file_id: str, indexer: Indexer = Depends(get_indexer)
+    namespace: str, file_id: str, indexer: Indexer = Depends(get_indexer)
 ):
     """
     Delete a file in a specific partition.
     """
     try:
-        deleted = indexer.delete_file(file_id, partition)
+        deleted = indexer.delete_file(file_id, namespace)
         if deleted:
             return JSONResponse(
                 content={"message": "File successfully deleted", "file_id": file_id},
@@ -89,9 +89,9 @@ async def delete_file(
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.put("/partition/{partition}/file/{file_id}", response_model=None)
+@router.put("/namespace/{namespace}/file/{file_id}", response_model=None)
 async def put_file(
-    partition: str,
+    namespace: str,
     file_id: str,
     file: UploadFile = File(...),
     metadata: Optional[Any] = Form(None),
@@ -99,14 +99,14 @@ async def put_file(
 ):
     try:
         # Check if file exists
-        if not indexer.vectordb.file_exists(file_id, partition):
+        if not indexer.vectordb.file_exists(file_id, namespace):
             raise HTTPException(
                 status_code=404,
-                detail=f"File {file_id} not found in partition {partition}",
+                detail=f"File {file_id} not found in partition {namespace}",
             )
 
         # Delete the existing file
-        indexer.delete_file(file_id, partition)
+        indexer.delete_file(file_id, namespace)
         logger.info(f"File {file_id} deleted.")
 
         # Load metadata
@@ -118,7 +118,7 @@ async def put_file(
             )
 
         # CHeck partition
-        if not isinstance(partition, str):
+        if not isinstance(namespace, str):
             raise HTTPException(status_code=400, detail="partition must be a string.")
 
         # Add file_id to metadata
@@ -135,7 +135,7 @@ async def put_file(
             buffer.write(await file.read())
         # Now pass the file path to the Indexer
         await indexer.add_files2vdb(
-            path=file_path, metadata=metadata, partition=partition
+            path=file_path, metadata=metadata, partition=namespace
         )
 
         return JSONResponse(
@@ -148,19 +148,19 @@ async def put_file(
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.patch("/partition/{partition}/file/{file_id}", response_model=None)
+@router.patch("/namespace/{namespace}/file/{file_id}", response_model=None)
 async def patch_file(
-    partition: str,
+    namespace: str,
     file_id: str,
     metadata: Optional[Any] = Form(None),
     indexer: Indexer = Depends(get_indexer),
 ):
     try:
         # Check if file exists
-        if not indexer.vectordb.file_exists(file_id, partition):
+        if not indexer.vectordb.file_exists(file_id, namespace):
             raise HTTPException(
                 status_code=404,
-                detail=f"File {file_id} not found in partition {partition}",
+                detail=f"File {file_id} not found in partition {namespace}",
             )
 
         # Load metadata
@@ -172,14 +172,14 @@ async def patch_file(
             )
 
         # CHeck partition
-        if not isinstance(partition, str):
+        if not isinstance(namespace, str):
             raise HTTPException(status_code=400, detail="partition must be a string.")
 
         # Add file_id to metadata
         metadata["file_id"] = file_id
 
         # Update the metadata
-        await indexer.update_file_metadata(file_id, metadata, partition)
+        await indexer.update_file_metadata(file_id, metadata, namespace)
 
         return JSONResponse(
             content={"message": f"File metadata updated : {file_id}"}, status_code=200

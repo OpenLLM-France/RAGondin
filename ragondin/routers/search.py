@@ -12,8 +12,8 @@ router = APIRouter()
 @router.get("/", response_model=None)
 async def search_multiple_partitions(
     request: Request,
-    partitions: Optional[List[str]] = Query(
-        ["all"], description="List of partitions to search"
+    namespace: Optional[List[str]] = Query(
+        ["all"], description="List of namespaces to search"
     ),
     text: str = Query(..., description="Text to search semantically"),
     top_k: int = Query(5, description="Number of top results to return"),
@@ -21,7 +21,7 @@ async def search_multiple_partitions(
 ):
     try:
         # Perform the search using the Indexer
-        results = await indexer.asearch(query=text, top_k=top_k, partition=partitions)
+        results = await indexer.asearch(query=text, top_k=top_k, partition=namespace)
 
         # Construct HATEOAS response
         documents = [
@@ -43,17 +43,17 @@ async def search_multiple_partitions(
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.get("/partition/{partition}", response_model=None)
+@router.get("/namespace/{namespace}", response_model=None)
 async def search_one_partition(
     request: Request,
-    partition: str,
+    namespace: str,
     text: str = Query(..., description="Text to search semantically"),
     top_k: int = Query(5, description="Number of top results to return"),
     indexer: Indexer = Depends(get_indexer),
 ):
     try:
         # Perform the search using the Indexer
-        results = await indexer.asearch(query=text, top_k=top_k, partition=partition)
+        results = await indexer.asearch(query=text, top_k=top_k, partition=namespace)
         # Transforming the results (assuming they are LangChain documents)
         # Construct HATEOAS response
         documents = [
@@ -75,10 +75,10 @@ async def search_one_partition(
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.get("/partition/{partition}/file/{file_id}", response_model=None)
+@router.get("/namespace/{namespace}/file/{file_id}", response_model=None)
 async def search_file(
     request: Request,
-    partition: str,
+    namespace: str,
     file_id: str,
     query: str = Query(..., description="Text to search semantically"),
     top_k: int = Query(5, description="Number of top results to return"),
@@ -87,7 +87,7 @@ async def search_file(
     try:
         # Perform the search using the Indexer
         results = await indexer.asearch(
-            query=query, top_k=top_k, partition=partition, filter={"file_id": file_id}
+            query=query, top_k=top_k, partition=namespace, filter={"file_id": file_id}
         )
 
         # Construct HATEOAS response
@@ -110,10 +110,10 @@ async def search_file(
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.get("/{extract_id}", response_model=None)
-async def get_extract(extract_id: str, indexer: Indexer = Depends(get_indexer)):
+@router.get("/{item_id}", response_model=None)
+async def get_extract(item_id: str, indexer: Indexer = Depends(get_indexer)):
     try:
-        doc = indexer.vectordb.get_chunk_by_id(extract_id)
+        doc = indexer.vectordb.get_chunk_by_id(item_id)
         return JSONResponse(
             content={"page_content": doc.page_content, "metadata": doc.metadata},
             status_code=200,
