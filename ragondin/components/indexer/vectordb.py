@@ -122,14 +122,24 @@ class MilvusDB(ABCVectorDB):
             self.sparse_embeddings = BM25BuiltInFunction(enable_match=True)
 
         index_params = None
+        # if hybrid_mode:
+        #     index_params = [
+        #         {"metric_type": "BM25"},  # For sparse vector
+        #         {"metric_type": "IP"},  # For dense vector
+        #     ]
+        # else:
+        #     index_params = {"metric_type": "COSINE"}
+
         if hybrid_mode:
-            index_params = [
-                {"metric_type": "BM25"},  # For sparse vector
-                {"metric_type": "IP"},  # For dense vector
+            self.index_params = [
+                {"index_type": "IVF_SQ8_HYBRID", "metric_type": "L2", "nlist": 100, "params": {"M": 16, "efConstruction": 200}},  # For dense vector
+                {"index_type": "IVF_SQ8_HYBRID", "metric_type": "BM25","nlist": 100, "params": {"M": 16, "efConstruction": 200}}  # For sparse vector
             ]
         else:
-            index_params = {"metric_type": "COSINE"}
-
+            self.index_params = {
+                "index_type": "IVF_SQ8_HYBRID", "metric_type": "L2", "nlist": 100, "params": {"M": 16, "efConstruction": 200}
+            }
+        
         self.hybrid_mode = hybrid_mode
         self.index_params = index_params
         # Initialize collection-related attributes
@@ -137,6 +147,7 @@ class MilvusDB(ABCVectorDB):
         self._collection_name = None
         self.vector_store = None
         self.default_partition = "_default"
+        
 
         # Set the initial collection name (if provided)
         if collection_name:
@@ -213,6 +224,12 @@ class MilvusDB(ABCVectorDB):
         # Join all parts with " and " only if there are multiple conditions
         expr = " and ".join(expr_parts) if expr_parts else ""
 
+        search_params = {
+            "topk": top_k,
+            "query": query,
+            "metric_type": "L2",
+            "nprob": 8      # Number of inverted file cells to probe.
+        }
         if self.hybrid_mode:
             # docs_scores = await self.vector_store.asimilarity_search_with_score(
             #     query=query,
@@ -229,7 +246,9 @@ class MilvusDB(ABCVectorDB):
                 fetch_k=top_k,
                 ranker_type="rrf",
                 expr=expr,
+                search_params=search_params
             )
+            print(len(docs_scores))
         else:
             docs_scores = (
                 await self.vector_store.asimilarity_search_with_relevance_scores(
@@ -237,6 +256,7 @@ class MilvusDB(ABCVectorDB):
                     k=top_k,
                     score_threshold=similarity_threshold,
                     expr=expr,
+                    search_params=search_params
                 )
             )
 
