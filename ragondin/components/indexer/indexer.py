@@ -111,18 +111,14 @@ class Indexer(metaclass=SingletonMeta):
             )
         )
 
-        chunk_tasks = []
+        results = []
         try:
-            self.logger.info("Starting chunking")
-
             async for doc in doc_generator:
                 # task = asyncio.create_task(self.chunk(doc, gpu_semaphore))
                 results.append(await self.chunk(doc, gpu_semaphore))
 
             # Await all tasks concurrently
             all_chunks = sum(results, [])
-            self.logger.info(f"Chunking completed for {path}")
-
             if all_chunks:
                 if self.enable_insertion:
                     await self.vectordb.async_add_documents(all_chunks)
@@ -133,7 +129,6 @@ class Indexer(metaclass=SingletonMeta):
                     )
 
         except Exception as e:
-            self.logger.error(f"An exception as occured: {e}")
             raise Exception(f"An exception as occured: {e}")
 
     def delete_file(self, file_id: str, partition: str):
