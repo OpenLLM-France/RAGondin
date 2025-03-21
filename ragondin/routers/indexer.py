@@ -3,13 +3,12 @@ from pathlib import Path
 from typing import Any, Optional
 
 import ray
-from components import Indexer
 from config.config import load_config
 from fastapi import APIRouter, Depends, File, Form, HTTPException, Request, UploadFile
 from fastapi.responses import JSONResponse
 from loguru import logger
 from ray.util.state import get_task
-from utils.dependencies import get_indexer, vectordb
+from utils.dependencies import Indexer, get_indexer, vectordb
 
 # load config
 config = load_config()
@@ -68,24 +67,6 @@ async def add_file(
             },
             status_code=200,
         )
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-
-@router.get("/task/{task_id}", response_model=None)
-async def get_task_status(task_id: str, indexer: Indexer = Depends(get_indexer)):
-    try:
-        task_status = get_task(task_id).state
-        if task_status is None:
-            return JSONResponse(
-                content={"message": f"Task {task_id} not found", "status": "not found"},
-                status_code=404,
-            )
-        else:
-            return JSONResponse(
-                content={"message": f"Task {task_id} status", "status": task_status},
-                status_code=200,
-            )
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -159,13 +140,16 @@ async def put_file(
         with open(file_path, "wb") as buffer:
             buffer.write(await file.read())
         # Now pass the file path to the Indexer
-        await indexer.add_files2vdb(
+        task = indexer.add_files2vdb.remote(
             path=file_path, metadata=metadata, partition=partition
         )
 
         return JSONResponse(
             content={
-                "message": f"File processed and added to the vector database : {file_id}"
+                "message": f"Indexation task for file : {file_id} queued",
+                "task_status": str(
+                    request.url_for("get_task_status", task_id=task.task_id().hex())
+                ),
             },
             status_code=200,
         )
@@ -209,6 +193,24 @@ async def patch_file(
         return JSONResponse(
             content={"message": f"File metadata updated : {file_id}"}, status_code=200
         )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/task/{task_id}", response_model=None)
+async def get_task_status(task_id: str, indexer: Indexer = Depends(get_indexer)):
+    try:
+        task = get_task(task_id)
+        if task is None:
+            return JSONResponse(
+                content={"message": f"Task {task_id} not found", "status": "not found"},
+                status_code=404,
+            )
+        else:
+            return JSONResponse(
+                content={"message": f"Task {task_id} status", "status": task.state},
+                status_code=200,
+            )
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 

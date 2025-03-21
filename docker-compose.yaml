@@ -13,6 +13,7 @@ x-ragondin: &ragondin_template
     - 8265:8265 # for ray
   env_file:
     - .env
+  shm_size: 10.24gb
   
   depends_on:
     - ${VDB_HOST}

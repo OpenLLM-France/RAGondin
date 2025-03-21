@@ -11,8 +11,6 @@ from .embeddings import HFEmbedder
 from .loaders.loader import DocSerializer
 from .vectordb import ConnectorFactory
 
-ray.init(dashboard_host="0.0.0.0", ignore_reinit_error=True)
-
 
 @ray.remote(num_gpus=1)
 class Indexer(metaclass=SingletonMeta):

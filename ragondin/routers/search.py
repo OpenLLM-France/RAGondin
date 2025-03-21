@@ -1,9 +1,8 @@
 from typing import List, Optional
 
-from components import Indexer
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from fastapi.responses import JSONResponse
-from utils.dependencies import get_indexer
+from utils.dependencies import Indexer, get_indexer, vectordb
 
 # Create an APIRouter instance
 router = APIRouter()
@@ -21,7 +20,9 @@ async def search_multiple_partitions(
 ):
     try:
         # Perform the search using the Indexer
-        results = await indexer.asearch(query=text, top_k=top_k, partition=partitions)
+        results = await indexer.asearch.remote(
+            query=text, top_k=top_k, partition=partitions
+        )
 
         # Construct HATEOAS response
         documents = [
@@ -53,7 +54,9 @@ async def search_one_partition(
 ):
     try:
         # Perform the search using the Indexer
-        results = await indexer.asearch(query=text, top_k=top_k, partition=partition)
+        results = await indexer.asearch.remote(
+            query=text, top_k=top_k, partition=partition
+        )
         # Transforming the results (assuming they are LangChain documents)
         # Construct HATEOAS response
         documents = [
@@ -86,7 +89,7 @@ async def search_file(
 ):
     try:
         # Perform the search using the Indexer
-        results = await indexer.asearch(
+        results = await indexer.asearch.remote(
             query=query, top_k=top_k, partition=partition, filter={"file_id": file_id}
         )
 
@@ -113,7 +116,7 @@ async def search_file(
 @router.get("/{extract_id}", response_model=None)
 async def get_extract(extract_id: str, indexer: Indexer = Depends(get_indexer)):
     try:
-        doc = indexer.vectordb.get_chunk_by_id(extract_id)
+        doc = vectordb.get_chunk_by_id(extract_id)
         return JSONResponse(
             content={"page_content": doc.page_content, "metadata": doc.metadata},
             status_code=200,
