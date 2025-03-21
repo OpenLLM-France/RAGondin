@@ -129,7 +129,12 @@ class PPTXLoader(BaseLoader):
         images_captions = await self.get_captions(imgs)
 
         for caption in images_captions:
-            md_content = re.sub(self.image_placeholder, caption, md_content, count=1)
+            md_content = re.sub(
+                self.image_placeholder,
+                caption.replace("\\", "/"),
+                md_content,
+                count=1,
+            )
 
         doc = Document(page_content=md_content, metadata=metadata)
         if save_md:

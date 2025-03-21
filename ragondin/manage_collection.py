@@ -4,16 +4,11 @@ import argparse
 import asyncio
 import os
 import time
-
 from components import Indexer, load_config
 from loguru import logger
-from qdrant_client import QdrantClient
-
-config = load_config()
 
 
 def is_valid_directory(path):
-    """Custom validation to check if the directory exists."""
     if os.path.isdir(path):
         return os.path.abspath(path)
     else:
@@ -21,19 +16,6 @@ def is_valid_directory(path):
 
 
 async def main():
-    """
-    Main function to handle command-line arguments and perform operations on Qdrant vector database.
-    This function supports the following operations:
-    1. Adding local files from a specified folder to the Qdrant vector database.
-    2. Deleting a specified collection from the Qdrant vector database.
-    3. Adding a list of specified files to the Qdrant vector database.
-    Command-line arguments:
-        -f, --folder: Path to the folder containing files to be uploaded to Qdrant.
-        -d, --delete: Name of the collection to delete from Qdrant.
-        -o, --override: Overrides for the Hydra configuration (e.g., vectordb.collection_name='vdb95'). Can be used multiple times.
-        -l, --list: List of file paths to be uploaded to Qdrant.
-    The function loads the configuration with potential overrides, and based on the provided arguments, it performs the corresponding operations on the Qdrant vector database.
-    """
     parser = argparse.ArgumentParser(
         description="Adds local files from a folder to qdrant vector db"
     )
@@ -42,17 +24,12 @@ async def main():
         "-f", "--folder", type=is_valid_directory, help="Path to the folder"
     )
 
-    # Add a collection deletion argument
-    parser.add_argument(
-        "-d", "--delete", type=str, help="Name of the collection to delete"
-    )
-
     # Add an override argument for Hydra config
     parser.add_argument(
         "-o",
         "--override",
         action="append",
-        help="Overrides for the Hydra configuration (e.g., vectordb.collection_name='vdb95'). Can be used multiple times.",
+        help="Overrides for the Hydra configuration (e.g., vectordb.enable=true). Can be used multiple times.",
         default=None,
     )
 
@@ -65,46 +42,27 @@ async def main():
     config = load_config(overrides=args.override)
 
     if args.folder:
-        collection = config.vectordb["collection_name"]
-        if config.vectordb["enable"]:
-            logger.warning(f"Data will be upserted to the collection {collection}")
-
         indexer = Indexer(config, logger)
 
         start = time.time()
-        await indexer.add_files2vdb(path=args.folder)
+        await indexer.add_files2vdb(
+            path=args.folder, partition=indexer.default_partition
+        )
         end = time.time()
 
-    if collection_name := args.delete:
-        end = 0
-        start = 0
-        client = QdrantClient(
-            port=config.vectordb["port"], host=config.vectordb["host"]
-        )
-        if client.collection_exists(collection_name=collection_name):
-            client.delete_collection(collection_name)
-            logger.info(f"collection '{collection_name}' deleted")
-        else:
-            logger.info("This collection doesn't exist")
-            return
-
     if args.list:
-        collection = config.vectordb["collection_name"]
-        if config.vectordb["enable"]:
-            logger.warning(f"Data will be upserted to the collection {collection}")
-
         indexer = Indexer(config, logger)
 
         start = time.time()
-        await indexer.add_files2vdb(path=args.list)
+        await indexer.add_files2vdb(path=args.list, partition=indexer.default_partition)
         end = time.time()
 
     logger.info(f"Execution time: {end - start:.4f} seconds")
     if config.vectordb["enable"]:
-        logger.info(f"Documents loaded to collection named '{collection}'.")
+        logger.info(
+            f"Documents loaded to partition named '{indexer.default_partition}'."
+        )
 
 
 if __name__ == "__main__":
     asyncio.run(main())
-
-# ./manage_collection.py -f app/upload_dir/S2_RAG/ -o vectordb.collection_name='vdb90' -o chunker.breakpoint_threshold_amount=90

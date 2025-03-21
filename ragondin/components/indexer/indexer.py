@@ -117,12 +117,12 @@ class Indexer(metaclass=SingletonMeta):
 
             async for doc in doc_generator:
                 # task = asyncio.create_task(self.chunk(doc, gpu_semaphore))
-                chunk_tasks.append(await self.chunk(doc, gpu_semaphore))
+                results.append(await self.chunk(doc, gpu_semaphore))
 
             # Await all tasks concurrently
-            # results = await asyncio.gather(*chunk_tasks)
-            all_chunks = sum(chunk_tasks, [])
+            all_chunks = sum(results, [])
             self.logger.info(f"Chunking completed for {path}")
+
             if all_chunks:
                 if self.enable_insertion:
                     await self.vectordb.async_add_documents(all_chunks)
