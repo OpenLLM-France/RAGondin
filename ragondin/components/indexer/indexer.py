@@ -2,6 +2,7 @@ import asyncio
 from pathlib import Path
 from typing import AsyncGenerator, Dict, List, Optional
 
+import ray
 from langchain_core.documents.base import Document
 
 from ..utils import SingletonMeta
@@ -11,6 +12,7 @@ from .loaders.loader import DocSerializer
 from .vectordb import ConnectorFactory
 
 
+@ray.remote(num_gpus=1)
 class Indexer(metaclass=SingletonMeta):
     """This class bridges static files with the vector store database."""
 
@@ -100,27 +102,23 @@ class Indexer(metaclass=SingletonMeta):
         gpu_semaphore = asyncio.Semaphore(
             self.n_concurrent_chunking
         )  # Only allow max_concurrent_gpu_ops GPU operation at a time
+        self.logger.info(f"Starting serialization of documents from {path}...")
         doc_generator: AsyncGenerator[Document, None] = (
             self.serializer.serialize_documents(
                 path,
                 metadata={**metadata, "partition": partition},
                 recursive=True,
-                n_concurrent_ops=self.n_concurrent_loading,
             )
         )
 
-        chunk_tasks = []
+        results = []
         try:
             async for doc in doc_generator:
-                task = asyncio.create_task(self.chunk(doc, gpu_semaphore))
-                chunk_tasks.append(task)
+                # task = asyncio.create_task(self.chunk(doc, gpu_semaphore))
+                results.append(await self.chunk(doc, gpu_semaphore))
 
             # Await all tasks concurrently
-            results = await asyncio.gather(*chunk_tasks)
-            all_chunks = sum(
-                results, []
-            )  # TODO: Here we upsert a lot of data once and it can lead to longer processing thus data availability. Batching to tune.
-
+            all_chunks = sum(results, [])
             if all_chunks:
                 if self.enable_insertion:
                     await self.vectordb.async_add_documents(all_chunks)
@@ -131,7 +129,6 @@ class Indexer(metaclass=SingletonMeta):
                     )
 
         except Exception as e:
-            self.logger.error(f"An exception as occured: {e}")
             raise Exception(f"An exception as occured: {e}")
 
     def delete_file(self, file_id: str, partition: str):
