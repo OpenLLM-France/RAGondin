@@ -4,7 +4,17 @@ from typing import Any, Optional
 
 import ray
 from config.config import load_config
-from fastapi import APIRouter, Depends, File, Form, HTTPException, Request, UploadFile
+from fastapi import (
+    APIRouter,
+    Depends,
+    File,
+    Form,
+    HTTPException,
+    Request,
+    Response,
+    UploadFile,
+    status,
+)
 from fastapi.responses import JSONResponse
 from loguru import logger
 from ray.util.state import get_task
@@ -17,7 +27,7 @@ DATA_DIR = config.paths.data_dir
 router = APIRouter()
 
 
-@router.post("/partition/{partition}/file/{file_id}", response_model=None)
+@router.post("/partition/{partition}/file/{file_id}")
 async def add_file(
     request: Request,
     partition: str,
@@ -26,52 +36,67 @@ async def add_file(
     metadata: Optional[Any] = Form(None),
     indexer: Indexer = Depends(get_indexer),
 ):
+    # Check if file exists
+    if vectordb.file_exists(file_id, partition):
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=f"File '{file_id}' already exists in partition {partition}",
+        )
+    # Load metadata
     try:
-        # Check if file exists
-        if vectordb.file_exists(file_id, partition):
-            raise HTTPException(
-                status_code=404,
-                detail=f"File {file_id} already exists in partition {partition}",
-            )
-        # Load metadata
         metadata = metadata or "{}"
         metadata = json.loads(metadata)
-        if not isinstance(metadata, dict):
-            raise HTTPException(
-                status_code=400, detail="Metadata should be a dictionary"
-            )
+    except json.JSONDecodeError:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid JSON in metadata"
+        )
+    if not isinstance(metadata, dict):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Metadata must be a dictionary",
+        )
 
-        # Add file_id to metadata
-        metadata["file_id"] = file_id
+    # Add file_id to metadata
+    metadata["file_id"] = file_id
 
-        # Create a temporary directory to store files
-        save_dir = Path(DATA_DIR)
-        save_dir.mkdir(parents=True, exist_ok=True)
+    # Create a temporary directory to store files
+    save_dir = Path(DATA_DIR)
+    save_dir.mkdir(parents=True, exist_ok=True)
 
-        # Save the uploaded file
-        file_path = save_dir / Path(file.filename).name
-        logger.info(f"Processing file: {file.filename} and saving to {file_path}")
+    # Save the uploaded file
+    file_path = save_dir / Path(file.filename).name
+    logger.info(f"Processing file: {file.filename} and saving to {file_path}")
+    try:
         with open(file_path, "wb") as buffer:
             buffer.write(await file.read())
-        # Now pass the file path to the Indexer
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to save file: {str(e)}",
+        )
+
+    # Queue the file for indexing
+    try:
         task = indexer.add_files2vdb.remote(
             path=file_path, metadata=metadata, partition=partition
         )
-
-        return JSONResponse(
-            content={
-                "message": f"Indexation task for file : {file_id} queued",
-                "task_status": str(
-                    request.url_for("get_task_status", task_id=task.task_id().hex())
-                ),
-            },
-            status_code=200,
-        )
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Indexing error: {str(e)}",
+        )
+
+    return JSONResponse(
+        status_code=status.HTTP_201_CREATED,
+        content={
+            "task_status_url": str(
+                request.url_for("get_task_status", task_id=task.task_id().hex())
+            )
+        },
+    )
 
 
-@router.delete("/partition/{partition}/file/{file_id}", response_model=None)
+@router.delete("/partition/{partition}/file/{file_id}")
 async def delete_file(
     partition: str, file_id: str, indexer: Indexer = Depends(get_indexer)
 ):
@@ -80,21 +105,22 @@ async def delete_file(
     """
     try:
         deleted = ray.get(indexer.delete_file.remote(file_id, partition))
-        if deleted:
-            return JSONResponse(
-                content={"message": "File successfully deleted", "file_id": file_id},
-                status_code=200,
-            )
-        else:
-            return JSONResponse(
-                content={"message": "File not found", "file_id": file_id},
-                status_code=404,
-            )
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error while deleting file '{file_id}': {str(e)}",
+        )
+
+    if not deleted:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"File '{file_id}' not found in partition '{partition}'.",
+        )
+
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
-@router.put("/partition/{partition}/file/{file_id}", response_model=None)
+@router.put("/partition/{partition}/file/{file_id}")
 async def put_file(
     request: Request,
     partition: str,
@@ -103,116 +129,129 @@ async def put_file(
     metadata: Optional[Any] = Form(None),
     indexer: Indexer = Depends(get_indexer),
 ):
-    try:
-        # Check if file exists
-        if not vectordb.file_exists(file_id, partition):
-            raise HTTPException(
-                status_code=404,
-                detail=f"File {file_id} not found in partition {partition}",
-            )
+    # Validate file existence
+    if not vectordb.file_exists(file_id, partition):
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"File '{file_id}' not found in partition '{partition}'.",
+        )
 
-        # Delete the existing file
+    # Delete old file
+    try:
         ray.get(indexer.delete_file.remote(file_id, partition))
         logger.info(f"File {file_id} deleted.")
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to delete existing file: {str(e)}",
+        )
 
-        # Load metadata
+    # Parse metadata
+    try:
         metadata = metadata or "{}"
         metadata = json.loads(metadata)
         if not isinstance(metadata, dict):
-            raise HTTPException(
-                status_code=400, detail="Metadata should be a dictionary"
-            )
+            raise ValueError("Metadata is not a dictionary.")
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Invalid metadata: {str(e)}",
+        )
 
-        # CHeck partition
-        if not isinstance(partition, str):
-            raise HTTPException(status_code=400, detail="partition must be a string.")
+    metadata["file_id"] = file_id
 
-        # Add file_id to metadata
-        metadata["file_id"] = file_id
+    # Save uploaded file
+    save_dir = Path(DATA_DIR)
+    save_dir.mkdir(parents=True, exist_ok=True)
+    file_path = save_dir / Path(file.filename).name
+    logger.info(f"Processing file: {file.filename} and saving to {file_path}")
 
-        # Create a temporary directory to store files
-        save_dir = Path(DATA_DIR)
-        save_dir.mkdir(parents=True, exist_ok=True)
-
-        # Save the uploaded file
-        file_path = save_dir / Path(file.filename).name
-        logger.info(f"Processing file: {file.filename} and saving to {file_path}")
+    try:
         with open(file_path, "wb") as buffer:
             buffer.write(await file.read())
-        # Now pass the file path to the Indexer
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to save file: {str(e)}",
+        )
+
+    # Queue indexing task
+    try:
         task = indexer.add_files2vdb.remote(
             path=file_path, metadata=metadata, partition=partition
         )
-
-        return JSONResponse(
-            content={
-                "message": f"Indexation task for file : {file_id} queued",
-                "task_status": str(
-                    request.url_for("get_task_status", task_id=task.task_id().hex())
-                ),
-            },
-            status_code=200,
-        )
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Indexing error: {str(e)}",
+        )
+
+    return JSONResponse(
+        status_code=status.HTTP_202_ACCEPTED,
+        content={
+            "task_status_url": str(
+                request.url_for("get_task_status", task_id=task.task_id().hex())
+            )
+        },
+    )
 
 
-@router.patch("/partition/{partition}/file/{file_id}", response_model=None)
+@router.patch("/partition/{partition}/file/{file_id}")
 async def patch_file(
     partition: str,
     file_id: str,
     metadata: Optional[Any] = Form(None),
     indexer: Indexer = Depends(get_indexer),
 ):
-    try:
-        # Check if file exists
-        if not vectordb.file_exists(file_id, partition):
-            raise HTTPException(
-                status_code=404,
-                detail=f"File {file_id} not found in partition {partition}",
-            )
+    # Check if file exists
+    if not vectordb.file_exists(file_id, partition):
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"File '{file_id}' not found in partition '{partition}'.",
+        )
 
-        # Load metadata
+    # Parse metadata
+    try:
         metadata = metadata or "{}"
         metadata = json.loads(metadata)
         if not isinstance(metadata, dict):
-            raise HTTPException(
-                status_code=400, detail="Metadata should be a dictionary"
-            )
-
-        # CHeck partition
-        if not isinstance(partition, str):
-            raise HTTPException(status_code=400, detail="partition must be a string.")
-
-        # Add file_id to metadata
-        metadata["file_id"] = file_id
-
-        # Update the metadata
-        await indexer.update_file_metadata.remote(file_id, metadata, partition)
-
-        return JSONResponse(
-            content={"message": f"File metadata updated : {file_id}"}, status_code=200
+            raise ValueError("Metadata must be a JSON object.")
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Invalid metadata: {str(e)}",
         )
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
 
+    metadata["file_id"] = file_id
 
-@router.get("/task/{task_id}", response_model=None)
-async def get_task_status(task_id: str, indexer: Indexer = Depends(get_indexer)):
+    # Update metadata in indexer
     try:
-        task = get_task(task_id)
-        if task is None:
-            return JSONResponse(
-                content={"message": f"Task {task_id} not found", "status": "not found"},
-                status_code=404,
-            )
-        else:
-            return JSONResponse(
-                content={"message": f"Task {task_id} status", "status": task.state},
-                status_code=200,
-            )
+        ray.get(indexer.update_file_metadata.remote(file_id, metadata, partition))
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to update metadata: {str(e)}",
+        )
+
+    return JSONResponse(
+        status_code=status.HTTP_200_OK,
+        content={"message": f"Metadata for file '{file_id}' successfully updated."},
+    )
+
+
+@router.get("/task/{task_id}")
+async def get_task_status(task_id: str, indexer: Indexer = Depends(get_indexer)):
+    task = get_task(task_id)
+
+    if task is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail=f"Task '{task_id}' not found."
+        )
+
+    return JSONResponse(
+        status_code=status.HTTP_200_OK,
+        content={"task_id": task_id, "task_state": task.state},
+    )
 
 
 @router.post("/sync-db/", response_model=None)

@@ -8,7 +8,7 @@ from utils.dependencies import Indexer, get_indexer, vectordb
 router = APIRouter()
 
 
-@router.get("/", response_model=None)
+@router.get("/")
 async def search_multiple_partitions(
     request: Request,
     partitions: Optional[List[str]] = Query(
@@ -35,7 +35,7 @@ async def search_multiple_partitions(
         ]
 
         # Return results
-        return JSONResponse(content=f"Documents: {documents}", status_code=200)
+        return JSONResponse(content={"Documents": documents}, status_code=200)
 
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
@@ -44,7 +44,7 @@ async def search_multiple_partitions(
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.get("/partition/{partition}", response_model=None)
+@router.get("/partition/{partition}")
 async def search_one_partition(
     request: Request,
     partition: str,
@@ -69,7 +69,7 @@ async def search_one_partition(
         ]
 
         # Return results
-        return JSONResponse(content=f"Documents: {documents}", status_code=200)
+        return JSONResponse(content={"Documents": documents}, status_code=200)
 
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
@@ -78,7 +78,7 @@ async def search_one_partition(
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.get("/partition/{partition}/file/{file_id}", response_model=None)
+@router.get("/partition/{partition}/file/{file_id}")
 async def search_file(
     request: Request,
     partition: str,
@@ -104,7 +104,7 @@ async def search_file(
         ]
 
         # Return results
-        return JSONResponse(content=f"Documents: {documents}", status_code=200)
+        return JSONResponse(content={"Documents": documents}, status_code=200)
 
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
