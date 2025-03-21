@@ -2,11 +2,13 @@ import json
 from pathlib import Path
 from typing import Any, Optional
 
+import ray
 from components import Indexer
 from config.config import load_config
-from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
+from fastapi import APIRouter, Depends, File, Form, HTTPException, Request, UploadFile
 from fastapi.responses import JSONResponse
 from loguru import logger
+from ray.util.state import get_task
 from utils.dependencies import get_indexer, vectordb
 
 # load config
@@ -18,6 +20,7 @@ router = APIRouter()
 
 @router.post("/partition/{partition}/file/{file_id}", response_model=None)
 async def add_file(
+    request: Request,
     partition: str,
     file_id: str,
     file: UploadFile = File(...),
@@ -52,16 +55,37 @@ async def add_file(
         with open(file_path, "wb") as buffer:
             buffer.write(await file.read())
         # Now pass the file path to the Indexer
-        await indexer.add_files2vdb.remote(
+        task = indexer.add_files2vdb.remote(
             path=file_path, metadata=metadata, partition=partition
         )
 
         return JSONResponse(
             content={
-                "message": f"File processed and added to the vector database : {file_id}"
+                "message": f"Indexation task for file : {file_id} queued",
+                "task_status": str(
+                    request.url_for("get_task_status", task_id=task.task_id().hex())
+                ),
             },
             status_code=200,
         )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/task/{task_id}", response_model=None)
+async def get_task_status(task_id: str, indexer: Indexer = Depends(get_indexer)):
+    try:
+        task_status = get_task(task_id).state
+        if task_status is None:
+            return JSONResponse(
+                content={"message": f"Task {task_id} not found", "status": "not found"},
+                status_code=404,
+            )
+        else:
+            return JSONResponse(
+                content={"message": f"Task {task_id} status", "status": task_status},
+                status_code=200,
+            )
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -74,7 +98,7 @@ async def delete_file(
     Delete a file in a specific partition.
     """
     try:
-        deleted = indexer.delete_file(file_id, partition)
+        deleted = ray.get(indexer.delete_file.remote(file_id, partition))
         if deleted:
             return JSONResponse(
                 content={"message": "File successfully deleted", "file_id": file_id},
@@ -91,6 +115,7 @@ async def delete_file(
 
 @router.put("/partition/{partition}/file/{file_id}", response_model=None)
 async def put_file(
+    request: Request,
     partition: str,
     file_id: str,
     file: UploadFile = File(...),
@@ -106,7 +131,7 @@ async def put_file(
             )
 
         # Delete the existing file
-        indexer.delete_file(file_id, partition)
+        ray.get(indexer.delete_file.remote(file_id, partition))
         logger.info(f"File {file_id} deleted.")
 
         # Load metadata
@@ -179,7 +204,7 @@ async def patch_file(
         metadata["file_id"] = file_id
 
         # Update the metadata
-        await indexer.update_file_metadata(file_id, metadata, partition)
+        await indexer.update_file_metadata.remote(file_id, metadata, partition)
 
         return JSONResponse(
             content={"message": f"File metadata updated : {file_id}"}, status_code=200
