@@ -28,7 +28,7 @@ async def add_file(
         # Check if file exists
         if indexer.vectordb.file_exists(file_id, partition):
             raise HTTPException(
-                status_code=404,
+                status_code=409,
                 detail=f"File {file_id} already exists in partition {partition}",
             )
         # Load metadata
