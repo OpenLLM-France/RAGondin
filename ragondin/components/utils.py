@@ -6,8 +6,14 @@ from pathlib import Path
 
 from config.config import load_config
 from langchain_core.documents.base import Document
+import ray
+import inspect
+import hashlib
 
 config = load_config()
+
+if not ray.is_initialized():
+    ray.init(dashboard_host="0.0.0.0", ignore_reinit_error=True)
 
 
 class SingletonMeta(type):
@@ -52,6 +58,46 @@ class LLMSemaphore(metaclass=SingletonMeta):
         """Ensure semaphore is released at shutdown"""
         while self._semaphore.locked():
             self._semaphore.release()
+
+
+@ray.remote
+class DistributedSemaphoreActor:
+    def __init__(self, max_concurrent_ops: int):
+        self.semaphore = asyncio.Semaphore(max_concurrent_ops)
+
+    async def acquire(self):
+        await self.semaphore.acquire()
+
+    async def release(self):
+        self.semaphore.release()
+
+    def cleanup(self):
+        while self.semaphore.locked():
+            self.semaphore.release()
+
+
+class DistributedSemaphore:
+    # https://chat.deepseek.com/a/chat/s/890dbcc0-2d3f-4819-af9d-774b892905bc
+    def __init__(self, name: str = "llmSemaphore", max_concurrent_ops: int = 10):
+        try:
+            actor = ray.get_actor(name)  # reuse existing actor if it exists
+        except ValueError:
+            # create new actor if it doesn't exist
+            actor = DistributedSemaphoreActor.options(name=name).remote(
+                max_concurrent_ops
+            )
+
+        self._actor = actor
+
+    async def __aenter__(self):
+        await self._actor.acquire.remote()
+        return self
+
+    async def __aexit__(self, exc_type, exc, tb):
+        await self._actor.release.remote()
+
+    def cleanup(self):
+        ray.get(self._actor.cleanup.remote())
 
 
 def load_sys_template(file_path: Path) -> tuple[str, str]:
@@ -107,5 +153,36 @@ def format_context(docs: list[Document]) -> str:
     return context, sources
 
 
+class SingletonRayMeta(type):
+    def __call__(cls, *args, **kwargs):
+        # Determine the actor name (customizable via class attribute)
+        actor_name = getattr(cls, "_actor_name", cls.__name__)
+
+        # Ensure Ray is initialized
+        if not ray.is_initialized():
+            ray.init()
+
+        try:
+            # Try to get an existing actor
+            actor_handle = ray.get_actor(actor_name)
+        except ValueError:
+            # Actor doesn't exist yet; create it
+            actor_cls = ray.remote(cls)
+            try:
+                # Attempt to create the actor with the given name
+                actor_handle = actor_cls.options(name=actor_name).remote(
+                    *args, **kwargs
+                )
+            except ValueError as e:
+                # Handle race condition: another process created the actor concurrently
+                if f"The actor name '{actor_name}' already exists" in str(e):
+                    actor_handle = ray.get_actor(actor_name)
+                else:
+                    raise e
+
+        return actor_handle
+
+
 # Global variables
-llmSemaphore = LLMSemaphore(max_concurrent_ops=config.semaphore.llm_semaphore)
+# llmSemaphore = LLMSemaphore(max_concurrent_ops=config.semaphore.llm_semaphore)
+llmSemaphore = DistributedSemaphore(max_concurrent_ops=config.semaphore.llm_semaphore)

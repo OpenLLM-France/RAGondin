@@ -77,7 +77,7 @@ async def add_file(
 
     # Queue the file for indexing
     try:
-        task = indexer.add_files2vdb.remote(
+        task = indexer.add_file.remote(
             path=file_path, metadata=metadata, partition=partition
         )
     except Exception as e:
@@ -177,7 +177,7 @@ async def put_file(
 
     # Queue indexing task
     try:
-        task = indexer.add_files2vdb.remote(
+        task = indexer.add_files.remote(
             path=file_path, metadata=metadata, partition=partition
         )
     except Exception as e:
@@ -275,7 +275,7 @@ async def sync_db(indexer: Indexer = Depends(get_indexer)):
                             up_to_date_files.append(file_path.name)
                         else:
                             missing_files.append(file_path.name)
-                            await indexer.add_files2vdb(
+                            await indexer.add_files(
                                 path=file_path,
                                 metadata={},
                                 collection_name=collection_name,

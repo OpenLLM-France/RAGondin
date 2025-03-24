@@ -24,7 +24,7 @@ class ABCChunker(ABC):
         pass
 
     @abstractmethod
-    def split_document(self, doc: Document):
+    async def split_document(self, doc: Document):
         pass
 
 

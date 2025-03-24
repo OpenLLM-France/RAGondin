@@ -6,7 +6,9 @@ from loguru import logger
 config = load_config()
 # Initialize components once
 indexer = Indexer.remote(config, logger)
-embedder = HFEmbedder(embedder_config=config.embedder)
+embedder = HFEmbedder(embedder_config=config.embedder, device="cpu")
+
+
 vectordb = ConnectorFactory.create_vdb(
     config, logger=logger, embeddings=embedder.get_embeddings()
 )
