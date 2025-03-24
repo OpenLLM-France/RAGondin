@@ -8,7 +8,7 @@ from langchain_core.prompts import ChatPromptTemplate
 from langchain_openai import ChatOpenAI
 from omegaconf import OmegaConf
 
-from .indexer import ABCVectorDB, QdrantDB
+from .indexer import ABCVectorDB
 from .llm import LLM
 from .utils import load_sys_template
 
@@ -130,7 +130,7 @@ class MultiQueryRetriever(BaseRetriever):
             raise KeyError(f"An Error has occured: {e}")
 
     async def retrieve(
-        self, partition: list[str], question: str, db: QdrantDB
+        self, partition: list[str], question: str, db: ABCVectorDB
     ) -> list[Document]:
         # generate different perspectives of the question
         generated_questions = await self.generate_queries.ainvoke(

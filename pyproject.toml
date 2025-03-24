@@ -33,6 +33,7 @@ dependencies = [
     "spire-doc>=13.1.0",
     "markitdown>=0.0.2",
     "openai>=1.64.0",
+    "ray[default]>=2.43.0",
 ]
 
 [dependency-groups]
