@@ -1,23 +1,22 @@
-import asyncio
-from pathlib import Path
-from typing import AsyncGenerator, Dict, List, Optional
-
+from typing import Dict, List, Optional
 import ray
 from langchain_core.documents.base import Document
+import torch
+import gc
 
 from ..utils import SingletonMeta
-from .chunker import ABCChunker, ChunkerFactory, SemanticSplitter
+from .chunker import ABCChunker, ChunkerFactory
 from .embeddings import HFEmbedder
-from .loaders.loader import DocSerializer, get_files
+from .loaders.loader import DocSerializer
 from .vectordb import ConnectorFactory
 
 if not ray.is_initialized():
     ray.init(dashboard_host="0.0.0.0", ignore_reinit_error=True)
 
 
-@ray.remote(num_gpus=1, concurrency_groups={"compute": 2})
+@ray.remote(num_gpus=1, concurrency_groups={"compute": 3})
 class Indexer(metaclass=SingletonMeta):
-    """This class bridges static files with the vector store database."""
+    """This class bridges static files with the vector store database.*"""
 
     def __init__(self, config, logger, device=None) -> None:
         """
@@ -31,7 +30,7 @@ class Indexer(metaclass=SingletonMeta):
         embedder = HFEmbedder(
             embedder_config=config.embedder, device=device
         )  # cloud pickle
-
+        self.embedder = embedder
         self.serializer = DocSerializer(data_dir=config.paths.data_dir, config=config)
         self.chunker: ABCChunker = ChunkerFactory.create_chunker(
             config, embedder=embedder.get_embeddings()
@@ -52,6 +51,14 @@ class Indexer(metaclass=SingletonMeta):
         self.default_partition = "_default"
         self.enable_insertion = self.config.vectordb["enable"]
 
+    def _delegate_vdb_call(self, method_name: str, *args, **kwargs):
+        """Execute the method on the local vectordb."""
+        self.logger.debug(f"METH: {method_name}, {args}, {kwargs}")
+        method = getattr(self.vectordb, method_name)
+        if not callable(method):
+            raise AttributeError(f"Method {method_name} not found/callable")
+        return method(*args, **kwargs)
+
     async def serialize_and_chunk(
         self,
         path: str | list[str],
@@ -68,12 +75,14 @@ class Indexer(metaclass=SingletonMeta):
         self.logger.info(f"Chunking completed for {path}")
         return chunks
 
+    @ray.method(concurrency_group="compute")
     async def add_file(
         self,
         path: str | list[str],
         metadata: Optional[Dict] = {},
         partition: Optional[str] = None,
     ):
+        partition = self._check_partition_str(partition)
         chunks = await self.serialize_and_chunk(path, metadata, partition)
         try:
             if self.enable_insertion:
@@ -86,34 +95,10 @@ class Indexer(metaclass=SingletonMeta):
         except Exception as e:
             self.logger.error(f"An exception as occured: {e}")
             raise Exception(f"An exception as occured: {e}")
-
-    async def add_files(
-        self,
-        path: str | list[str],
-        metadata: Optional[Dict] = {},
-        partition: Optional[str] = None,
-    ):
-        partition = self._check_partition_str(partition)
-
-        try:
-            self.logger.info(f"Starting serialization of documents from {path}...")
-            chunk_tasks = []
-            async for file_path in get_files(
-                self.serializer.loader_classes, path, recursive=True
-            ):
-                chunk_tasks.append(
-                    asyncio.create_task(
-                        self.add_file(
-                            path=file_path, metadata=metadata, partition=partition
-                        )
-                    )
-                )
-
-            # Await all tasks concurrently
-            await asyncio.gather(*chunk_tasks)
-
-        except Exception as e:
-            raise Exception(f"An exception as occured: {e}")
+        finally:
+            gc.collect()
+            torch.cuda.empty_cache()
+            torch.cuda.ipc_collect()
 
     def delete_file(self, file_id: str, partition: str):
         """
