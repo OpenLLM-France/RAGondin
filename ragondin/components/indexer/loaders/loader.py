@@ -58,10 +58,6 @@ class DocSerializer:
         logger.info(f"{p.name}: SERIALIZED")
         return doc
 
-    async def get_files(self, path, recursive=True):
-        async for file in get_files(self.loader_classes, path, recursive):
-            yield file
-
     async def serialize_documents(
         self,
         path: str | Path | list[str],

@@ -7,13 +7,8 @@ from pathlib import Path
 from config.config import load_config
 from langchain_core.documents.base import Document
 import ray
-import inspect
-import hashlib
 
 config = load_config()
-
-if not ray.is_initialized():
-    ray.init(dashboard_host="0.0.0.0", ignore_reinit_error=True)
 
 
 class SingletonMeta(type):
@@ -151,36 +146,6 @@ def format_context(docs: list[Document]) -> str:
             }
         )
     return context, sources
-
-
-class SingletonRayMeta(type):
-    def __call__(cls, *args, **kwargs):
-        # Determine the actor name (customizable via class attribute)
-        actor_name = getattr(cls, "_actor_name", cls.__name__)
-
-        # Ensure Ray is initialized
-        if not ray.is_initialized():
-            ray.init()
-
-        try:
-            # Try to get an existing actor
-            actor_handle = ray.get_actor(actor_name)
-        except ValueError:
-            # Actor doesn't exist yet; create it
-            actor_cls = ray.remote(cls)
-            try:
-                # Attempt to create the actor with the given name
-                actor_handle = actor_cls.options(name=actor_name).remote(
-                    *args, **kwargs
-                )
-            except ValueError as e:
-                # Handle race condition: another process created the actor concurrently
-                if f"The actor name '{actor_name}' already exists" in str(e):
-                    actor_handle = ray.get_actor(actor_name)
-                else:
-                    raise e
-
-        return actor_handle
 
 
 # Global variables

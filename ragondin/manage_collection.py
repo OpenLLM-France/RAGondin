@@ -4,8 +4,12 @@ import argparse
 import asyncio
 import os
 import time
+
+import ray.experimental
 from components import Indexer, load_config
 from loguru import logger
+from components.indexer.loaders.loader import get_files, DocSerializer
+import ray
 
 
 def is_valid_directory(path):
@@ -40,11 +44,21 @@ async def main():
 
     # Load the config with potential overrides
     config = load_config(overrides=args.override)
+    serializer = DocSerializer(data_dir=config.paths.data_dir, config=config)
 
     if args.folder:
-        indexer = Indexer.options(max_concurrency=2, num_gpus=1).remote(config, logger)
+        indexer = Indexer.remote(config, logger)
+        chunk_tasks = []
+        async for file_path in get_files(
+            serializer.loader_classes, args.folder, recursive=True
+        ):
+            chunk_tasks.append(
+                indexer.add_file.remote(path=file_path, metadata={}, partition=None)
+            )
+
+        # Await all tasks concurrently
         start = time.time()
-        await indexer.add_files.remote(path=args.folder)
+        await asyncio.gather(*chunk_tasks)
         end = time.time()
 
     if args.list:
