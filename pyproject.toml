@@ -34,6 +34,10 @@ dependencies = [
     "markitdown>=0.0.2",
     "openai>=1.64.0",
     "ray[default]>=2.43.0",
+    "mcp>=1.5.0",
+    "anthropic>=0.46.0",
+    "fastmcp>=0.4.1",
+    "starlette>=0.41.3",
 ]
 
 [dependency-groups]

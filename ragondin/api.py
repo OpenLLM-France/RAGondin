@@ -20,6 +20,7 @@ from routers.indexer import router as indexer_router
 from routers.openai import router as openai_router
 from routers.search import router as search_router
 from utils.dependencies import vectordb
+from fastmcp import FastMCP
 
 config = load_config()
 DATA_DIR = Path(config.paths.data_dir)
@@ -55,6 +56,7 @@ app.state.app_state = AppState(config)
 app.mount(
     "/static", StaticFiles(directory=DATA_DIR.resolve(), check_dir=True), name="static"
 )
+mcp_server = FastMCP("Ragondin")
 
 
 def static_base_url_dependency(request: Request) -> str:

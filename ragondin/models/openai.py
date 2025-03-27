@@ -1,5 +1,4 @@
-from typing import Dict, List, Literal, Optional
-
+from typing import List, Optional, Dict, Any, Union
 from pydantic import BaseModel, Field
 
 
@@ -7,19 +6,26 @@ from pydantic import BaseModel, Field
 class OpenAIMessage(BaseModel):
     """Modèle représentant un message dans l'API OpenAI."""
 
-    role: Literal["user", "assistant", "system"]
+    role: str
     content: str
+    tool_calls: Optional[List[Dict[str, Any]]] = None
 
 
 class OpenAICompletionRequest(BaseModel):
     """Modèle représentant une requête de complétion pour l'API OpenAI."""
 
-    model: str = Field(..., description="model name")
-    messages: List[OpenAIMessage]
-    temperature: Optional[float] = Field(0.7)
-    top_p: Optional[float] = Field(1.0)
-    stream: Optional[bool] = Field(False)
-    max_tokens: Optional[int] = Field(None)
+    model: str
+    messages: List[ChatMsg]
+    temperature: Optional[float] = 0.7
+    top_p: Optional[float] = 1.0
+    n: Optional[int] = 1
+    stream: Optional[bool] = False
+    stop: Optional[List[str]] = None
+    max_tokens: Optional[int] = None
+    presence_penalty: Optional[float] = 0.0
+    frequency_penalty: Optional[float] = 0.0
+    tools: Optional[List[Tool]] = None
+    tool_choice: Optional[Union[str, ToolChoice]] = None
 
 
 class OpenAICompletionChoice(BaseModel):
@@ -27,7 +33,7 @@ class OpenAICompletionChoice(BaseModel):
 
     index: int
     message: OpenAIMessage
-    finish_reason: str
+    finish_reason: Optional[str] = None
 
 
 class OpenAIUsage(BaseModel):
@@ -53,7 +59,7 @@ class OpenAICompletionChunkChoice(BaseModel):
     """Modèle représentant un choix de segment de complétion en streaming dans l'API OpenAI."""
 
     index: int
-    delta: Dict[str, str]
+    delta: Dict[str, Any]
     finish_reason: Optional[str] = None
 
 
@@ -65,3 +71,30 @@ class OpenAICompletionChunk(BaseModel):
     created: int
     model: str
     choices: List[OpenAICompletionChunkChoice]
+
+
+class ChatMsg(BaseModel):
+    """Modèle pour un message de chat"""
+    role: str
+    content: str
+
+
+class Tool(BaseModel):
+    """Modèle pour un outil OpenAI"""
+    type: str = Field(default="function")
+    function: Dict[str, Any]
+
+
+class ToolChoice(BaseModel):
+    """Modèle pour le choix d'un outil OpenAI"""
+    type: str = Field(default="function")
+    function: Dict[str, str]
+
+
+# Mapping des rôles vers les types de messages
+mapping = {
+    "user": ChatMsg,
+    "assistant": ChatMsg,
+    "system": ChatMsg,
+    "tool": ChatMsg
+}
