@@ -3,6 +3,7 @@ import ray
 from langchain_core.documents.base import Document
 import torch
 import gc
+import inspect
 
 from ..utils import SingletonMeta
 from .chunker import ABCChunker, ChunkerFactory
@@ -14,7 +15,7 @@ if not ray.is_initialized():
     ray.init(dashboard_host="0.0.0.0", ignore_reinit_error=True)
 
 
-@ray.remote(num_gpus=1, concurrency_groups={"compute": 3})
+@ray.remote(num_gpus=1, concurrency_groups={"compute": 2})
 class Indexer(metaclass=SingletonMeta):
     """This class bridges static files with the vector store database.*"""
 
@@ -50,14 +51,6 @@ class Indexer(metaclass=SingletonMeta):
         )  # Number of concurrent chunking operations
         self.default_partition = "_default"
         self.enable_insertion = self.config.vectordb["enable"]
-
-    def _delegate_vdb_call(self, method_name: str, *args, **kwargs):
-        """Execute the method on the local vectordb."""
-        self.logger.debug(f"METH: {method_name}, {args}, {kwargs}")
-        method = getattr(self.vectordb, method_name)
-        if not callable(method):
-            raise AttributeError(f"Method {method_name} not found/callable")
-        return method(*args, **kwargs)
 
     async def serialize_and_chunk(
         self,
@@ -209,3 +202,19 @@ class Indexer(metaclass=SingletonMeta):
         ):
             raise ValueError("Partition should be a string or a list of strings.")
         return partition
+
+    async def _delegate_vdb_call(self, method_name: str, *args, **kwargs):
+        """Execute the method on the local vectordb, handling async methods."""
+        method = getattr(self.vectordb, method_name)
+        if not callable(method):
+            raise AttributeError(f"Method {method_name} not found/callable")
+
+        result = method(*args, **kwargs)
+        if inspect.isawaitable(result):
+            return await result
+        return result
+
+    def _is_method_async(self, method_name: str) -> bool:
+        """Helper method to check if a vectordb method is async."""
+        method = getattr(self.vectordb, method_name, None)
+        return inspect.iscoroutinefunction(method) if method else False

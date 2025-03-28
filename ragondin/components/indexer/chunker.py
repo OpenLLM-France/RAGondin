@@ -90,19 +90,7 @@ class ChunkContextualizer:
         source: str,
         semaphore: asyncio.Semaphore = llmSemaphore,
     ):
-        """
-        Asynchronously generates context for a given chunk of text.
-
-        Args:
-            first_page (str): The first page of the document.
-            prev_chunk (str): The previous chunk of text.
-            chunk (str): The current chunk of text to be contextualized.
-            source (str): The source of the document.
-            semaphore (asyncio.Semaphore, optional): A semaphore to limit concurrent access. Defaults to llmSemaphore.
-
-        Returns:
-            str: The generated context for the given chunk of text. Returns an empty string if an error occurs.
-        """
+        """generates context for a given chunk of text."""
         async with semaphore:
             try:
                 return await self.context_generator.ainvoke(
@@ -124,7 +112,6 @@ class ChunkContextualizer:
         chunks: list[Document],
         pages: list[str],
         source: str,
-        n_concurrent_request: int = 5,
     ) -> list[str]:
         """
         Contextualizes a list of document chunks by generating context for each chunk based on the previous chunk.
@@ -170,16 +157,7 @@ class ChunkContextualizer:
 
 
 class RecursiveSplitter(ABCChunker):
-    """
-    RecursiveSplitter is a class that splits a document into chunks and contextualizes them.
-    Attributes:
-        splitter (RecursiveCharacterTextSplitter): An instance of RecursiveCharacterTextSplitter used to split text into chunks.
-        contextualizer (ChunkContextualizer): An instance of ChunkContextualizer used to add context to the chunks.
-    Methods:
-        __init__(chunk_size: int=200, chunk_overlap: int=20, contextual_retrieval: bool=True, llm: Optional[ChatOpenAI]=None, **args):
-            Initializes the RecursiveSplitter with the specified chunk size, chunk overlap, and other parameters.
-        async split_document(doc: Document) -> list[Document]:
-    """
+    """RecursiveSplitter is a class that splits a document into chunks and contextualizes them."""
 
     def __init__(
         self,
@@ -202,20 +180,6 @@ class RecursiveSplitter(ABCChunker):
         )
 
     async def split_document(self, doc: Document):
-        """
-        Splits a document into chunks and contextualizes them.
-        Args:
-            doc (Document): The document to be split and contextualized.
-        Returns:
-            list[Document]: A list of filtered and contextualized document chunks.
-        The function performs the following steps:
-        1. Splits the document into pages based on the page separator.
-        2. Concatenates the pages and tracks the start and end indices of each page.
-        3. Preprocesses the full text by splitting it using the splitter.
-        4. Creates document chunks from the full text.
-        5. Contextualizes the chunks with additional context.
-        6. Filters and updates the chunks with metadata and contextualized content.
-        """
         text = ""
         page_idx = []
         metadata = doc.metadata
@@ -224,7 +188,6 @@ class RecursiveSplitter(ABCChunker):
         pages: list[str] = doc.page_content.split(sep=page_sep)
         start_index = 0
 
-        # TODO: We can apply apply this function 'split_text' once.
         for page_num, p in enumerate(pages, start=1):
             text += "\n" + p
             c = " ".join(self.splitter.split_text(text))
@@ -244,7 +207,6 @@ class RecursiveSplitter(ABCChunker):
             [Document(page_content="")] + chunks,
             pages,
             source=source,
-            n_concurrent_request=5,
         )
 
         i = 0
@@ -265,16 +227,7 @@ class RecursiveSplitter(ABCChunker):
 
 
 class SemanticSplitter(ABCChunker):
-    """
-    SemanticSplitter is a class that splits a document into semantically meaningful chunks and contextualizes them.
-    Attributes:
-        splitter (SemanticChunker): An instance of SemanticChunker used to split the document.
-        contextualizer (ChunkContextualizer): An instance of ChunkContextualizer used to add context to the chunks.
-    Methods:
-        __init__(min_chunk_size: int = 1000, embeddings = None, breakpoint_threshold_amount=85, contextual_retrieval: bool=False, llm: Optional[ChatOpenAI]=None, **args):
-            Initializes the SemanticSplitter with the given parameters.
-        async split_document(doc: Document) -> List[Document]:
-    """
+    """SemanticSplitter is a class that splits a document into semantically meaningful chunks and contextualizes them."""
 
     def __init__(
         self,
@@ -301,17 +254,7 @@ class SemanticSplitter(ABCChunker):
         )
 
     async def split_document(self, doc: Document):
-        """
-        Splits a document into chunks and contextualizes them.
-        Args:
-            doc (Document): The document to be split. It should have the following attributes:
-                - metadata (dict): Metadata associated with the document. It should contain:
-                    - "source" (str): The source of the document.
-                    - "page_sep" (str): The separator used to split the document into pages.
-                - page_content (str): The content of the document.
-        Returns:
-            List[Document]: A list of chunked and contextualized documents with updated metadata.
-        """
+        """Splits a document into chunks and contextualizes them."""
         text = ""
         page_idx = []
         metadata = doc.metadata
@@ -378,11 +321,6 @@ class ChunkerFactory:
             Args:
                 config (OmegaConf): Configuration object containing chunker parameters.
                 embedder (Optional[HuggingFaceBgeEmbeddings | HuggingFaceEmbeddings]): Optional embedder to be used if the chunker type is 'semantic_splitter'.
-            Returns:
-                ABCChunker: An instance of the specified chunker class.
-            Raises:
-                ValueError: If the specified chunker name is not recognized.
-                AttributeError: If the chunker type is 'semantic_splitter' and the embedder parameter is not provided.
             """
 
         # Extract parameters

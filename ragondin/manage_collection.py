@@ -4,12 +4,9 @@ import argparse
 import asyncio
 import os
 import time
-
-import ray.experimental
 from components import Indexer, load_config
 from loguru import logger
 from components.indexer.loaders.loader import get_files, DocSerializer
-import ray
 
 
 def is_valid_directory(path):

@@ -1,3 +1,4 @@
+import ray.actor
 from components import ConnectorFactory, HFEmbedder, Indexer, ABCVectorDB
 from config import load_config
 from loguru import logger
@@ -11,21 +12,38 @@ class VDBProxy:
         self.indexer_actor = indexer_actor  # Reference to the remote actor
 
     def __getattr__(self, method_name):
-        def remote_method(*args, **kwargs):
-            return ray.get(
-                self.indexer_actor._delegate_vdb_call.remote(
+        # Check if the method is async on the remote vectordb
+        is_async = ray.get(self.indexer_actor._is_method_async.remote(method_name))
+
+        if is_async:
+            # Return an async coroutine for async methods
+            async def async_wrapper(*args, **kwargs):
+                result_ref = self.indexer_actor._delegate_vdb_call.remote(
                     method_name, *args, **kwargs
                 )
-            )
+                return await result_ref
 
-        return remote_method
+            return async_wrapper
+
+        else:
+            # Return a blocking wrapper for sync methods
+            def sync_wrapper(*args, **kwargs):
+                return ray.get(
+                    self.indexer_actor._delegate_vdb_call.remote(
+                        method_name, *args, **kwargs
+                    )
+                )
+
+            return sync_wrapper
 
 
 # load config
 config = load_config()
 # Initialize components once
 indexer = Indexer.remote(config, logger)
-vectordb: ABCVectorDB = VDBProxy(indexer_actor=indexer)
+vectordb: ABCVectorDB = VDBProxy(
+    indexer_actor=indexer
+)  # vectordb is not of type ABCVectorDB, but it mimics it
 
 
 def get_indexer():
