@@ -128,7 +128,6 @@ async def get_answer(
         headers={"X-Metadata-Sources": src_json},
     )
 
-
 @app.get("/health_check", summary="Toy endpoint to check that the api is up")
 async def health_check():
     return "RAG API is up."
