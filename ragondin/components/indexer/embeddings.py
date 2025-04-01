@@ -1,7 +1,9 @@
-from abc import abstractmethod, ABC
-from langchain_huggingface import HuggingFaceEmbeddings
+from abc import ABC, abstractmethod
+
 import torch
+from langchain_huggingface import HuggingFaceEmbeddings
 from omegaconf import OmegaConf
+from ..utils import SingletonABCMeta
 
 
 class ABCEmbedder(ABC):
@@ -20,7 +22,8 @@ class ABCEmbedder(ABC):
         """
         pass
 
-class HFEmbedder(ABCEmbedder):
+
+class HFEmbedder(ABCEmbedder, metaclass=SingletonABCMeta):
     """Factory class for loading and managing HuggingFace embedding models.
 
     This class handles the initialization and configuration of various HuggingFace
@@ -28,27 +31,25 @@ class HFEmbedder(ABCEmbedder):
 
     Args:
         embedder_config (OmegaConf): Configuration object containing model parameters
-        device (str, optional): Device to run the model on ('cuda' or 'cpu'). 
+        device (str, optional): Device to run the model on ('cuda' or 'cpu').
             Defaults to None, which auto-selects based on CUDA availability.
-    
+
     Raises:
         ValueError: If the specified model type is not supported or if initialization fails.
     """
 
     def __init__(self, embedder_config: OmegaConf, device=None) -> None:
         if device is None:
-            device = 'cuda' if torch.cuda.is_available() else 'cpu'
-        
+            device = "cuda" if torch.cuda.is_available() else "cpu"
+
         try:
             self.embedding = HuggingFaceEmbeddings(
                 model_name=embedder_config["model_name"],
-                model_kwargs={"device": device, 'trust_remote_code': True},
-                encode_kwargs={"normalize_embeddings": True}
+                model_kwargs={"device": device, "trust_remote_code": True},
+                encode_kwargs={"normalize_embeddings": True},
             )
         except Exception as e:
             raise ValueError(f"An error occurred during model initialization: {e}")
-    
-
 
     def get_embeddings(self) -> HuggingFaceEmbeddings:
         """Retrieve the initialized embedding model."""

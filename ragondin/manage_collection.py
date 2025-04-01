@@ -2,16 +2,14 @@
 
 import argparse
 import asyncio
-import time
 import os
+import time
+from components import Indexer, load_config
 from loguru import logger
-from qdrant_client import QdrantClient
-from components import load_config, Indexer
+from components.indexer.loaders.loader import get_files, DocSerializer
 
-config = load_config()
 
 def is_valid_directory(path):
-    """Custom validation to check if the directory exists."""
     if os.path.isdir(path):
         return os.path.abspath(path)
     else:
@@ -19,85 +17,57 @@ def is_valid_directory(path):
 
 
 async def main():
-    parser = argparse.ArgumentParser(description='Adds local files from a folder to qdrant vector db')
-    # Add a folder argument for uploading to qdrant
-    parser.add_argument("-f", "--folder",
-        type=is_valid_directory,
-        help="Path to the folder"
+    parser = argparse.ArgumentParser(
+        description="Adds local files from a folder to qdrant vector db"
     )
-
-    # Add a collection deletion argument
-    parser.add_argument("-d", "--delete",
-        type=str,
-        help="Name of the collection to delete"
+    # Add a folder argument for uploading to qdrant
+    parser.add_argument(
+        "-f", "--folder", type=is_valid_directory, help="Path to the folder"
     )
 
     # Add an override argument for Hydra config
     parser.add_argument(
-        "-o", "--override",
+        "-o",
+        "--override",
         action="append",
-        help="Overrides for the Hydra configuration (e.g., vectordb.collection_name='vdb95'). Can be used multiple times.",
+        help="Overrides for the Hydra configuration (e.g., vectordb.enable=true). Can be used multiple times.",
         default=None,
     )
 
     # Add a list of files argument for uploading to qdrant
-    parser.add_argument("-l", "--list",
-        type=str,
-        nargs='+',
-        help="List of file paths"
-    )
+    parser.add_argument("-l", "--list", type=str, nargs="+", help="List of file paths")
 
     args = parser.parse_args()
 
     # Load the config with potential overrides
     config = load_config(overrides=args.override)
+    serializer = DocSerializer(data_dir=config.paths.data_dir, config=config)
 
     if args.folder:
-        collection = config.vectordb["collection_name"]
-        logger.warning(f"Data will be upserted to the collection {collection}")
+        indexer = Indexer.remote(config, logger)
+        chunk_tasks = []
+        async for file_path in get_files(
+            serializer.loader_classes, args.folder, recursive=True
+        ):
+            chunk_tasks.append(
+                indexer.add_file.remote(path=file_path, metadata={}, partition=None)
+            )
 
-        indexer = Indexer(config, logger)
-        
+        # Await all tasks concurrently
         start = time.time()
-        await indexer.add_files2vdb(path=args.folder)
+        await asyncio.gather(*chunk_tasks)
         end = time.time()
-
-        logger.info(f"Execution time: {end - start:.4f} seconds")
-        logger.info(f"Documents loaded to collection named '{collection}'. ")
-    
-    
-    if collection_name := args.delete:
-        client = QdrantClient(
-            port=config.vectordb["port"],
-            host=config.vectordb["host"]
-        )
-        if client.collection_exists(collection_name=collection_name):
-            client.delete_collection(collection_name)
-            logger.info(f"collection '{collection_name}' deleted")
-        else:
-            logger.info(f"This collection doesn't exist")
-    
 
     if args.list:
-        collection = config.vectordb["collection_name"]
-        logger.warning(f"Data will be upserted to the collection {collection}")
-
-        indexer = Indexer(config, logger)
-        
+        indexer = Indexer.remote(config, logger)
         start = time.time()
-        await indexer.add_files2vdb(path=args.list)
+        await indexer.add_files.remote(path=args.list)
         end = time.time()
 
-        logger.info(f"Execution time: {end - start:.4f} seconds")
-        logger.info(f"Documents loaded to collection named '{collection}'.")
+    logger.info(f"Execution time: {end - start:.4f} seconds")
+    if config.vectordb["enable"]:
+        logger.info("Documents loaded to `default` partition.")
 
 
-    
-if __name__ == '__main__':
+if __name__ == "__main__":
     asyncio.run(main())
-    # Example usage of the -l argument in the command line:
-    # ./manage_collection.py -l file1.txt file2.txt file3.txt -o vectordb.collection_name='vdb95'
-
-# ./manage_collection.py -f app/upload_dir/S2_RAG/ -o vectordb.collection_name='vdb90' -o chunker.breakpoint_threshold_amount=90
-
-# ./manage_collection.py -f app/upload_dir/S2_RAG/ -o vectordb.collection_name='vdb95' -o chunker.breakpoint_threshold_amount=95

@@ -47,55 +47,150 @@ Supports three retrieval modes:
 ```bash
 git clone https://github.com/OpenLLM-France/RAGondin.git
 cd RAGondin
-git checkout main
+git checkout dev
 ```
 
-#### 2. Create poetry environment and install dependencies:
-Requirements: Python3.12 and poetry installed
+#### 2. Create uv environment and install dependencies:
+Requirements: Python3.12 and uv installed
 
 ```bash
-# Create a new environment using Poetry
-poetry config virtualenvs.in-project true
-
-# Install dependencies
-poetry install
+# Create a new environment with all dependencies
+uv init
+uv sync
 ```
 
-#### 3. Run the fastapi
-1. **Prepare Qdrant collection** (using `manage_collection.py`):
-> Before running the script, add the files you want to test the rag on the `./data` folder.
+#### 3. Create a .env file
+Copy the content of **.env.exemple** to **.env**. Then add the **BASE_URL** and **API_KEY**.
 
-```bash
-# Create/update collection (default collection from .hydra_config/config.yaml)
-python3 manage_collection.py -f './data' 
+#### 4.Deployment
+1. **Load all the documents that you want to extract the informations**
 
-# Specify collection name
-python3 manage_collection.py -f './data' -o vectordb.collection_name={collection_name}
+Add the files (word, excel, pptx, pdf, etc.) into the './data/' folder or add it later on the web interface.
 
-# Add list of files
-
-python3 manage_collection.py -l ./data/file1.pdf ./data/file2.pdf 
-
-```
-See the **`.hydra_config/config.yaml`**. More parameters can be modified using CLI.
-For example, to deactivate the contextualized chunking, then you can use the following command
-```bash
-./manage_collection.py -f ./data/ -o vectordb.collection_name={collection_name} -o chunker.contextual_retrieval=false
-```
-
-To delete a vector db, you can the following command
-```bash
-# Delete collection
-python3 manage_collection.py -d {collection_name}
-```
-
-2. **Launch the app and the api**:
+2. **Launch the app**:
 ```bash
 # launch the api
-uvicorn api:app --reload --port 8082 --host 0.0.0.0
+docker-compose up -d --build
 ```
 
-You can access the default frontend to chat with your documents. Navivate to the **'/chainlit'** route.
+### 🧠 API Overview
+
+This FastAPI-powered backend offers capabilities for document-based question answering (RAG), semantic search, and document indexing across multiple partitions. It exposes endpoints for interacting with a vector database and managing document ingestion, processing, and querying.
+
+---
+
+### 📍 Endpoints Summary
+
+---
+
+#### 🔍 LLM Calls
+
+**`POST /{partition}/generate`**  
+Generates an answer to a user’s input based on a chat history and a document corpus in a given partition. Supports asynchronous streaming response.
+
+---
+
+#### 📦 Indexer
+
+**`POST /indexer/partition/{partition}/file/{file_id}`**  
+Uploads a file (with optional metadata) to a specific partition.
+
+- **Inputs:**
+  - `file` (form-data): binary – File to upload  
+  - `metadata` (form-data): JSON string – Metadata for the file (e.g. `{"file_type": "pdf"}`)
+
+- **Returns:**
+  - `201 Created` with a JSON containing the task status URL
+
+---
+
+**`PUT /indexer/partition/{partition}/file/{file_id}`**  
+Replaces an existing file in the partition. Deletes existing entry and creates a new indexation task.
+
+- **Inputs:**
+  - `file` (form-data): binary – File to upload  
+  - `metadata` (form-data): JSON string – Metadata for the file (e.g. `{"file_type": "pdf"}`)
+
+- **Returns:**
+  - `201 Created` with a JSON containing the task status URL
+
+---
+
+**`PATCH /indexer/partition/{partition}/file/{file_id}`**  
+Updates the metadata of an existing file without reindexing.
+
+- **Inputs:**
+  - `metadata` (form-data): JSON string – Metadata for the file (e.g. `{"file_type": "pdf"}`)
+
+---
+
+**`DELETE /indexer/partition/{partition}/file/{file_id}`**  
+Deletes a file from a specific partition.
+
+---
+
+**`GET /indexer/task/{task_id}`**  
+Retrieves the status of an asynchronous indexing task.
+
+---
+
+#### 🔎 Semantic Search
+
+**`GET /search/`**  
+Searches across multiple partitions using a semantic query.
+
+- **Inputs:**
+  - `partitions` (query, optional): List[str] – Partitions to search (default: `["all"]`)  
+  - `text` (query, required): string – Text to search semantically  
+  - `top_k` (query, optional): int – Number of top results to return (default: `5`)
+
+- **Returns:**
+  - `200 OK` with a JSON list of document links (HATEOAS style)
+
+---
+
+**`GET /search/partition/{partition}`**  
+Searches within a specific partition.
+
+- **Inputs:**
+  - `text` (query, required): string – Text to search semantically  
+  - `top_k` (query, optional): int – Number of top results to return (default: `5`)
+
+- **Returns:**
+  - `200 OK` with a JSON list of document links (HATEOAS style)
+
+---
+
+**`GET /search/partition/{partition}/file/{file_id}`**  
+Searches within a specific file in a partition.
+
+- **Inputs:**
+  - `text` (query, required): string – Text to search semantically  
+  - `top_k` (query, optional): int – Number of top results to return (default: `5`)
+
+- **Returns:**
+  - `200 OK` with a JSON list of document links (HATEOAS style)
+
+---
+
+#### 📄 Document Extract Details
+
+**`GET /extract/{extract_id}`**  
+Fetches a specific extract by its ID.
+
+- **Returns:**
+  - Extract text content  
+  - Metadata (JSON)
+
+---
+
+#### 💬 OpenAI-Compatible Chat
+
+**`POST /v1/chat/completions`**  
+OpenAI-compatible chat completion endpoint using a Retrieval-Augmented Generation (RAG) pipeline. Accepts `model`, `messages`, `temperature`, `top_p`, etc.
+
+
+
 
 ## Contribute
 Contributions are welcome! Please follow standard GitHub workflow:

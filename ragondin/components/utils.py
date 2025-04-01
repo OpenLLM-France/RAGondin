@@ -1,27 +1,125 @@
+import asyncio
+import atexit
+import threading
+from abc import ABCMeta
 from pathlib import Path
+
+from config.config import load_config
 from langchain_core.documents.base import Document
+import ray
+
+config = load_config()
+
 
 class SingletonMeta(type):
     _instances = {}
+    _lock = threading.Lock()  # Ensures thread safety
 
     def __call__(cls, *args, **kwargs):
-        if cls not in cls._instances:
-            instance = super().__call__(*args, **kwargs)
-            cls._instances[cls] = instance
+        if cls not in cls._instances:  # First check (not thread-safe yet)
+            with cls._lock:  # Prevents multiple threads from creating instances
+                if cls not in cls._instances:  # Second check (double-checked locking)
+                    instance = super().__call__(*args, **kwargs)
+                    cls._instances[cls] = instance
         return cls._instances[cls]
-    
+
+
+class SingletonABCMeta(ABCMeta, SingletonMeta):
+    pass
+
+
+class LLMSemaphore(metaclass=SingletonMeta):
+    def __init__(self, max_concurrent_ops: int):
+        if max_concurrent_ops <= 0:
+            raise ValueError("max_concurrent_ops must be a positive integer")
+        self.max_concurrent_ops = max_concurrent_ops
+        self._semaphore = asyncio.Semaphore(max_concurrent_ops)
+        atexit.register(self.cleanup)
+
+    async def __aenter__(self):
+        await self._semaphore.acquire()
+        return self
+
+    async def __aexit__(self, exc_type, exc, tb):
+        self._semaphore.release()
+
+    async def acquire(self):
+        await self._semaphore.acquire()
+
+    def release(self):
+        self._semaphore.release()
+
+    def cleanup(self):
+        """Ensure semaphore is released at shutdown"""
+        while self._semaphore.locked():
+            self._semaphore.release()
+
+
+@ray.remote
+class DistributedSemaphoreActor:
+    def __init__(self, max_concurrent_ops: int):
+        self.semaphore = asyncio.Semaphore(max_concurrent_ops)
+
+    async def acquire(self):
+        await self.semaphore.acquire()
+
+    async def release(self):
+        self.semaphore.release()
+
+    def cleanup(self):
+        while self.semaphore.locked():
+            self.semaphore.release()
+
+
+class DistributedSemaphore:
+    # https://chat.deepseek.com/a/chat/s/890dbcc0-2d3f-4819-af9d-774b892905bc
+    def __init__(self, name: str = "llmSemaphore", max_concurrent_ops: int = 10):
+        try:
+            actor = ray.get_actor(name)  # reuse existing actor if it exists
+        except ValueError:
+            # create new actor if it doesn't exist
+            actor = DistributedSemaphoreActor.options(name=name).remote(
+                max_concurrent_ops
+            )
+
+        self._actor = actor
+
+    async def __aenter__(self):
+        await self._actor.acquire.remote()
+        return self
+
+    async def __aexit__(self, exc_type, exc, tb):
+        await self._actor.release.remote()
+
+    def cleanup(self):
+        ray.get(self._actor.cleanup.remote())
+
 
 def load_sys_template(file_path: Path) -> tuple[str, str]:
     with open(file_path, mode="r") as f:
         sys_msg = f.read()
         return sys_msg
-    
+
 
 def format_context(docs: list[Document]) -> str:
-    """Build context string from list of documents."""
+    """
+    Build a context string from a list of documents.
+    Args:
+        docs (list[Document]): A list of Document objects to be formatted.
+    Returns:
+        tuple: A tuple containing:
+            - str: A formatted string representing the context built from the documents.
+            - list: A list of dictionaries, each containing metadata and content of the documents.
+                Each dictionary contains the following keys:
+                - "doc_id" (str): The identifier of the document.
+                - "source" (str): The source of the document.
+                - "sub_url_path" (str): The sub URL path of the document.
+                - "page" (int): The page number of the document.
+                - "content" (str): The content of the document.'
+    """
     if not docs:
-        return 'No document found from the database', []
-    
+        return "No document found from the database", []
+
     sources = []
     context = "Extracted documents:\n"
 
@@ -34,17 +132,22 @@ def format_context(docs: list[Document]) -> str:
 
         # document = (f"""<chunk document_id={doc_id}>\n{doc.page_content.strip()}\n</chunk>\n""")
         # Source: {source} (Page: {page})
-    
+
         context += document
         context += "-" * 40 + "\n\n"
 
         sources.append(
             {
                 "doc_id": doc_id,
-                'source': doc.metadata["source"],
-                'sub_url_path': doc.metadata["sub_url_path"],
-                'page': doc.metadata["page"],
-                'content': doc.page_content
+                "source": doc.metadata["source"],
+                "sub_url_path": doc.metadata["sub_url_path"],
+                "page": doc.metadata["page"],
+                "content": doc.page_content,
             }
         )
     return context, sources
+
+
+# Global variables
+# llmSemaphore = LLMSemaphore(max_concurrent_ops=config.semaphore.llm_semaphore)
+llmSemaphore = DistributedSemaphore(max_concurrent_ops=config.semaphore.llm_semaphore)
