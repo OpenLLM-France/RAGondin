@@ -3,6 +3,7 @@ from abc import ABC, abstractmethod
 import torch
 from langchain_huggingface import HuggingFaceEmbeddings
 from omegaconf import OmegaConf
+from ..utils import SingletonABCMeta
 
 
 class ABCEmbedder(ABC):
@@ -22,7 +23,7 @@ class ABCEmbedder(ABC):
         pass
 
 
-class HFEmbedder(ABCEmbedder):
+class HFEmbedder(ABCEmbedder, metaclass=SingletonABCMeta):
     """Factory class for loading and managing HuggingFace embedding models.
 
     This class handles the initialization and configuration of various HuggingFace

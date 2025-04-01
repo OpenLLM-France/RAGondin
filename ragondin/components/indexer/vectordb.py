@@ -10,7 +10,21 @@ from langchain_qdrant import FastEmbedSparse, QdrantVectorStore, RetrievalMode
 from pymilvus import MilvusClient
 from qdrant_client import QdrantClient, models
 
-# https://python-client.qdrant.tech/qdrant_client.qdrant_client
+
+INDEX_PARAMS = [
+    {"metric_type": "BM25", "index_type": "SPARSE_INVERTED_INDEX"},  # For sparse vector
+    {
+        "metric_type": "IP",
+        "index_type": "IVF_FLAT",
+        "params": {"nlist": 128},
+    },  # For dense vector
+]
+
+
+SEARCH_PARAMS = [
+    {"metric_type": "IP", "params": {"nprobe": 10}},
+    {"metric_type": "BM25", "params": {"drop_ratio_build": 0.2}},
+]
 
 
 class ABCVectorDB(ABC):
@@ -123,12 +137,11 @@ class MilvusDB(ABCVectorDB):
 
         index_params = None
         if hybrid_mode:
-            index_params = [
-                {"metric_type": "BM25"},  # For sparse vector
-                {"metric_type": "IP"},  # For dense vector
-            ]
+            index_params = INDEX_PARAMS
         else:
-            index_params = {"metric_type": "COSINE"}
+            index_params = {"metric_type": "COSINE", "index_type": "FLAT"}
+
+        self.search_params = SEARCH_PARAMS
 
         self.hybrid_mode = hybrid_mode
         self.index_params = index_params
@@ -162,6 +175,7 @@ class MilvusDB(ABCVectorDB):
             index_params=self.index_params,
             primary_field="_id",
             enable_dynamic_field=True,
+            search_params=self.search_params,
             partition_key_field="partition",
             builtin_function=self.sparse_embeddings,
             vector_field=["sparse", "vector"] if self.hybrid_mode else None,
@@ -201,6 +215,8 @@ class MilvusDB(ABCVectorDB):
             ValueError: If no collection name is provided and no default collection name is set.
             ValueError: If the specified collection does not exist.
         """
+
+        # self.logger.info(f"SEARCH PARAMS: {self.vector_store.search_params}")
 
         expr_parts = []
 

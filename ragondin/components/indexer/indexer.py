@@ -1,20 +1,23 @@
-import asyncio
-from pathlib import Path
-from typing import AsyncGenerator, Dict, List, Optional
-
+from typing import Dict, List, Optional
 import ray
 from langchain_core.documents.base import Document
+import torch
+import gc
+import inspect
 
 from ..utils import SingletonMeta
-from .chunker import ABCChunker, ChunkerFactory, SemanticSplitter
+from .chunker import ABCChunker, ChunkerFactory
 from .embeddings import HFEmbedder
 from .loaders.loader import DocSerializer
 from .vectordb import ConnectorFactory
 
+if not ray.is_initialized():
+    ray.init(dashboard_host="0.0.0.0", ignore_reinit_error=True)
 
-@ray.remote(num_gpus=1)
+
+@ray.remote(num_gpus=1, concurrency_groups={"compute": 2})
 class Indexer(metaclass=SingletonMeta):
-    """This class bridges static files with the vector store database."""
+    """This class bridges static files with the vector store database.*"""
 
     def __init__(self, config, logger, device=None) -> None:
         """
@@ -24,16 +27,11 @@ class Indexer(metaclass=SingletonMeta):
             config (Config): Configuration object containing settings for the embedder, paths, llm, and insertion.
             logger (Logger): Logger object for logging information.
             device (str, optional): Device to be used by the embedder. Defaults to None.
-
-        Attributes:
-            serializer (DocSerializer): Serializer for document data.
-            chunker (ABCChunker): Chunker object created using the ChunkerFactory.
-            vectordb (VectorDB): Vector database connector created using the ConnectorFactory.
-            logger (Logger): Logger object for logging information.
-            n_concurrent_loading (int): Number of concurrent loading operations. Defaults to 2.
-            n_concurrent_chunking (int): Number of concurrent chunking operations. Defaults to 2.
         """
-        embedder = HFEmbedder(embedder_config=config.embedder, device=device)
+        embedder = HFEmbedder(
+            embedder_config=config.embedder, device=device
+        )  # cloud pickle
+        self.embedder = embedder
         self.serializer = DocSerializer(data_dir=config.paths.data_dir, config=config)
         self.chunker: ABCChunker = ChunkerFactory.create_chunker(
             config, embedder=embedder.get_embeddings()
@@ -54,82 +52,46 @@ class Indexer(metaclass=SingletonMeta):
         self.default_partition = "_default"
         self.enable_insertion = self.config.vectordb["enable"]
 
-    async def chunk(
-        self, doc, gpu_semaphore: asyncio.Semaphore
-    ) -> AsyncGenerator[Document, None]:
-        """
-        Asynchronously chunks a document using the specified chunker.
-
-        If the chunker is an instance of `SemanticSplitter`, it will use a GPU semaphore
-        to manage access to GPU resources while splitting the document.
-
-        Args:
-            doc (Document): The document to be chunked.
-            gpu_semaphore (asyncio.Semaphore): A semaphore to control access to GPU resources.
-
-        Returns:
-            AsyncGenerator[Document, None]: An asynchronous generator yielding the chunks of the document.
-        """
-        if isinstance(self.chunker, SemanticSplitter):
-            async with gpu_semaphore:
-                chunks = await self.chunker.split_document(doc)
-        else:
-            chunks = await self.chunker.split_document(doc)
-
-        self.logger.info(f"{Path(doc.metadata['source']).name} CHUNKED")
-        return chunks
-
-    async def add_files2vdb(
+    async def serialize_and_chunk(
         self,
         path: str | list[str],
         metadata: Optional[Dict] = {},
         partition: Optional[str] = None,
     ):
-        """
-        Add files to the vector database in async mode.
-        This method serializes documents from the given path(s) and processes them in chunks using GPU operations.
-        The processed chunks are then added to the vector database.
-        Args:
-            path (str | list[str]): The path or list of paths to the files to be added.
-            metadata (Optional[Dict], optional): Metadata to be associated with the documents. Defaults to an empty dictionary.
-            collection_name (Optional[str], optional): The name of the collection in the vector database. Defaults to None.
-        Raises:
-            Exception: If an error occurs during the document processing or adding to the vector database.
-        Returns:
-            None
-        """
-        partition = self._check_partition_str(partition)
-        gpu_semaphore = asyncio.Semaphore(
-            self.n_concurrent_chunking
-        )  # Only allow max_concurrent_gpu_ops GPU operation at a time
         self.logger.info(f"Starting serialization of documents from {path}...")
-        doc_generator: AsyncGenerator[Document, None] = (
-            self.serializer.serialize_documents(
-                path,
-                metadata={**metadata, "partition": partition},
-                recursive=True,
-            )
+        doc: Document = await self.serializer.serialize_document(
+            path, metadata={**metadata, "partition": partition}
         )
 
-        results = []
+        self.logger.info("Starting chunking")
+        chunks = await self.chunker.split_document(doc)
+        self.logger.info(f"Chunking completed for {path}")
+        return chunks
+
+    @ray.method(concurrency_group="compute")
+    async def add_file(
+        self,
+        path: str | list[str],
+        metadata: Optional[Dict] = {},
+        partition: Optional[str] = None,
+    ):
+        partition = self._check_partition_str(partition)
+        chunks = await self.serialize_and_chunk(path, metadata, partition)
         try:
-            async for doc in doc_generator:
-                # task = asyncio.create_task(self.chunk(doc, gpu_semaphore))
-                results.append(await self.chunk(doc, gpu_semaphore))
-
-            # Await all tasks concurrently
-            all_chunks = sum(results, [])
-            if all_chunks:
-                if self.enable_insertion:
-                    await self.vectordb.async_add_documents(all_chunks)
-                    self.logger.debug(f"Documents {path} added.")
-                else:
-                    self.logger.debug(
-                        f"Documents {path} handled but not added to the database."
-                    )
-
+            if self.enable_insertion:
+                await self.vectordb.async_add_documents(chunks)
+                self.logger.debug(f"Documents {path} added.")
+            else:
+                self.logger.debug(
+                    f"Documents {path} handled but not added to the database."
+                )
         except Exception as e:
+            self.logger.error(f"An exception as occured: {e}")
             raise Exception(f"An exception as occured: {e}")
+        finally:
+            gc.collect()
+            torch.cuda.empty_cache()
+            torch.cuda.ipc_collect()
 
     def delete_file(self, file_id: str, partition: str):
         """
@@ -240,3 +202,19 @@ class Indexer(metaclass=SingletonMeta):
         ):
             raise ValueError("Partition should be a string or a list of strings.")
         return partition
+
+    async def _delegate_vdb_call(self, method_name: str, *args, **kwargs):
+        """Execute the method on the local vectordb, handling async methods."""
+        method = getattr(self.vectordb, method_name)
+        if not callable(method):
+            raise AttributeError(f"Method {method_name} not found/callable")
+
+        result = method(*args, **kwargs)
+        if inspect.isawaitable(result):
+            return await result
+        return result
+
+    def _is_method_async(self, method_name: str) -> bool:
+        """Helper method to check if a vectordb method is async."""
+        method = getattr(self.vectordb, method_name, None)
+        return inspect.iscoroutinefunction(method) if method else False

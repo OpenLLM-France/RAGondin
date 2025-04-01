@@ -6,6 +6,7 @@ from pathlib import Path
 
 from config.config import load_config
 from langchain_core.documents.base import Document
+import ray
 
 config = load_config()
 
@@ -52,6 +53,46 @@ class LLMSemaphore(metaclass=SingletonMeta):
         """Ensure semaphore is released at shutdown"""
         while self._semaphore.locked():
             self._semaphore.release()
+
+
+@ray.remote
+class DistributedSemaphoreActor:
+    def __init__(self, max_concurrent_ops: int):
+        self.semaphore = asyncio.Semaphore(max_concurrent_ops)
+
+    async def acquire(self):
+        await self.semaphore.acquire()
+
+    async def release(self):
+        self.semaphore.release()
+
+    def cleanup(self):
+        while self.semaphore.locked():
+            self.semaphore.release()
+
+
+class DistributedSemaphore:
+    # https://chat.deepseek.com/a/chat/s/890dbcc0-2d3f-4819-af9d-774b892905bc
+    def __init__(self, name: str = "llmSemaphore", max_concurrent_ops: int = 10):
+        try:
+            actor = ray.get_actor(name)  # reuse existing actor if it exists
+        except ValueError:
+            # create new actor if it doesn't exist
+            actor = DistributedSemaphoreActor.options(name=name).remote(
+                max_concurrent_ops
+            )
+
+        self._actor = actor
+
+    async def __aenter__(self):
+        await self._actor.acquire.remote()
+        return self
+
+    async def __aexit__(self, exc_type, exc, tb):
+        await self._actor.release.remote()
+
+    def cleanup(self):
+        ray.get(self._actor.cleanup.remote())
 
 
 def load_sys_template(file_path: Path) -> tuple[str, str]:
@@ -108,4 +149,5 @@ def format_context(docs: list[Document]) -> str:
 
 
 # Global variables
-llmSemaphore = LLMSemaphore(max_concurrent_ops=config.semaphore.llm_semaphore)
+# llmSemaphore = LLMSemaphore(max_concurrent_ops=config.semaphore.llm_semaphore)
+llmSemaphore = DistributedSemaphore(max_concurrent_ops=config.semaphore.llm_semaphore)

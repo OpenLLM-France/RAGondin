@@ -7,7 +7,6 @@ import torch
 from aiopath import AsyncPath
 from langchain_core.documents.base import Document
 from loguru import logger
-
 from .base import BaseLoader
 
 
@@ -27,12 +26,11 @@ class DocSerializer:
         self.data_dir = data_dir
         self.kwargs = kwargs
         self.config = kwargs.get("config")
+        self.loader_classes = get_loaders(
+            file_loaders=self.config.loader["file_loaders"]
+        )
 
-        self.loader_classes = get_loaders(self.config)
-
-    async def serialize_document(
-        self, path: str, semaphore: asyncio.Semaphore, metadata: Optional[Dict] = {}
-    ):
+    async def serialize_document(self, path: str, metadata: Optional[Dict] = {}):
         p = AsyncPath(path)
         type_ = p.suffix
         loader_cls: BaseLoader = self.loader_classes.get(type_)
@@ -40,33 +38,22 @@ class DocSerializer:
             Path(path).resolve().relative_to(self.data_dir)
         )  # for the static file server
 
-        if type_ == ".pdf":  # for loaders that uses gpu
-            async with semaphore:
-                logger.debug(f"LOADING: {p.name}")
-                loader = loader_cls(**self.kwargs)
-                metadata = {
-                    "source": str(path),
-                    "file_name": p.name,
-                    "sub_url_path": str(sub_url_path),
-                    "page_sep": loader.page_sep,
-                    **metadata,
-                }
-                doc: Document = await loader.aload_document(
-                    file_path=path, metadata=metadata, save_md=True
-                )
-        else:
-            logger.debug(f"LOADING: {p.name}")
-            loader = loader_cls(**self.kwargs)  # Propagate kwargs here!
-            metadata = {
-                "source": str(path),
-                "file_name": p.name,
-                "sub_url_path": str(sub_url_path),
-                "page_sep": loader.page_sep,
-                **metadata,
-            }
-            doc: Document = await loader.aload_document(
-                file_path=path, metadata=metadata, save_md=True
-            )
+        logger.debug(f"LOADING: {p.name}")
+        loader = loader_cls(**self.kwargs)  # Propagate kwargs here!
+        metadata = {
+            "source": str(path),
+            "file_name": p.name,
+            "sub_url_path": str(sub_url_path),
+            "page_sep": loader.page_sep,
+            **metadata,
+        }
+        doc: Document = await loader.aload_document(
+            file_path=path, metadata=metadata, save_md=True
+        )
+
+        if torch.cuda.is_available():
+            torch.cuda.empty_cache()
+            torch.cuda.ipc_collect()
 
         logger.info(f"{p.name}: SERIALIZED")
         return doc
@@ -76,32 +63,13 @@ class DocSerializer:
         path: str | Path | list[str],
         metadata: Optional[Dict] = {},
         recursive=True,
-        n_concurrent_ops=3,
     ) -> AsyncGenerator[Document, None]:
-        """
-        Asynchronously serializes documents from the given path(s).
-        Args:
-            path (str | Path | list[str]): The path or list of paths to the documents to be serialized.
-            metadata (Optional[Dict], optional): Additional metadata to include with each document. Defaults to {}.
-            recursive (bool, optional): Whether to search for files recursively in the given path(s). Defaults to True.
-            n_concurrent_ops (int, optional): The number of concurrent operations to allow. Defaults to 3.
-        Yields:
-            AsyncGenerator[Document, None]: An asynchronous generator that yields serialized Document objects.
-        """
-        semaphore = asyncio.Semaphore(n_concurrent_ops)
         tasks = []
         async for file in get_files(self.loader_classes, path, recursive):
-            tasks.append(
-                self.serialize_document(file, semaphore=semaphore, metadata=metadata)
-            )
+            tasks.append(self.serialize_document(file, metadata=metadata))
 
         for task in asyncio.as_completed(tasks):
             doc = await task
-
-            if torch.cuda.is_available():
-                torch.cuda.empty_cache()
-                torch.cuda.ipc_collect()
-
             yield doc  # yield doc as soon as it is ready
 
 
@@ -143,11 +111,10 @@ async def get_files(
             raise ValueError(f"Path {path} is neither a file nor a directory")
 
 
-def get_loaders(config):
-    loader_defaults = config["loader"]["file_loaders"]
+def get_loaders(file_loaders: dict):
     loader_classes = {}
 
-    for type_, class_name in loader_defaults.items():
+    for type_, class_name in file_loaders.items():
         try:
             module = importlib.import_module(f"components.indexer.loaders.{class_name}")
             cls = getattr(module, class_name)

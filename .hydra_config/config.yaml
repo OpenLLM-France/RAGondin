@@ -26,7 +26,7 @@ reranker:
   top_k: 7
 
 grader:
-  grade_documents: false
+  grade_documents: true
 
 verbose:
   verbose: true
