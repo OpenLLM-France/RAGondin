@@ -113,7 +113,7 @@ async def search_file(
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.get("/{extract_id}", response_model=None)
+@router.get("/extract/{extract_id}", response_model=None)
 async def get_extract(extract_id: str, indexer: Indexer = Depends(get_indexer)):
     try:
         doc = vectordb.get_chunk_by_id(extract_id)

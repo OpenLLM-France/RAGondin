@@ -254,7 +254,7 @@ async def get_task_status(task_id: str, indexer: Indexer = Depends(get_indexer))
     )
 
 
-@router.post("/sync-db/", response_model=None)
+@router.post("/sync-db", response_model=None)
 async def sync_db(indexer: Indexer = Depends(get_indexer)):
     try:
         data_dir = Path(DATA_DIR)

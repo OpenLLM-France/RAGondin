@@ -77,96 +77,118 @@ docker-compose up -d --build
 
 This FastAPI-powered backend offers capabilities for document-based question answering (RAG), semantic search, and document indexing across multiple partitions. It exposes endpoints for interacting with a vector database and managing document ingestion, processing, and querying.
 
-#### 📍 Endpoints Summary
+---
 
-##### 🔍 LLM Calls
+### 📍 Endpoints Summary
 
-###### `POST /{partition}/generate`  
-  Generates an answer to a user’s input based on a chat history and a document corpus in a given partition. Supports asynchronous streaming response.
+---
 
+#### 🔍 LLM Calls
 
-##### 📦 Indexer
+**`POST /{partition}/generate`**  
+Generates an answer to a user’s input based on a chat history and a document corpus in a given partition. Supports asynchronous streaming response.
 
-###### `POST /indexer/partition/{partition}/file/{file_id}`  
-  Uploads a file (with optional metadata) to a specific partition.
+---
 
-**Inputs:**
-- `file` (form-data): binary – File to upload
-- `metadata`: JSON string – Metadata for the file (example : "{"file_type" : "pdf"}")
+#### 📦 Indexer
 
-**Returns:**
-- `201 Created` with a JSON containing the task status URL
+**`POST /indexer/partition/{partition}/file/{file_id}`**  
+Uploads a file (with optional metadata) to a specific partition.
 
+- **Inputs:**
+  - `file` (form-data): binary – File to upload  
+  - `metadata` (form-data): JSON string – Metadata for the file (e.g. `{"file_type": "pdf"}`)
 
-###### `PUT /indexer/partition/{partition}/file/{file_id}`  
-  Replaces an existing file in the partition. Deletes existing entry and creates a new indexation task.
+- **Returns:**
+  - `201 Created` with a JSON containing the task status URL
 
-**Inputs:**
-- `file` (form-data): binary – File to upload
-- `metadata`: JSON string – Metadata for the file (example : "{"file_type" : "pdf"}")
+---
 
-**Returns:**
-- `201 Created` with a JSON containing the task status URL
+**`PUT /indexer/partition/{partition}/file/{file_id}`**  
+Replaces an existing file in the partition. Deletes existing entry and creates a new indexation task.
 
-###### `PATCH /indexer/partition/{partition}/file/{file_id}`  
-  Updates the metadata of an existing file without reindexing.
+- **Inputs:**
+  - `file` (form-data): binary – File to upload  
+  - `metadata` (form-data): JSON string – Metadata for the file (e.g. `{"file_type": "pdf"}`)
 
-**Inputs:**
-- `metadata`: JSON string – Metadata for the file (example : "{"file_type" : "pdf"}")
+- **Returns:**
+  - `201 Created` with a JSON containing the task status URL
 
-###### `DELETE /indexer/partition/{partition}/file/{file_id}`  
-  Deletes a file from a specific partition.
+---
 
-###### `GET /indexer/task/{task_id}`  
-  Retrieves the status of an asynchronous indexing task.
+**`PATCH /indexer/partition/{partition}/file/{file_id}`**  
+Updates the metadata of an existing file without reindexing.
 
+- **Inputs:**
+  - `metadata` (form-data): JSON string – Metadata for the file (e.g. `{"file_type": "pdf"}`)
 
-##### 🔎 Semantic Search
+---
 
-###### `GET /search/`  
-  Searches across multiple partitions using a semantic query.
+**`DELETE /indexer/partition/{partition}/file/{file_id}`**  
+Deletes a file from a specific partition.
 
-**Inputs:**
-- `partitions` (query, optional): List[str] – Partitions to search. Default: `["all"]`
-- `text` (query, required): string – Text to search semantically
-- `top_k` (query, optional): int – Number of top results to return. Default: `5`
+---
 
-**Returns:**
-- `200 OK` with a JSON list of document links (HATEOAS style)
+**`GET /indexer/task/{task_id}`**  
+Retrieves the status of an asynchronous indexing task.
 
+---
 
-###### `GET /search/partition/{partition}`  
-  Searches within a specific partition
+#### 🔎 Semantic Search
 
-**Inputs:**
-- `text` (query, required): string – Text to search semantically
-- `top_k` (query, optional): int – Number of top results to return. Default: `5`
+**`GET /search/`**  
+Searches across multiple partitions using a semantic query.
 
-**Returns:**
-- `200 OK` with a JSON list of document links (HATEOAS style)
+- **Inputs:**
+  - `partitions` (query, optional): List[str] – Partitions to search (default: `["all"]`)  
+  - `text` (query, required): string – Text to search semantically  
+  - `top_k` (query, optional): int – Number of top results to return (default: `5`)
 
-###### `GET /search/partition/{partition}/file/{file_id}`  
-  Searches within a specific file in a partition.
+- **Returns:**
+  - `200 OK` with a JSON list of document links (HATEOAS style)
 
-**Inputs:**
-- `text` (query, required): string – Text to search semantically
-- `top_k` (query, optional): int – Number of top results to return. Default: `5`
+---
 
-**Returns:**
-- `200 OK` with a JSON list of document links (HATEOAS style)
+**`GET /search/partition/{partition}`**  
+Searches within a specific partition.
 
-##### 🔎 Document extract details
+- **Inputs:**
+  - `text` (query, required): string – Text to search semantically  
+  - `top_k` (query, optional): int – Number of top results to return (default: `5`)
 
-###### `GET /search/{extract_id}`  
-  Fetches a specific extract by its ID.
-**Returns:**
-- Extract text content
-- metadata JSON
+- **Returns:**
+  - `200 OK` with a JSON list of document links (HATEOAS style)
 
-##### 💬 OpenAI-Compatible Chat
+---
 
-- `POST /v1/chat/completions`  
-  OpenAI-compatible chat completion endpoint using a Retrieval-Augmented Generation (RAG) pipeline. Accepts `model`, `messages`, `temperature`, `top_p`, etc.
+**`GET /search/partition/{partition}/file/{file_id}`**  
+Searches within a specific file in a partition.
+
+- **Inputs:**
+  - `text` (query, required): string – Text to search semantically  
+  - `top_k` (query, optional): int – Number of top results to return (default: `5`)
+
+- **Returns:**
+  - `200 OK` with a JSON list of document links (HATEOAS style)
+
+---
+
+#### 📄 Document Extract Details
+
+**`GET /extract/{extract_id}`**  
+Fetches a specific extract by its ID.
+
+- **Returns:**
+  - Extract text content  
+  - Metadata (JSON)
+
+---
+
+#### 💬 OpenAI-Compatible Chat
+
+**`POST /v1/chat/completions`**  
+OpenAI-compatible chat completion endpoint using a Retrieval-Augmented Generation (RAG) pipeline. Accepts `model`, `messages`, `temperature`, `top_p`, etc.
+
 
 
 
