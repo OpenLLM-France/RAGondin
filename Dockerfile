@@ -10,7 +10,14 @@ RUN apt-get update && apt-get install -y \
     gcc \
     cmake \
     make \
+    lldb\
     && rm -rf /var/lib/apt/lists/*
+
+RUN apt update && apt install -y --no-install-recommends gnupg
+RUN echo "deb http://developer.download.nvidia.com/devtools/repos/ubuntu2404/$(dpkg --print-architecture) /" | tee /etc/apt/sources.list.d/nvidia-devtools.list
+RUN apt-key adv --fetch-keys http://developer.download.nvidia.com/compute/cuda/repos/ubuntu1804/x86_64/7fa2af80.pub
+RUN apt update
+RUN apt install -y nsight-systems-cli
 
 # install ffmpeg
 RUN apt update && \
@@ -28,6 +35,8 @@ WORKDIR /app
 COPY pyproject.toml uv.lock ./
 RUN pip3 install uv && \
     uv sync --no-dev
+COPY entrypoint.sh /app/entrypoint.sh
+RUN chmod +x /app/entrypoint.sh
 
 # Set workdir for source code
 WORKDIR /app/ragondin
@@ -41,4 +50,4 @@ COPY prompts/ /app/prompts/
 COPY .hydra_config/ /app/.hydra_config/
 ENV PYTHONPATH=/app/ragondin/
 
-ENTRYPOINT ["uv", "run", "uvicorn", "api:app", "--host", "0.0.0.0", "--port", "8080", "--reload"]
+ENTRYPOINT ../entrypoint.sh

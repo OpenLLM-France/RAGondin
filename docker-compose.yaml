@@ -11,6 +11,7 @@ x-ragondin: &ragondin_template
   ports:
     - "${APP_PORT}:8080"
     - 8265:8265 # for ray
+    - 8082:8081 # for ray
   env_file:
     - .env
   shm_size: 10.24gb
@@ -40,3 +41,32 @@ services:
     deploy: {}
     profiles:
       - 'cpu'
+
+  prometheus:
+    image: prom/prometheus
+    volumes:
+      - prometheus:/etc/prometheus
+    ports:
+      - "9090:9090"
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana
+    restart: unless-stopped
+    environment:
+      - TERM=linux
+      - GF_INSTALL_PLUGINS=grafana-clock-panel,grafana-polystat-panel
+      - GF_AUTH_ANONYMOUS_ENABLED=true
+      - GF_AUTH_ANONYMOUS_ORG_ROLE=Admin
+      - GF_AUTH_DISABLE_LOGIN_FORM=true
+      - GF_SECURITY_ALLOW_EMBEDDING=true
+      - GF_SECURITY_COOKIE_SECURE=true
+      - GF_SECURITY_COOKIE_SAMESITE=none
+    ports:
+      - '3000:3000'
+    volumes:
+      - 'grafana_storage:/var/lib/grafana'
+
+volumes:
+  prometheus:
+  grafana_storage:

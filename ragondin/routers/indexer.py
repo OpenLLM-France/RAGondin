@@ -80,20 +80,19 @@ async def add_file(
         task = indexer.add_file.remote(
             path=file_path, metadata=metadata, partition=partition
         )
+        return JSONResponse(
+            status_code=status.HTTP_201_CREATED,
+            content={
+                "task_status_url": str(
+                    request.url_for("get_task_status", task_id=task.task_id().hex())
+                )
+            },
+        )
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Indexing error: {str(e)}",
         )
-
-    return JSONResponse(
-        status_code=status.HTTP_201_CREATED,
-        content={
-            "task_status_url": str(
-                request.url_for("get_task_status", task_id=task.task_id().hex())
-            )
-        },
-    )
 
 
 @router.delete("/partition/{partition}/file/{file_id}")

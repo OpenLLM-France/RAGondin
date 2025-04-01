@@ -1,22 +1,29 @@
 import asyncio
-from pathlib import Path
-from typing import AsyncGenerator, Dict, List, Optional
+from typing import Dict, List, Optional
 
 import ray
+import torch
 from langchain_core.documents.base import Document
+from loguru import logger
 
-from ..utils import SingletonMeta
-from .chunker import ABCChunker, ChunkerFactory, SemanticSplitter
+from .chunker import ABCChunker, ChunkerFactory
 from .embeddings import HFEmbedder
 from .loaders.loader import DocSerializer, get_files
 from .vectordb import ConnectorFactory
 
-if not ray.is_initialized():
-    ray.init(dashboard_host="0.0.0.0", ignore_reinit_error=True)
 
-
-@ray.remote(num_gpus=1, concurrency_groups={"compute": 2})
-class Indexer(metaclass=SingletonMeta):
+@ray.remote(
+    num_gpus=1,
+    concurrency_groups={"compute": 2},
+    runtime_env={
+        "nsight": {
+            "t": "cuda,cudnn,cublas",
+            "cuda-memory-usage": "true",
+            "cuda-graph-trace": "graph",
+        }
+    },
+)
+class Indexer:
     """This class bridges static files with the vector store database."""
 
     def __init__(self, config, logger, device=None) -> None:
@@ -68,12 +75,18 @@ class Indexer(metaclass=SingletonMeta):
         self.logger.info(f"Chunking completed for {path}")
         return chunks
 
+    @ray.method(concurrency_group="compute")
     async def add_file(
         self,
         path: str | list[str],
         metadata: Optional[Dict] = {},
         partition: Optional[str] = None,
     ):
+        logger.info(
+            "GPU IDs: {}".format(ray.get_runtime_context().get_accelerator_ids()["GPU"])
+        )
+        logger.info(f"[BEFORE] Allocated: {torch.cuda.memory_allocated() / 1e6} MB")
+        logger.info(f"[BEFORE] Reserved : {torch.cuda.memory_reserved() / 1e6} MB")
         chunks = await self.serialize_and_chunk(path, metadata, partition)
         try:
             if self.enable_insertion:
@@ -86,6 +99,18 @@ class Indexer(metaclass=SingletonMeta):
         except Exception as e:
             self.logger.error(f"An exception as occured: {e}")
             raise Exception(f"An exception as occured: {e}")
+        # finally:
+        #     logger.info(f"[AFTER] Allocated: {torch.cuda.memory_allocated() / 1e6} MB")
+        #     logger.info(f"[AFTER] Reserved : {torch.cuda.memory_reserved() / 1e6} MB")
+        #     torch.cuda.empty_cache()
+        #     torch.cuda.ipc_collect()
+        #     gc.collect()
+        #     logger.info(
+        #         f"[AFTER_CU] Allocated: {torch.cuda.memory_allocated() / 1e6} MB"
+        #     )
+        #     logger.info(
+        #         f"[AFTER_CU] Reserved : {torch.cuda.memory_reserved() / 1e6} MB"
+        #     )
 
     async def add_files(
         self,

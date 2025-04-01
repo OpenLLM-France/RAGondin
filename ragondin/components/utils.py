@@ -4,16 +4,14 @@ import threading
 from abc import ABCMeta
 from pathlib import Path
 
+import ray
 from config.config import load_config
 from langchain_core.documents.base import Document
-import ray
-import inspect
-import hashlib
 
 config = load_config()
 
 if not ray.is_initialized():
-    ray.init(dashboard_host="0.0.0.0", ignore_reinit_error=True)
+    ray.init()
 
 
 class SingletonMeta(type):
@@ -157,10 +155,6 @@ class SingletonRayMeta(type):
     def __call__(cls, *args, **kwargs):
         # Determine the actor name (customizable via class attribute)
         actor_name = getattr(cls, "_actor_name", cls.__name__)
-
-        # Ensure Ray is initialized
-        if not ray.is_initialized():
-            ray.init()
 
         try:
             # Try to get an existing actor

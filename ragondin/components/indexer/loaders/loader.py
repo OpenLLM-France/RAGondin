@@ -7,6 +7,7 @@ import torch
 from aiopath import AsyncPath
 from langchain_core.documents.base import Document
 from loguru import logger
+
 from .base import BaseLoader
 
 
@@ -37,7 +38,6 @@ class DocSerializer:
         sub_url_path = (
             Path(path).resolve().relative_to(self.data_dir)
         )  # for the static file server
-
         logger.debug(f"LOADING: {p.name}")
         loader = loader_cls(**self.kwargs)  # Propagate kwargs here!
         metadata = {
