@@ -140,7 +140,7 @@ mount_chainlit(
 
 
 # Mount the search router
-app.include_router(search_router, prefix="/", tags=[Tags.SEARCH])
+app.include_router(search_router, prefix="", tags=[Tags.SEARCH])
 # Mount the openai router
 app.include_router(openai_router, prefix="/v1", tags=[Tags.OPENAI])
 # Mount the indexer router
