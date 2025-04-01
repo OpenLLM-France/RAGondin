@@ -8,7 +8,7 @@ from utils.dependencies import Indexer, get_indexer, vectordb
 router = APIRouter()
 
 
-@router.get("/")
+@router.get("/search")
 async def search_multiple_partitions(
     request: Request,
     partitions: Optional[List[str]] = Query(
@@ -44,7 +44,7 @@ async def search_multiple_partitions(
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.get("/partition/{partition}")
+@router.get("/search/partition/{partition}")
 async def search_one_partition(
     request: Request,
     partition: str,
@@ -78,7 +78,7 @@ async def search_one_partition(
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.get("/partition/{partition}/file/{file_id}")
+@router.get("/search/partition/{partition}/file/{file_id}")
 async def search_file(
     request: Request,
     partition: str,
@@ -113,7 +113,7 @@ async def search_file(
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.get("/{extract_id}", response_model=None)
+@router.get("/extract/{extract_id}", response_model=None)
 async def get_extract(extract_id: str, indexer: Indexer = Depends(get_indexer)):
     try:
         doc = vectordb.get_chunk_by_id(extract_id)

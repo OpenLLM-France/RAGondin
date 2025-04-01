@@ -138,12 +138,13 @@ mount_chainlit(
     app, "./chainlit/app_front.py", path="/chainlit"
 )  # mount the default front
 
-# Mount the indexer router
-app.include_router(indexer_router, prefix="/indexer", tags=[Tags.INDEXER])
+
 # Mount the search router
-app.include_router(search_router, prefix="/extracts", tags=[Tags.SEARCH])
+app.include_router(search_router, prefix="/", tags=[Tags.SEARCH])
 # Mount the openai router
 app.include_router(openai_router, prefix="/v1", tags=[Tags.OPENAI])
+# Mount the indexer router
+app.include_router(indexer_router, prefix="/indexer", tags=[Tags.INDEXER])
 
 if __name__ == "__main__":
     uvicorn.run("api:app", host="0.0.0.0", port=8083, reload=True, proxy_headers=True)
