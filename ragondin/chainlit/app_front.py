@@ -24,7 +24,6 @@ def get_base_url():
 
 # this file is in the docker along with the fastapi running at port 8080
 
-
 # @cl.set_starters
 # async def set_starters():
 #     with open(APP_DIR / 'public' / 'conversation_starters.yaml') as file: # Load the YAML file
@@ -102,7 +101,9 @@ async def on_message(message: cl.Message):
     user_message = message.content
     params = {"new_user_input": user_message}
     async with cl.Step(name="Searching for relevant documents..."):
-        async with httpx.AsyncClient(timeout=httpx.Timeout(60.0), http2=True) as client:
+        async with httpx.AsyncClient(
+            timeout=httpx.Timeout(4 * 60.0), http2=True
+        ) as client:
             async with client.stream(
                 "POST",
                 f"{base_url}/{PARTITION}/generate",
