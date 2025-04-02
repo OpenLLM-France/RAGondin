@@ -23,7 +23,7 @@ insertion:
 
 reranker:
   model_name: jinaai/jina-colbert-v2
-  top_k: 7
+  top_k: 5
 
 grader:
   grade_documents: true
