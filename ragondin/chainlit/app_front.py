@@ -85,7 +85,7 @@ async def on_chat_start():
         global history
         history.clear()
         logger.debug("New Chat Started")
-        async with httpx.AsyncClient(timeout=httpx.Timeout(60.0)) as client:
+        async with httpx.AsyncClient(timeout=httpx.Timeout(4 * 60.0)) as client:
             response = await client.get(url=f"{base_url}/health_check")
 
             print(response.text)

@@ -23,7 +23,6 @@ x-ragondin: &ragondin_template
 
 
 services:
-
   # GPU - default 
   ragondin:
     <<: *ragondin_template
