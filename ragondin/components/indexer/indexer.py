@@ -15,7 +15,9 @@ if not ray.is_initialized():
     ray.init(dashboard_host="0.0.0.0", ignore_reinit_error=True)
 
 
-@ray.remote(num_gpus=1, concurrency_groups={"compute": 2})
+@ray.remote(
+    num_gpus=1, concurrency_groups={"compute": 2}, max_task_retries=2, max_restarts=-1
+)
 class Indexer(metaclass=SingletonMeta):
     """This class bridges static files with the vector store database.*"""
 
@@ -28,16 +30,13 @@ class Indexer(metaclass=SingletonMeta):
             logger (Logger): Logger object for logging information.
             device (str, optional): Device to be used by the embedder. Defaults to None.
         """
-        embedder = HFEmbedder(
-            embedder_config=config.embedder, device=device
-        )  # cloud pickle
-        self.embedder = embedder
+        self.embedder = HFEmbedder(embedder_config=config.embedder, device=device)
         self.serializer = DocSerializer(data_dir=config.paths.data_dir, config=config)
         self.chunker: ABCChunker = ChunkerFactory.create_chunker(
-            config, embedder=embedder.get_embeddings()
+            config, embedder=self.embedder.get_embeddings()
         )
         self.vectordb = ConnectorFactory.create_vdb(
-            config, logger=logger, embeddings=embedder.get_embeddings()
+            config, logger=logger, embeddings=self.embedder.get_embeddings()
         )
         self.logger = logger
         self.logger.info("Indexer initialized...")

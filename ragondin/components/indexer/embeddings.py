@@ -46,7 +46,7 @@ class HFEmbedder(ABCEmbedder, metaclass=SingletonABCMeta):
             self.embedding = HuggingFaceEmbeddings(
                 model_name=embedder_config["model_name"],
                 model_kwargs={"device": device, "trust_remote_code": True},
-                encode_kwargs={"normalize_embeddings": True},
+                encode_kwargs={"normalize_embeddings": True, "convert_to_tensor": True},
             )
         except Exception as e:
             raise ValueError(f"An error occurred during model initialization: {e}")

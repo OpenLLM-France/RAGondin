@@ -53,7 +53,7 @@ def format_elements(sources, only_txt=True):
 
         else:
             source = Path(url)
-            logger.debug(f"Source: {url}")
+            # logger.debug(f"Source: {url}")
             match source.suffix:
                 case ".pdf":
                     elem = cl.Pdf(
@@ -113,7 +113,7 @@ async def on_message(message: cl.Message):
                 sources = json.loads(metadata_sources)
 
                 if sources:
-                    elements, source_names = format_elements(sources, only_txt=False)
+                    elements, source_names = format_elements(sources, only_txt=True)
                     msg = cl.Message(content="", elements=elements)
                 else:
                     msg = cl.Message(content="")

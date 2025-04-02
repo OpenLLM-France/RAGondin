@@ -15,14 +15,16 @@ INDEX_PARAMS = [
     {"metric_type": "BM25", "index_type": "SPARSE_INVERTED_INDEX"},  # For sparse vector
     {
         "metric_type": "IP",
-        "index_type": "IVF_FLAT",
-        "params": {"nlist": 128},
+        "index_type": "HNSW",
+        "params": {"M": 32, "efConstruction": 100},
     },  # For dense vector
 ]
 
-
 SEARCH_PARAMS = [
-    {"metric_type": "IP", "params": {"nprobe": 10}},
+    {
+        "metric_type": "IP",
+        "params": {"ef": 20},
+    },
     {"metric_type": "BM25", "params": {"drop_ratio_build": 0.2}},
 ]
 

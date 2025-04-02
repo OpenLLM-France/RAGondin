@@ -1,41 +1,56 @@
 import asyncio
+import gc
 import time
 
+import torch
 from components.utils import SingletonMeta
 from langchain_core.documents.base import Document
 from loguru import logger
 from tqdm.asyncio import tqdm
-
+from marker.converters.pdf import PdfConverter
+from marker.models import create_model_dict
 from .base import BaseLoader
+import torch.multiprocessing as mp
+from concurrent.futures import ThreadPoolExecutor
+
+
+if torch.cuda.is_available():
+    mp.set_start_method("spawn", force=True)
 
 
 class MarkerConverter(metaclass=SingletonMeta):
-    """
-    A class used to convert files to markdown format using a PDF converter.
-    Attributes
-    ----------
-    converter : PdfConverter
-        An instance of PdfConverter initialized with specific configuration.
-    Methods
-    -------
-    convert_to_md(file_path)
-        Asynchronously converts the given file to markdown format.
-    """
-
-    def __init__(self) -> None:
-        from marker.converters.pdf import PdfConverter
-        from marker.models import create_model_dict
+    def __init__(self, page_sep) -> None:
+        self.model_dict = create_model_dict()
+        for k, v in self.model_dict.items():
+            v.model.share_memory()
 
         self.converter = PdfConverter(
-            artifact_dict=create_model_dict(),
+            artifact_dict=self.model_dict,
             config={
                 "output_format": "markdown",
                 "paginate_output": True,
+                "page_separator": page_sep,
             },
         )
 
+        # Create a thread pool executor to reuse threads across conversions.
+        self.executor = ThreadPoolExecutor(
+            max_workers=4
+        )  # Adjust max_workers as needed.
+
+        # An async lock to guard access if the converter isn’t thread-safe.
+        self._lock = asyncio.Lock()
+
     async def convert_to_md(self, file_path):
-        return await asyncio.to_thread(self.converter, str(file_path))
+        loop = asyncio.get_running_loop()
+        # Use process pool to run the conversion in a separate process
+        # async with self._lock:
+        output = await loop.run_in_executor(
+            self.executor,  # Using default executor
+            self.converter,
+            str(file_path),
+        )
+        return output
 
 
 class MarkerLoader(BaseLoader):
@@ -45,26 +60,17 @@ class MarkerLoader(BaseLoader):
     Attributes:
         page_sep (str): Separator used for pages in the document.
         converter (MarkerConverter): Instance of MarkerConverter for converting documents to markdown.
-    Methods:
-        __init__(page_sep: str='------------------------------------------------\n\n', **kwargs) -> None:
-            Initializes the MarkerLoader with the given page separator and additional keyword arguments.
-        async aload_document(file_path, metadata=None, save_md=False):
-            Asynchronously loads a document from the specified file path, converts it to markdown,
-            optionally replaces image tags with descriptions, and returns a Document object.
-        async get_captions(img_dict, n_semaphores=10):
-            Asynchronously generates captions for images in the document using a language model,
-            with a specified number of semaphores for concurrency control.
     """
 
     def __init__(
         self,
-        page_sep: str = "------------------------------------------------\n\n",
+        page_sep: str = "-" * 48 + "\n\n",
         **kwargs,
     ) -> None:
         super().__init__(**kwargs)
 
         self.page_sep = page_sep
-        self.converter = MarkerConverter()
+        self.converter = MarkerConverter(page_sep=page_sep)
 
     async def aload_document(self, file_path, metadata=None, save_md=False):
         file_path = str(file_path)
