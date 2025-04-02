@@ -68,9 +68,14 @@ Copy the content of **.env.exemple** to **.env**. Then add the **BASE_URL** and 
 Add the files (word, excel, pptx, pdf, etc.) into the './data/' folder or add it later on the web interface.
 
 2. **Launch the app**:
+
+launch the app on GPU :
 ```bash
-# launch the api
 docker-compose up -d --build
+```
+launch the app on CPU :
+```bash
+docker compose --profile cpu up -d
 ```
 
 ### 🧠 API Overview
