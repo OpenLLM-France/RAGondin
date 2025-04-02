@@ -177,7 +177,7 @@ async def put_file(
 
     # Queue indexing task
     try:
-        task = indexer.add_files.remote(
+        task = indexer.add_file.remote(
             path=file_path, metadata=metadata, partition=partition
         )
     except Exception as e:
