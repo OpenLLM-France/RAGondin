@@ -10,13 +10,12 @@ from .chunker import ABCChunker, ChunkerFactory
 from .embeddings import HFEmbedder
 from .loaders.loader import DocSerializer
 from .vectordb import ConnectorFactory
-
 if not ray.is_initialized():
     ray.init(dashboard_host="0.0.0.0", ignore_reinit_error=True)
 
 if torch.cuda.is_available():
     gpu, cpu = 1, 0
-else: 
+else:
     gpu, cpu = 0, 1
 @ray.remote(num_cpus=cpu, num_gpus=gpu, concurrency_groups={"compute": 2})
 class Indexer(metaclass=SingletonMeta):
@@ -93,8 +92,9 @@ class Indexer(metaclass=SingletonMeta):
             raise Exception(f"An exception as occured: {e}")
         finally:
             gc.collect()
-            torch.cuda.empty_cache()
-            torch.cuda.ipc_collect()
+            if gpu :
+                torch.cuda.empty_cache()
+                torch.cuda.ipc_collect()
 
     def delete_file(self, file_id: str, partition: str):
         """
