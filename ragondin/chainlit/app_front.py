@@ -88,6 +88,7 @@ async def on_chat_start():
         logger.debug("New Chat Started")
         async with httpx.AsyncClient(timeout=httpx.Timeout(60.0)) as client:
             response = await client.get(url=f"{base_url}/health_check")
+
             print(response.text)
     except Exception as e:
         logger.error(f"An error happened: {e}")
