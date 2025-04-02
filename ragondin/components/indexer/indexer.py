@@ -14,8 +14,11 @@ from .vectordb import ConnectorFactory
 if not ray.is_initialized():
     ray.init(dashboard_host="0.0.0.0", ignore_reinit_error=True)
 
-
-@ray.remote(num_gpus=1, concurrency_groups={"compute": 2})
+if torch.cuda.is_available():
+    gpu, cpu = 1, 0
+else: 
+    gpu, cpu = 0, 1
+@ray.remote(num_cpus=cpu, num_gpus=gpu, concurrency_groups={"compute": 2})
 class Indexer(metaclass=SingletonMeta):
     """This class bridges static files with the vector store database.*"""
 
