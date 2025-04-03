@@ -13,8 +13,6 @@ from langchain_openai import ChatOpenAI
 from loguru import logger
 from omegaconf import OmegaConf
 from tqdm.asyncio import tqdm
-
-from ..llm import LLM
 from ..utils import llmSemaphore
 
 
@@ -342,5 +340,5 @@ class ChunkerFactory:
                 )
 
         # Include contextual retrieval if specified
-        chunker_params["llm"] = LLM(config, logger=None).client
+        chunker_params["llm"] = ChatOpenAI(**config.llm)
         return chunker_class(**chunker_params)

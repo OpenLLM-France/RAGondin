@@ -6,9 +6,9 @@ from langchain_openai import ChatOpenAI
 
 
 class LLM:
-    def __init__(self, config, logger=None):
+    def __init__(self, llm_config, logger=None):
         self.logger = logger
-        self.client: ChatOpenAI = ChatOpenAI(**config.llm)
+        self.client: ChatOpenAI = ChatOpenAI(**llm_config)
 
     def run(
         self,

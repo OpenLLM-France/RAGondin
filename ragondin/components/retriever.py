@@ -9,7 +9,6 @@ from langchain_openai import ChatOpenAI
 from omegaconf import OmegaConf
 
 from .indexer import ABCVectorDB
-from .llm import LLM
 from .utils import load_sys_template
 
 CRITERIAS = ["similarity"]
@@ -213,8 +212,6 @@ class RetrieverFactory:
             raise ValueError(f"Unknown retriever type: {retriever_type}")
 
         if retriever_type in ["hyde", "multiQuery"]:
-            retreiverConfig["llm"] = LLM(
-                config, logger=None
-            ).client  # add an llm client to extra parameters for these types of retrievers
+            retreiverConfig["llm"] = ChatOpenAI(**config.llm)
 
         return retriever_cls(**retreiverConfig)

@@ -64,7 +64,7 @@ class MarkerLoader(BaseLoader):
 
     def __init__(
         self,
-        page_sep: str = "-" * 48 + "\n\n",
+        page_sep: str = "[PAGE_SEP]",
         **kwargs,
     ) -> None:
         super().__init__(**kwargs)

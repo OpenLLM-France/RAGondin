@@ -49,7 +49,7 @@ class RagPipeline:
         self.chat_history_depth = config.rag["chat_history_depth"]
 
         self._chat_history: deque = deque(maxlen=self.chat_history_depth)
-        self.llm_client = LLM(config, self.logger)
+        self.llm_client = LLM(config.llm, self.logger)
 
     async def get_contextualized_docs(
         self, partition: list[str], question: str, chat_history: list
