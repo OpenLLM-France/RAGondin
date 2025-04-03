@@ -72,6 +72,11 @@ class MarkerLoader(BaseLoader):
         self.page_sep = page_sep
         self.converter = MarkerConverter(page_sep=page_sep)
 
+    @classmethod
+    def destroy(cls):
+        if MarkerConverter in SingletonMeta._instances:
+            del SingletonMeta._instances[MarkerConverter]
+
     async def aload_document(self, file_path, metadata=None, save_md=False):
         file_path = str(file_path)
         logger.info(f"Loading {file_path}")

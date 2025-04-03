@@ -1,4 +1,6 @@
 import asyncio
+
+import torch
 from components.utils import SingletonMeta, SingletonABCMeta
 from docling.datamodel.document import ConversionResult
 from docling_core.types.doc.document import PictureItem
@@ -100,8 +102,14 @@ class DoclingLoader(BaseLoader):
         self.page_sep = page_sep
         self.converter = DoclingConverter()
 
+    @classmethod
+    def destroy(cls):
+        if DoclingConverter in SingletonMeta._instances:
+            del SingletonMeta._instances[DoclingConverter]
+
     async def aload_document(self, file_path, metadata, save_md=False):
-        result = await self.converter.convert_to_md(file_path)
+        with torch.no_grad():
+            result = await self.converter.convert_to_md(file_path)
 
         n_pages = len(result.pages)
         s = f"{self.page_sep}".join(
