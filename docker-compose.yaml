@@ -2,14 +2,17 @@ include:
   - vdb/${VDB_HOST}.yaml
 
 x-ragondin: &ragondin_template
-  build: 
+  build:
+    context: .
     dockerfile: Dockerfile
+    args:
+      APP_PORT: ${APP_PORT}
   volumes:
     - ./model_weights:/app/model_weights
     - ./data:/app/data # PDF data for RAG
     - ./ragondin:/app/ragondin # For dev mode
   ports:
-    - "${APP_PORT}:8080"
+    - "${APP_PORT}:${APP_PORT}"
     - 8265:8265 # for ray
   env_file:
     - .env
@@ -20,7 +23,6 @@ x-ragondin: &ragondin_template
 
 
 services:
-
   # GPU - default 
   ragondin:
     <<: *ragondin_template
@@ -34,7 +36,7 @@ services:
     profiles:
       - ''  # Empty string gives default behavior (but does not run when cpu requested)
 
-  # No GPU (docker compose --profile cpu up)
+  # No GPU (docker compose --profile cpu up --build)
   ragondin-cpu:
     <<: *ragondin_template
     deploy: {}

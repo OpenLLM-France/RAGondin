@@ -96,6 +96,7 @@ async def get_answer(
         - It runs the ragPipe pipeline to generate an answer stream, context, and sources.
         - The sources are converted to URLs using the static_base_url and included in the response headers as JSON.
     """
+
     msgs: list[HumanMessage | AIMessage] = None
     if chat_history:
         msgs = [
@@ -128,8 +129,10 @@ async def get_answer(
         headers={"X-Metadata-Sources": src_json},
     )
 
+
 @app.get("/health_check", summary="Toy endpoint to check that the api is up")
-async def health_check():
+async def health_check(static_base_url: str = Depends(static_base_url_dependency)):
+    logger.info(f"URL: {static_base_url}")
     return "RAG API is up."
 
 

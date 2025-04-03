@@ -41,4 +41,7 @@ COPY prompts/ /app/prompts/
 COPY .hydra_config/ /app/.hydra_config/
 ENV PYTHONPATH=/app/ragondin/
 
-ENTRYPOINT ["uv", "run", "uvicorn", "api:app", "--host", "0.0.0.0", "--port", "8080", "--reload"]
+
+ARG APP_PORT
+ENV APP_PORT=${APP_PORT}
+ENTRYPOINT ["sh", "-c", "uv run uvicorn api:app --host 0.0.0.0 --port $APP_PORT --reload"]

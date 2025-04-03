@@ -23,10 +23,10 @@ insertion:
 
 reranker:
   model_name: jinaai/jina-colbert-v2
-  top_k: 5
+  top_k: 4 # 8
 
 grader:
-  grade_documents: true
+  grade_documents: false
 
 verbose:
   verbose: true
@@ -44,9 +44,10 @@ loader:
   image_captioning: true
   file_loaders:
     docx: MarkItDownLoader
-    pdf: DoclingLoader
+    pdf: DoclingLoader # MarkerLoader
     doc: DocLoader
     pptx: PPTXLoader
+    # txt: TextLoader
     # odt: CustomDocLoader
 
 semaphore:
