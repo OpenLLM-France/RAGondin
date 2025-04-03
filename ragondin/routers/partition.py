@@ -28,7 +28,7 @@ async def list_files(
     except Exception as e:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
 
-    documents = [
+    files = [
         {
             "link": str(request.url_for("get_file", partition=partition, file_id=file))
         }
@@ -37,7 +37,7 @@ async def list_files(
 
     return JSONResponse(
         status_code=status.HTTP_200_OK,
-        content={"documents": documents}
+        content={"files": files}
     )
 
 
@@ -56,7 +56,7 @@ async def get_file(
         )
 
     try:
-        results = await indexer.get_file_chunks.remote(
+        results = vectordb.get_file_chunks(
             partition=partition, file_id=file_id, include_id=True
         )
     except ValueError as e:

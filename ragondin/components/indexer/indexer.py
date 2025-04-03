@@ -151,7 +151,7 @@ class Indexer(metaclass=SingletonMeta):
 
         try:
             # Get existing chunks associated with the file name
-            docs = await self.get_file_chunks(file_id, partition)
+            docs = self.vectordb.get_file_chunks(file_id, partition)
 
             # Update the metadata
             for doc in docs:
@@ -188,15 +188,7 @@ class Indexer(metaclass=SingletonMeta):
             filter=filter,
         )
         return results
-
-    async def get_file_chunks(self, file_id: str, partition: str, include_id: bool = False):
-        return self.vectordb.get_file_chunks(file_id=file_id, partition=partition, include_id=include_id)
-    
-    async def list_files(self, partition: Optional[str] = None):
-        partition = self._check_partition_str(partition)
-        files = await self.vectordb.list_files(partition=partition)
         
-
     def _check_partition_str(self, partition: Optional[str]):
         if partition is None:
             self.logger.warning("Partition not provided. Using default partition.")
