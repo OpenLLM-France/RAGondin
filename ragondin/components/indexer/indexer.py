@@ -188,7 +188,7 @@ class Indexer(metaclass=SingletonMeta):
             filter=filter,
         )
         return results
-
+        
     def _check_partition_str(self, partition: Optional[str]):
         if partition is None:
             self.logger.warning("Partition not provided. Using default partition.")
