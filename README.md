@@ -84,7 +84,7 @@ docker compose up --build
 # Launch with CPU only (useful if GPU is unavailable)
 docker compose --profile cpu up --build
 ```
-> **Note**: The initial launch may take longer due to the installation of required dependencies. Once the application is up and running, you can access the web interface at `http://localhost:8080` (8080 = APP_PORT in your **`.env`**) to manage documents, execute searches, or interact with the RAG pipeline.
+> **Note**: The initial launch may take longer due to the installation of required dependencies. Once the application is up and running, you can access the web interface at `http://localhost:8080/chainlit` (8080 = APP_PORT in your **`.env`**) to manage documents, execute searches, or interact with the RAG pipeline.
 
 
 * **Running on CPU**:  
