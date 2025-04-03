@@ -3,7 +3,25 @@ defaults:
   - chunker: recursive_splitter #semantic_splitter
   - retriever: multiQuery
   - rag: ChatBotRag
-  - llm: qwen
+
+llm_params: &llm_params
+  temperature: 0.2
+  timeout: 60
+  max_retries: 2
+  frequency_penalty: 0.2
+  # max_tokens: 2048
+
+llm:
+  <<: *llm_params
+  base_url: ${oc.env:BASE_URL}
+  model: ${oc.env:MODEL}
+  api_key: ${oc.env:API_KEY}
+
+vlm:
+  <<: *llm_params
+  base_url: ${oc.env:VLM_BASE_URL}
+  model: ${oc.env:VLM_MODEL}  
+  api_key: ${oc.env:VLM_API_KEY}
 
 embedder:
   type: huggingface
@@ -26,7 +44,7 @@ reranker:
   top_k: 8
 
 grader:
-  grade_documents: false
+  grade_documents: true
 
 verbose:
   verbose: true
