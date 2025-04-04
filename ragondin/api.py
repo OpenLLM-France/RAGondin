@@ -21,6 +21,8 @@ from pydantic import BaseModel
 from routers.indexer import router as indexer_router
 from routers.openai import router as openai_router
 from routers.search import router as search_router
+from routers.extract import router as extract_router
+from routers.partition import router as partition_router
 from utils.dependencies import vectordb
 
 config = load_config()
@@ -34,7 +36,9 @@ class Tags(Enum):
     LLM = ("LLM Calls",)
     INDEXER = ("Indexer",)
     SEARCH = ("Semantic Search",)
-    OPENAI = "OpenAI Compatible API"
+    OPENAI = "OpenAI Compatible API",
+    EXTRACT = "Document extracts",
+    PARTITION = "Partitions & files",
 
 
 class AppState:
@@ -96,6 +100,7 @@ async def get_answer(
         - It runs the ragPipe pipeline to generate an answer stream, context, and sources.
         - The sources are converted to URLs using the static_base_url and included in the response headers as JSON.
     """
+
     msgs: list[HumanMessage | AIMessage] = None
     if chat_history:
         msgs = [
@@ -130,7 +135,8 @@ async def get_answer(
 
 
 @app.get("/health_check", summary="Toy endpoint to check that the api is up")
-async def health_check():
+async def health_check(static_base_url: str = Depends(static_base_url_dependency)):
+    logger.info(f"URL: {static_base_url}")
     return "RAG API is up."
 
 
@@ -140,10 +146,15 @@ mount_chainlit(
 
 # Mount the indexer router
 app.include_router(indexer_router, prefix="/indexer", tags=[Tags.INDEXER])
+# Mount the extract router
+app.include_router(extract_router, prefix="/extract", tags=[Tags.EXTRACT])
 # Mount the search router
-app.include_router(search_router, prefix="/extracts", tags=[Tags.SEARCH])
+app.include_router(search_router, prefix="/search", tags=[Tags.SEARCH])
+# Mount the partition router
+app.include_router(partition_router, prefix="/partition", tags=[Tags.PARTITION])
 # Mount the openai router
 app.include_router(openai_router, prefix="/v1", tags=[Tags.OPENAI])
+
 
 if __name__ == "__main__":
     uvicorn.run("api:app", host="0.0.0.0", port=8083, reload=True, proxy_headers=True)

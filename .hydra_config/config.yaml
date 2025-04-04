@@ -65,6 +65,7 @@ loader:
     pdf: DoclingLoader # MarkerLoader # 
     doc: DocLoader
     pptx: PPTXLoader
+    # txt: TextLoader
     # odt: CustomDocLoader
 
 semaphore:

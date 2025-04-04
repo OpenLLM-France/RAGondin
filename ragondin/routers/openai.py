@@ -4,7 +4,7 @@ import uuid
 from typing import Literal
 
 from fastapi import APIRouter, Depends, HTTPException, Request
-from fastapi.responses import StreamingResponse
+from fastapi.responses import StreamingResponse, JSONResponse
 from langchain_core.messages import AIMessage, HumanMessage
 from models.openai import (
     OpenAICompletion,
@@ -47,6 +47,25 @@ def source2url(s: dict, static_base_url: str):
     return s
 
 
+@router.get("/models", summary="OpenAI-compatible model listing endpoint")
+async def list_models(app_state=Depends(get_app_state)):
+    # Get available partitions from your backend
+    partitions = app_state.ragpipe.vectordb.list_partitions() + ['all']
+    
+    # Format them as OpenAI models
+    models = [
+        {
+            "id": f"ragondin-{partition}",
+            "object": "model",
+            "created": 0,
+            "owned_by": "RAGondin",
+        }
+        for partition in partitions
+    ]
+
+    return JSONResponse(content={"object": "list", "data": models})
+
+
 @router.post(
     "/chat/completions", summary="OpenAI compatible chat completion endpoint using RAG"
 )
@@ -77,10 +96,16 @@ async def openai_chat_completion(
             mapping[chat_msg.role](content=chat_msg.content)
             for chat_msg in chat_history
         ]
-
+    # Load model name and partition
+    model_name = request.model
+    if not model_name.startswith("ragondin-"):
+        raise HTTPException(status_code=404, detail="Model not found")
+    partition = model_name.split("-")[1]
+    if not app_state.ragpipe.vectordb.partition_exists(partition):
+        raise HTTPException(status_code=404, detail="Model not found")
     # Run RAG pipeline
     answer_stream, context, sources = await app_state.ragpipe.run(
-        partition=["all"], question=new_user_input, chat_history=msgs
+        partition=[partition], question=new_user_input, chat_history=msgs
     )
 
     # Handle the sources
@@ -90,7 +115,6 @@ async def openai_chat_completion(
     # Create response-id
     response_id = f"chatcmpl-{str(uuid.uuid4())}"
     created_time = int(time.time())
-    model_name = app_state.model_name
 
     if request.stream:
         # Openai compatible streaming response
@@ -140,7 +164,7 @@ async def openai_chat_completion(
         return StreamingResponse(
             stream_response(),
             media_type="text/event-stream",
-            headers={"X-Metadata-Sources": src_json},
+            #headers={"X-Metadata-Sources": src_json},
         )
     else:
         # Non streaming response

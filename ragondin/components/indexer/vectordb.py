@@ -359,7 +359,7 @@ class MilvusDB(ABCVectorDB):
             raise
 
     def get_file_chunks(
-        self, file_id: str, partition: Optional[str] = None, limit: int = 100
+        self, file_id: str, partition: str, include_id:bool = False, limit: int = 100
     ):
         """
         Retrieve file points from the vector database based on a filter.
@@ -377,6 +377,7 @@ class MilvusDB(ABCVectorDB):
             # Pagination parameters
             offset = 0
             results = []
+            excluded_keys = ["text", "vector", "_id"] if not include_id else ["text", "vector"]
 
             while True:
                 response = self.client.query(
@@ -398,7 +399,7 @@ class MilvusDB(ABCVectorDB):
                     metadata={
                         key: value
                         for key, value in res.items()
-                        if key not in ["text", "vector", "_id"]
+                        if key not in excluded_keys
                     },
                 )
                 for res in results
@@ -457,6 +458,89 @@ class MilvusDB(ABCVectorDB):
         except Exception as e:
             self.logger.error(f"Error in `file_exists` for file_id {file_id}: {e}")
             return False
+    
+    def partition_exists(self, partition: str):
+        """
+        Check if a partition exists in Milvus
+        """
+        try:
+            # Adjust filter expression based on the type of value
+            filter_expression = f"partition == '{partition}'"
+
+            # Pagination parameters
+            results = []
+
+            response = self.client.query(
+                collection_name=self.collection_name,
+                filter=filter_expression,
+                output_fields=["_id"],  # Only fetch IDs
+                limit=1,
+            )
+            if not response:
+                return False
+
+            return True
+        except Exception as e:
+            self.logger.error(f"Error in `partition_exists` for partition {partition}: {e}")
+            return False
+    
+    def list_files(self, partition: str):
+        """
+        Retrieve all unique file_id values from a given partition.
+        """
+        try:
+            filter_expression = f"partition == '{partition}'"
+            offset = 0
+            results = set()
+
+            while True:
+                response = self.client.query(
+                    collection_name=self.collection_name,
+                    filter=filter_expression,
+                    output_fields=["file_id"],
+                    limit=1000,
+                    offset=offset,
+                )
+
+                if not response:
+                    break
+
+                results.update(res["file_id"] for res in response if "file_id" in res)
+                offset += len(response)
+
+            return list(results)
+
+        except Exception as e:
+            self.logger.error(f"Failed to get file_ids in partition '{partition}': {e}")
+            raise     
+
+    def list_partitions(self):
+        """
+        Retrieve all unique file_id values from a given partition.
+        """
+        try:
+            offset = 0
+            results = set()
+
+            while True:
+                response = self.client.query(
+                    collection_name=self.collection_name,
+                    output_fields=["partition"],
+                    limit=1000,
+                    offset=offset,
+                )
+
+                if not response:
+                    break
+
+                results.update(res["partition"] for res in response if "partition" in res)
+                offset += len(response)
+
+            return list(results)
+
+        except Exception as e:
+            self.logger.error(f"Failed to list partitions : {e}")
+            raise    
 
     def collection_exists(self, collection_name: str):
         """
