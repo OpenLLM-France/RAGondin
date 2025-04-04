@@ -144,7 +144,7 @@ class ChunkContextualizer:
                 total=len(tasks),
                 desc=f"Contextualizing chunks of *{Path(source).name}*",
             )
-            chunk_format = "chunks' context: {chunk_context}\n\n=> chunk: {chunk}"
+            chunk_format = "chunks' context: {chunk_context}\n\n=> chunk: \n{chunk}"
             return [
                 chunk_format.format(chunk=chunk.page_content, chunk_context=task)
                 for chunk, task in zip(chunks[1:], contexts)

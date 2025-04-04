@@ -35,7 +35,7 @@ class MarkerConverter(metaclass=SingletonMeta):
 
         # Create a thread pool executor to reuse threads across conversions.
         self.executor = ThreadPoolExecutor(
-            max_workers=4
+            max_workers=12
         )  # Adjust max_workers as needed.
 
     async def convert_to_md(self, file_path):
