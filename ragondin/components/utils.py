@@ -8,8 +8,6 @@ from config.config import load_config
 from langchain_core.documents.base import Document
 import ray
 
-config = load_config()
-
 
 class SingletonMeta(type):
     _instances = {}
@@ -149,5 +147,6 @@ def format_context(docs: list[Document]) -> str:
 
 
 # Global variables
+config = load_config()
 # llmSemaphore = LLMSemaphore(max_concurrent_ops=config.semaphore.llm_semaphore)
 llmSemaphore = DistributedSemaphore(max_concurrent_ops=config.semaphore.llm_semaphore)

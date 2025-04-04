@@ -1,7 +1,0 @@
-defaults:
-  - base
-
-base_url: ${oc.env:BASE_URL}
-model: Qwen2.5-VL-7B-Instruct   
-# zyoNoob/Qwen2.5-VL-7B-Instruct-AWQ # 
-api_key: ${oc.env:API_KEY}

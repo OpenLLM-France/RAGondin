@@ -17,13 +17,13 @@ IMAGE_DESCRIPTION_PROMPT = """Provide a complete, structured and precise descrip
 class BaseLoader(ABC):
     def __init__(self, **kwargs) -> None:
         self.config = kwargs.get("config")
-        llm_config = self.config["llm"]
+        vlm_config = self.config.vlm
         model_settings = {
             "temperature": 0.2,
             "max_retries": 3,
             "timeout": 60,
         }
-        settings: dict = llm_config
+        settings: dict = vlm_config
         settings.update(model_settings)
 
         self.vlm_endpoint = ChatOpenAI(**settings).with_retry(stop_after_attempt=2)
