@@ -44,7 +44,7 @@ reranker:
   top_k: 8
 
 grader:
-  grade_documents: true
+  grade_documents: false
 
 verbose:
   verbose: true

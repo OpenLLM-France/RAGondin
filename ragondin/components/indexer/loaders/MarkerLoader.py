@@ -1,5 +1,4 @@
 import asyncio
-import gc
 import time
 
 import torch
@@ -18,6 +17,7 @@ if torch.cuda.is_available():
     mp.set_start_method("spawn", force=True)
 
 
+# TODO: Pagination correct number and Image resolution to avoid captioning small images
 class MarkerConverter(metaclass=SingletonMeta):
     def __init__(self, page_sep) -> None:
         self.model_dict = create_model_dict()
@@ -38,13 +38,9 @@ class MarkerConverter(metaclass=SingletonMeta):
             max_workers=4
         )  # Adjust max_workers as needed.
 
-        # An async lock to guard access if the converter isn’t thread-safe.
-        self._lock = asyncio.Lock()
-
     async def convert_to_md(self, file_path):
         loop = asyncio.get_running_loop()
         # Use process pool to run the conversion in a separate process
-        # async with self._lock:
         output = await loop.run_in_executor(
             self.executor,  # Using default executor
             self.converter,
@@ -68,7 +64,6 @@ class MarkerLoader(BaseLoader):
         **kwargs,
     ) -> None:
         super().__init__(**kwargs)
-
         self.page_sep = page_sep
         self.converter = MarkerConverter(page_sep=page_sep)
 
@@ -79,11 +74,12 @@ class MarkerLoader(BaseLoader):
 
     async def aload_document(self, file_path, metadata=None, save_md=False):
         file_path = str(file_path)
-        logger.info(f"Loading {file_path}")
-        start = time.time()
-        render = await self.converter.convert_to_md(file_path)
-        conversion_time = time.time() - start
-        logger.info(f"Markdown conversion time: {conversion_time:.2f} s.")
+        with torch.no_grad():
+            logger.info(f"Loading {file_path}")
+            start = time.time()
+            render = await self.converter.convert_to_md(file_path)
+            conversion_time = time.time() - start
+            logger.info(f"Markdown conversion time: {conversion_time:.2f} s.")
 
         text = render.markdown
 
@@ -111,15 +107,16 @@ class MarkerLoader(BaseLoader):
 
         return doc
 
-    async def get_captions(self, img_dict):
+    async def get_captions(self, img_dict: dict):
         tasks = []
+        keys = []
 
-        for _, picture in img_dict.items():
+        for key, picture in img_dict.items():
             tasks.append(self.get_image_description(picture))
+            keys.append(key)
         try:
-            results = await tqdm.gather(
-                *tasks, desc="Captioning imgs"
-            )  # asyncio.gather(*tasks)
+            results = await tqdm.gather(*tasks, desc="Captioning imgs")
+            assert len(img_dict.keys()) == len(results)
         except asyncio.CancelledError:
             for task in tasks:
                 task.cancel()
