@@ -36,9 +36,9 @@ class Tags(Enum):
     LLM = ("LLM Calls",)
     INDEXER = ("Indexer",)
     SEARCH = ("Semantic Search",)
-    OPENAI = "OpenAI Compatible API",
-    EXTRACT = "Document extracts",
-    PARTITION = "Partitions & files",
+    OPENAI = ("OpenAI Compatible API",)
+    EXTRACT = ("Document extracts",)
+    PARTITION = ("Partitions & files",)
 
 
 class AppState:
@@ -140,10 +140,8 @@ async def health_check(static_base_url: str = Depends(static_base_url_dependency
     return "RAG API is up."
 
 
-mount_chainlit(
-    app, "./chainlit/app_front.py", path="/chainlit"
-)  # mount the default front
-
+# Mount the default front
+mount_chainlit(app, "./chainlit/app_front.py", path="/chainlit")
 # Mount the indexer router
 app.include_router(indexer_router, prefix="/indexer", tags=[Tags.INDEXER])
 # Mount the extract router

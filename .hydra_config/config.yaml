@@ -25,7 +25,7 @@ vlm:
 
 embedder:
   type: huggingface
-  model_name: HIT-TMG/KaLM-embedding-multilingual-mini-v1
+  model_name: ${oc.env:EMBEDDER_MODEL_NAME, HIT-TMG/KaLM-embedding-multilingual-mini-v1}
   
 vectordb:
   host: ${oc.env:VDB_HOST, milvus}
@@ -40,11 +40,12 @@ insertion:
   n_concurrent_chunking: 2 # Number of concurrent chunking operations
 
 reranker:
-  model_name: jinaai/jina-colbert-v2
-  top_k: 8
+  enable: ${oc.env:RERANKER_ENABLED, true}
+  model_name: ${oc.env:RERANKER_MODEL, jinaai/jina-colbert-v2}
+  top_k: ${oc.env:RERANKER_TOP_K, 8}
 
 grader:
-  grade_documents: false
+  enable: false
 
 verbose:
   verbose: true
