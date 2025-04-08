@@ -20,7 +20,13 @@ else:
     gpu, cpu = 0, 2
 
 
-@ray.remote(num_cpus=cpu, num_gpus=gpu, concurrency_groups={"compute": 2})
+@ray.remote(
+    num_cpus=cpu,
+    num_gpus=gpu,
+    concurrency_groups={"compute": 2},
+    max_task_retries=2,
+    max_restarts=-1,
+)
 class Indexer(metaclass=SingletonMeta):
     """This class bridges static files with the vector store database.*"""
 
@@ -33,16 +39,13 @@ class Indexer(metaclass=SingletonMeta):
             logger (Logger): Logger object for logging information.
             device (str, optional): Device to be used by the embedder. Defaults to None.
         """
-        embedder = HFEmbedder(
-            embedder_config=config.embedder, device=device
-        )  # cloud pickle
-        self.embedder = embedder
+        self.embedder = HFEmbedder(embedder_config=config.embedder, device=device)
         self.serializer = DocSerializer(data_dir=config.paths.data_dir, config=config)
         self.chunker: ABCChunker = ChunkerFactory.create_chunker(
-            config, embedder=embedder.get_embeddings()
+            config, embedder=self.embedder.get_embeddings()
         )
         self.vectordb = ConnectorFactory.create_vdb(
-            config, logger=logger, embeddings=embedder.get_embeddings()
+            config, logger=logger, embeddings=self.embedder.get_embeddings()
         )
         self.logger = logger
         self.logger.info("Indexer initialized...")
@@ -188,7 +191,7 @@ class Indexer(metaclass=SingletonMeta):
             filter=filter,
         )
         return results
-        
+
     def _check_partition_str(self, partition: Optional[str]):
         if partition is None:
             self.logger.warning("Partition not provided. Using default partition.")

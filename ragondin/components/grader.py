@@ -1,28 +1,40 @@
 import asyncio
 from typing import Literal
-
 from langchain_core.documents.base import Document
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_openai import ChatOpenAI
 from pydantic import BaseModel, Field
-
 from .llm import LLM
 from .utils import llmSemaphore
 
-sys_prompt = """You are an expert at carefully judging documents' relevancy with respect to user's query."""
+
+sys_prompt = """You are a seasoned expert in assessing document relevance. Your task is to evaluate documents carefully against a user's query by considering their semantics, context, and keyword significance. Your expert judgment ensures that only truly pertinent documents are flagged as relevant."""
 
 
 class DocumentGrade(BaseModel):
-    """Evaluates document's relevancy with respect to a user query."""
+    """
+    Evaluates a document's relevance with respect to a user's query.
 
-    relevance_score: Literal["highly_relevant", "somewhat_relevant", "irrelevant"] = (
-        Field(description="Document relevance classification:\n")
+    This model guides you to assess whether a document is pertinent by analyzing:
+      - Semantic alignment with the query
+      - Contextual relevance
+      - Presence and significance of key terms
+
+    The evaluation assigns one of two scores:
+      - "highly_relevant": The document meaningfully addresses the query.
+      - "irrelevant": The document does not adequately address the query.
+
+    Use this framework to ensure that only documents with strong relevance pass the evaluation.
+    """
+
+    relevance_score: Literal["highly_relevant", "irrelevant"] = Field(
+        description="Classification of document relevance based on semantic and contextual analysis."
     )
 
 
 class Grader:
     def __init__(self, config, logger=None):
-        llm: ChatOpenAI = LLM(config=config, logger=logger).client
+        llm: ChatOpenAI = ChatOpenAI(**config.vlm)
         # structured llm
         self.sllm = llm.with_structured_output(DocumentGrade)
         self.logger = logger

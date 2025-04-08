@@ -1,12 +1,12 @@
 import ray.actor
-from components import ConnectorFactory, HFEmbedder, Indexer, ABCVectorDB
+from components import Indexer, HFEmbedder, ConnectorFactory, ABCVectorDB
 from config import load_config
 from loguru import logger
 import ray
 
 
 class VDBProxy:
-    """Serializable class that delegates method calls to the remote vectordb."""
+    """Class that delegates method calls to the remote vectordb."""
 
     def __init__(self, indexer_actor: ray.actor.ActorHandle):
         self.indexer_actor = indexer_actor  # Reference to the remote actor

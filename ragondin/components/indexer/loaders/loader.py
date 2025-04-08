@@ -2,12 +2,15 @@ import asyncio
 import importlib
 from pathlib import Path
 from typing import AsyncGenerator, Dict, Optional
-
 import torch
 from aiopath import AsyncPath
 from langchain_core.documents.base import Document
 from loguru import logger
+from components.utils import SingletonMeta
+from .DoclingLoader import DoclingLoader
+from .MarkerLoader import MarkerLoader
 from .base import BaseLoader
+import gc
 
 
 class DocSerializer:
@@ -37,7 +40,6 @@ class DocSerializer:
         sub_url_path = (
             Path(path).resolve().relative_to(self.data_dir)
         )  # for the static file server
-
         logger.debug(f"LOADING: {p.name}")
         loader = loader_cls(**self.kwargs)  # Propagate kwargs here!
         metadata = {
@@ -51,11 +53,16 @@ class DocSerializer:
             file_path=path, metadata=metadata, save_md=True
         )
 
+        if isinstance(loader, (DoclingLoader, MarkerLoader)):
+            loader_cls.destroy()
+
+        del loader
+
+        gc.collect()
         if torch.cuda.is_available():
             torch.cuda.empty_cache()
             torch.cuda.ipc_collect()
 
-        logger.info(f"{p.name}: SERIALIZED")
         return doc
 
     async def serialize_documents(
