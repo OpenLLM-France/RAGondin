@@ -89,7 +89,7 @@ uv sync
 ```
 
 #### 3. Create a .env file
-Add your **`.env`** at the root of the projet and provide the LLM and VLM settings.
+Add your **`.env`** at the root of the projet and provide the LLM and VLM settings. Thus, for PDF files, we have multiple options for indexing, `Marker` provides by the best performance among the others, but for non-GPU users, we recommend using `Custompymupdf4llm`. Other formats have already been configured with the best option.
 
 ```bash
 # LLM settings
@@ -106,6 +106,10 @@ VLM_MODEL=
 APP_PORT=8080
 APP_HOST=0.0.0.0
 ## More settings can be added (see .env.example)
+
+# Loaders
+PDF_Loader= # MarkerLoader # DoclingLoader  # Custompymupdf4llm # CustomPyMuPDFLoader
+
 ```
 
 #### 4.Deployment: Launch the app
