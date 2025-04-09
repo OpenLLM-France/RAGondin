@@ -63,7 +63,7 @@ loader:
   image_captioning: true
   file_loaders:
     docx: MarkItDownLoader
-    pdf: DoclingLoader # MarkerLoader # 
+    pdf: ${oc.env:PDF_Loader}  # DoclingLoader # MarkerLoader # CustomPyMuPDFLoader # Custompymupdf4llm
     doc: DocLoader
     pptx: PPTXLoader
     # txt: TextLoader

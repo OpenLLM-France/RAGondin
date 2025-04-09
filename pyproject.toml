@@ -7,7 +7,6 @@ requires-python = ">=3.12"
 dependencies = [
     "aiopath>=0.7.7",
     "chainlit>=2.2.1",
-    "debugpy>=1.8.13",
     "docling>=2.24.0",
     "einops>=0.8.1",
     "fastembed-gpu>=0.4.2",
@@ -18,22 +17,19 @@ dependencies = [
     "langchain-huggingface>=0.1.2",
     "langchain-milvus>=0.1.8",
     "langchain-openai>=0.3.7",
-    "langchain-qdrant>=0.2.0",
-    "llama-index-llms-langchain>=0.6.0",
     "loguru>=0.7.3",
     "marker-pdf>=0.2.17",
     "markitdown>=0.0.2",
-    "psutil>=7.0.0",
     "pydub>=0.25.1",
     "pymupdf4llm>=0.0.17",
-    "python-dotenv>=1.0.1",
-    "pyyaml>=6.0.2",
     "ragatouille>=0.0.9",
     "whisperx>=3.3.1",
     "spire-doc>=13.1.0",
     "markitdown>=0.0.2",
     "openai>=1.64.0",
     "ray[default]>=2.43.0",
+    "langchain-qdrant>=0.2.0",
+    "python-dotenv>=1.0.1",
 ]
 
 [dependency-groups]
