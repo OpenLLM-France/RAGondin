@@ -34,6 +34,7 @@ dependencies = [
     "markitdown>=0.0.2",
     "openai>=1.64.0",
     "ray[default]>=2.43.0",
+    "pip>=25.0.1",
 ]
 
 [dependency-groups]

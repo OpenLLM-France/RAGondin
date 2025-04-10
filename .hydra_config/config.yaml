@@ -9,7 +9,6 @@ llm_params: &llm_params
   timeout: 60
   max_retries: 2
   frequency_penalty: 0.2
-  # max_tokens: 2048
 
 llm:
   <<: *llm_params
@@ -22,6 +21,10 @@ vlm:
   base_url: ${oc.env:VLM_BASE_URL}
   model: ${oc.env:VLM_MODEL}  
   api_key: ${oc.env:VLM_API_KEY}
+
+semaphore:
+  llm_semaphore: ${oc.decode:${oc.env:LLM_SEMAPHORE, 10}}
+  vlm_semaphore: ${oc.decode:${oc.env:VLM_SEMAPHORE, 10}}
 
 embedder:
   type: huggingface
@@ -65,8 +68,8 @@ loader:
     pdf: DoclingLoader # MarkerLoader # 
     doc: DocLoader
     pptx: PPTXLoader
-    # txt: TextLoader
+    txt: TextLoader
+    # wav: VideoAudioLoader
+    # mp3: VideoAudioLoader
+    # mp4: VideoAudioLoader
     # odt: CustomDocLoader
-
-semaphore:
-  llm_semaphore: ${oc.decode:${oc.env:LLM_SEMAPHORE, 10}}

@@ -9,6 +9,7 @@ from loguru import logger
 from components.utils import SingletonMeta
 from .DoclingLoader import DoclingLoader
 from .MarkerLoader import MarkerLoader
+from .VideoAudioLoader import VideoAudioLoader
 from .base import BaseLoader
 import gc
 
@@ -36,7 +37,12 @@ class DocSerializer:
     async def serialize_document(self, path: str, metadata: Optional[Dict] = {}):
         p = AsyncPath(path)
         type_ = p.suffix
-        loader_cls: BaseLoader = self.loader_classes.get(type_)
+
+        loader_cls: BaseLoader = self.loader_classes.get(type_, None)
+        if loader_cls is None:
+            logger.info(f"No loader for this file {p.name}")
+            return None
+
         sub_url_path = (
             Path(path).resolve().relative_to(self.data_dir)
         )  # for the static file server
@@ -53,7 +59,7 @@ class DocSerializer:
             file_path=path, metadata=metadata, save_md=True
         )
 
-        if isinstance(loader, (DoclingLoader, MarkerLoader)):
+        if isinstance(loader, (DoclingLoader, MarkerLoader, VideoAudioLoader)):
             loader_cls.destroy()
 
         del loader

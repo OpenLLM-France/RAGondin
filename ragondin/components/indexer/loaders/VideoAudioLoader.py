@@ -1,20 +1,32 @@
-import gc
 import os
 from pathlib import Path
-
-import torch
 import whisperx
 from langchain_core.documents.base import Document
 from loguru import logger
 from pydub import AudioSegment
-
-from .AudioTranscriber import AudioTranscriber
 from .base import BaseLoader
+from components.utils import SingletonMeta
+
+import torch
+
+torch.backends.cuda.matmul.allow_tf32 = True
+torch.backends.cudnn.allow_tf32 = True
+
+
+class AudioTranscriber(metaclass=SingletonMeta):
+    def __init__(
+        self, device="cpu", compute_type="float32", model_name="large-v2", language="fr"
+    ):
+        self.model = whisperx.load_model(
+            model_name, device=device, language=language, compute_type=compute_type
+        )
 
 
 class VideoAudioLoader(BaseLoader):
-    def __init__(self, page_sep: str = "[PAGE_SEP]", batch_size=4, config=None):
-        self.batch_size = batch_size
+    def __init__(self, page_sep: str = "[PAGE_SEP]", **kwargs):
+        super().__init__(**kwargs)
+
+        self.batch_size = 4
         self.page_sep = page_sep
         self.formats = [".wav", ".mp3", ".mp4"]
 
@@ -22,12 +34,12 @@ class VideoAudioLoader(BaseLoader):
             device="cuda" if torch.cuda.is_available() else "cpu"
         )
 
-    def free_memory(self):
-        gc.collect()
-        if torch.cuda.is_available():
-            torch.cuda.empty_cache()
+    @classmethod
+    def destroy(cls):
+        if AudioTranscriber in SingletonMeta._instances:
+            del SingletonMeta._instances[AudioTranscriber]
 
-    async def aload_document(self, file_path, metadata: dict = None):
+    async def aload_document(self, file_path, metadata: dict = None, save_md=False):
         path = Path(file_path)
         if path.suffix not in self.formats:
             logger.warning(
@@ -41,14 +53,15 @@ class VideoAudioLoader(BaseLoader):
             audio_path_wav = path
         else:
             sound = AudioSegment.from_file(file=path, format=path.suffix[1:])
-            audio_path_wav = path.with_suffix(".wav")
-            # Export to wav format
+
+            audio_path_wav = path.with_suffix(".wav")  # Export to wav format
             sound.export(
                 audio_path_wav,
                 format="wav",
                 parameters=["-ar", "16000", "-ac", "1", "-ab", "32k"],
             )
 
+        logger.info(f"SOUND: {file_path}")
         audio = whisperx.load_audio(audio_path_wav)
 
         if path.suffix != ".wav":
@@ -57,8 +70,9 @@ class VideoAudioLoader(BaseLoader):
         transcription_l = self.transcriber.model.transcribe(
             audio, batch_size=self.batch_size
         )
+
         content = " ".join([tr["text"] for tr in transcription_l["segments"]])
-
-        self.free_memory()
-
-        return Document(page_content=f"{content}{self.page_sep}", metadata=metadata)
+        doc = Document(page_content=f"{content}{self.page_sep}", metadata=metadata)
+        if save_md:
+            self.save_document(Document(page_content=content), str(file_path))
+        return doc
