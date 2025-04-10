@@ -70,6 +70,8 @@ class Indexer(metaclass=SingletonMeta):
         doc: Document = await self.serializer.serialize_document(
             path, metadata={**metadata, "partition": partition}
         )
+        if doc is None:
+            return []
 
         self.logger.info("Starting chunking")
         chunks = await self.chunker.split_document(doc)
