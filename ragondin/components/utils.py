@@ -148,5 +148,7 @@ def format_context(docs: list[Document]) -> str:
 
 # Global variables
 config = load_config()
+
 # llmSemaphore = LLMSemaphore(max_concurrent_ops=config.semaphore.llm_semaphore)
 llmSemaphore = DistributedSemaphore(max_concurrent_ops=config.semaphore.llm_semaphore)
+vlmSemaphore = DistributedSemaphore(max_concurrent_ops=config.semaphore.vlm_semaphore)

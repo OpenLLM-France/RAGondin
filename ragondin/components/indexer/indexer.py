@@ -17,7 +17,7 @@ if not ray.is_initialized():
 if torch.cuda.is_available():
     gpu, cpu = 1, 0
 else:
-    gpu, cpu = 0, 2
+    gpu, cpu = 0, 1
 
 
 @ray.remote(
@@ -70,6 +70,8 @@ class Indexer(metaclass=SingletonMeta):
         doc: Document = await self.serializer.serialize_document(
             path, metadata={**metadata, "partition": partition}
         )
+        if doc is None:
+            return []
 
         self.logger.info("Starting chunking")
         chunks = await self.chunker.split_document(doc)

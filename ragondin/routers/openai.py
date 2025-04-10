@@ -16,6 +16,7 @@ from models.openai import (
     OpenAIUsage,
 )
 from pydantic import BaseModel
+from urllib.parse import urlparse, quote
 
 
 # Classe pour les messages du chat
@@ -50,8 +51,8 @@ def source2url(s: dict, static_base_url: str):
 @router.get("/models", summary="OpenAI-compatible model listing endpoint")
 async def list_models(app_state=Depends(get_app_state)):
     # Get available partitions from your backend
-    partitions = app_state.ragpipe.vectordb.list_partitions() + ['all']
-    
+    partitions = app_state.ragpipe.vectordb.list_partitions() + ["all"]
+
     # Format them as OpenAI models
     models = [
         {
@@ -101,7 +102,9 @@ async def openai_chat_completion(
     if not model_name.startswith("ragondin-"):
         raise HTTPException(status_code=404, detail="Model not found")
     partition = model_name.split("-")[1]
-    if not app_state.ragpipe.vectordb.partition_exists(partition):
+    if partition != "all" and not app_state.ragpipe.vectordb.partition_exists(
+        partition
+    ):
         raise HTTPException(status_code=404, detail="Model not found")
     # Run RAG pipeline
     answer_stream, context, sources = await app_state.ragpipe.run(
@@ -110,7 +113,19 @@ async def openai_chat_completion(
 
     # Handle the sources
     sources = list(map(lambda x: source2url(x, static_base_url), sources))
-    src_json = json.dumps(sources)
+    markdowns_links = []
+    for doc in sources:
+        encoded_url = quote(doc["url"], safe=":/")
+        parsed_url = urlparse(doc["url"])
+        doc_name = parsed_url.path.split("/")[-1]
+
+        if "pdf" in doc_name.lower():
+            encoded_url = f"{encoded_url}#page={doc['page']}"
+        s = f"* {doc['doc_id']} : [{doc_name}]({encoded_url})"
+
+        markdowns_links.append(s)
+
+    src_md = "\n## Sources: \n" + "\n".join(markdowns_links) if markdowns_links else ""
 
     # Create response-id
     response_id = f"chatcmpl-{str(uuid.uuid4())}"
@@ -150,6 +165,20 @@ async def openai_chat_completion(
                 yield f"data: {chunk.model_dump_json()}\n\n"
 
             # Send final chunk
+            ## Send Sources
+            chunk_src = OpenAICompletionChunk(
+                id=response_id,
+                created=created_time,
+                model=model_name,
+                choices=[
+                    OpenAICompletionChunkChoice(
+                        index=0,
+                        delta={"content": src_md},
+                        finish_reason=None,
+                    )
+                ],
+            )
+
             chunk = OpenAICompletionChunk(
                 id=response_id,
                 created=created_time,
@@ -159,12 +188,13 @@ async def openai_chat_completion(
                 ],
             )
             yield f"data: {chunk.model_dump_json()}\n\n"
+            # yield f"data: {chunk_src.model_dump_json()}\n\n"
             yield "data: [DONE]\n\n"
 
         return StreamingResponse(
             stream_response(),
             media_type="text/event-stream",
-            #headers={"X-Metadata-Sources": src_json},
+            # headers={"X-Metadata-Sources": src_json},
         )
     else:
         # Non streaming response

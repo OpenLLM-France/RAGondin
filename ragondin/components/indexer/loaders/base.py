@@ -9,7 +9,7 @@ from langchain_core.messages import HumanMessage
 from langchain_openai import ChatOpenAI
 from loguru import logger
 
-from ...utils import llmSemaphore
+from ...utils import vlmSemaphore
 
 IMAGE_DESCRIPTION_PROMPT = """Provide a complete, structured and precise description of this image or figure in the same language (french) as its content. If the image contains tables, render them in markdown."""
 
@@ -40,7 +40,7 @@ class BaseLoader(ABC):
             f.write(doc.page_content)
 
     async def get_image_description(
-        self, image, semaphore: asyncio.Semaphore = llmSemaphore
+        self, image, semaphore: asyncio.Semaphore = vlmSemaphore
     ):
         """
         Creates a description for an image using the LLM model defined in the constructor
