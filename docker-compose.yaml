@@ -2,15 +2,18 @@ include:
   - vdb/${VDB_HOST}.yaml
 
 x-ragondin: &ragondin_template
-  build:
-    context: .
-    dockerfile: Dockerfile
-    args:
-      APP_PORT: ${APP_PORT}
+  # build:
+  #   context: .
+  #   dockerfile: Dockerfile
+  #   args:
+  #     APP_PORT: ${APP_PORT}
+  image : ghcr.io/openllm-france/ragondin:latest
   volumes:
+    - ./.hydra_config:/app/.hydra_config
     - ./model_weights:/app/model_weights
     - ./data:/app/data # PDF data for RAG
     - ./ragondin:/app/ragondin # For dev mode
+
   ports:
     - "${APP_PORT}:${APP_PORT}"
     - 8265:8265 # for ray
