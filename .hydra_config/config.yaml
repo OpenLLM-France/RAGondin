@@ -28,13 +28,13 @@ semaphore:
 
 embedder:
   type: huggingface
-  model_name: HIT-TMG/KaLM-embedding-multilingual-mini-v1
+  model_name: ${oc.env:EMBEDDER_MODEL_NAME, HIT-TMG/KaLM-embedding-multilingual-mini-v1}
   
 vectordb:
   host: ${oc.env:VDB_HOST, milvus}
   port: ${oc.env:VDB_PORT, 19530}
   connector_name: ${oc.env:VDB_CONNECTOR_NAME, milvus}
-  collection_name: IVF_HNSW_IP # HNSW_ip # ivf_flat_tuto # ivf_flat_ip # ivf_flat_cosine1 # 
+  collection_name: vdb 
   hybrid_mode: true
   enable: true
 
@@ -43,11 +43,12 @@ insertion:
   n_concurrent_chunking: 2 # Number of concurrent chunking operations
 
 reranker:
-  model_name: jinaai/jina-colbert-v2
-  top_k: 8
+  enable: ${oc.decode:${oc.env:RERANKER_ENABLED, true}}
+  model_name: ${oc.env:RERANKER_MODEL, jinaai/jina-colbert-v2}
+  top_k: ${oc.decode:${oc.env:RERANKER_TOP_K, 4}}
 
 grader:
-  grade_documents: false
+  enable: false
 
 verbose:
   verbose: true
@@ -65,7 +66,7 @@ loader:
   image_captioning: true
   file_loaders:
     docx: MarkItDownLoader
-    pdf: DoclingLoader # MarkerLoader # 
+    pdf: ${oc.env:PDFLoader, DoclingLoader}  # DoclingLoader # MarkerLoader # CustomPyMuPDFLoader # Custompymupdf4llm
     doc: DocLoader
     pptx: PPTXLoader
     txt: TextLoader

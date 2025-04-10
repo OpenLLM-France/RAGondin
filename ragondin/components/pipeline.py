@@ -25,10 +25,11 @@ class RagPipeline:
         self.vectordb: ABCVectorDB = vectordb
 
         self.reranker = None
-        if config.reranker["model_name"]:
-            self.reranker = Reranker(self.logger, config)
-
+        self.reranker_enabled = config.reranker["enable"]
+        logger.info(f"Reranker enabled: {self.reranker_enabled}")
         self.reranker_top_k = int(config.reranker["top_k"])
+        if self.reranker_enabled:
+            self.reranker = Reranker(self.logger, config)
 
         self.prompts_dir = Path(config.paths.prompts_dir)
         self.rag_sys_prompt: str = load_sys_template(
@@ -42,7 +43,8 @@ class RagPipeline:
         )
 
         self.grader: Grader = None
-        if config.grader["grade_documents"]:
+        self.grader_enabled = config.grader["enable"]
+        if self.grader_enabled:
             self.grader = Grader(config, logger=self.logger)
 
         self.rag_mode = config.rag["mode"]
@@ -122,19 +124,18 @@ class RagPipeline:
 
         if docs:
             # grade and filter irrelevant docs
-            docs = (
-                await self.grader.grade_docs(
+            if self.grader_enabled:
+                docs = self.grader.filter_docs(
                     user_input=contextualized_question, docs=docs
                 )
-                if self.grader
-                else docs
-            )
 
             # 2. rerank documents is asked
-            if self.reranker:
+            if self.reranker_enabled:
                 docs = await self.reranker.rerank(
                     contextualized_question, chunks=docs, k=self.reranker_top_k
                 )
+            else:
+                docs = docs[: self.reranker_top_k]
 
         # 3. Format the retrieved docs
         context, sources = format_context(docs)

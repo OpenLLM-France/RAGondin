@@ -10,51 +10,72 @@ RAGondin is a project dedicated to experimenting with advanced RAG (Retrieval-Au
 - Collaborate with the community to innovate and push the boundaries of RAG applications
 
 ## Current Features
+This section provides a detailed explanation of the currently supported features. 
+The **`.hydra_config`** directory contains all the configuration files for the application. 
+These configurations are structured using the [Hydra configuration framework](https://hydra.cc/docs/intro/). 
+This directory will be referenced for setting up the RAG (Retrieval-Augmented Generation) pipeline.
+
 - **Supported File Formats**  
-The current branch supports the following file types: `pdf`, `docx`, `doc`, `pptx`, `ppt`, and `txt`. Additional formats such as `odt`, `csv`, and `html` will be introduced in future updates. All supported file types are converted to Markdown, with images replaced by captions generated using a Vision Language Model (VLM) (Refer to the **Configuration** section for more details). Then the markdown output is chunked and indexed in milvus.
+The current branch supports the following file formats: `pdf`, `docx`, `doc`, `pptx`, `ppt`, and `txt`. Future updates will expand support to include formats such as `odt`, `csv`, audio and video files, and `html`.  
+
+For all supported file types, the content is converted into Markdown, with images replaced by captions generated using a Vision Language Model (VLM). (Refer to the **Configuration** section for more details.) The resulting Markdown is then chunked and indexed in the [Milvus vector database](https://milvus.io/).
 
 - **Chunking**  
-Differents chunking strategies are implemented: **`semantic` and `recursive` chunking**.
-Currently **recursive chunker** is used to process all supported file types. Future releases will implement format-specific chunkers (e.g., specialized CSV chunking, Markdown chunker, etc). You can find the specifics of this chunker in the file *`.hydra_config/chunker/recursive_splitter.yaml`*
+Different chunking strategies are available, including **`semantic`** and **`recursive`** chunking. By default, the **recursive chunker** is used for processing all supported file types due to its efficiency and low memory consumption. This is the **recommended chunker** for most use cases. Future updates may introduce format-specific chunkers, such as specialized chunkers for CSV, Markdown, and other formats. Details about the recursive chunker can be found in the configuration file: *`.hydra_config/chunker/recursive_splitter.yaml`*.
 
-  ```yml
-  name: recursive_splitter
-  chunk_size: 1500
-  chunk_overlap: 300
-  contextual_retrieval: true
-  ```
-Here the **`chunk_size` and `chunk_overlap`** are expressed in terms of tokens and not characters. For a quick test, contextual_retrieval (see. [contextual retrievel](!https://www.anthropic.com/news/contextual-retrieval) ) can be set to false
+```yml
+# .hydra_config/chunker/recursive_splitter.yaml
+defaults:
+  - base
+name: recursive_splitter
+chunk_size: 1500
+chunk_overlap: 300
+```
+Here, the **`chunk_size`** and **`chunk_overlap`** are measured in tokens rather than characters. For improved retrieval performance, you can enable the contextual retrieval feature. This technique, known as "Contextual Retrieval," was introduced by Anthropic to enhance retrieval quality (see [Contextual Retrieval](https://www.anthropic.com/news/contextual-retrieval) for more details). To activate this feature, set **`CONTEXT_RETRIEVAL=true`** in your **`.env`** file. Refer to the **`Usage`** section for additional instructions.
 
 - **Indexing & Search**  
-After chunking, data is indexed in a **Milvus** vector database using the multilingual embedding model `HIT-TMG/KaLM-embedding-multilingual-mini-v1` (ranked highly on the MTEB benchmark). The same model embeds user queries for semantic search (Dense Search).  
-    * **Hybrid Search**: Combines **`semantic search`** with keyword search (using **`BM25`**) to handle domain-specific jargon and coded product names that might not exist in the embedding model's training data. By default, our search pipeline  uses hybrid search.
+After chunking, the data is indexed in the **Milvus** vector database using the multilingual embedding model `HIT-TMG/KaLM-embedding-multilingual-mini-v1`, which performs well on the [MTEB benchmark](https://huggingface.co/spaces/mteb/leaderboard). Developers can customize the embedding model by setting the **`EMBEDDER_MODEL`** variable in the *`.env`* file to any compatible model from Huggingface, such as `"sentence-transformers/all-MiniLM-L6-v2"` for faster processing.
+
+**Note**: When selecting an embedding model, consider the language of your documents and the model's context length (token limit). The default model supports both French and English. The same model is also used to embed user queries for semantic (dense) search.
+
+  * **Hybrid Search**: Combines **`semantic search`** with keyword search (using **`BM25`**) to handle domain-specific jargon and coded product names that might not exist in the embedding model's training data. By default, our search pipeline  uses hybrid search.
 
 - **Retriever**  
-Supports three retrieval modes: **`multiQuery`, `single` and `hyde`**
-    * **single**: Standard query-based document retrieval  
-    * **multiQuery**: Generates augmented query variations using an LLM, then combines results. This is the default setting and is to most relevant one according to our tests. 
-    * **HyDE**: Generates a hypothetical answer using an LLM, then retrieves documents matching this answer
+  Supports three retrieval modes: **`multiQuery`**, **`single`**, and **`HyDE`**:
+  - **multiQuery**: Leverages an LLM to generate multiple query variations, combining the results from each query for improved relevance. This is the default and most effective mode based on our tests.
+  - **single**: Performs standard document retrieval using a single query.
+  - **HyDE**: Utilizes an LLM to generate a hypothetical answer, then retrieves documents that align with (in term of similarity) this generated response.
 
-- **Grader**: Filters out irrelevant documents after retrieval. Currently it's set to be **`false`**.
-- **Reranker**: Uses a multilingual reranking model to reorder documents by relevance with respect to the user's query. This part is important because the retriever returns documents that are semantically similar to the query. However, similarity is not synonymous with relevance, so rerankers are essential for reordering documents and filtering out less relevant ones. This helps reduce hallucination by weeding out irrelevant ones.
+- **Grader**: Filters out irrelevant documents after retrieval using an llm. Currently it's set to be **`false`**.
+- **Reranker**: Uses a multilingual reranking model to reorder documents by relevance with respect to the user's query. By default, we use the **`jinaai/jina-colbert-v2`**. For experimentation, set the **`RERANKER_MODEL`** in the **`.env`** file. 
+
+**`Note`**: This part is important because the retriever returns documents that are semantically similar to the query. However, similarity is not synonymous with relevance, so rerankers are essential for reordering documents and filtering out less relevant ones. This helps reduce hallucination by weeding out irrelevant ones.
 
 - **RAG Types**:  
     * **SimpleRAG**: Basic implementation without chat history  
     * **ChatBotRAG**: Version that maintains conversation context. 
 
 ## Configurations
-- `.env`: Store your LLM API key (`API_KEY`)  and your `BASE_URL` in a **`.env`** at the root of the project (see the **`.env.example`** for references). An **`VLM`(Vision language model)** endpoint is expected. The **`VLM`** is used to caption extracted images from files. 
 
 ## Usage
 
-#### 1. Clone the repository:
+### 1. Clone the repository:
 ```bash
 git clone https://github.com/OpenLLM-France/RAGondin.git
 cd RAGondin
-git checkout dev
+git checkout main # or dev if you want to try the dev branch
 ```
 
-#### 2. Create uv environment and install dependencies:
+#### Environment Setup
+
+First, the users are suggested to run RAGondin in a virtual environment (for all the necessary libraries and packages). It can be done easily with:
+
+```bash
+python -m venv .venv
+source .venv/bin/activate
+```
+
+### 2. Create uv environment and install dependencies:
 **Requirements**: Ensure you have Python 3.12 installed along with `uv`. For detailed installation instructions, refer to the [uv official documentation](https://docs.astral.sh/uv/getting-started/installation/#pypi).
 
 * To install `uv`, you can use either `pip` (if already available) or `curl`. Additional installation methods are outlined in the [documentation](https://docs.astral.sh/uv/getting-started/installation/#pypi).
@@ -68,13 +89,45 @@ curl -LsSf https://astral.sh/uv/install.sh | sh
 
 ```bash
 # Create a new environment with all dependencies
-uv sync # There is already 
+uv sync
 ```
 
-#### 3. Create a .env file
-Copy the content of **.env.exemple** to **.env**. Then add the **BASE_URL** and **API_KEY**.
+### 3. Create a .env file
 
-#### 4.Deployment: Launch the app
+Add a `.env` file at the root of the project to configure the LLM (Language Model) and VLM (Vision Language Model) settings. 
+
+It is mandatory to configure the LLM settings (`API_KEY`, `BASE_URL`, `MODEL_NAME`) as well as the VLM settings (`API_KEY`, `BASE_URL`, `MODEL_NAME`). The **`VLM`** is specifically utilized for generating captions for images extracted from files during the vectorization process. If you plan to use the same model for both LLM and VLM functionalities, you can reuse the same settings for both.
+
+For PDF file indexing, multiple options are available:
+- **`MarkerLoader` and `DoclingLoader`** are recommended for the best performance (requires GPU).
+- **PyMuPDF4LLMLoader** or **PyMuPDFLoader**: Suggested for non-GPU users. Not that these loader doesn't handle Non-searchable PDF nor does it handle images (**`We will add it`**).
+
+Other file formats are pre-configured with optimal settings.
+
+```bash
+# LLM settings
+BASE_URL=
+API_KEY=
+MODEL=
+
+# VLM settings
+VLM_BASE_URL=
+VLM_API_KEY=
+VLM_MODEL=
+
+# App
+APP_PORT=8080
+APP_HOST=0.0.0.0
+## More settings can be added (see .env.example)
+
+# Loaders
+PDFLoader=DoclingLoader
+```
+
+### 4.Deployment: Launch the app
+
+Make sure that you have Docker Desktop in disposition. If not, check out the installation in the official website [Docker](!https://www.docker.com/).
+
 The application can be launched in either a GPU or CPU environment, depending on your device's capabilities. Use the following commands:
 
 ```bash
@@ -84,16 +137,18 @@ docker compose up --build
 # Launch with CPU only (useful if GPU is unavailable)
 docker compose --profile cpu up --build
 ```
-> **Note**: The initial launch may take longer due to the installation of required dependencies. Once the application is up and running, you can access the web interface at `http://localhost:8080` (8080 = APP_PORT in your **`.env`**) to manage documents, execute searches, or interact with the RAG pipeline.
+> **Note**: The initial launch is longer due to the installation of required dependencies. Once the application is up and running, you can access the api documentation at `http://localhost:8080/docs` (8080 is the APP_PORT variable determined in your **`.env`**) to manage documents, execute searches, or interact with the RAG pipeline (see the **next section** about the api for more details). A default chat ui is also deployed using [chainlit](!https://docs.chainlit.io/get-started/overview). You can access to it at `http://localhost:8080/chainlit` chat with your documents with our RAG engine behind it.
 
 
 * **Running on CPU**:  
-  For quick testing on a CPU, adjust the following parameters to reduce computational load (at the cost of performance and quality):  
-  - Set **`top_k=4`** for the **`reranker`** in `.hydra_config/config.yaml`.  
-  - Set **`top_k=5`** for the **`retriever`** in `.hydra_config/retriever/base.yaml`.  
+  For quick testing on a CPU, you can optimize performance by reducing computational load with the following adjustments in the **`.env`** file:
+  - Set **`RERANKER_TOP_K=6`** or even lower to limit the number of documents processed by the reranker. You can actually go further and disable the reranker by **`RERANKER_ENABLED=false`** cause it's a costly operation.
+  - Set **`RETRIEVER_TOP_K=4`** to reduce the number of documents retrieved during the search phase.
+
+  These changes may impact performance and result quality but are suitable for lightweight testing.
 
 * **Running on GPU**:  
-  Optimal values are already configured for GPU usage. However, you can modify these settings if you wish to experiment with different configurations depending on the capacity of your llm-endpoint and host environment.
+  Optimal values are already configured for GPU usage. However, you can modify these settings if you wish to experiment with different configurations depending on the capacity of machine.
 
 Now, that your app is launched, files can be added in order to chat with your documents. The following sections deals with that.
 

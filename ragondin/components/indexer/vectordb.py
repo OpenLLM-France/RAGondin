@@ -12,7 +12,10 @@ from qdrant_client import QdrantClient, models
 
 
 INDEX_PARAMS = [
-    {"metric_type": "BM25", "index_type": "SPARSE_INVERTED_INDEX"},  # For sparse vector
+    {
+        "metric_type": "BM25",
+        "index_type": "SPARSE_INVERTED_INDEX",
+    },  # Fovr sparse vector
     {
         "metric_type": "IP",
         "index_type": "HNSW",
@@ -359,7 +362,7 @@ class MilvusDB(ABCVectorDB):
             raise
 
     def get_file_chunks(
-        self, file_id: str, partition: str, include_id:bool = False, limit: int = 100
+        self, file_id: str, partition: str, include_id: bool = False, limit: int = 100
     ):
         """
         Retrieve file points from the vector database based on a filter.
@@ -377,7 +380,9 @@ class MilvusDB(ABCVectorDB):
             # Pagination parameters
             offset = 0
             results = []
-            excluded_keys = ["text", "vector", "_id"] if not include_id else ["text", "vector"]
+            excluded_keys = (
+                ["text", "vector", "_id"] if not include_id else ["text", "vector"]
+            )
 
             while True:
                 response = self.client.query(
@@ -458,7 +463,7 @@ class MilvusDB(ABCVectorDB):
         except Exception as e:
             self.logger.error(f"Error in `file_exists` for file_id {file_id}: {e}")
             return False
-    
+
     def partition_exists(self, partition: str):
         """
         Check if a partition exists in Milvus
@@ -481,9 +486,11 @@ class MilvusDB(ABCVectorDB):
 
             return True
         except Exception as e:
-            self.logger.error(f"Error in `partition_exists` for partition {partition}: {e}")
+            self.logger.error(
+                f"Error in `partition_exists` for partition {partition}: {e}"
+            )
             return False
-    
+
     def list_files(self, partition: str):
         """
         Retrieve all unique file_id values from a given partition.
@@ -512,7 +519,7 @@ class MilvusDB(ABCVectorDB):
 
         except Exception as e:
             self.logger.error(f"Failed to get file_ids in partition '{partition}': {e}")
-            raise     
+            raise
 
     def list_partitions(self):
         """
@@ -533,14 +540,16 @@ class MilvusDB(ABCVectorDB):
                 if not response:
                     break
 
-                results.update(res["partition"] for res in response if "partition" in res)
+                results.update(
+                    res["partition"] for res in response if "partition" in res
+                )
                 offset += len(response)
 
             return list(results)
 
         except Exception as e:
             self.logger.error(f"Failed to list partitions : {e}")
-            raise    
+            raise
 
     def collection_exists(self, collection_name: str):
         """

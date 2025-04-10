@@ -6,10 +6,9 @@ import chainlit as cl
 import httpx
 from loguru import logger
 
+
 PARTITION = "all"
-
 headers = {"accept": "application/json", "Content-Type": "application/json"}
-
 history = []
 
 
