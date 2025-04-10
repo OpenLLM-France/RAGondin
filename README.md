@@ -56,22 +56,26 @@ After chunking, the data is indexed in the **Milvus** vector database using the 
     * **ChatBotRAG**: Version that maintains conversation context. 
 
 ## Configurations
-### Environment Setup
-
-Create a `.env` file at the root of the project and define the required environment variables. Refer to the **`.env.example`** file for guidance.
-
-It is mandatory to configure the LLM settings (`API_KEY`, `BASE_URL`, `MODEL_NAME`) as well as the VLM settings (`API_KEY`, `BASE_URL`, `MODEL_NAME`). The **`VLM`** is specifically utilized for generating captions for images extracted from files during the vectorization process. If you plan to use the same model for both LLM and VLM functionalities, you can reuse the same settings for both.
 
 ## Usage
 
-#### 1. Clone the repository:
+### 1. Clone the repository:
 ```bash
 git clone https://github.com/OpenLLM-France/RAGondin.git
 cd RAGondin
 git checkout main # or dev if you want to try the dev branch
 ```
 
-#### 2. Create uv environment and install dependencies:
+#### Environment Setup
+
+First, the users are suggested to run RAGondin in a virtual environment (for all the necessary libraries and packages). It can be done easily with:
+
+```bash
+python -m venv .venv
+source .venv/bin/activate
+```
+
+### 2. Create uv environment and install dependencies:
 **Requirements**: Ensure you have Python 3.12 installed along with `uv`. For detailed installation instructions, refer to the [uv official documentation](https://docs.astral.sh/uv/getting-started/installation/#pypi).
 
 * To install `uv`, you can use either `pip` (if already available) or `curl`. Additional installation methods are outlined in the [documentation](https://docs.astral.sh/uv/getting-started/installation/#pypi).
@@ -88,9 +92,11 @@ curl -LsSf https://astral.sh/uv/install.sh | sh
 uv sync
 ```
 
-#### 3. Create a .env file
+### 3. Create a .env file
 
 Add a `.env` file at the root of the project to configure the LLM (Language Model) and VLM (Vision Language Model) settings. 
+
+It is mandatory to configure the LLM settings (`API_KEY`, `BASE_URL`, `MODEL_NAME`) as well as the VLM settings (`API_KEY`, `BASE_URL`, `MODEL_NAME`). The **`VLM`** is specifically utilized for generating captions for images extracted from files during the vectorization process. If you plan to use the same model for both LLM and VLM functionalities, you can reuse the same settings for both.
 
 For PDF file indexing, multiple options are available:
 - **`MarkerLoader` and `DoclingLoader`** are recommended for the best performance (requires GPU).
@@ -118,7 +124,10 @@ APP_HOST=0.0.0.0
 PDFLoader=DoclingLoader
 ```
 
-#### 4.Deployment: Launch the app
+### 4.Deployment: Launch the app
+
+Make sure that you have Docker Desktop in disposition. If not, check out the installation in the official website [Docker](!https://www.docker.com/).
+
 The application can be launched in either a GPU or CPU environment, depending on your device's capabilities. Use the following commands:
 
 ```bash
@@ -128,7 +137,7 @@ docker compose up --build
 # Launch with CPU only (useful if GPU is unavailable)
 docker compose --profile cpu up --build
 ```
-> **Note**: The initial launch is longer due to the installation of required dependencies. Once the application is up and running, you can access the api documentation at `http://localhost:8080/docs` (8080 = APP_PORT in your **`.env`**) to manage documents, execute searches, or interact with the RAG pipeline (see the **next section** about the api for more details). A default chat ui is also deployed using [chainlit](!https://docs.chainlit.io/get-started/overview). You can access to it at `http://localhost:8080/chainlit` chat with your documents with our RAG engine behind it.
+> **Note**: The initial launch is longer due to the installation of required dependencies. Once the application is up and running, you can access the api documentation at `http://localhost:8080/docs` (8080 is the APP_PORT variable determined in your **`.env`**) to manage documents, execute searches, or interact with the RAG pipeline (see the **next section** about the api for more details). A default chat ui is also deployed using [chainlit](!https://docs.chainlit.io/get-started/overview). You can access to it at `http://localhost:8080/chainlit` chat with your documents with our RAG engine behind it.
 
 
 * **Running on CPU**:  
