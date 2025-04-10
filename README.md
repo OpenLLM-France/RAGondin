@@ -89,7 +89,14 @@ uv sync
 ```
 
 #### 3. Create a .env file
-Add your **`.env`** at the root of the projet and provide the LLM and VLM settings. Thus, for PDF files, we have multiple options for indexing, `Marker` provides by the best performance among the others, but for non-GPU users, we recommend using `Custompymupdf4llm`. Other formats have already been configured with the best option.
+
+Add a `.env` file at the root of the project to configure the LLM (Language Model) and VLM (Vision Language Model) settings. 
+
+For PDF file indexing, multiple options are available:
+- **`MarkerLoader` and `DoclingLoader`** are recommended for the best performance (requires GPU).
+- **PyMuPDF4LLMLoader** or **PyMuPDFLoader**: Suggested for non-GPU users. Not that these loader doesn't handle Non-searchable PDF nor does it handle images (**`We will add it`**).
+
+Other file formats are pre-configured with optimal settings.
 
 ```bash
 # LLM settings
@@ -108,8 +115,7 @@ APP_HOST=0.0.0.0
 ## More settings can be added (see .env.example)
 
 # Loaders
-PDF_Loader= # MarkerLoader # DoclingLoader  # Custompymupdf4llm # CustomPyMuPDFLoader
-
+PDFLoader=DoclingLoader
 ```
 
 #### 4.Deployment: Launch the app
@@ -128,7 +134,7 @@ docker compose --profile cpu up --build
 * **Running on CPU**:  
   For quick testing on a CPU, you can optimize performance by reducing computational load with the following adjustments in the **`.env`** file:
   - Set **`RERANKER_TOP_K=6`** or even lower to limit the number of documents processed by the reranker. You can actually go further and disable the reranker by **`RERANKER_ENABLED=false`** cause it's a costly operation.
-  - Set **`RETRIEVER_TOP_K=5`** to reduce the number of documents retrieved during the search phase.
+  - Set **`RETRIEVER_TOP_K=4`** to reduce the number of documents retrieved during the search phase.
 
   These changes may impact performance and result quality but are suitable for lightweight testing.
 

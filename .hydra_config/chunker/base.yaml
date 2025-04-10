@@ -1,1 +1,1 @@
-contextual_retrieval: ${oc.env:CONTEXTUAL_RETRIEVAL, true}
+contextual_retrieval: ${oc.decode:${oc.env:CONTEXTUAL_RETRIEVAL, true}}

@@ -25,11 +25,11 @@ class RagPipeline:
         self.vectordb: ABCVectorDB = vectordb
 
         self.reranker = None
-        self.reranker_enabled = config.reranker.get("enable", False)
+        self.reranker_enabled = config.reranker["enable"]
+        logger.info(f"Reranker enabled: {self.reranker_enabled}")
+        self.reranker_top_k = int(config.reranker["top_k"])
         if self.reranker_enabled:
             self.reranker = Reranker(self.logger, config)
-
-        self.reranker_top_k = int(config.reranker["top_k"])
 
         self.prompts_dir = Path(config.paths.prompts_dir)
         self.rag_sys_prompt: str = load_sys_template(
@@ -43,7 +43,7 @@ class RagPipeline:
         )
 
         self.grader: Grader = None
-        self.grader_enabled = config.grader.get("enable", False)
+        self.grader_enabled = config.grader["enable"]
         if self.grader_enabled:
             self.grader = Grader(config, logger=self.logger)
 

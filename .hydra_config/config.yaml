@@ -9,7 +9,6 @@ llm_params: &llm_params
   timeout: 60
   max_retries: 2
   frequency_penalty: 0.2
-  # max_tokens: 2048
 
 llm:
   <<: *llm_params
@@ -31,7 +30,7 @@ vectordb:
   host: ${oc.env:VDB_HOST, milvus}
   port: ${oc.env:VDB_PORT, 19530}
   connector_name: ${oc.env:VDB_CONNECTOR_NAME, milvus}
-  collection_name: IVF_HNSW_IP # HNSW_ip # ivf_flat_tuto # ivf_flat_ip # ivf_flat_cosine1 # 
+  collection_name: vdb 
   hybrid_mode: true
   enable: true
 
@@ -40,9 +39,9 @@ insertion:
   n_concurrent_chunking: 2 # Number of concurrent chunking operations
 
 reranker:
-  enable: ${oc.env:RERANKER_ENABLED, true}
+  enable: ${oc.decode:${oc.env:RERANKER_ENABLED, true}}
   model_name: ${oc.env:RERANKER_MODEL, jinaai/jina-colbert-v2}
-  top_k: ${oc.env:RERANKER_TOP_K, 8}
+  top_k: ${oc.decode:${oc.env:RERANKER_TOP_K, 4}}
 
 grader:
   enable: false
@@ -63,11 +62,10 @@ loader:
   image_captioning: true
   file_loaders:
     docx: MarkItDownLoader
-    pdf: ${oc.env:PDF_Loader}  # DoclingLoader # MarkerLoader # CustomPyMuPDFLoader # Custompymupdf4llm
+    pdf: ${oc.env:PDFLoader, DoclingLoader}  # DoclingLoader # MarkerLoader # CustomPyMuPDFLoader # Custompymupdf4llm
     doc: DocLoader
     pptx: PPTXLoader
-    # txt: TextLoader
-    # odt: CustomDocLoader
+    txt: TextLoader
 
 semaphore:
   llm_semaphore: ${oc.decode:${oc.env:LLM_SEMAPHORE, 10}}

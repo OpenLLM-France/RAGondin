@@ -1,4 +1,4 @@
 type: ''
 criteria: similarity
-top_k: ${oc.env:RETRIEVER_TOP_K, 15}
+top_k: ${oc.decode:${oc.env:RETRIEVER_TOP_K, 6}}
 similarity_threshold: 0.6
