@@ -282,4 +282,7 @@ This repository is for research and educational purposes only. While we strive f
 
 ## License
 MIT License - See [LICENSE](LICENSE) file for details.
+
+## TODO
+[] Better manage logs
 ```

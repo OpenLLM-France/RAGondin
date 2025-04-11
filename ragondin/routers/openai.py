@@ -194,7 +194,7 @@ async def openai_chat_completion(
         return StreamingResponse(
             stream_response(),
             media_type="text/event-stream",
-            # headers={"X-Metadata-Sources": src_json},
+            headers={"X-Metadata-Sources": json.dumps(markdowns_links)},
         )
     else:
         # Non streaming response

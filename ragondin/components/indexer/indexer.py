@@ -23,7 +23,7 @@ else:
 @ray.remote(
     num_cpus=cpu,
     num_gpus=gpu,
-    concurrency_groups={"compute": 2},
+    concurrency_groups={"compute": 4, "serialization": 2, "chunking": 2},
     max_task_retries=2,
     max_restarts=-1,
 )
@@ -60,23 +60,28 @@ class Indexer(metaclass=SingletonMeta):
         self.default_partition = "_default"
         self.enable_insertion = self.config.vectordb["enable"]
 
-    async def serialize_and_chunk(
-        self,
-        path: str | list[str],
-        metadata: Optional[Dict] = {},
-        partition: Optional[str] = None,
-    ):
+    @ray.method(concurrency_group="serialization")
+    async def serialize(self, path: str, metadata: Optional[Dict] = {}):
         self.logger.info(f"Starting serialization of documents from {path}...")
         doc: Document = await self.serializer.serialize_document(
-            path, metadata={**metadata, "partition": partition}
+            path, metadata=metadata
         )
         if doc is None:
             return []
 
-        self.logger.info("Starting chunking")
-        chunks = await self.chunker.split_document(doc)
-        self.logger.info(f"Chunking completed for {path}")
-        return chunks
+        self.logger.info("Serialization completed.")
+        return doc
+
+    @ray.method(concurrency_group="chunking")
+    async def chunk(self, doc: Document, file_path: str):
+        if doc is not None:
+            self.logger.info("Starting chunking")
+            chunks = await self.chunker.split_document(doc)
+            self.logger.info(f"Chunking completed for {file_path}")
+            return chunks
+        else:
+            self.logger.info(f"No chunks for {file_path}")
+            return []
 
     @ray.method(concurrency_group="compute")
     async def add_file(
@@ -86,7 +91,10 @@ class Indexer(metaclass=SingletonMeta):
         partition: Optional[str] = None,
     ):
         partition = self._check_partition_str(partition)
-        chunks = await self.serialize_and_chunk(path, metadata, partition)
+        metadata = {**metadata, "partition": partition}
+        doc = await self.serialize(path, metadata=metadata)
+        chunks = await self.chunk(doc, path)
+
         try:
             if self.enable_insertion:
                 await self.vectordb.async_add_documents(chunks)
