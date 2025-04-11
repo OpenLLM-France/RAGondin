@@ -5,11 +5,14 @@ import chainlit as cl
 from loguru import logger
 import httpx
 from openai import AsyncOpenAI
+from openai import OpenAI
 
 
 # Instrument the OpenAI client
 cl.instrument_openai()
-
+PARTITION = "all"
+headers = {"accept": "application/json", "Content-Type": "application/json"}
+history = []
 
 def get_base_url():
     from chainlit.context import get_context
@@ -19,19 +22,24 @@ def get_base_url():
     base_url = f"{parsed_url.scheme}://{parsed_url.netloc}"
     return base_url
 
-
-@cl.on_chat_start
-async def on_chat_start():
-    base_url = get_base_url()
+def get_settings():
     settings = {
         "model": "ragondin-all",
         "temperature": 0,
         "timeout": 4 * 60.0,
     }
+    return settings
+
+@cl.on_chat_start
+async def on_chat_start():
+    base_url = get_base_url()
+    settings = get_settings()
 
     logger.debug(f"BASE URL: {base_url}")
 
     try:
+        global history
+        history.clear()
         cl.user_session.set("message_history", [])
         cl.user_session.set("settings", settings)
         logger.debug("New Chat Started")
@@ -47,26 +55,39 @@ async def on_chat_start():
 
 @cl.on_message
 async def on_message(message: cl.Message):
-    message_history = cl.user_session.get("message_history")
-    message_history.append({"role": "user", "content": message.content})
 
-    msg = cl.Message(content="")
-    settings = cl.user_session.get("settings")
-    base_url = cl.user_session.get("BASE URL")
+    # client = AsyncOpenAI(api_key="sk-1234", base_url=f"{get_base_url()}/v1", timeout=4 * 60.0)
+    # response = await client.chat.completions.create(
+    #     messages=[
+    #         {
+    #             "content": message.content,
+    #             "role": "user"
+    #         }
+    #     ],
+    #     **get_settings()
+    # )
+    print(message.content)
 
-    client = AsyncOpenAI(api_key="sk-1234", base_url=f"{base_url}/v1", timeout=4 * 60.0)
-    stream = await client.chat.completions.create(
-        messages=message_history, stream=True, **settings
+    base_url = get_base_url()
+    api_key = 'sk-1234'
+
+    client = OpenAI(api_key=api_key, base_url=base_url)
+
+    response = client.chat.completions.create(
+        messages=[
+            {"role": "user", "content": message.content},
+        ],
+        model=f"ragondin-{PARTITION}",
+        temperature=0,
+        top_p=1,
+        n=1,
+        max_tokens=200,
+        stream=False,
+        stop=None
     )
+    
+    await cl.Message(content=response.choices[0].message.content).send()
 
-    async for part in stream:
-        if token := part.choices[0].delta.content or "":
-            await msg.stream_token(token)
-
-    message_history.append({"role": "assistant", "content": msg.content})
-
-    await msg.update()
-    cl.user_session.set("message_history", message_history)
 
 
 # this file is in the docker along with the fastapi running at port 8080

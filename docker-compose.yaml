@@ -15,8 +15,8 @@ x-ragondin: &ragondin_template
     - ./ragondin:/app/ragondin # For dev mode
 
   ports:
-    - "${APP_PORT}:${APP_PORT}"
-    - 8265:8265 # for ray
+    - "${APP2_PORT}:${APP_PORT}"
+    - 8266:8265 # for ray
   env_file:
     - .env
   shm_size: 10.24gb
