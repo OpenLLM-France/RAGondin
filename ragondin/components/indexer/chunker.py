@@ -26,8 +26,7 @@ class ABCChunker(ABC):
         pass
 
 
-template = """
-**Objectif** : Rédiger un texte de contextualisation pour le fragment suivant en intégrant les éléments fournis.
+template = """**Objectif** : Rédiger succinctement un texte de contextualisation pour le fragment suivant en intégrant les éléments fournis.
 
 **Consignes de rédaction** :
 1. Prendre en compte :

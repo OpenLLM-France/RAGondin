@@ -26,7 +26,7 @@ INDEX_PARAMS = [
 SEARCH_PARAMS = [
     {
         "metric_type": "IP",
-        "params": {"ef": 20},
+        "params": {"ef": 15},
     },
     {"metric_type": "BM25", "params": {"drop_ratio_build": 0.2}},
 ]
@@ -526,26 +526,8 @@ class MilvusDB(ABCVectorDB):
         Retrieve all unique file_id values from a given partition.
         """
         try:
-            offset = 0
-            results = set()
-
-            while True:
-                response = self.client.query(
-                    collection_name=self.collection_name,
-                    output_fields=["partition"],
-                    limit=1000,
-                    offset=offset,
-                )
-
-                if not response:
-                    break
-
-                results.update(
-                    res["partition"] for res in response if "partition" in res
-                )
-                offset += len(response)
-
-            return list(results)
+            results = self.vector_store.client.list_partitions()
+            return results
 
         except Exception as e:
             self.logger.error(f"Failed to list partitions : {e}")
@@ -555,7 +537,7 @@ class MilvusDB(ABCVectorDB):
         """
         Check if a collection exists in Milvus
         """
-        return self.client.has_collection(collection_name)
+        return self.vector_store.client.has_collection(collection_name)
 
 
 class QdrantDB(ABCVectorDB):
