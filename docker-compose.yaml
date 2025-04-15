@@ -2,12 +2,11 @@ include:
   - vdb/${VDB_HOST}.yaml
 
 x-ragondin: &ragondin_template
-  # build:
-  #   context: .
-  #   dockerfile: Dockerfile
-  #   args:
-  #     APP_PORT: ${APP_PORT}
-  image : ghcr.io/openllm-france/ragondin:latest
+  build:
+    context: .
+    dockerfile: Dockerfile
+    args:
+      APP_PORT: ${APP_PORT}
   volumes:
     - ./.hydra_config:/app/.hydra_config
     - ./model_weights:/app/model_weights
@@ -20,10 +19,9 @@ x-ragondin: &ragondin_template
   env_file:
     - .env
   shm_size: 10.24gb
-  
+
   depends_on:
     - ${VDB_HOST}
-
 
 services:
   # GPU - default 
@@ -34,10 +32,10 @@ services:
         reservations:
           devices:
             - driver: nvidia
-              count: all 
-              capabilities: [gpu]
+              count: all
+              capabilities: [ gpu ]
     profiles:
-      - ''  # Empty string gives default behavior (but does not run when cpu requested)
+      - '' # Empty string gives default behavior (but does not run when cpu requested)
 
   # No GPU (docker compose --profile cpu up --build)
   ragondin-cpu:

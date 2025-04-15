@@ -99,6 +99,7 @@ async def on_message(message: cl.Message):
                     response = httpx.post(
                         url, files=files, headers={"accept": "application/json"}
                     )
+                    
 
                 if response.status_code == 200:
                     await cl.Message(content="File uploaded successfully!").send()
