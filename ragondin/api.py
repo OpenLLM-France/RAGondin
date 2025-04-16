@@ -141,7 +141,9 @@ async def health_check(static_base_url: str = Depends(static_base_url_dependency
 
 
 # Mount the default front
-mount_chainlit(app, "./chainlit/app_front.py", path="/chainlit")
+# mount_chainlit(app, "./chainlit/app_front.py", path="/chainlit")
+mount_chainlit(app, "./chainlit/app_front2.py", path="/chainlit")
+
 # Mount the indexer router
 app.include_router(indexer_router, prefix="/indexer", tags=[Tags.INDEXER])
 # Mount the extract router

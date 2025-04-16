@@ -14,15 +14,14 @@ x-ragondin: &ragondin_template
     - ./ragondin:/app/ragondin # For dev mode
 
   ports:
-    - "${APP_PORT}:${APP_PORT}"
-    - 8265:8265 # for ray
+    - "${APP2_PORT}:${APP_PORT}"
+    - 8266:8265 # for ray
   env_file:
     - .env
   shm_size: 10.24gb
-  
+
   depends_on:
     - ${VDB_HOST}
-
 
 services:
   # GPU - default 
@@ -33,10 +32,10 @@ services:
         reservations:
           devices:
             - driver: nvidia
-              count: all 
-              capabilities: [gpu]
+              count: all
+              capabilities: [ gpu ]
     profiles:
-      - ''  # Empty string gives default behavior (but does not run when cpu requested)
+      - '' # Empty string gives default behavior (but does not run when cpu requested)
 
   # No GPU (docker compose --profile cpu up --build)
   ragondin-cpu:

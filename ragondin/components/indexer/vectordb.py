@@ -81,6 +81,10 @@ class ABCVectorDB(ABC):
     def collection_exists(self, collection_name: str):
         pass
 
+    @abstractmethod
+    def list_partitions(self):
+        pass
+
 
 class MilvusDB(ABCVectorDB):
     """
@@ -816,7 +820,10 @@ class QdrantDB(ABCVectorDB):
         except Exception as e:
             self.logger.error(f"Couldn't get file points for {key} {value}: {e}")
             raise
-
+        
+    def list_partitions(self):
+        return 
+    
     def delete_points(self, points: list, collection_name: Optional[str] = None):
         """
         Delete points from Qdrant
