@@ -19,10 +19,9 @@ x-ragondin: &ragondin_template
   env_file:
     - .env
   shm_size: 10.24gb
-  
+
   depends_on:
     - ${VDB_HOST}
-
 
 services:
   # GPU - default 
@@ -33,10 +32,10 @@ services:
         reservations:
           devices:
             - driver: nvidia
-              count: all 
-              capabilities: [gpu]
+              count: all
+              capabilities: [ gpu ]
     profiles:
-      - ''  # Empty string gives default behavior (but does not run when cpu requested)
+      - '' # Empty string gives default behavior (but does not run when cpu requested)
 
   # No GPU (docker compose --profile cpu up --build)
   ragondin-cpu:

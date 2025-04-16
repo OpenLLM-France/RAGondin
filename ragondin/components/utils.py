@@ -3,7 +3,6 @@ import atexit
 import threading
 from abc import ABCMeta
 from pathlib import Path
-
 from config.config import load_config
 from langchain_core.documents.base import Document
 import ray
@@ -150,5 +149,9 @@ def format_context(docs: list[Document]) -> str:
 config = load_config()
 
 # llmSemaphore = LLMSemaphore(max_concurrent_ops=config.semaphore.llm_semaphore)
-llmSemaphore = DistributedSemaphore(max_concurrent_ops=config.semaphore.llm_semaphore)
-vlmSemaphore = DistributedSemaphore(max_concurrent_ops=config.semaphore.vlm_semaphore)
+llmSemaphore = DistributedSemaphore(
+    name="llmSemaphore", max_concurrent_ops=config.semaphore.llm_semaphore
+)
+vlmSemaphore = DistributedSemaphore(
+    name="vlmSemaphore", max_concurrent_ops=config.semaphore.vlm_semaphore
+)

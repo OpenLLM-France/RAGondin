@@ -23,7 +23,6 @@ dependencies = [
     "pydub>=0.25.1",
     "pymupdf4llm>=0.0.17",
     "ragatouille>=0.0.9",
-    "whisperx>=3.3.1",
     "spire-doc>=13.1.0",
     "markitdown>=0.0.2",
     "openai>=1.64.0",
@@ -31,6 +30,9 @@ dependencies = [
     "langchain-qdrant>=0.2.0",
     "python-dotenv>=1.0.1",
     "pip>=25.0.1",
+    "chardet>=5.2.0",
+    "openai-whisper>=20240930",
+    "torch>=2.4.1",
 ]
 
 [dependency-groups]

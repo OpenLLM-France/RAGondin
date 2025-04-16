@@ -22,7 +22,7 @@ else:
 @ray.remote(
     num_cpus=cpu,
     num_gpus=gpu,
-    concurrency_groups={"compute": 4, "serialization": 2, "chunking": 2},
+    concurrency_groups={"compute": 2, "serialize": 2, "chunk": 2},
     max_task_retries=2
 )
 class IndexerWorker(metaclass=SingletonMeta):
@@ -59,19 +59,16 @@ class IndexerWorker(metaclass=SingletonMeta):
         self.default_partition = "_default"
         self.enable_insertion = self.config.vectordb["enable"]
 
-    @ray.method(concurrency_group="serialization")
+    # @ray.method(concurrency_group="serialize")
     async def serialize(self, path: str, metadata: Optional[Dict] = {}):
         self.logger.info(f"Starting serialization of documents from {path}...")
         doc: Document = await self.serializer.serialize_document(
             path, metadata=metadata
         )
-        if doc is None:
-            return []
-
         self.logger.info("Serialization completed.")
         return doc
 
-    @ray.method(concurrency_group="chunking")
+    # @ray.method(concurrency_group="chunk")
     async def chunk(self, doc: Document, file_path: str):
         if doc is not None:
             self.logger.info("Starting chunking")

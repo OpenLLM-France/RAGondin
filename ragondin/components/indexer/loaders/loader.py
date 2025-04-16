@@ -9,7 +9,7 @@ from loguru import logger
 from components.utils import SingletonMeta
 from .DoclingLoader import DoclingLoader
 from .MarkerLoader import MarkerLoader
-from .VideoAudioLoader import AudioTranscriber
+from .VideoAudioLoader import VideoAudioLoader
 from .base import BaseLoader
 import gc
 
@@ -56,10 +56,10 @@ class DocSerializer:
             **metadata,
         }
         doc: Document = await loader.aload_document(
-            file_path=path, metadata=metadata, save_md=True
+            file_path=path, metadata=metadata, save_md=False
         )
 
-        if isinstance(loader, (DoclingLoader, MarkerLoader, AudioTranscriber)):
+        if isinstance(loader, (DoclingLoader, MarkerLoader, VideoAudioLoader)):
             loader_cls.destroy()
 
         del loader
