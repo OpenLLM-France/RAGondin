@@ -5,8 +5,6 @@ x-ragondin: &ragondin_template
   build:
     context: .
     dockerfile: Dockerfile
-    args:
-      APP_PORT: ${APP_PORT}
   volumes:
     - ./.hydra_config:/app/.hydra_config
     - ./model_weights:/app/model_weights
@@ -14,8 +12,8 @@ x-ragondin: &ragondin_template
     - ./ragondin:/app/ragondin # For dev mode
 
   ports:
-    - "${APP_PORT}:${APP_PORT}"
-    - 8265:8265 # for ray
+    - "${APP_PORT:-8080}:8080"
+    - ${RAY_PORT:-8265}:8265 # for ray
   env_file:
     - .env
   shm_size: 10.24gb

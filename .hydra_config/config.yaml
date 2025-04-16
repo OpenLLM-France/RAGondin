@@ -34,7 +34,7 @@ vectordb:
   host: ${oc.env:VDB_HOST, milvus}
   port: ${oc.env:VDB_PORT, 19530}
   connector_name: ${oc.env:VDB_CONNECTOR_NAME, milvus}
-  collection_name: vdb 
+  collection_name: vdb_test 
   hybrid_mode: true
   enable: true
 
@@ -74,3 +74,10 @@ loader:
     mp3: VideoAudioLoader
     mp4: VideoAudioLoader
     # odt: CustomDocLoader
+
+ray:
+  num_cpus: ${oc.decode:${oc.env:RAY_NUM_CPUS, 4}}
+  num_gpus: ${oc.decode:${oc.env:RAY_NUM_GPUS, 1}}
+  compute_concurrency: ${oc.decode:${oc.env:RAY_INDEX_CONCURRENCY, 2}}
+  chunk_concurrency: ${oc.decode:${oc.env:RAY_CHUNK_CONCURRENCY, 2}}
+  serialize_concurrency: ${oc.decode:${oc.env:RAY_SERIALIZE_CONCURRENCY, 2}}

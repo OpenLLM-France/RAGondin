@@ -10,19 +10,31 @@ from .chunker import ABCChunker, ChunkerFactory
 from .embeddings import HFEmbedder
 from .loaders.loader import DocSerializer
 from .vectordb import ConnectorFactory
-if not ray.is_initialized():
-    ray.init(dashboard_host="0.0.0.0", ignore_reinit_error=True)
+from config import load_config
+
+# Load the configuration
+config = load_config()
+
+# Set ray resources
+NUM_GPUS = config.ray.get("num_gpus")
+NUM_CPUS = config.ray.get("num_cpus")
+
+# Set ray concurrency groups
+COMPUTE_CONCURRENCY = config.ray.get("compute_concurrency")
+SERIALIZE_CONCURRENCY = config.ray.get("serialize_concurrency")
+CHUNK_CONCURRENCY = config.ray.get("chunk_concurrency")
+
 
 if torch.cuda.is_available():
-    gpu, cpu = 1, 0
+    gpu, cpu = NUM_GPUS, NUM_CPUS
 else:
-    gpu, cpu = 0, 1
+    gpu, cpu = 0, NUM_CPUS
 
 
 @ray.remote(
     num_cpus=cpu,
     num_gpus=gpu,
-    concurrency_groups={"compute": 2, "serialize": 2, "chunk": 2},
+    concurrency_groups={"compute": COMPUTE_CONCURRENCY, "serialize": SERIALIZE_CONCURRENCY, "chunk": CHUNK_CONCURRENCY},
     max_task_retries=2
 )
 class IndexerWorker(metaclass=SingletonMeta):
@@ -118,7 +130,7 @@ class IndexerWorker(metaclass=SingletonMeta):
 
 
 
-@ray.remote(concurrency_groups={"compute": 4})
+@ray.remote(concurrency_groups={"compute": COMPUTE_CONCURRENCY})
 class Indexer():
     def __init__(self, config, logger, device=None):
         self.config = config
