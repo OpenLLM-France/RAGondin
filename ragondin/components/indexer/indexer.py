@@ -23,8 +23,7 @@ else:
     num_cpus=cpu,
     num_gpus=gpu,
     concurrency_groups={"compute": 4, "serialization": 2, "chunking": 2},
-    max_task_retries=2,
-    max_restarts=-1,
+    max_task_retries=2
 )
 class IndexerWorker(metaclass=SingletonMeta):
     """This class bridges static files with the vector store database.*"""
@@ -111,6 +110,38 @@ class IndexerWorker(metaclass=SingletonMeta):
                 gc.collect()
                 torch.cuda.empty_cache()
                 torch.cuda.ipc_collect()
+
+    def _check_partition_str(self, partition: Optional[str]):
+        if partition is None:
+            self.logger.warning("Partition not provided. Using default partition.")
+            partition = self.default_partition
+        elif not isinstance(partition, str):
+            raise ValueError("Partition should be a string.")
+        return partition
+
+
+
+@ray.remote(concurrency_groups={"compute": 4})
+class Indexer():
+    def __init__(self, config, logger, device=None):
+        self.config = config
+        self.device = device
+        self.logger = logger
+        self.enable_insertion = self.config.vectordb["enable"]
+        self.embedder = HFEmbedder(
+            embedder_config=config.embedder, device=device
+        )
+        self.vectordb = ConnectorFactory.create_vdb(
+            config, logger, embeddings=self.embedder.get_embeddings()
+        )
+    def get_worker(self):
+        return IndexerWorker.remote(self.config, self.device)
+
+    @ray.method(concurrency_group="compute")
+    async def add_file(self, path, metadata, partition):
+        worker = self.get_worker()
+        await worker.add_file.remote(path, metadata, partition)
+        ray.kill(worker)
 
     def delete_file(self, file_id: str, partition: str):
         """
@@ -201,15 +232,7 @@ class IndexerWorker(metaclass=SingletonMeta):
             filter=filter,
         )
         return results
-
-    def _check_partition_str(self, partition: Optional[str]):
-        if partition is None:
-            self.logger.warning("Partition not provided. Using default partition.")
-            partition = self.default_partition
-        elif not isinstance(partition, str):
-            raise ValueError("Partition should be a string.")
-        return partition
-
+    
     def _check_partition_list(self, partition: Optional[str]):
         if partition is None:
             self.logger.warning("Partition not provided. Using default partition.")
@@ -221,43 +244,6 @@ class IndexerWorker(metaclass=SingletonMeta):
         ):
             raise ValueError("Partition should be a string or a list of strings.")
         return partition
-
-    async def _delegate_vdb_call(self, method_name: str, *args, **kwargs):
-        """Execute the method on the local vectordb, handling async methods."""
-        method = getattr(self.vectordb, method_name)
-        if not callable(method):
-            raise AttributeError(f"Method {method_name} not found/callable")
-
-        result = method(*args, **kwargs)
-        if inspect.isawaitable(result):
-            return await result
-        return result
-
-    def _is_method_async(self, method_name: str) -> bool:
-        """Helper method to check if a vectordb method is async."""
-        method = getattr(self.vectordb, method_name, None)
-        return inspect.iscoroutinefunction(method) if method else False
-
-
-@ray.remote
-class Indexer():
-    def __init__(self, config, logger, device=None):
-        self.config = config
-        self.device = device
-        self.embedder = HFEmbedder(
-            embedder_config=config.embedder, device=device
-        )
-        self.vectordb = ConnectorFactory.create_vdb(
-            config, logger, embeddings=self.embedder.get_embeddings()
-        )
-    def get_worker(self):
-        return IndexerWorker.remote(self.config, self.device)
-
-    async def add_file(self, path, metadata, partition):
-        worker = self.get_worker()
-        await worker.add_file.remote(path, metadata, partition)
-        ray.kill(worker)
-
 
     async def _delegate_vdb_call(self, method_name: str, *args, **kwargs):
         """Execute the method on the local vectordb, handling async methods."""
