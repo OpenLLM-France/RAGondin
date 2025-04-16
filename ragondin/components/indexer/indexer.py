@@ -10,7 +10,6 @@ from .chunker import ABCChunker, ChunkerFactory
 from .embeddings import HFEmbedder
 from .loaders.loader import DocSerializer
 from .vectordb import ConnectorFactory
-
 if not ray.is_initialized():
     ray.init(dashboard_host="0.0.0.0", ignore_reinit_error=True)
 
@@ -27,10 +26,10 @@ else:
     max_task_retries=2,
     max_restarts=-1,
 )
-class Indexer(metaclass=SingletonMeta):
+class IndexerWorker(metaclass=SingletonMeta):
     """This class bridges static files with the vector store database.*"""
 
-    def __init__(self, config, logger, device=None) -> None:
+    def __init__(self, config, device=None) -> None:
         """
         Initializes the Indexer class with the given configuration, logger, and optional device.
 
@@ -39,6 +38,7 @@ class Indexer(metaclass=SingletonMeta):
             logger (Logger): Logger object for logging information.
             device (str, optional): Device to be used by the embedder. Defaults to None.
         """
+        from loguru import logger
         self.embedder = HFEmbedder(embedder_config=config.embedder, device=device)
         self.serializer = DocSerializer(data_dir=config.paths.data_dir, config=config)
         self.chunker: ABCChunker = ChunkerFactory.create_chunker(
@@ -221,6 +221,43 @@ class Indexer(metaclass=SingletonMeta):
         ):
             raise ValueError("Partition should be a string or a list of strings.")
         return partition
+
+    async def _delegate_vdb_call(self, method_name: str, *args, **kwargs):
+        """Execute the method on the local vectordb, handling async methods."""
+        method = getattr(self.vectordb, method_name)
+        if not callable(method):
+            raise AttributeError(f"Method {method_name} not found/callable")
+
+        result = method(*args, **kwargs)
+        if inspect.isawaitable(result):
+            return await result
+        return result
+
+    def _is_method_async(self, method_name: str) -> bool:
+        """Helper method to check if a vectordb method is async."""
+        method = getattr(self.vectordb, method_name, None)
+        return inspect.iscoroutinefunction(method) if method else False
+
+
+@ray.remote
+class Indexer():
+    def __init__(self, config, logger, device=None):
+        self.config = config
+        self.device = device
+        self.embedder = HFEmbedder(
+            embedder_config=config.embedder, device=device
+        )
+        self.vectordb = ConnectorFactory.create_vdb(
+            config, logger, embeddings=self.embedder.get_embeddings()
+        )
+    def get_worker(self):
+        return IndexerWorker.remote(self.config, self.device)
+
+    async def add_file(self, path, metadata, partition):
+        worker = self.get_worker()
+        await worker.add_file.remote(path, metadata, partition)
+        ray.kill(worker)
+
 
     async def _delegate_vdb_call(self, method_name: str, *args, **kwargs):
         """Execute the method on the local vectordb, handling async methods."""
