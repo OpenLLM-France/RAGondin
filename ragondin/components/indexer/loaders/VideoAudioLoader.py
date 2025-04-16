@@ -43,13 +43,13 @@ class VideoAudioLoader(BaseLoader):
             )
 
         logger.info(f"SOUND: {file_path}")
-        result = self.model.transcribe(str(file_path))
+        result = self.model.transcribe(str(audio_path_wav))
 
         if path.suffix != ".wav":
             os.remove(audio_path_wav)
 
         content = result["text"]
-        doc = Document(page_content=f"{content}{self.page_sep}", metadata=metadata)
+        doc = Document(page_content=content, metadata=metadata)
         if save_md:
             self.save_document(Document(page_content=content), str(file_path))
         return doc

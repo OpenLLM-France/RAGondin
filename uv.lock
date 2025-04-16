@@ -3993,6 +3993,8 @@ dependencies = [
     { name = "ragatouille" },
     { name = "ray", extra = ["default"] },
     { name = "spire-doc" },
+    { name = "torch", version = "2.4.1", source = { registry = "https://pypi.org/simple" }, marker = "platform_machine == 'x86_64' and sys_platform == 'darwin'" },
+    { name = "torch", version = "2.6.0", source = { registry = "https://pypi.org/simple" }, marker = "platform_machine != 'x86_64' or sys_platform != 'darwin'" },
 ]
 
 [package.dev-dependencies]
@@ -4027,6 +4029,7 @@ requires-dist = [
     { name = "ragatouille", specifier = ">=0.0.9" },
     { name = "ray", extras = ["default"], specifier = ">=2.43.0" },
     { name = "spire-doc", specifier = ">=13.1.0" },
+    { name = "torch", specifier = ">=2.4.1" },
 ]
 
 [package.metadata.requires-dev]

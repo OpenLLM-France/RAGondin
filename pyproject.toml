@@ -31,6 +31,7 @@ dependencies = [
     "python-dotenv>=1.0.1",
     "pip>=25.0.1",
     "openai-whisper>=20240930",
+    "torch>=2.4.1",
 ]
 
 [dependency-groups]

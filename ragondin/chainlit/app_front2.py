@@ -34,7 +34,7 @@ async def on_chat_start():
         history.clear()
         logger.debug("New Chat Started")
 
-        partition_names = vectordb.list_partitions()
+        partition_names = vectordb.list_partitions() + ['all']
 
         partition_choice = await cl.AskActionMessage(
             content="Select a partition to use:",
