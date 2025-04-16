@@ -203,8 +203,8 @@ async def openai_chat_completion(
             full_response += token.content
 
         # Append src_md to the full response
-        full_response += f"\n\n{src_md}"
-        
+        # full_response += f"\n\n{src_md}"
+
         completion = OpenAICompletion(
             id=response_id,
             created=created_time,

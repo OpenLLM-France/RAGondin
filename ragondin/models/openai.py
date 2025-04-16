@@ -55,7 +55,6 @@ class OpenAICompletionChunkChoice(BaseModel):
     index: int
     delta: Dict[str, str]
     finish_reason: Optional[str] = None
-    metadata: str = None
 
 
 class OpenAICompletionChunk(BaseModel):
