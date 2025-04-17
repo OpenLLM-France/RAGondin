@@ -2,6 +2,7 @@ import ray.actor
 from components import Indexer, HFEmbedder, ConnectorFactory, ABCVectorDB
 from config import load_config
 from loguru import logger
+from components.indexer.indexer import Indexer
 import ray
 
 
