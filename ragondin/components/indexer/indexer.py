@@ -178,7 +178,7 @@ class Indexer():
                 self.logger.info(f"No points found for file_id: {file_id}")
                 return
             # Delete the points
-            self.vectordb.delete_points(points)
+            self.vectordb.delete_file_points(points, partition)
             self.logger.info(f"File {file_id} deleted.")
         except Exception as e:
             self.logger.error(f"Error in `delete_files` for file_id {file_id}: {e}")

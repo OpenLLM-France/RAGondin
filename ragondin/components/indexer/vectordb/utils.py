@@ -103,7 +103,6 @@ class PartitionKeyManager:
 
     def partition_exists(self, partition_key: str):
         """Check if a partition exists by its key"""
-        # partition_key = partition_key.lower()
         with self.Session() as session:
             return (
                 session.query(Partition).filter_by(partition_key=partition_key).count()
