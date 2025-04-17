@@ -9,7 +9,7 @@ from langchain_milvus import BM25BuiltInFunction, Milvus
 from langchain_qdrant import FastEmbedSparse, QdrantVectorStore, RetrievalMode
 from pymilvus import MilvusClient
 from qdrant_client import QdrantClient, models
-
+from .utils import PartitionKeyManager
 
 INDEX_PARAMS = [
     {
@@ -70,7 +70,7 @@ class ABCVectorDB(ABC):
         pass
 
     @abstractmethod
-    def delete_points(self, points: list):
+    def delete_file_points(self, points: list, partition):
         pass
 
     @abstractmethod
@@ -79,10 +79,6 @@ class ABCVectorDB(ABC):
 
     @abstractmethod
     def collection_exists(self, collection_name: str):
-        pass
-
-    @abstractmethod
-    def list_partitions(self):
         pass
 
 
@@ -121,6 +117,7 @@ class MilvusDB(ABCVectorDB):
         collection_name: str = None,
         logger=None,
         hybrid_mode=True,
+        **kwargs,
     ):
         """
         Initialize Milvus.
@@ -158,7 +155,9 @@ class MilvusDB(ABCVectorDB):
         self.default_collection_name = None
         self._collection_name = None
         self.vector_store = None
+        self.partition_key_manager: PartitionKeyManager = None
         self.default_partition = "_default"
+        self.volumes_dir = kwargs.get("volumes_dir", None)
 
         # Set the initial collection name (if provided)
         if collection_name:
@@ -190,6 +189,12 @@ class MilvusDB(ABCVectorDB):
             vector_field=["sparse", "vector"] if self.hybrid_mode else None,
             consistency_level="Strong",
         )
+
+        self.partition_key_manager = PartitionKeyManager(
+            database_url=f"sqlite:///{self.volumes_dir}/partitions_{name}.db",
+            logger=self.logger,
+        )
+
         self.logger.info(f"The Collection named `{name}` loaded.")
 
         if self.default_collection_name is None:
@@ -305,18 +310,16 @@ class MilvusDB(ABCVectorDB):
         return list(retrieved_chunks.values())
 
     async def async_add_documents(self, chunks: list[Document]) -> None:
-        """
-        Asynchronously add documents to the vector store.
+        """Asynchronously add documents to the vector store."""
 
-        Args:
-            chunks (list[Document]): A list of Document objects to be added.
-            collection_name (Optional[str]): The name of the collection to which the documents should be added.
-                                             If None, the default collection name will be used.
-
-        Returns:
-            None
-        """
+        partitions = set([d.metadata["partition"] for d in chunks])
         await self.vector_store.aadd_documents(chunks)
+
+        for partition in partitions:
+            self.partition_key_manager.create_or_update_partition(
+                partition_key=partition, amount=1
+            )
+
         self.logger.info("CHUNKS INSERTED")
 
     def get_file_points(self, file_id: str, partition: str, limit: int = 100):
@@ -334,6 +337,10 @@ class MilvusDB(ABCVectorDB):
         """
 
         try:
+            if not self.partition_exists(partition):
+                self.logger.debug(f"Partition {partition} does not exist.")
+                return []
+
             # Adjust filter expression based on the type of value
             filter_expression = f"partition == '{partition}' and file_id == '{file_id}'"
 
@@ -368,16 +375,11 @@ class MilvusDB(ABCVectorDB):
     def get_file_chunks(
         self, file_id: str, partition: str, include_id: bool = False, limit: int = 100
     ):
-        """
-        Retrieve file points from the vector database based on a filter.
-        Args:
-            filter (dict): A dictionary containing the filter key and value.
-            collection_name (Optional[str], optional): The name of the collection to query. Defaults to None.
-            limit (int, optional): The maximum number of results to return per query. Defaults to 100.
-        Returns:
-            list: A list of Documents that match the filter criteria.
-        """
         try:
+            if not self.partition_exists(partition):
+                self.logger.debug(f"Partition {partition} does not exist.")
+                return []
+
             # Adjust filter expression based on the type of value
             filter_expression = f"partition == '{partition}' and file_id == '{file_id}'"
 
@@ -446,12 +448,15 @@ class MilvusDB(ABCVectorDB):
         except Exception as e:
             self.logger.error(f"Couldn't get chunk by ID {chunk_id}: {e}")
 
-    def delete_points(self, points: list):
+    def delete_file_points(self, points: list, partition: str):
         """
         Delete points from Milvus
         """
         try:
             self.client.delete(collection_name=self.collection_name, ids=points)
+            self.partition_key_manager.create_or_update_partition(
+                partition_key=partition, amount=-1
+            )
         except Exception as e:
             self.logger.error(f"Error in `delete_points`: {e}")
         pass
@@ -461,9 +466,13 @@ class MilvusDB(ABCVectorDB):
         Check if a file exists in Milvus
         """
         try:
+            if not self.partition_exists(partition):
+                return False
+
             # Get points associated with the file name
             points = self.get_file_points(file_id=file_id, partition=partition, limit=1)
             return True if points else False
+
         except Exception as e:
             self.logger.error(f"Error in `file_exists` for file_id {file_id}: {e}")
             return False
@@ -473,22 +482,7 @@ class MilvusDB(ABCVectorDB):
         Check if a partition exists in Milvus
         """
         try:
-            # Adjust filter expression based on the type of value
-            filter_expression = f"partition == '{partition}'"
-
-            # Pagination parameters
-            results = []
-
-            response = self.client.query(
-                collection_name=self.collection_name,
-                filter=filter_expression,
-                output_fields=["_id"],  # Only fetch IDs
-                limit=1,
-            )
-            if not response:
-                return False
-
-            return True
+            return self.partition_key_manager.partition_exists(partition)
         except Exception as e:
             self.logger.error(
                 f"Error in `partition_exists` for partition {partition}: {e}"
@@ -500,6 +494,9 @@ class MilvusDB(ABCVectorDB):
         Retrieve all unique file_id values from a given partition.
         """
         try:
+            if not self.partition_exists(partition):
+                return []
+
             filter_expression = f"partition == '{partition}'"
             offset = 0
             results = set()
@@ -526,11 +523,8 @@ class MilvusDB(ABCVectorDB):
             raise
 
     def list_partitions(self):
-        """
-        Retrieve all unique file_id values from a given partition.
-        """
         try:
-            results = self.vector_store.client.list_partitions()
+            results = self.partition_key_manager.list_partitions()
             return results
 
         except Exception as e:
@@ -542,6 +536,32 @@ class MilvusDB(ABCVectorDB):
         Check if a collection exists in Milvus
         """
         return self.vector_store.client.has_collection(collection_name)
+
+    def delete_partition(self, partition: str):
+        """
+        Delete a partition by its key
+        """
+
+        if not self.partition_exists(partition):
+            self.logger.debug(f"Partition {partition} does not exist.")
+            return False
+
+        try:
+            deleted_count = self.client.delete(
+                collection_name=self.collection_name,
+                filter=f"partition == '{partition}'",
+            )
+            self.partition_key_manager.delete_partition(partition_key=partition)
+            self.logger.info(
+                f"Deleted {deleted_count} points from partition '{partition}'."
+            )
+
+            return True
+        except Exception as e:
+            self.logger.error(
+                f"Error in `delete_partition` for partition {partition}: {e}"
+            )
+            return False
 
 
 class QdrantDB(ABCVectorDB):
@@ -589,6 +609,7 @@ class QdrantDB(ABCVectorDB):
         collection_name: str = None,
         logger=None,
         hybrid_mode=True,
+        **kwargs,
     ):
         """
         Initialize Qdrant_Connector.
@@ -820,11 +841,8 @@ class QdrantDB(ABCVectorDB):
         except Exception as e:
             self.logger.error(f"Couldn't get file points for {key} {value}: {e}")
             raise
-        
-    def list_partitions(self):
-        return 
-    
-    def delete_points(self, points: list, collection_name: Optional[str] = None):
+
+    def delete_file_points(self, points: list, collection_name: Optional[str] = None):
         """
         Delete points from Qdrant
         """
@@ -878,5 +896,6 @@ class ConnectorFactory:
 
         dbconfig["embeddings"] = embeddings
         dbconfig["logger"] = logger
+        dbconfig["volumes_dir"] = config.paths.volumes_dir
 
         return vdb_cls(**dbconfig)

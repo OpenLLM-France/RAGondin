@@ -17,4 +17,5 @@ def load_config(config_path="../../.hydra_config", overrides=None) -> OmegaConf:
     ):
         config = compose(config_name="config", overrides=overrides)
         config.paths.data_dir = Path(config.paths.data_dir).resolve()
+        config.paths.volumes_dir = Path(config.paths.volumes_dir).resolve()
         return config

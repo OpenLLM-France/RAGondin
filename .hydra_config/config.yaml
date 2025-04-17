@@ -57,6 +57,8 @@ verbose:
 paths:
   prompts_dir: ${oc.env:PROMPTS_DIR, ../prompts}
   data_dir: ${oc.env:DATA_DIR, ../data}
+  volumes_dir: ${oc.env:DOCKER_VOLUME_DIRECTORY, ../volumes}
+
 
 prompt:
   rag_sys_pmpt: rag_sys_prompt_template.txt # rag_sys_pmpt_tmpl_ifa.txt
