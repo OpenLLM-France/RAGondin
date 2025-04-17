@@ -7,13 +7,17 @@ from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import StreamingResponse, JSONResponse
 from langchain_core.messages import AIMessage, HumanMessage
 from models.openai import (
+    OpenAIChatCompletion,
+    OpenAIChatCompletionChoice,
     OpenAICompletion,
     OpenAICompletionChoice,
     OpenAICompletionChunk,
     OpenAICompletionChunkChoice,
+    OpenAIChatCompletionRequest,
     OpenAICompletionRequest,
     OpenAIMessage,
     OpenAIUsage,
+    OpenAILogprobs
 )
 from pydantic import BaseModel
 from urllib.parse import urlparse, quote
@@ -67,11 +71,45 @@ async def list_models(app_state=Depends(get_app_state)):
     return JSONResponse(content={"object": "list", "data": models})
 
 
+def __get_partition_name(model_name):
+    if not model_name.startswith("ragondin-"):
+        raise HTTPException(status_code=404, detail="Model not found")
+
+    partition = model_name.split("-")[1]
+
+    if partition != "all" and not app_state.ragpipe.vectordb.partition_exists(
+        partition
+    ):
+        raise HTTPException(status_code=404, detail="Model not found")
+
+    return partition
+
+
+def __create_md_links(sources, static_base_url):
+    sources = list(map(lambda x: source2url(x, static_base_url), sources))
+    markdowns_links = []
+
+    for doc in sources:
+        encoded_url = quote(doc["url"], safe=":/")
+        parsed_url = urlparse(doc["url"])
+        doc_name = parsed_url.path.split("/")[-1]
+
+        if "pdf" in doc_name.lower():
+            encoded_url = f"{encoded_url}#page={doc['page']}"
+        s = f"* {doc['doc_id']} : [{doc_name}]({encoded_url})"
+
+        markdowns_links.append(s)
+
+    src_md = "\n## Sources: \n" + "\n".join(markdowns_links) if markdowns_links else ""
+
+    return markdowns_links, src_md
+
+
 @router.post(
     "/chat/completions", summary="OpenAI compatible chat completion endpoint using RAG"
 )
 async def openai_chat_completion(
-    request: OpenAICompletionRequest,
+    request: OpenAIChatCompletionRequest,
     static_base_url: str = Depends(static_base_url_dependency),
     app_state=Depends(get_app_state),
 ):
@@ -97,35 +135,18 @@ async def openai_chat_completion(
             mapping[chat_msg.role](content=chat_msg.content)
             for chat_msg in chat_history
         ]
+
     # Load model name and partition
     model_name = request.model
-    if not model_name.startswith("ragondin-"):
-        raise HTTPException(status_code=404, detail="Model not found")
-    partition = model_name.split("-")[1]
-    if partition != "all" and not app_state.ragpipe.vectordb.partition_exists(
-        partition
-    ):
-        raise HTTPException(status_code=404, detail="Model not found")
+    partition = __get_partition_name(model_name)
+
     # Run RAG pipeline
     answer_stream, context, sources = await app_state.ragpipe.run(
         partition=[partition], question=new_user_input, chat_history=msgs
     )
 
     # Handle the sources
-    sources = list(map(lambda x: source2url(x, static_base_url), sources))
-    markdowns_links = []
-    for doc in sources:
-        encoded_url = quote(doc["url"], safe=":/")
-        parsed_url = urlparse(doc["url"])
-        doc_name = parsed_url.path.split("/")[-1]
-
-        if "pdf" in doc_name.lower():
-            encoded_url = f"{encoded_url}#page={doc['page']}"
-        s = f"* {doc['doc_id']} : [{doc_name}]({encoded_url})"
-
-        markdowns_links.append(s)
-
-    src_md = "\n## Sources: \n" + "\n".join(markdowns_links) if markdowns_links else ""
+    markdowns_links = __create_md_links(sources, static_base_url)
 
     # Create response-id
     response_id = f"chatcmpl-{str(uuid.uuid4())}"
@@ -202,12 +223,12 @@ async def openai_chat_completion(
         async for token in answer_stream:
             full_response += token.content
 
-        completion = OpenAICompletion(
+        completion = OpenAIChatCompletion(
             id=response_id,
             created=created_time,
             model=model_name,
             choices=[
-                OpenAICompletionChoice(
+                OpenAIChatCompletionChoice(
                     index=0,
                     message=OpenAIMessage(role="assistant", content=full_response),
                     finish_reason="stop",
@@ -221,3 +242,76 @@ async def openai_chat_completion(
         )
 
         return completion
+
+
+@router.post(
+    "/completions", summary="OpenAI compatible completion endpoint using RAG"
+)
+async def openai_completion(
+    request: OpenAICompletionRequest,
+    static_base_url: str = Depends(static_base_url_dependency),
+    app_state=Depends(get_app_state),
+):
+    print('strat openai_completion(...)')
+    # Load model name and partition
+    model_name = request.model
+    partition = __get_partition_name(model_name)
+
+    # Run RAG pipeline
+    answer_stream, context, sources = await app_state.ragpipe.run(
+        partition=[partition], question=request.prompt, chat_history=None
+    )
+
+    # Handle the sources
+    markdowns_links = __create_md_links(sources, static_base_url)
+
+    # Create response-id
+    response_id = f"chatcmpl-{str(uuid.uuid4())}"
+    created_time = int(time.time())
+
+    if request.stream:
+        raise
+    else:
+        # Non streaming response
+        full_response = ""
+
+        logprobs = OpenAILogprobs()
+        logprobs.tokens = []
+        logprobs.token_logprobs = []
+
+        try:
+            async for token in answer_stream:
+                print(token.__dict__)
+                full_response += token.content
+                if 'logprobs' in token.response_metadata:
+                    logprobs.tokens.append(token.response_metadata['logprobs']['content'][0]['token'])
+                    logprobs.token_logprobs.append(token.response_metadata['logprobs']['content'][0]['logprob'])
+
+                    print(type(logprobs.tokens[-1]))
+                    print(type(logprobs.token_logprobs[-1]))
+        except Exception as e:
+            print(f'ERROR: {e}')
+
+        print('before complation object creation')
+        completion = OpenAICompletion(
+            id=response_id,
+            created=created_time,
+            model=model_name,
+            choices=[
+                OpenAICompletionChoice(
+                    index=0,
+                    text=full_response,
+                    #logprobs=logprobs,
+                    finish_reason="stop",
+                )
+            ],
+            usage=OpenAIUsage(
+                prompt_tokens=100,  # Valeurs approximatives
+                completion_tokens=len(full_response.split()) * 4 // 3,  # Estimation
+                total_tokens=100 + len(full_response.split()) * 4 // 3,
+            ),
+        )
+        print('after completion object creation')
+
+        return completion
+ 

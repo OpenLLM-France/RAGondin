@@ -11,8 +11,8 @@ class OpenAIMessage(BaseModel):
     content: str
 
 
-class OpenAICompletionRequest(BaseModel):
-    """Modèle représentant une requête de complétion pour l'API OpenAI."""
+class OpenAIChatCompletionRequest(BaseModel):
+    """Modèle représentant une requête de complétion chat pour l'API OpenAI."""
 
     model: str = Field(..., description="model name")
     messages: List[OpenAIMessage]
@@ -22,12 +22,48 @@ class OpenAICompletionRequest(BaseModel):
     max_tokens: Optional[int] = Field(None)
 
 
-class OpenAICompletionChoice(BaseModel):
-    """Modèle représentant un choix de complétion dans l'API OpenAI."""
+class OpenAIChatCompletionChoice(BaseModel):
+    """Modèle représentant un choix de complétion chat dans l'API OpenAI."""
 
     index: int
     message: OpenAIMessage
     finish_reason: str
+
+
+class OpenAILogprobs(BaseModel):
+    text_offset: Optional[List] = Field(None)
+    token_logprobs: Optional[List[float]] = Field(None)
+    tokens: Optional[List[str]] = Field(None)
+    top_logprobs: Optional[List] = Field(None)
+
+
+class OpenAICompletionChoice(BaseModel):
+    """Modèle représentant un choix de complétion dans l'API OpenAI."""
+
+    index: int
+    text: str
+    logprobs: Optional[OpenAILogprobs] = Field(None)
+    finish_reason: str
+
+
+class OpenAICompletionRequest(BaseModel):
+    """ Legacy OpenAI completion API """
+
+    model: str = Field(..., description="model name")
+    prompt: str
+    best_of: Optional[int] = Field(1)
+    echo: Optional[bool] = Field(False)
+    frequency_penalty: Optional[float] = Field(0.0)
+    logit_bias: Optional[dict] = Field(None)
+    logprobs: Optional[int] = Field(None)
+    max_tokens: Optional[int] = Field(16)
+    n: Optional[int] = Field(1)
+    presence_penalty: Optional[float] = Field(0.0)
+    seed: Optional[int] = Field(None)
+    stop: Optional[List[str]] = Field(None)
+    stream: Optional[bool] = Field(False)
+    temperature: Optional[float] = Field(0.7)
+    top_p: Optional[float] = Field(1.0)
 
 
 class OpenAIUsage(BaseModel):
@@ -42,10 +78,21 @@ class OpenAICompletion(BaseModel):
     """Modèle représentant une réponse de complétion dans l'API OpenAI."""
 
     id: str
-    object: str = "chat.completion"
+    object: str = "text_completion"
     created: int
     model: str
     choices: List[OpenAICompletionChoice]
+    usage: OpenAIUsage
+
+
+class OpenAIChatCompletion(BaseModel):
+    """Modèle représentant une réponse de complétion chat dans l'API OpenAI."""
+
+    id: str
+    object: str = "chat.completion"
+    created: int
+    model: str
+    choices: List[OpenAIChatCompletionChoice]
     usage: OpenAIUsage
 
 
