@@ -28,10 +28,11 @@ class VideoAudioLoader(BaseLoader):
 
         self.batch_size = 4
         self.page_sep = page_sep
-        self.formats = [".wav", ".mp3", ".mp4"]
+        self.formats = [".wav", ".mp3", ".mp4", ".ogg", ".flv", ".wma", ".aac"]
 
         device = "cuda" if torch.cuda.is_available() else "cpu"
-        self.transcriber = AudioTranscriber(device=device, model_name="base")
+        model = kwargs.get("config").loader["audio_model"]
+        self.transcriber = AudioTranscriber(device=device, model_name=model)
 
     @classmethod
     def destroy(cls):

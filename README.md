@@ -102,6 +102,8 @@ For PDF file indexing, multiple options are available:
 - **`MarkerLoader` and `DoclingLoader`** are recommended for the best performance (requires GPU).
 - **PyMuPDF4LLMLoader** or **PyMuPDFLoader**: Suggested for non-GPU users. Not that these loader doesn't handle Non-searchable PDF nor does it handle images (**`We will add it`**).
 
+Concerning the audio and video files, we use OpenAI's Whisper model to convert the audio into plain text. The file extensions supported by RAGondin are: .wav, .mp3, .mp4, .ogg, .flv, .wma, .aac. You can also choose the model used for transcription for speed or precision. Here are all the Whisper's models: tiny, base, small, medium, large, turbo. For more information, checkout [OpenAI Whisper](https://github.com/openai/whisper)
+
 Other file formats are pre-configured with optimal settings.
 
 ```bash
@@ -122,6 +124,9 @@ APP_HOST=0.0.0.0
 
 # Loaders
 PDFLoader=DoclingLoader
+
+# Audio
+WHISPER_MODEL=base
 ```
 
 ### 4.Deployment: Launch the app
