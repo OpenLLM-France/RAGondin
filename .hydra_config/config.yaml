@@ -64,6 +64,7 @@ prompt:
 
 loader:
   image_captioning: true
+  audio_model: ${oc.env:WHISPER_MODEL, base}
   file_loaders:
     docx: MarkItDownLoader
     pdf: ${oc.env:PDFLoader, DoclingLoader}  # DoclingLoader # MarkerLoader # CustomPyMuPDFLoader # Custompymupdf4llm
@@ -73,6 +74,10 @@ loader:
     wav: VideoAudioLoader
     mp3: VideoAudioLoader
     mp4: VideoAudioLoader
+    ogg: VideoAudioLoader
+    flv: VideoAudioLoader
+    wma: VideoAudioLoader
+    aac: VideoAudioLoader
     # odt: CustomDocLoader
 
 ray:
