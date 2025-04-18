@@ -1,4 +1,4 @@
-from typing import Dict, List, Literal, Optional
+from typing import Any, Dict, List, Literal, Optional
 
 from pydantic import BaseModel, Field
 
@@ -37,17 +37,33 @@ class OpenAILogprobs(BaseModel):
     top_logprobs: Optional[List] = Field(None)
 
 
+class ChatCompletionTokenLogprob(BaseModel):
+    token: str
+    bytes_: list[int] = Field(..., alias="bytes")  # Handle Python reserved word
+    logprob: float
+    top_logprobs: list  # Separate model for recursion
+
+
+class ChoiceLogprobs(BaseModel):
+    content: List[ChatCompletionTokenLogprob]
+    refusal: Optional[Any] = Field(None)  # Explicit Field declaration
+
+
+# Handle forward references
+ChatCompletionTokenLogprob.model_rebuild()
+
+
 class OpenAICompletionChoice(BaseModel):
     """Modèle représentant un choix de complétion dans l'API OpenAI."""
 
     index: int
     text: str
-    logprobs: Optional[OpenAILogprobs] = Field(None)
+    logprobs: Optional[ChoiceLogprobs] = Field(None)
     finish_reason: str
 
 
 class OpenAICompletionRequest(BaseModel):
-    """ Legacy OpenAI completion API """
+    """Legacy OpenAI completion API"""
 
     model: str = Field(..., description="model name")
     prompt: str

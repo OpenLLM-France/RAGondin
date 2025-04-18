@@ -23,7 +23,6 @@ from models.openai import (
 )
 from pydantic import BaseModel
 from urllib.parse import urlparse, quote
-from loguru import logger
 
 
 # Classe pour les messages du chat
@@ -247,68 +246,67 @@ async def openai_chat_completion(
         return completion
 
 
-@router.post("/completions", summary="OpenAI compatible completion endpoint using RAG")
-async def openai_completion(
-    request: OpenAICompletionRequest,
-    static_base_url: str = Depends(static_base_url_dependency),
-    app_state=Depends(get_app_state),
-):
-    print("strat openai_completion(...)")
-    # Load model name and partition
-    model_name = request.model
-    partition = __get_partition_name(model_name, app_state)
+# @router.post("/completions", summary="OpenAI compatible completion endpoint using RAG")
+# async def openai_completion(
+#     request: OpenAICompletionRequest,
+#     static_base_url: str = Depends(static_base_url_dependency),
+#     app_state=Depends(get_app_state),
+# ):
+#     print("strat openai_completion(...)")
+#     # Load model name and partition
+#     model_name = request.model
+#     partition = __get_partition_name(model_name, app_state)
 
-    # Run RAG pipeline
-    output, context, sources = await app_state.ragpipe.completion(
-        partition=[partition],
-        question=request.prompt,
-        chat_history=None,
-        llm_config=None,
-    )
+#     # Run RAG pipeline
+#     output, context, sources = await app_state.ragpipe.completion(
+#         partition=[partition],
+#         question=request.prompt,
+#         chat_history=None,
+#         llm_config=None,
+#     )
 
-    # Create response-id
-    response_id = f"chatcmpl-{str(uuid.uuid4())}"
-    created_time = int(time.time())
+#     # Create response-id
+#     response_id = f"chatcmpl-{str(uuid.uuid4())}"
+#     created_time = int(time.time())
 
-    if request.stream:
-        raise
-    else:
-        # Non streaming response
-        output = await output
-        metadata = output.response_metadata
-        usage = metadata["token_usage"]
+#     if request.stream:
+#         raise
+#     else:
+#         # Non streaming response
+#         output = await output
+#         metadata = output.response_metadata
+#         usage = metadata["token_usage"]
 
-        logprops = ChoiceLogprobs(
-            content=[
-                ChatCompletionTokenLogprob(
-                    token=r["token"],
-                    bytes=r["bytes"],
-                    logprob=r["logprob"],
-                    top_logprobs=r["top_logprobs"],
-                )
-                for r in metadata["logprobs"]["content"]
-            ],
-            refusal=metadata["logprobs"]["refusal"],
-        )
+#         logprops = ChoiceLogprobs(
+#             content=[
+#                 ChatCompletionTokenLogprob(
+#                     token=r["token"],
+#                     bytes=r["bytes"],
+#                     logprob=r["logprob"],
+#                     top_logprobs=r["top_logprobs"],
+#                 )
+#                 for r in metadata
+#             ],
+#         )
 
-        completion = OpenAICompletion(
-            id=response_id,
-            created=created_time,
-            model=model_name,
-            choices=[
-                OpenAICompletionChoice(
-                    index=0,
-                    text=output.content,
-                    logprobs=logprops,
-                    finish_reason=metadata["finish_reason"],
-                )
-            ],
-            usage=OpenAIUsage(
-                prompt_tokens=usage["prompt_tokens"],
-                completion_tokens=usage["completion_tokens"],
-                total_tokens=usage["total_tokens"],
-            ),
-        )
-        print("after completion object creation")
+#         completion = OpenAICompletion(
+#             id=response_id,
+#             created=created_time,
+#             model=model_name,
+#             choices=[
+#                 OpenAICompletionChoice(
+#                     index=0,
+#                     text=output.content,
+#                     logprobs=logprops,
+#                     finish_reason=metadata["finish_reason"],
+#                 )
+#             ],
+#             usage=OpenAIUsage(
+#                 prompt_tokens=usage["prompt_tokens"],
+#                 completion_tokens=usage["completion_tokens"],
+#                 total_tokens=usage["total_tokens"],
+#             ),
+#         )
+#         print("after completion object creation")
 
-        return completion
+#         return completion

@@ -9,13 +9,13 @@ llm_params: &llm_params
   timeout: 60
   max_retries: 2
   frequency_penalty: 0.2
+  logprobs: true
 
 llm:
   <<: *llm_params
   base_url: ${oc.env:BASE_URL}
   model: ${oc.env:MODEL}
   api_key: ${oc.env:API_KEY}
-  logprobs: true
 
 vlm:
   <<: *llm_params
