@@ -23,7 +23,6 @@ from models.openai import (
 )
 from pydantic import BaseModel
 from urllib.parse import urlparse, quote
-from loguru import logger
 
 
 # Classe pour les messages du chat
@@ -58,27 +57,18 @@ def source2url(s: dict, static_base_url: str):
 @router.get("/models", summary="OpenAI-compatible model listing endpoint")
 async def list_models(app_state=Depends(get_app_state)):
     # Get available partitions from your backend
-    partitions = app_state.ragpipe.vectordb.list_partitions()
+    partitions = app_state.ragpipe.vectordb.list_partitions() + ["all"]
 
     # Format them as OpenAI models
     models = [
         {
-            "id": f"ragondin-{partition.partition}",
-            "object": "model",
-            "created": int(partition.created_at.timestamp()),
-            "owned_by": "RAGondin",
-        }
-        for partition in partitions
-    ]
-
-    models.append(
-        {
-            "id": "ragondin-all",
+            "id": f"ragondin-{partition}",
             "object": "model",
             "created": 0,
             "owned_by": "RAGondin",
         }
-    )
+        for partition in partitions
+    ]
 
     return JSONResponse(content={"object": "list", "data": models})
 
@@ -235,10 +225,7 @@ async def openai_chat_completion(
         async for token in answer_stream:
             full_response += token.content
 
-        # Append src_md to the full response
-        # full_response += f"\n\n{src_md}"
-
-        completion = OpenAICompletion(
+        completion = OpenAIChatCompletion(
             id=response_id,
             created=created_time,
             model=model_name,
@@ -259,68 +246,67 @@ async def openai_chat_completion(
         return completion
 
 
-@router.post("/completions", summary="OpenAI compatible completion endpoint using RAG")
-async def openai_completion(
-    request: OpenAICompletionRequest,
-    static_base_url: str = Depends(static_base_url_dependency),
-    app_state=Depends(get_app_state),
-):
-    print("strat openai_completion(...)")
-    # Load model name and partition
-    model_name = request.model
-    partition = __get_partition_name(model_name, app_state)
+# @router.post("/completions", summary="OpenAI compatible completion endpoint using RAG")
+# async def openai_completion(
+#     request: OpenAICompletionRequest,
+#     static_base_url: str = Depends(static_base_url_dependency),
+#     app_state=Depends(get_app_state),
+# ):
+#     print("strat openai_completion(...)")
+#     # Load model name and partition
+#     model_name = request.model
+#     partition = __get_partition_name(model_name, app_state)
 
-    # Run RAG pipeline
-    output, context, sources = await app_state.ragpipe.completion(
-        partition=[partition],
-        question=request.prompt,
-        chat_history=None,
-        llm_config=None,
-    )
+#     # Run RAG pipeline
+#     output, context, sources = await app_state.ragpipe.completion(
+#         partition=[partition],
+#         question=request.prompt,
+#         chat_history=None,
+#         llm_config=None,
+#     )
 
-    # Create response-id
-    response_id = f"chatcmpl-{str(uuid.uuid4())}"
-    created_time = int(time.time())
+#     # Create response-id
+#     response_id = f"chatcmpl-{str(uuid.uuid4())}"
+#     created_time = int(time.time())
 
-    if request.stream:
-        raise
-    else:
-        # Non streaming response
-        output = await output
-        metadata = output.response_metadata
-        usage = metadata["token_usage"]
+#     if request.stream:
+#         raise
+#     else:
+#         # Non streaming response
+#         output = await output
+#         metadata = output.response_metadata
+#         usage = metadata["token_usage"]
 
-        logprops = ChoiceLogprobs(
-            content=[
-                ChatCompletionTokenLogprob(
-                    token=r["token"],
-                    bytes=r["bytes"],
-                    logprob=r["logprob"],
-                    top_logprobs=r["top_logprobs"],
-                )
-                for r in metadata["logprobs"]["content"]
-            ],
-            refusal=metadata["logprobs"]["refusal"],
-        )
+#         logprops = ChoiceLogprobs(
+#             content=[
+#                 ChatCompletionTokenLogprob(
+#                     token=r["token"],
+#                     bytes=r["bytes"],
+#                     logprob=r["logprob"],
+#                     top_logprobs=r["top_logprobs"],
+#                 )
+#                 for r in metadata
+#             ],
+#         )
 
-        completion = OpenAICompletion(
-            id=response_id,
-            created=created_time,
-            model=model_name,
-            choices=[
-                OpenAICompletionChoice(
-                    index=0,
-                    text=output.content,
-                    logprobs=logprops,
-                    finish_reason=metadata["finish_reason"],
-                )
-            ],
-            usage=OpenAIUsage(
-                prompt_tokens=usage["prompt_tokens"],
-                completion_tokens=usage["completion_tokens"],
-                total_tokens=usage["total_tokens"],
-            ),
-        )
-        print("after completion object creation")
+#         completion = OpenAICompletion(
+#             id=response_id,
+#             created=created_time,
+#             model=model_name,
+#             choices=[
+#                 OpenAICompletionChoice(
+#                     index=0,
+#                     text=output.content,
+#                     logprobs=logprops,
+#                     finish_reason=metadata["finish_reason"],
+#                 )
+#             ],
+#             usage=OpenAIUsage(
+#                 prompt_tokens=usage["prompt_tokens"],
+#                 completion_tokens=usage["completion_tokens"],
+#                 total_tokens=usage["total_tokens"],
+#             ),
+#         )
+#         print("after completion object creation")
 
-        return completion
+#         return completion

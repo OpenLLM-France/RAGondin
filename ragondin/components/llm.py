@@ -8,6 +8,7 @@ from langchain_openai import ChatOpenAI
 class LLM:
     def __init__(self, llm_config, logger=None):
         self.logger = logger
+        print()
         self.client: ChatOpenAI = ChatOpenAI(**llm_config)
 
     def run(
