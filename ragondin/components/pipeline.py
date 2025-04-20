@@ -164,8 +164,13 @@ class RagPipeline:
         return payload, context, sources
 
     async def _prepare_for_completions(self, partition: list[str], payload: dict):
+        prompt = payload["prompt"]
+
         # 1. get the query
-        query = payload["prompt"]
+        query = await self.generate_query(
+            messages=[{"role": "user", "content": prompt}]
+        )
+        self.logger.debug(f"Query: {query}")
 
         # 2. get docs
         docs = await self.retriever_pipeline.retrieve_docs(
@@ -178,7 +183,7 @@ class RagPipeline:
         # 4. prepare the output
         prompt = (
             f"Given the context: \n{context}\n" if docs else ""
-        ) + f"Complete the following sentence: {query}"
+        ) + f"Complete the following prompt: {prompt}"
         payload["prompt"] = prompt
 
         return payload, context, sources

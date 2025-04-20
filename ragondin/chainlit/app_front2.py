@@ -3,10 +3,9 @@ import chainlit as cl
 from loguru import logger
 from openai import AsyncOpenAI
 
+# from fastapi import Request
 # from chainlit.server import app as chainlit_app
 # from starlette.middleware.base import BaseHTTPMiddleware
-# from fastapi import Request
-
 
 # class CaptureBaseURL(BaseHTTPMiddleware):
 #     """Stash the computed base_url into Chainlit’s user_session on each HTTP request."""
@@ -42,7 +41,6 @@ async def chat_profile(current_user: cl.User):
 
         for i, m in enumerate(models, start=1):
             partition = m.id.split("ragondin-")[1]
-
             description_template = "You are interacting with the **{name}** LLM.\n" + (
                 "The LLM's answers will be grounded on **all** partitions."
                 if "all" in m.id
