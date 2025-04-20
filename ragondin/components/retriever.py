@@ -29,7 +29,7 @@ class ABCRetriever(ABC):
 
     @abstractmethod
     async def retrieve(
-        self, partition: list[str], question: str, db: ABCVectorDB
+        self, partition: list[str], query: str, db: ABCVectorDB
     ) -> list[Document]:
         pass
 
@@ -59,10 +59,10 @@ class BaseRetriever(ABCRetriever):
         self.logger.info("Retriever initialized")
 
     async def retrieve(
-        self, partition: list[str], question: str, db: ABCVectorDB
+        self, partition: list[str], query: str, db: ABCVectorDB
     ) -> list[Document]:
         chunks = await db.async_search(
-            query=question,
+            query=query,
             partition=partition,
             top_k=self.top_k,
             similarity_threshold=self.similarity_threshold,
@@ -129,14 +129,14 @@ class MultiQueryRetriever(BaseRetriever):
             raise KeyError(f"An Error has occured: {e}")
 
     async def retrieve(
-        self, partition: list[str], question: str, db: ABCVectorDB
+        self, partition: list[str], query: str, db: ABCVectorDB
     ) -> list[Document]:
-        # generate different perspectives of the question
-        generated_questions = await self.generate_queries.ainvoke(
-            {"question": question, "k_queries": self.k_queries}
+        # generate different perspectives of the query
+        generated_queries = await self.generate_queries.ainvoke(
+            {"query": query, "k_queries": self.k_queries}
         )
         chunks = await db.async_multy_query_search(
-            queries=generated_questions,
+            queries=generated_queries,
             partition=partition,
             top_k_per_query=self.top_k,
             similarity_threshold=self.similarity_threshold,
@@ -172,18 +172,18 @@ class HyDeRetriever(BaseRetriever):
         except Exception as e:
             raise ArithmeticError(f"An error occured: {e}")
 
-    async def get_hyde(self, question: str):
+    async def get_hyde(self, query: str):
         self.logger.debug("Generating HyDe Document")
-        hyde_document = await self.generate_hyde.ainvoke({"question": question})
+        hyde_document = await self.generate_hyde.ainvoke({"query": query})
         return hyde_document
 
     async def retrieve(
-        self, partition: list[str], question: str, db: ABCVectorDB
+        self, partition: list[str], query: str, db: ABCVectorDB
     ) -> list[Document]:
-        hyde = await self.get_hyde(question)
+        hyde = await self.get_hyde(query)
         queries = [hyde]
         if self.combine:
-            queries.append(question)
+            queries.append(query)
 
         return await db.async_multy_query_search(
             queries=queries,

@@ -25,13 +25,13 @@ class Reranker:
         self.logger.debug("Reranker initialized...")
 
     async def rerank(
-        self, question: str, chunks: list[Document], k: int = 5
+        self, query: str, chunks: list[Document], k: int = 5
     ) -> list[Document]:
         """
         Rerank documents by relevancy with respect to the given query.
 
         Args:
-            question (str): Search query.
+            query (str): Search query.
             docs (list[str]): List of document strings.
             k (int): Number of documents to return.
 
@@ -44,7 +44,7 @@ class Reranker:
             k = min(k, len(chunks))  # k must be <= the number of documents
             ranked_txt = await asyncio.to_thread(
                 lambda: self.model.rerank(
-                    question, [d.page_content for d in chunks], k=k, bsize="auto"
+                    query, [d.page_content for d in chunks], k=k, bsize="auto"
                 )
             )
             gc.collect()

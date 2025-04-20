@@ -19,7 +19,9 @@ from langchain_core.messages import AIMessage, HumanMessage
 from loguru import logger
 from pydantic import BaseModel
 from routers.indexer import router as indexer_router
-from routers.openai import router as openai_router
+
+# from routers.openai import router as openai_router
+from routers.openai2 import router as openai_router
 from routers.search import router as search_router
 from routers.extract import router as extract_router
 from routers.partition import router as partition_router
@@ -46,6 +48,7 @@ class AppState:
         self.config = config
         self.model_name = config.llm.model
         self.ragpipe = ragPipe
+        self.vectordb = vectordb
         self.data_dir = Path(config.paths.data_dir)
 
 
@@ -57,6 +60,7 @@ class ChatMsg(BaseModel):
 mapping = {"user": HumanMessage, "assistant": AIMessage}
 
 app = FastAPI()
+
 app.state.app_state = AppState(config)
 app.mount(
     "/static", StaticFiles(directory=DATA_DIR.resolve(), check_dir=True), name="static"
@@ -76,7 +80,7 @@ def source2url(s: dict, static_base_url: str):
 
 @app.post(
     "/{partition}/generate",
-    summary="Given a question, this endpoint allows to generate an answer grounded on the documents in the VectorDB",
+    summary="Given a query, this endpoint allows to generate an answer grounded on the documents in the VectorDB",
     tags=[Tags.LLM],
 )
 async def get_answer(
@@ -107,8 +111,8 @@ async def get_answer(
             mapping[chat_msg.role](content=chat_msg.content)
             for chat_msg in chat_history
         ]
-    answer_stream, context, sources = await ragPipe.run(
-        partition=[partition], question=new_user_input, chat_history=msgs
+    answer_stream, context, sources = await ragPipe._prepare_for_chat_completion(
+        partition=[partition], question=new_user_input, messages=msgs
     )
     # print(sources)
     sources = list(map(lambda x: source2url(x, static_base_url), sources))
@@ -141,7 +145,7 @@ async def health_check(static_base_url: str = Depends(static_base_url_dependency
 
 
 # Mount the default front
-mount_chainlit(app, "./chainlit/app_front.py", path="/chainlit")
+mount_chainlit(app, "./chainlit/app_front2.py", path="/chainlit")
 # Mount the indexer router
 app.include_router(indexer_router, prefix="/indexer", tags=[Tags.INDEXER])
 # Mount the extract router

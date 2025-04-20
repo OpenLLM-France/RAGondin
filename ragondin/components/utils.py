@@ -127,9 +127,6 @@ def format_context(docs: list[Document]) -> str:
         content: \n{doc.page_content.strip()}\n
         """
 
-        # document = (f"""<chunk document_id={doc_id}>\n{doc.page_content.strip()}\n</chunk>\n""")
-        # Source: {source} (Page: {page})
-
         context += document
         context += "-" * 40 + "\n\n"
 

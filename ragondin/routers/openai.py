@@ -58,7 +58,7 @@ def source2url(s: dict, static_base_url: str):
 @router.get("/models", summary="OpenAI-compatible model listing endpoint")
 async def list_models(app_state=Depends(get_app_state)):
     # Get available partitions from your backend
-    partitions = app_state.ragpipe.vectordb.list_partitions() + ["all"]
+    partitions = app_state.vectordb.list_partitions() + ["all"]
 
     # Format them as OpenAI models
     models = [
@@ -80,9 +80,7 @@ def __get_partition_name(model_name, app_state):
 
     partition = model_name.split("-")[1]
 
-    if partition != "all" and not app_state.ragpipe.vectordb.partition_exists(
-        partition
-    ):
+    if partition != "all" and not app_state.vectordb.partition_exists(partition):
         raise HTTPException(status_code=404, detail="Model not found")
 
     return partition
@@ -261,7 +259,7 @@ async def openai_completion(
     # Run RAG pipeline
     output, context, sources = await app_state.ragpipe.completion(
         partition=[partition],
-        question=request.prompt,
+        query=request.prompt,
         chat_history=None,
         llm_config=None,
     )
