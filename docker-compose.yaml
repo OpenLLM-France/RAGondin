@@ -38,6 +38,8 @@ services:
     profiles:
       - '' # Empty string gives default behavior (but does not run when cpu requested)
 
+
+
   # No GPU (docker compose --profile cpu up --build)
   ragondin-cpu:
     <<: *ragondin_template
