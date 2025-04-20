@@ -1,5 +1,4 @@
 from typing import Any, Dict, List, Literal, Optional
-
 from pydantic import BaseModel, Field
 
 
@@ -16,10 +15,11 @@ class OpenAIChatCompletionRequest(BaseModel):
 
     model: str = Field(..., description="model name")
     messages: List[OpenAIMessage]
-    temperature: Optional[float] = Field(0.7)
+    temperature: Optional[float] = Field(0.3)
     top_p: Optional[float] = Field(1.0)
     stream: Optional[bool] = Field(False)
-    max_tokens: Optional[int] = Field(None)
+    max_tokens: Optional[int] = Field(8192)
+    logprobs: Optional[int] = Field(None)
 
 
 class OpenAIChatCompletionChoice(BaseModel):
@@ -72,13 +72,13 @@ class OpenAICompletionRequest(BaseModel):
     frequency_penalty: Optional[float] = Field(0.0)
     logit_bias: Optional[dict] = Field(None)
     logprobs: Optional[int] = Field(None)
-    max_tokens: Optional[int] = Field(16)
+    max_tokens: Optional[int] = Field(8192)
     n: Optional[int] = Field(1)
     presence_penalty: Optional[float] = Field(0.0)
     seed: Optional[int] = Field(None)
     stop: Optional[List[str]] = Field(None)
     stream: Optional[bool] = Field(False)
-    temperature: Optional[float] = Field(0.7)
+    temperature: Optional[float] = Field(0.3)
     top_p: Optional[float] = Field(1.0)
 
 

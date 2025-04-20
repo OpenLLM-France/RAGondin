@@ -1,38 +1,12 @@
 import json
-import time
-import uuid
-from typing import Literal
-
 from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import StreamingResponse, JSONResponse
-from langchain_core.messages import AIMessage, HumanMessage
 from models.openai import (
-    OpenAIChatCompletion,
-    OpenAIChatCompletionChoice,
-    OpenAICompletion,
-    OpenAICompletionChoice,
-    OpenAICompletionChunk,
-    OpenAICompletionChunkChoice,
     OpenAIChatCompletionRequest,
     OpenAICompletionRequest,
-    OpenAIMessage,
-    OpenAIUsage,
-    OpenAILogprobs,
-    ChoiceLogprobs,
-    ChatCompletionTokenLogprob,
 )
-from pydantic import BaseModel
 from urllib.parse import urlparse, quote
-
-
-# Classe pour les messages du chat
-class ChatMsg(BaseModel):
-    role: Literal["user", "assistant"]
-    content: str
-
-
-# Mapping pour les types de messages
-mapping = {"user": HumanMessage, "assistant": AIMessage}
+from loguru import logger
 
 # Créer un router pour les endpoints OpenAI
 router = APIRouter()
@@ -57,14 +31,14 @@ def source2url(s: dict, static_base_url: str):
 @router.get("/models", summary="OpenAI-compatible model listing endpoint")
 async def list_models(app_state=Depends(get_app_state)):
     # Get available partitions from your backend
-    partitions = app_state.ragpipe.vectordb.list_partitions() + ["all"]
+    partitions = app_state.vectordb.list_partitions() + ["all"]
 
     # Format them as OpenAI models
     models = [
         {
             "id": f"ragondin-{partition}",
             "object": "model",
-            "created": 0,
+            "created": 0,  # TODO: Add created time
             "owned_by": "RAGondin",
         }
         for partition in partitions
@@ -78,10 +52,7 @@ def __get_partition_name(model_name, app_state):
         raise HTTPException(status_code=404, detail="Model not found")
 
     partition = model_name.split("-")[1]
-
-    if partition != "all" and not app_state.ragpipe.vectordb.partition_exists(
-        partition
-    ):
+    if partition != "all" and not app_state.vectordb.partition_exists(partition):
         raise HTTPException(status_code=404, detail="Model not found")
 
     return partition
@@ -95,7 +66,6 @@ def __create_md_links(sources, static_base_url):
         encoded_url = quote(doc["url"], safe=":/")
         parsed_url = urlparse(doc["url"])
         doc_name = parsed_url.path.split("/")[-1]
-
         if "pdf" in doc_name.lower():
             encoded_url = f"{encoded_url}#page={doc['page']}"
         s = f"* {doc['doc_id']} : [{doc_name}]({encoded_url})"
@@ -103,7 +73,6 @@ def __create_md_links(sources, static_base_url):
         markdowns_links.append(s)
 
     src_md = "\n## Sources: \n" + "\n".join(markdowns_links) if markdowns_links else ""
-
     return markdowns_links, src_md
 
 
@@ -115,198 +84,75 @@ async def openai_chat_completion(
     static_base_url: str = Depends(static_base_url_dependency),
     app_state=Depends(get_app_state),
 ):
-    # Get the last user message
-    # And convert the chat history to the format expected by the RAG pipeline
-    user_messages = [msg for msg in request.messages if msg.role == "user"]
-    if not user_messages:
-        raise HTTPException(
-            status_code=400, detail="At least one user message is required"
+    try:
+        # Get the last user message
+        if not request.messages:
+            raise HTTPException(
+                status_code=400, detail="At least one user message is required"
+            )
+
+        # Load model name and partition
+        model_name = request.model
+        partition = __get_partition_name(model_name, app_state)
+
+        # Run RAG pipeline
+        llm_output, context, sources = await app_state.ragpipe.chat_completion(
+            partition=[partition], payload=request.model_dump()
         )
 
-    new_user_input = user_messages[-1].content
+        # Handle the sources
+        markdowns_links, src_md = __create_md_links(sources, static_base_url)
 
-    # Convert chat history to the format expected by the RAG pipeline
-    chat_history = []
-    for msg in request.messages[:-1]:  # Exclure le dernier message utilisateur
-        if msg.role in ["user", "assistant"]:
-            chat_history.append(ChatMsg(role=msg.role, content=msg.content))
+        if request.stream:
+            # Openai compatible streaming response
+            async def stream_response():
+                async for chunk in llm_output:
+                    yield chunk
 
-    msgs = None
-    if chat_history:
-        msgs = [
-            mapping[chat_msg.role](content=chat_msg.content)
-            for chat_msg in chat_history
-        ]
+            return StreamingResponse(
+                stream_response(),
+                media_type="text/event-stream",
+                headers={"X-Metadata-Sources": json.dumps(markdowns_links)},
+            )
+        else:
+            # get the next chunk item of an async generator async
+            try:
+                chunk = await llm_output.__anext__()
+                return chunk
+            except StopAsyncIteration:
+                raise HTTPException(status_code=500, detail="No response from LLM")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error: {str(e)}")
+
+
+@router.post("/completions", summary="OpenAI compatible completion endpoint using RAG")
+async def openai_completion(
+    request: OpenAICompletionRequest,
+    static_base_url: str = Depends(static_base_url_dependency),
+    app_state=Depends(get_app_state),
+):
+    # Get the last user message
+    if not request.prompt:
+        raise HTTPException(status_code=400, detail="tThe prompt is required")
+
+    if request.stream:
+        raise HTTPException(
+            status_code=400, detail="Streaming is not supported for this endpoint"
+        )
 
     # Load model name and partition
     model_name = request.model
     partition = __get_partition_name(model_name, app_state)
-
     # Run RAG pipeline
-    answer_stream, context, sources = await app_state.ragpipe.run(
-        partition=[partition], question=new_user_input, chat_history=msgs
+    llm_output, context, sources = await app_state.ragpipe.completions(
+        partition=[partition], payload=request.model_dump()
     )
 
     # Handle the sources
-    markdowns_links, src_md = __create_md_links(sources, static_base_url)
+    # markdowns_links, src_md = __create_md_links(sources, static_base_url)
 
-    # Create response-id
-    response_id = f"chatcmpl-{str(uuid.uuid4())}"
-    created_time = int(time.time())
-
-    if request.stream:
-        # Openai compatible streaming response
-        async def stream_response():
-            full_response = ""
-            chunk = OpenAICompletionChunk(
-                id=response_id,
-                created=created_time,
-                model=model_name,
-                choices=[
-                    OpenAICompletionChunkChoice(
-                        index=0, delta={"role": "assistant"}, finish_reason=None
-                    )
-                ],
-            )
-            yield f"data: {chunk.model_dump_json()}\n\n"
-
-            # Envoyer les tokens un par un
-            async for token in answer_stream:
-                full_response += token.content
-                chunk = OpenAICompletionChunk(
-                    id=response_id,
-                    created=created_time,
-                    model=model_name,
-                    choices=[
-                        OpenAICompletionChunkChoice(
-                            index=0,
-                            delta={"content": token.content},
-                            finish_reason=None,
-                        )
-                    ],
-                )
-                yield f"data: {chunk.model_dump_json()}\n\n"
-
-            # Send final chunk
-            ## Send Sources
-            chunk_src = OpenAICompletionChunk(
-                id=response_id,
-                created=created_time,
-                model=model_name,
-                choices=[
-                    OpenAICompletionChunkChoice(
-                        index=0,
-                        delta={"content": src_md},
-                        finish_reason=None,
-                    )
-                ],
-            )
-
-            chunk = OpenAICompletionChunk(
-                id=response_id,
-                created=created_time,
-                model=model_name,
-                choices=[
-                    OpenAICompletionChunkChoice(index=0, delta={}, finish_reason="stop")
-                ],
-            )
-            yield f"data: {chunk.model_dump_json()}\n\n"
-            # yield f"data: {chunk_src.model_dump_json()}\n\n"
-            yield "data: [DONE]\n\n"
-
-        return StreamingResponse(
-            stream_response(),
-            media_type="text/event-stream",
-            headers={"X-Metadata-Sources": json.dumps(markdowns_links)},
-        )
-    else:
-        # Non streaming response
-        full_response = ""
-        async for token in answer_stream:
-            full_response += token.content
-
-        completion = OpenAIChatCompletion(
-            id=response_id,
-            created=created_time,
-            model=model_name,
-            choices=[
-                OpenAIChatCompletionChoice(
-                    index=0,
-                    message=OpenAIMessage(role="assistant", content=full_response),
-                    finish_reason="stop",
-                )
-            ],
-            usage=OpenAIUsage(
-                prompt_tokens=100,  # Valeurs approximatives
-                completion_tokens=len(full_response.split()) * 4 // 3,  # Estimation
-                total_tokens=100 + len(full_response.split()) * 4 // 3,
-            ),
-        )
-
-        return completion
-
-
-# @router.post("/completions", summary="OpenAI compatible completion endpoint using RAG")
-# async def openai_completion(
-#     request: OpenAICompletionRequest,
-#     static_base_url: str = Depends(static_base_url_dependency),
-#     app_state=Depends(get_app_state),
-# ):
-#     print("strat openai_completion(...)")
-#     # Load model name and partition
-#     model_name = request.model
-#     partition = __get_partition_name(model_name, app_state)
-
-#     # Run RAG pipeline
-#     output, context, sources = await app_state.ragpipe.completion(
-#         partition=[partition],
-#         question=request.prompt,
-#         chat_history=None,
-#         llm_config=None,
-#     )
-
-#     # Create response-id
-#     response_id = f"chatcmpl-{str(uuid.uuid4())}"
-#     created_time = int(time.time())
-
-#     if request.stream:
-#         raise
-#     else:
-#         # Non streaming response
-#         output = await output
-#         metadata = output.response_metadata
-#         usage = metadata["token_usage"]
-
-#         logprops = ChoiceLogprobs(
-#             content=[
-#                 ChatCompletionTokenLogprob(
-#                     token=r["token"],
-#                     bytes=r["bytes"],
-#                     logprob=r["logprob"],
-#                     top_logprobs=r["top_logprobs"],
-#                 )
-#                 for r in metadata
-#             ],
-#         )
-
-#         completion = OpenAICompletion(
-#             id=response_id,
-#             created=created_time,
-#             model=model_name,
-#             choices=[
-#                 OpenAICompletionChoice(
-#                     index=0,
-#                     text=output.content,
-#                     logprobs=logprops,
-#                     finish_reason=metadata["finish_reason"],
-#                 )
-#             ],
-#             usage=OpenAIUsage(
-#                 prompt_tokens=usage["prompt_tokens"],
-#                 completion_tokens=usage["completion_tokens"],
-#                 total_tokens=usage["total_tokens"],
-#             ),
-#         )
-#         print("after completion object creation")
-
-#         return completion
+    try:
+        complete_response = await llm_output.__anext__()
+        return complete_response
+    except StopAsyncIteration:
+        raise HTTPException(status_code=500, detail="No response from LLM")
