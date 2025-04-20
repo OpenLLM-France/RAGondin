@@ -14,7 +14,7 @@ x-ragondin: &ragondin_template
     - ./ragondin:/app/ragondin # For dev mode
 
   ports:
-    - "${APP_PORT}:${APP_PORT}"
+    - ${APP_PORT:-8080}:8080
     - 8265:8265 # for ray
   env_file:
     - .env
@@ -37,6 +37,7 @@ services:
               capabilities: [gpu]
     profiles:
       - ''  # Empty string gives default behavior (but does not run when cpu requested)
+
 
   # No GPU (docker compose --profile cpu up --build)
   ragondin-cpu:

@@ -8,8 +8,6 @@ llm_params: &llm_params
   temperature: 0.2
   timeout: 60
   max_retries: 2
-  frequency_penalty: 0.2
-  logprobs: true
 
 llm:
   <<: *llm_params

@@ -44,4 +44,4 @@ ENV PYTHONPATH=/app/ragondin/
 
 ARG APP_PORT
 ENV APP_PORT=${APP_PORT}
-ENTRYPOINT ["sh", "-c", "uv run uvicorn api:app --host 0.0.0.0 --port $APP_PORT --reload"]
+ENTRYPOINT ["sh", "-c", "uv run uvicorn api:app --host 0.0.0.0 --port 8080 --reload"]
