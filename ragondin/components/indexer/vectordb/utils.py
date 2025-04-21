@@ -1,120 +1,264 @@
-from sqlalchemy import create_engine, Column, Integer, String, func
-from sqlalchemy.orm import declarative_base, sessionmaker, Session as SessionType
+from sqlalchemy.orm import (
+    declarative_base,
+    sessionmaker,
+    relationship,
+)
 
+
+from sqlalchemy import (
+    create_engine,
+    Column,
+    Integer,
+    String,
+    ForeignKey,
+    DateTime,
+    UniqueConstraint,
+)
+
+from datetime import datetime
 from pydantic import BaseModel
+from typing import List
 from loguru import logger
 
 
 Base = declarative_base()
 
 
-class PartitionModel(BaseModel):
-    partition_key: str
-    count: int = 0
+class FileModel(BaseModel):
+    id: int
+    file_id: str
+    partition: str
 
 
+class BasePartitionModel(BaseModel):
+    partition: str
+    created_at: datetime
+
+
+# In the PartitionModel class
+class PartitionModel(BasePartitionModel):
+    files: List[FileModel] = []
+
+
+class File(Base):
+    __tablename__ = "files"
+
+    id = Column(Integer, primary_key=True)
+    file_id = Column(String, nullable=False)
+    # Foreign key points directly to the partition string
+    partition_name = Column(String, ForeignKey("partitions.partition"), nullable=False)
+
+    # relationship to the Partition object
+    partition = relationship("Partition", back_populates="files")
+
+    # Enforce uniqueness of (file_id, partition_name)
+    __table_args__ = (
+        UniqueConstraint("file_id", "partition_name", name="uix_file_id_partition"),
+    )
+
+    def to_pydantic(self):
+        return FileModel(id=self.id, file_id=self.file_id, partition=self.partition)
+
+    def __repr__(self):
+        return f"<File(id={self.id}, file_id='{self.file_id}', partition='{self.partition}')>"
+
+
+# In the Partition model
 class Partition(Base):
     __tablename__ = "partitions"
 
     id = Column(Integer, primary_key=True)
-    partition_key = Column(String, unique=True, nullable=False)
-    count = Column(Integer, default=1)
+    partition = Column(String, unique=True, nullable=False)
+    created_at = Column(DateTime, default=datetime.now, nullable=False)
+    files = relationship(
+        "File", back_populates="partition", cascade="all, delete-orphan"
+    )
 
-    def to_pydantic(self):
-        return PartitionModel(partition_key=self.partition_key, count=self.count)
+    def to_pydantic(self, exclude_files=True):
+        if exclude_files:
+            return BasePartitionModel(
+                partition=self.partition, created_at=self.created_at
+            )
+        else:
+            return PartitionModel(
+                partition=self.partition,
+                created_at=self.created_at,
+                files=[file.to_pydantic() for file in self.files],
+            )
 
     def __repr__(self):
-        return f"<Partition(key='{self.partition_key}', count={self.count}>"
+        return f"<Partition(key='{self.partition}', created_at='{self.created_at}', file_count={len(self.files)})>"
 
 
-class PartitionKeyManager:
+class PartitionFileManager:
     def __init__(self, database_url: str, logger=logger):
         self.engine = create_engine(database_url)
         Base.metadata.create_all(self.engine)
         self.Session = sessionmaker(bind=self.engine)
         self.logger = logger
 
-    def get_partition(self, partition_key: str):
+    def get_partition(self, partition: str):
         """Retrieve a partition by its key"""
-        # partition_key = partition_key.lower()
         with self.Session() as session:
-            self.logger.debug(f"Fetching partition with key: {partition_key}")
-            partition = (
-                session.query(Partition).filter_by(partition_key=partition_key).first()
-            )
+            self.logger.debug(f"Fetching partition with key: {partition}")
+            partition = session.query(Partition).filter_by(partition=partition).first()
             if partition:
                 self.logger.info(f"Partition found: {partition}")
             else:
-                self.logger.warning(f"No partition found with key: {partition_key}")
+                self.logger.warning(f"No partition found with key: {partition}")
             return partition
 
-    def create_or_update_partition(self, partition_key: str, amount: int = 1):
-        """Increment the count for a partition"""
-        # partition_key = partition_key.lower()
+    # def create_partition(self, partition: str):
+    #     """Create a new partition if it doesn't exist"""
+    #     with self.Session() as session:
+    #         try:
+    #             partition = (
+    #                 session.query(Partition).filter_by(partition=partition).first()
+    #             )
+    #             if not partition:
+    #                 partition = Partition(partition=partition)
+    #                 session.add(partition)
+    #                 session.commit()
+    #                 self.logger.info(f"Created new partition with key: {partition}")
+    #             return partition
+    #         except Exception as e:
+    #             session.rollback()
+    #             raise e
+
+    def add_file_to_partition(self, file_id: str, partition: str):
+        """Add a file to a partition"""
         with self.Session() as session:
             try:
-                partition = (
-                    session.query(Partition)
-                    .filter_by(partition_key=partition_key)
+                # Check if file already exists in this partition
+                existing_file = (
+                    session.query(File)
+                    .join(Partition)
+                    .filter(File.file_id == file_id, Partition.partition == partition)
                     .first()
                 )
-                if partition:
-                    partition.count += amount
-                    self.logger.debug(
-                        f"Updated partition count to {partition.count} for key: {partition_key}"
+                if existing_file:
+                    self.logger.warning(
+                        f"File {file_id} already exists in partition {partition}"
                     )
+                    return False
 
-                    if partition.count <= 0:
-                        session.delete(partition)
-                        self.logger.info(
-                            f"Deleted partition with key: {partition_key} due to non-positive count."
-                        )
-                else:
-                    partition = Partition(partition_key=partition_key, count=amount)
-                    session.add(partition)
-                    self.logger.info(f"Created new partition with key: {partition_key}")
+                # Ensure partition exists
+                partition_obj = (
+                    session.query(Partition).filter_by(partition=partition).first()
+                )
+                if not partition_obj:
+                    partition_obj = Partition(partition=partition)
+                    session.add(partition_obj)
+                    self.logger.info(f"Created new partition with key: {partition}")
 
+                # Add file to partition
+                file = File(file_id=file_id, partition_name=partition_obj.partition)
+                session.add(file)
                 session.commit()
+                self.logger.info(f"Added file {file_id} to partition {partition}")
+                return True
             except Exception as e:
                 session.rollback()
+                self.logger.error(f"Error adding file to partition: {e}")
                 raise e
 
-    def delete_partition(self, partition_key: str):
-        """Delete a partition by its key"""
-        # partition_key = partition_key.lower()
+    def remove_file_from_partition(self, file_id: str, partition: str):
+        """Remove a file from its partition"""
         with self.Session() as session:
-            partition = (
-                session.query(Partition).filter_by(partition_key=partition_key).first()
-            )
-            if partition:
-                session.delete(partition)
-                session.commit()
-                self.logger.info(f"Deleted partition with key: {partition_key}")
-                return True
+            try:
+                # Find the file using a join with proper filtering
+                file = (
+                    session.query(File)
+                    .join(Partition)
+                    .filter(File.file_id == file_id, Partition.partition == partition)
+                    .first()
+                )
+                if file:
+                    session.delete(file)
+                    session.commit()
+                    self.logger.info(
+                        f"Removed file {file_id} from partition {partition}"
+                    )
 
+                    # Check if partition is now empty
+                    partition_obj = (
+                        session.query(Partition).filter_by(partition=partition).first()
+                    )
+                    if partition_obj and len(partition_obj.files) == 0:
+                        session.delete(partition_obj)
+                        session.commit()
+                        self.logger.info(f"Deleted empty partition {partition}")
+
+                    return True
+                self.logger.warning(
+                    f"File {file_id} not found in partition {partition}"
+                )
+                return False
+            except Exception as e:
+                session.rollback()
+                self.logger.error(f"Error removing file: {e}")
+                raise e
+
+    def delete_partition(self, partition: str):
+        """Delete a partition and all its files"""
+        with self.Session() as session:
+            partition = session.query(Partition).filter_by(partition=partition).first()
+            if partition:
+                session.delete(partition)  # Will delete all files due to cascade
+                session.commit()
+                self.logger.info(f"Deleted partition with key: {partition}")
+                return True
+            else:
+                self.logger.info(f"There is no partition named `{partition}`")
             return False
 
     def list_partitions(self):
         """List all existing partitions"""
         with self.Session() as session:
-            # convert to Pydantic models
             partitions = session.query(Partition).all()
-            return [partition.to_pydantic().partition_key for partition in partitions]
+            return [
+                partition.to_pydantic(exclude_files=True) for partition in partitions
+            ]
 
-    def partition_exists(self, partition_key: str):
+    def list_files_in_partition(self, partition: str):
+        """List all files in a partition"""
+        with self.Session() as session:
+            partition = session.query(Partition).filter_by(partition=partition).first()
+            if partition:
+                return [file.file_id for file in partition.files]
+            return []
+
+    def get_partition_file_count(self, partition: str):
+        """Get the count of files in a partition"""
+        with self.Session() as session:
+            partition_obj = (
+                session.query(Partition).filter_by(partition=partition).first()
+            )
+            if not partition_obj:
+                return 0
+            return len(partition_obj.files)  # Or use a count query if you prefer
+
+    def get_total_file_count(self):
+        """Get the total count of files across all partitions"""
+        with self.Session() as session:
+            return session.query(File).count()
+
+    def partition_exists(self, partition: str):
         """Check if a partition exists by its key"""
         with self.Session() as session:
-            return (
-                session.query(Partition).filter_by(partition_key=partition_key).count()
-                > 0
-            )
+            return session.query(Partition).filter_by(partition=partition).count() > 0
 
-    def get_total_count(self):
-        """Get the total count across all partitions"""
+    def file_exists_in_partition(self, file_id: str, partition: str):
+        """Check if a file exists in a specific partition"""
         with self.Session() as session:
+            # Use a join to correctly filter by both file_id and partition string
             return (
-                session.query(Partition)
-                .with_entities(func.sum(Partition.count))
-                .scalar()
-                or 0
+                session.query(File)
+                .join(Partition)  # Join the File and Partition tables
+                .filter(
+                    File.file_id == file_id,
+                    Partition.partition == partition,  # Filter on the partition string
+                )
+                .count()
+                > 0
             )
