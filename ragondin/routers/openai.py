@@ -51,18 +51,27 @@ def source2url(s: dict, static_base_url: str):
 @router.get("/models", summary="OpenAI-compatible model listing endpoint")
 async def list_models(app_state=Depends(get_app_state)):
     # Get available partitions from your backend
-    partitions = app_state.ragpipe.vectordb.list_partitions() + ["all"]
+    partitions = app_state.ragpipe.vectordb.list_partitions()
 
     # Format them as OpenAI models
     models = [
         {
-            "id": f"ragondin-{partition}",
+            "id": f"ragondin-{partition.partition}",
             "object": "model",
-            "created": 0,
+            "created": int(partition.created_at.timestamp()),
             "owned_by": "RAGondin",
         }
         for partition in partitions
     ]
+
+    models.append(
+        {
+            "id": "ragondin-all",
+            "object": "model",
+            "created": 0,
+            "owned_by": "RAGondin",
+        }
+    )
 
     return JSONResponse(content={"object": "list", "data": models})
 
@@ -201,6 +210,9 @@ async def openai_chat_completion(
         full_response = ""
         async for token in answer_stream:
             full_response += token.content
+
+        # Append src_md to the full response
+        # full_response += f"\n\n{src_md}"
 
         completion = OpenAICompletion(
             id=response_id,

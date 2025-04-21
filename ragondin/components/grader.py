@@ -35,7 +35,6 @@ class DocumentGrade(BaseModel):
 class Grader:
     def __init__(self, config, logger=None):
         llm: ChatOpenAI = ChatOpenAI(**config.vlm)
-        # structured llm
         self.sllm = llm.with_structured_output(DocumentGrade)
         self.logger = logger
 

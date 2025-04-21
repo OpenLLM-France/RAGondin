@@ -66,9 +66,6 @@ class Indexer(metaclass=SingletonMeta):
         doc: Document = await self.serializer.serialize_document(
             path, metadata=metadata
         )
-        if doc is None:
-            return []
-
         self.logger.info("Serialization completed.")
         return doc
 
@@ -112,6 +109,9 @@ class Indexer(metaclass=SingletonMeta):
                 torch.cuda.empty_cache()
                 torch.cuda.ipc_collect()
 
+    def delete_partition(self, partition: str):
+        return self.vectordb.delete_partition(partition)
+
     def delete_file(self, file_id: str, partition: str):
         """
         Deletes files from the vector database based on the provided filters.
@@ -138,7 +138,7 @@ class Indexer(metaclass=SingletonMeta):
                 self.logger.info(f"No points found for file_id: {file_id}")
                 return
             # Delete the points
-            self.vectordb.delete_points(points)
+            self.vectordb.delete_file_points(points, file_id, partition)
             self.logger.info(f"File {file_id} deleted.")
         except Exception as e:
             self.logger.error(f"Error in `delete_files` for file_id {file_id}: {e}")
