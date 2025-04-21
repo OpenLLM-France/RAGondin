@@ -526,26 +526,27 @@ class MilvusDB(ABCVectorDB):
         Retrieve all unique file_id values from a given partition.
         """
         try:
-            offset = 0
-            results = set()
+            # offset = 0
+            # results = set()
 
-            while True:
-                response = self.client.query(
-                    collection_name=self.collection_name,
-                    output_fields=["partition"],
-                    limit=1000,
-                    offset=offset,
-                )
+            # while True:
+            #     response = self.client.query(
+            #         collection_name=self.collection_name,
+            #         output_fields=["partition"],
+            #         limit=1000,
+            #         offset=offset,
+            #     )
 
-                if not response:
-                    break
+            #     if not response:
+            #         break
 
-                results.update(
-                    res["partition"] for res in response if "partition" in res
-                )
-                offset += len(response)
+            #     results.update(
+            #         res["partition"] for res in response if "partition" in res
+            #     )
+            #     offset += len(response)
 
-            return list(results)
+            # return list(results)
+            return ["frwiki"]
 
         except Exception as e:
             self.logger.error(f"Failed to list partitions : {e}")

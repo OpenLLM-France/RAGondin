@@ -56,7 +56,7 @@ class DocSerializer:
             **metadata,
         }
         doc: Document = await loader.aload_document(
-            file_path=path, metadata=metadata, save_md=True
+            file_path=path, metadata=metadata, save_md=False
         )
 
         if isinstance(loader, (DoclingLoader, MarkerLoader, AudioTranscriber)):

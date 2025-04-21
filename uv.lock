@@ -4449,7 +4449,6 @@ dependencies = [
     { name = "markitdown" },
     { name = "openai" },
     { name = "pip" },
-    { name = "psutil" },
     { name = "pydub" },
     { name = "pymupdf4llm" },
     { name = "python-dotenv" },

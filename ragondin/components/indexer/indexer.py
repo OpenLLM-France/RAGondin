@@ -15,15 +15,15 @@ if not ray.is_initialized():
     ray.init(dashboard_host="0.0.0.0", ignore_reinit_error=True)
 
 if torch.cuda.is_available():
-    gpu, cpu = 1, 0
+    gpu, cpu = 1, 24
 else:
-    gpu, cpu = 0, 1
+    gpu, cpu = 0, 24
 
 
 @ray.remote(
     num_cpus=cpu,
     num_gpus=gpu,
-    concurrency_groups={"compute": 4, "serialization": 2, "chunking": 2},
+    concurrency_groups={"compute": 6},
     max_task_retries=2,
     max_restarts=-1,
 )
@@ -60,7 +60,7 @@ class Indexer(metaclass=SingletonMeta):
         self.default_partition = "_default"
         self.enable_insertion = self.config.vectordb["enable"]
 
-    @ray.method(concurrency_group="serialization")
+    # @ray.method(concurrency_group="serialization")
     async def serialize(self, path: str, metadata: Optional[Dict] = {}):
         self.logger.info(f"Starting serialization of documents from {path}...")
         doc: Document = await self.serializer.serialize_document(
@@ -72,7 +72,7 @@ class Indexer(metaclass=SingletonMeta):
         self.logger.info("Serialization completed.")
         return doc
 
-    @ray.method(concurrency_group="chunking")
+    # @ray.method(concurrency_group="chunking")
     async def chunk(self, doc: Document, file_path: str):
         if doc is not None:
             self.logger.info("Starting chunking")
