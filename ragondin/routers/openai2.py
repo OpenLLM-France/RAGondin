@@ -51,7 +51,7 @@ def __get_partition_name(model_name, app_state):
     if not model_name.startswith("ragondin-"):
         raise HTTPException(status_code=404, detail="Model not found")
 
-    partition = model_name.split("-")[1]
+    partition = model_name.split("ragondin-")[1]
     if partition != "all" and not app_state.vectordb.partition_exists(partition):
         raise HTTPException(status_code=404, detail="Model not found")
 
