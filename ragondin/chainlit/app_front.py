@@ -5,6 +5,7 @@ from urllib.parse import quote, urlparse
 import chainlit as cl
 import httpx
 from loguru import logger
+import os
 
 
 PARTITION = "all"
@@ -13,15 +14,12 @@ history = []
 
 
 def get_base_url():
-    from chainlit.context import get_context
-
-    referer = get_context().session.http_referer
-    parsed_url = urlparse(referer)  # Parse the referer URL
-    base_url = f"{parsed_url.scheme}://{parsed_url.netloc}"
-    return base_url
+    base = "http://localhost:"
+    port = os.environ.get("CONTAINER_PORT", "8080")
+    return base + port
 
 
-# this file is in the docker along with the fastapi running at port 8080
+# this file is in the docker along with the fastapi running at port CONTAINER_PORT (default 8080)
 
 # @cl.set_starters
 # async def set_starters():
