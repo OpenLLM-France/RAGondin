@@ -110,7 +110,7 @@ async def openai_chat_completion(
     model_name = request.model
     if not model_name.startswith("ragondin-"):
         raise HTTPException(status_code=404, detail="Model not found")
-    partition = model_name.split("-")[1]
+    partition = model_name.split("ragondin-")[1]
     if partition != "all" and not app_state.ragpipe.vectordb.partition_exists(
         partition
     ):

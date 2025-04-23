@@ -1,6 +1,6 @@
 from typing import List, Optional
 
-from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response, status
+from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
 from fastapi.responses import JSONResponse
 from utils.dependencies import Indexer, get_indexer, vectordb
 import ray
@@ -50,8 +50,7 @@ async def delete_partition(partition: str, indexer: Indexer = Depends(get_indexe
     return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
-
-@router.get("/{partition}")
+@router.get("/{partition}/")
 async def list_files(
     request: Request,
     partition: str,
@@ -79,6 +78,26 @@ async def list_files(
     ]
 
     return JSONResponse(status_code=status.HTTP_200_OK, content={"files": files})
+
+
+@router.get("/check-file/{partition}/file/{file_id}")
+async def check_file_exists_in_partition(
+    request: Request,
+    partition: str,
+    file_id: str,
+):
+    # Check if file exists
+    exists = vectordb.file_exists(file_id, partition)
+    if not exists:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"File '{file_id}' not found in partition '{partition}'.",
+        )
+    else:
+        return JSONResponse(
+            status_code=status.HTTP_200_OK,
+            content=f"File '{file_id}' exists in partition '{partition}'.",
+        )
 
 
 @router.get("/{partition}/file/{file_id}")
