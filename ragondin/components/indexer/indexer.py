@@ -1,16 +1,17 @@
-from typing import Dict, List, Optional
-import ray
-from langchain_core.documents.base import Document
-import torch
 import gc
 import inspect
+from typing import Dict, List, Optional
 
-from ..utils import SingletonMeta
+import ray
+import torch
+from config import load_config
+from langchain_core.documents.base import Document
+from loguru import logger
+
 from .chunker import ABCChunker, ChunkerFactory
 from .embeddings import HFEmbedder
 from .loaders.loader import DocSerializer
 from .vectordb import ConnectorFactory
-from config import load_config
 
 # Load the configuration
 config = load_config()
@@ -19,28 +20,17 @@ config = load_config()
 NUM_GPUS = config.ray.get("num_gpus")
 NUM_CPUS = config.ray.get("num_cpus")
 
-# Set ray concurrency groups
-COMPUTE_CONCURRENCY = config.ray.get("compute_concurrency")
-SERIALIZE_CONCURRENCY = config.ray.get("serialize_concurrency")
-CHUNK_CONCURRENCY = config.ray.get("chunk_concurrency")
-
-
 if torch.cuda.is_available():
     gpu, cpu = NUM_GPUS, NUM_CPUS
 else:
     gpu, cpu = 0, NUM_CPUS
 
 
-@ray.remote(
-    num_cpus=cpu,
-    num_gpus=gpu,
-    concurrency_groups={"compute": COMPUTE_CONCURRENCY, "serialize": SERIALIZE_CONCURRENCY, "chunk": CHUNK_CONCURRENCY},
-    max_task_retries=2
-)
-class IndexerWorker(metaclass=SingletonMeta):
+@ray.remote(num_cpus=cpu, num_gpus=gpu, max_task_retries=2)
+class IndexerWorker:
     """This class bridges static files with the vector store database.*"""
 
-    def __init__(self, config, device=None) -> None:
+    def __init__(self) -> None:
         """
         Initializes the Indexer class with the given configuration, logger, and optional device.
 
@@ -49,19 +39,24 @@ class IndexerWorker(metaclass=SingletonMeta):
             logger (Logger): Logger object for logging information.
             device (str, optional): Device to be used by the embedder. Defaults to None.
         """
+        from config import load_config
         from loguru import logger
-        self.embedder = HFEmbedder(embedder_config=config.embedder, device=device)
-        self.serializer = DocSerializer(data_dir=config.paths.data_dir, config=config)
+
+        from .embeddings import HFEmbedder
+        from .vectordb import ConnectorFactory
+
+        self.config = load_config()
+        self.embedder = HFEmbedder(embedder_config=self.config.embedder, device=None)
+        self.serializer = DocSerializer(
+            data_dir=self.config.paths.data_dir, config=self.config
+        )
         self.chunker: ABCChunker = ChunkerFactory.create_chunker(
-            config, embedder=self.embedder.get_embeddings()
+            self.config, embedder=self.embedder.get_embeddings()
         )
         self.vectordb = ConnectorFactory.create_vdb(
-            config, logger=logger, embeddings=self.embedder.get_embeddings()
+            self.config, logger=logger, embeddings=self.embedder.get_embeddings()
         )
         self.logger = logger
-        self.logger.info("Indexer initialized...")
-        self.config = config
-
         self.n_concurrent_loading = config.insertion.get(
             "n_concurrent_loading", 2
         )  # Number of concurrent loading operations
@@ -70,8 +65,8 @@ class IndexerWorker(metaclass=SingletonMeta):
         )  # Number of concurrent chunking operations
         self.default_partition = "_default"
         self.enable_insertion = self.config.vectordb["enable"]
+        self.logger.info("Indexer worker initialized.")
 
-    # @ray.method(concurrency_group="serialize")
     async def serialize(self, path: str, metadata: Optional[Dict] = {}):
         self.logger.info(f"Starting serialization of documents from {path}...")
         doc: Document = await self.serializer.serialize_document(
@@ -80,7 +75,6 @@ class IndexerWorker(metaclass=SingletonMeta):
         self.logger.info("Serialization completed.")
         return doc
 
-    # @ray.method(concurrency_group="chunk")
     async def chunk(self, doc: Document, file_path: str):
         if doc is not None:
             self.logger.info("Starting chunking")
@@ -91,7 +85,6 @@ class IndexerWorker(metaclass=SingletonMeta):
             self.logger.info(f"No chunks for {file_path}")
             return []
 
-    @ray.method(concurrency_group="compute")
     async def add_file(
         self,
         path: str | list[str],
@@ -129,24 +122,23 @@ class IndexerWorker(metaclass=SingletonMeta):
         return partition
 
 
-
-@ray.remote(concurrency_groups={"compute": COMPUTE_CONCURRENCY})
-class Indexer():
-    def __init__(self, config, logger, device=None):
+@ray.remote(max_restarts=-1)
+class Indexer:
+    def __init__(self):
+        config = load_config()
         self.config = config
-        self.device = device
+        device = None
         self.logger = logger
         self.enable_insertion = self.config.vectordb["enable"]
-        self.embedder = HFEmbedder(
-            embedder_config=config.embedder, device=device
-        )
+        self.embedder = HFEmbedder(embedder_config=config.embedder, device=device)
         self.vectordb = ConnectorFactory.create_vdb(
             config, logger, embeddings=self.embedder.get_embeddings()
         )
-    def get_worker(self):
-        return IndexerWorker.remote(self.config, self.device)
+        logger.info("Indexer supervisor actor initialized.")
 
-    @ray.method(concurrency_group="compute")
+    def get_worker(self):
+        return IndexerWorker.remote()
+
     async def add_file(self, path, metadata, partition):
         worker = self.get_worker()
         await worker.add_file.remote(path, metadata, partition)
