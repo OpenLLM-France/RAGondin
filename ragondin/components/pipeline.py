@@ -52,6 +52,7 @@ class RagPipeline:
 
         self._chat_history: deque = deque(maxlen=self.chat_history_depth)
         self.llm_client = LLM(config.llm, self.logger)
+        self.vlm_client = LLM(config.vlm, self.logger)
 
     async def get_contextualized_docs(
         self, partition: list[str], question: str, chat_history: list
@@ -81,7 +82,7 @@ class RagPipeline:
             contextualize_q_prompt = ChatPromptTemplate.from_template(template)
 
             history_aware_retriever = (
-                contextualize_q_prompt | self.llm_client.client | StrOutputParser()
+                contextualize_q_prompt | self.vlm_client.client | StrOutputParser()
             )
             input_ = {
                 "query": question,

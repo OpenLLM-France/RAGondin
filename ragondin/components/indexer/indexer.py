@@ -11,8 +11,10 @@ from .embeddings import HFEmbedder
 from .loaders.loader import DocSerializer
 from .vectordb import ConnectorFactory
 
+
 if not ray.is_initialized():
     ray.init(dashboard_host="0.0.0.0", ignore_reinit_error=True)
+
 
 if torch.cuda.is_available():
     gpu, cpu = 1, 24
@@ -23,7 +25,7 @@ else:
 @ray.remote(
     num_cpus=cpu,
     num_gpus=gpu,
-    concurrency_groups={"compute": 6},
+    concurrency_groups={"compute": 25},
     max_task_retries=2,
     max_restarts=-1,
 )
@@ -60,7 +62,6 @@ class Indexer(metaclass=SingletonMeta):
         self.default_partition = "_default"
         self.enable_insertion = self.config.vectordb["enable"]
 
-    # @ray.method(concurrency_group="serialization")
     async def serialize(self, path: str, metadata: Optional[Dict] = {}):
         self.logger.info(f"Starting serialization of documents from {path}...")
         doc: Document = await self.serializer.serialize_document(
@@ -69,7 +70,6 @@ class Indexer(metaclass=SingletonMeta):
         self.logger.info("Serialization completed.")
         return doc
 
-    # @ray.method(concurrency_group="chunking")
     async def chunk(self, doc: Document, file_path: str):
         if doc is not None:
             self.logger.info("Starting chunking")
@@ -111,6 +111,9 @@ class Indexer(metaclass=SingletonMeta):
 
     def delete_partition(self, partition: str):
         return self.vectordb.delete_partition(partition)
+
+    def check_file_exists_in_partition(self, file_id: str, partition: str):
+        return self.vectordb.file_exists(file_id=file_id, partition=partition)
 
     def delete_file(self, file_id: str, partition: str):
         """

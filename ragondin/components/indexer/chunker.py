@@ -339,5 +339,5 @@ class ChunkerFactory:
                 )
 
         # Include contextual retrieval if specified
-        chunker_params["llm"] = ChatOpenAI(**config.llm)
+        chunker_params["llm"] = ChatOpenAI(**config.vlm)
         return chunker_class(**chunker_params)
