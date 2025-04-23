@@ -1,9 +1,9 @@
-import ray.actor
-from components import Indexer, HFEmbedder, ConnectorFactory, ABCVectorDB
-from config import load_config
-from loguru import logger
-from components.indexer.indexer import Indexer
 import ray
+import ray.actor
+from config import load_config
+
+from components import ABCVectorDB, Indexer
+from components.indexer.indexer import Indexer
 
 
 class VDBProxy:
@@ -41,7 +41,7 @@ class VDBProxy:
 # load config
 config = load_config()
 # Initialize components once
-indexer = Indexer.remote(config, logger)
+indexer = Indexer.remote()
 vectordb: ABCVectorDB = VDBProxy(
     indexer_actor=indexer
 )  # vectordb is not of type ABCVectorDB, but it mimics it
