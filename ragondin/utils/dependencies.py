@@ -2,7 +2,7 @@ import ray
 import ray.actor
 from config import load_config
 
-from components import ABCVectorDB, Indexer
+from components import ABCVectorDB
 from components.indexer.indexer import Indexer
 
 
