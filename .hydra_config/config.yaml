@@ -2,12 +2,14 @@ defaults:
   - _self_  # TODO: Silences the hydra version migration warning (PLEASE REVIEW FOR BREAKING CHANGES)
   - chunker: recursive_splitter #semantic_splitter
   - retriever: multiQuery
-  - rag: ChatBotRag
+  - rag: SimpleRag
 
 llm_params: &llm_params
-  temperature: 0.2
+  temperature: 0
   timeout: 60
   max_retries: 2
+  #frequency_penalty: 0.2
+  logprobs: true
 
 llm:
   <<: *llm_params

@@ -276,18 +276,15 @@ async def openai_completion(
         metadata = output.response_metadata
         usage = metadata["token_usage"]
 
-        logprops = ChoiceLogprobs(
-            content=[
-                ChatCompletionTokenLogprob(
-                    token=r["token"],
-                    bytes=r["bytes"],
-                    logprob=r["logprob"],
-                    top_logprobs=r["top_logprobs"],
-                )
-                for r in metadata["logprobs"]["content"]
-            ],
-            refusal=metadata["logprobs"]["refusal"],
-        )
+        logprobs = {
+            "token_logprobs": [ r["logprob"] for r in metadata["logprobs"]["content"] ],
+            "top_logprobs": [
+                {
+                    v["token"]: v["logprob"] for v in entry["top_logprobs"]
+                }
+                for entry in metadata["logprobs"]["content"]
+            ]
+        }
 
         completion = OpenAICompletion(
             id=response_id,
@@ -297,7 +294,7 @@ async def openai_completion(
                 OpenAICompletionChoice(
                     index=0,
                     text=output.content,
-                    logprobs=logprops,
+                    logprobs=logprobs,
                     finish_reason=metadata["finish_reason"],
                 )
             ],
