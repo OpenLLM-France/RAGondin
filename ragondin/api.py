@@ -1,7 +1,13 @@
 import ray
+from dotenv import dotenv_values
 
-if not ray.is_initialized():
-    ray.init(dashboard_host="0.0.0.0")
+env_vars = dotenv_values("/ray_mount/.env")
+env_vars["PYTHONPATH"] = "/app/ragondin"
+
+
+ray.init(
+    address="auto", runtime_env={"working_dir": "/app/ragondin", "env_vars": env_vars}
+)
 
 import json
 from enum import Enum
@@ -10,7 +16,6 @@ from typing import Literal
 
 import uvicorn
 from chainlit.utils import mount_chainlit
-from components import RagPipeline
 from config import load_config
 from fastapi import Depends, FastAPI, Request
 from fastapi.responses import StreamingResponse
@@ -18,12 +23,14 @@ from fastapi.staticfiles import StaticFiles
 from langchain_core.messages import AIMessage, HumanMessage
 from loguru import logger
 from pydantic import BaseModel
+from routers.extract import router as extract_router
 from routers.indexer import router as indexer_router
 from routers.openai import router as openai_router
-from routers.search import router as search_router
-from routers.extract import router as extract_router
 from routers.partition import router as partition_router
+from routers.search import router as search_router
 from utils.dependencies import vectordb
+
+from components import RagPipeline
 
 config = load_config()
 DATA_DIR = Path(config.paths.data_dir)
