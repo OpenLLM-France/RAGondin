@@ -1,4 +1,5 @@
-from typing import Any, Dict, List, Literal, Optional
+from typing import Any, Dict, List, Literal, Optional, Union
+
 from pydantic import BaseModel, Field
 
 
@@ -45,8 +46,10 @@ class ChatCompletionTokenLogprob(BaseModel):
 
 
 class ChoiceLogprobs(BaseModel):
-    content: List[ChatCompletionTokenLogprob]
-    refusal: Optional[Any] = Field(None)  # Explicit Field declaration
+    text_offsets: Optional[List[int]] = Field(None)
+    token_logprobs: List[Union[float, None]]
+    tokens: List[str] = Field(None)
+    top_logprobs: List[Union[dict, None]]
 
 
 # Handle forward references
