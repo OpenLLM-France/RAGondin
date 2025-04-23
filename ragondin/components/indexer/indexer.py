@@ -178,7 +178,7 @@ class Indexer():
                 self.logger.info(f"No points found for file_id: {file_id}")
                 return
             # Delete the points
-            self.vectordb.delete_points(points)
+            self.vectordb.delete_file_points(points, file_id, partition)
             self.logger.info(f"File {file_id} deleted.")
         except Exception as e:
             self.logger.error(f"Error in `delete_files` for file_id {file_id}: {e}")
@@ -241,7 +241,10 @@ class Indexer():
             filter=filter,
         )
         return results
-    
+
+    def delete_partition(self, partition: str):
+        return self.vectordb.delete_partition(partition)
+
     def _check_partition_list(self, partition: Optional[str]):
         if partition is None:
             self.logger.warning("Partition not provided. Using default partition.")
