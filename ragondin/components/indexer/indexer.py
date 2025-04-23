@@ -120,9 +120,6 @@ class IndexerWorker(metaclass=SingletonMeta):
                 torch.cuda.empty_cache()
                 torch.cuda.ipc_collect()
 
-    def delete_partition(self, partition: str):
-        return self.vectordb.delete_partition(partition)
-
     def _check_partition_str(self, partition: Optional[str]):
         if partition is None:
             self.logger.warning("Partition not provided. Using default partition.")
@@ -244,7 +241,10 @@ class Indexer():
             filter=filter,
         )
         return results
-    
+
+    def delete_partition(self, partition: str):
+        return self.vectordb.delete_partition(partition)
+
     def _check_partition_list(self, partition: Optional[str]):
         if partition is None:
             self.logger.warning("Partition not provided. Using default partition.")

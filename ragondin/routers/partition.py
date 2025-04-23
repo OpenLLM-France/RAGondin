@@ -47,9 +47,8 @@ async def delete_partition(partition: str, indexer: Indexer = Depends(get_indexe
             detail=f"Partition '{partition}' not found.",
         )
 
-    return Response(
-        content=f"Partition {partition} deleted", status_code=status.HTTP_204_NO_CONTENT
-    )
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
+
 
 
 @router.get("/{partition}")
