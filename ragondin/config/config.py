@@ -6,7 +6,7 @@ from hydra import compose, initialize_config_dir
 from loguru import logger
 from omegaconf import OmegaConf
 
-CONFIG_PATH = os.environ.get("CONFIG_PATH", "../../.hydra_config")
+CONFIG_PATH = os.environ.get("CONFIG_PATH", "/app/.hydra_config")
 
 
 def load_config(config_path=CONFIG_PATH, overrides=None) -> OmegaConf:
