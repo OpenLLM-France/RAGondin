@@ -31,7 +31,7 @@ embedder:
   model_name: ${oc.env:EMBEDDER_MODEL_NAME, HIT-TMG/KaLM-embedding-multilingual-mini-v1}
   
 vectordb:
-  host: ${oc.env:VDB_HOST, milvus}
+  host: ${oc.env:VDB_HOST, 192.168.201.85}
   port: ${oc.env:VDB_PORT, 19530}
   connector_name: ${oc.env:VDB_CONNECTOR_NAME, milvus}
   collection_name: vdb_test 

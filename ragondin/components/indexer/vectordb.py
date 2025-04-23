@@ -888,6 +888,7 @@ class ConnectorFactory:
 
         # Extract parameters
         dbconfig = dict(config.vectordb)
+        logger.info(f"VECTORDB CONFIG: {dbconfig}")
         name = dbconfig.pop("connector_name")
         dbconfig.pop("enable")
         vdb_cls = ConnectorFactory.CONNECTORS.get(name)

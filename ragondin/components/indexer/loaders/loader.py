@@ -44,7 +44,7 @@ class DocSerializer:
             return None
 
         sub_url_path = (
-            Path(path).resolve().relative_to(self.data_dir)
+            Path(path).resolve()#.relative_to(self.data_dir)
         )  # for the static file server
         logger.debug(f"LOADING: {p.name}")
         loader = loader_cls(**self.kwargs)  # Propagate kwargs here!

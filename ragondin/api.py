@@ -1,8 +1,16 @@
 import ray
+from dotenv import dotenv_values
+env_vars = dotenv_values("/ray_mount/.env")
+env_vars["PYTHONPATH"] = "/app/ragondin"
 
-if not ray.is_initialized():
-    ray.init(dashboard_host="0.0.0.0")
 
+ray.init(
+    address="auto",
+    runtime_env={
+        "working_dir": "/app/ragondin",
+        # "excludes": ["model_weights/", "data/"],
+        "env_vars": env_vars}
+)
 import json
 from enum import Enum
 from pathlib import Path
