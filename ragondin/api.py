@@ -57,7 +57,6 @@ class Tags(Enum):
 class AppState:
     def __init__(self, config):
         self.config = config
-        self.model_name = config.llm.model
         self.ragpipe = ragPipe
         self.data_dir = Path(config.paths.data_dir)
 
@@ -73,15 +72,16 @@ mapping = {"user": HumanMessage, "assistant": AIMessage}
 AUTH_TOKEN: Optional[str] = os.getenv("AUTH_TOKEN")
 security = HTTPBearer()
 
+
 # Dependency to verify token
 def verify_token(credentials: HTTPAuthorizationCredentials = Depends(security)):
     if AUTH_TOKEN is None:
         return  # Auth disabled
     if credentials.credentials != AUTH_TOKEN:
         raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Invalid or missing token"
+            status_code=status.HTTP_403_FORBIDDEN, detail="Invalid or missing token"
         )
+
 
 # Apply globally only if AUTH_TOKEN is set
 dependencies = [Depends(verify_token)] if AUTH_TOKEN else []

@@ -36,7 +36,7 @@ class DoclingConverter(metaclass=SingletonMeta):
     """
 
     def __init__(self):
-        img_scale = 2
+        img_scale = 1
         pipeline_options = PdfPipelineOptions(
             do_ocr=True,
             do_table_structure=True,
