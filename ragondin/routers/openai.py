@@ -20,7 +20,7 @@ def get_app_state(request: Request):
 @router.get("/models", summary="OpenAI-compatible model listing endpoint")
 async def list_models(app_state=Depends(get_app_state)):
     # Get available partitions from your backend
-    partitions = app_state.ragpipe.vectordb.list_partitions()
+    partitions = app_state.vectordb.list_partitions()
 
     # Format them as OpenAI models
     models = [

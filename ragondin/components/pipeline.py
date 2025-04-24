@@ -143,6 +143,7 @@ class RagPipeline:
         docs = await self.retriever_pipeline.retrieve_docs(
             partition=partition, query=query
         )
+        logger.info(f"{len(docs)} Documents retrieved")
 
         # 3. Format the retrieved docs
         context, sources = format_context(docs)

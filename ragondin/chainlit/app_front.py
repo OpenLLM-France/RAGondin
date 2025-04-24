@@ -12,16 +12,18 @@ headers = {"accept": "application/json", "Content-Type": "application/json"}
 
 
 def get_base_url():
-    try:
-        context = get_context()
-        referer = context.session.http_referer
-        parsed_url = urlparse(referer)  # Parse the referer URL
-        base_url = f"{parsed_url.scheme}://{parsed_url.netloc}"
-        return base_url
-    except Exception as e:
-        logger.error(f"Error retrieving Chainlit context: {e}")
-        port = os.environ.get("CONTAINER_PORT", "8080")
-        return f"http://localhost:{port}"  # Default fallback URL
+    # try:
+    #     context = get_context()
+    #     referer = context.session.http_referer
+    #     parsed_url = urlparse(referer)  # Parse the referer URL
+    #     base_url = f"{parsed_url.scheme}://{parsed_url.netloc}"
+    #     return base_url
+    # except Exception as e:
+    #     logger.error(f"Error retrieving Chainlit context: {e}")
+    port = os.environ.get("CONTAINER_PORT", "8080")
+    logger.info(f"PORT: {port}")
+
+    return f"http://localhost:{port}"  # Default fallback URL
 
 
 @cl.set_chat_profiles
@@ -72,9 +74,9 @@ async def on_chat_start():
 
     try:
         async with httpx.AsyncClient(
-            timeout=httpx.Timeout(4 * 60.0), headers=headers
+            timeout=httpx.Timeout(timeout=httpx.Timeout(4 * 60.0)), headers=headers
         ) as client:
-            response = await client.get(url=f"{base_url}/health_check")
+            response = await client.get(url=f"{base_url}/health_check", headers=headers)
             print(response.text)
 
     except Exception as e:
@@ -91,7 +93,7 @@ async def __fetch_page_content(chunk_url):
         return data.get("page_content", "")
 
 
-async def __format_sources(metadata_sources, only_txt=False):
+async def __format_sources(metadata_sources, only_txt=True):
     elements = []
     source_names = []
     for s in metadata_sources:
@@ -119,7 +121,7 @@ async def __format_sources(metadata_sources, only_txt=False):
                     elem = cl.Text(content=chunk_content, name=doc_id, display="side")
 
         elements.append(elem)
-        source_names.append(f"{doc_id}: {filename} ({page})")
+        source_names.append(f"{doc_id}: {filename} (page: {page})")
 
     return elements, source_names
 
@@ -140,7 +142,7 @@ async def on_message(message: cl.Message):
 
     async with cl.Step(name="Searching for relevant documents..."):
         async with httpx.AsyncClient(
-            timeout=httpx.Timeout(4 * 60.0), http2=True
+            timeout=httpx.Timeout(timeout=httpx.Timeout(4 * 60.0)), http2=True
         ) as client:
             async with client.stream(
                 "POST",

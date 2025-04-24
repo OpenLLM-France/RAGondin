@@ -50,13 +50,6 @@ class AppState:
         self.data_dir = Path(config.paths.data_dir)
 
 
-class ChatMsg(BaseModel):
-    role: Literal["user", "assistant"]
-    content: str
-
-
-mapping = {"user": HumanMessage, "assistant": AIMessage}
-
 app = FastAPI()
 
 app.state.app_state = AppState(config)
@@ -65,13 +58,8 @@ app.mount(
 )
 
 
-def static_base_url_dependency(request: Request) -> str:
-    return f"{request.url.scheme}://{request.url.hostname}:{request.url.port}/static"
-
-
 @app.get("/health_check", summary="Toy endpoint to check that the api is up")
-async def health_check(static_base_url: str = Depends(static_base_url_dependency)):
-    logger.info(f"URL: {static_base_url}")
+async def health_check(request: Request):
     return "RAG API is up."
 
 
