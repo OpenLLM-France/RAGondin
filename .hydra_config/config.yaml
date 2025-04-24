@@ -58,7 +58,7 @@ verbose:
 paths:
   prompts_dir: ${oc.env:PROMPTS_DIR, ../prompts}
   data_dir: ${oc.env:DATA_DIR, ../data}
-  volumes_dir: ${oc.env:DOCKER_VOLUME_DIRECTORY, /app/volumes}
+  volumes_dir: ${oc.env:MILVUS_VOLUME_DIRECTORY, /app/volumes}
 
 
 prompt:
@@ -86,6 +86,3 @@ loader:
 ray:
   num_cpus: ${oc.decode:${oc.env:RAY_NUM_CPUS, 4}}
   num_gpus: ${oc.decode:${oc.env:RAY_NUM_GPUS, 1}}
-  compute_concurrency: ${oc.decode:${oc.env:RAY_INDEX_CONCURRENCY, 2}}
-  chunk_concurrency: ${oc.decode:${oc.env:RAY_CHUNK_CONCURRENCY, 2}}
-  serialize_concurrency: ${oc.decode:${oc.env:RAY_SERIALIZE_CONCURRENCY, 2}}

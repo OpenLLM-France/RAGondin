@@ -1,17 +1,18 @@
 import asyncio
+import gc
 import importlib
 from pathlib import Path
 from typing import AsyncGenerator, Dict, Optional
+
 import torch
 from aiopath import AsyncPath
 from langchain_core.documents.base import Document
 from loguru import logger
-from components.utils import SingletonMeta
+
+from .base import BaseLoader
 from .DoclingLoader import DoclingLoader
 from .MarkerLoader import MarkerLoader
 from .VideoAudioLoader import VideoAudioLoader
-from .base import BaseLoader
-import gc
 
 
 class DocSerializer:

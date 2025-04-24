@@ -6,16 +6,12 @@ x-ragondin: &ragondin_template
     context: .
     dockerfile: Dockerfile
   volumes:
-    - ./.hydra_config:/app/.hydra_config
+    - /ray_mount:/ray_mount
     - ./model_weights:/app/model_weights
     - ./data:/app/data # PDF data for RAG
     - ./ragondin:/app/ragondin # For dev mode
     - ${DATA_VOLUME_DIR:-./volumes}:/app/volumes
-
-  ports:
-    - "${APP_PORT:-8083}:${CONTAINER_PORT:-8080}"
-    - ${RAY_DASHBOARD_PORT:-8265}:${RAY_DASHBOARD_PORT:-8265} # for ray dashboard
-
+  network_mode: host
   env_file:
     - .env
   shm_size: 10.24gb
@@ -36,7 +32,6 @@ services:
               capabilities: [ gpu ]
     profiles:
       - '' # Empty string gives default behavior (but does not run when cpu requested)
-
 
   # No GPU (docker compose --profile cpu up --build)
   ragondin-cpu:

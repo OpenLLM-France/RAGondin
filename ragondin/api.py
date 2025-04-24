@@ -1,30 +1,43 @@
-import ray
+import os
 
-if not ray.is_initialized():
-    ray.init(dashboard_host="0.0.0.0")
+import ray
+from dotenv import dotenv_values
+
+SHARED_ENV = os.environ.get("SHARED_ENV", None)
+
+env_vars = dotenv_values(SHARED_ENV) if SHARED_ENV else {}
+env_vars["PYTHONPATH"] = "/app/ragondin"
+
+
+ray.init(
+    address="auto", runtime_env={"working_dir": "/app/ragondin", "env_vars": env_vars}
+)
 
 import json
 from enum import Enum
 from pathlib import Path
-from typing import Literal
+from typing import Literal, Optional
 
 import uvicorn
 from chainlit.utils import mount_chainlit
-from components import RagPipeline
 from config import load_config
-from fastapi import Depends, FastAPI, Request
+from fastapi import Depends, FastAPI, Request, HTTPException, status
 from fastapi.responses import StreamingResponse
 from fastapi.staticfiles import StaticFiles
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from langchain_core.messages import AIMessage, HumanMessage
 from loguru import logger
 from pydantic import BaseModel
+from routers.extract import router as extract_router
 from routers.indexer import router as indexer_router
 
 from routers.openai import router as openai_router
-from routers.search import router as search_router
-from routers.extract import router as extract_router
 from routers.partition import router as partition_router
+from routers.search import router as search_router
 from utils.dependencies import vectordb
+import os
+
+from components import RagPipeline
 
 config = load_config()
 DATA_DIR = Path(config.paths.data_dir)
@@ -50,7 +63,24 @@ class AppState:
         self.data_dir = Path(config.paths.data_dir)
 
 
-app = FastAPI()
+# Read the token from env (or None if not set)
+AUTH_TOKEN: Optional[str] = os.getenv("AUTH_TOKEN")
+security = HTTPBearer()
+
+# Dependency to verify token
+def verify_token(credentials: HTTPAuthorizationCredentials = Depends(security)):
+    if AUTH_TOKEN is None:
+        return  # Auth disabled
+    if credentials.credentials != AUTH_TOKEN:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Invalid or missing token"
+        )
+
+# Apply globally only if AUTH_TOKEN is set
+dependencies = [Depends(verify_token)] if AUTH_TOKEN else []
+app = FastAPI(dependencies=dependencies)
+
 
 app.state.app_state = AppState(config)
 app.mount(
@@ -64,7 +94,6 @@ async def health_check(request: Request):
 
 
 # Mount the default front
-# mount_chainlit(app, "./chainlit/app_front2.py", path="/chainlit")
 mount_chainlit(app, "./chainlit/app_front.py", path="/chainlit")
 
 # Mount the indexer router
