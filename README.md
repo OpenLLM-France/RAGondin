@@ -120,6 +120,10 @@ VLM_MODEL=
 # App
 APP_PORT=8083
 APP_HOST=0.0.0.0
+
+# To enable HTTP authentication via HTTPBearer
+AUTH_TOKEN=super-secret-token
+
 ## More settings can be added (see .env.example)
 
 # Loaders
