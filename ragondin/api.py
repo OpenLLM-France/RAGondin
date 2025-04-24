@@ -16,14 +16,15 @@ ray.init(
 import json
 from enum import Enum
 from pathlib import Path
-from typing import Literal
+from typing import Literal, Optional
 
 import uvicorn
 from chainlit.utils import mount_chainlit
 from config import load_config
-from fastapi import Depends, FastAPI, Request
+from fastapi import Depends, FastAPI, Request, HTTPException, status
 from fastapi.responses import StreamingResponse
 from fastapi.staticfiles import StaticFiles
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from langchain_core.messages import AIMessage, HumanMessage
 from loguru import logger
 from pydantic import BaseModel
@@ -33,6 +34,7 @@ from routers.openai import router as openai_router
 from routers.partition import router as partition_router
 from routers.search import router as search_router
 from utils.dependencies import vectordb
+import os
 
 from components import RagPipeline
 
@@ -67,7 +69,23 @@ class ChatMsg(BaseModel):
 
 mapping = {"user": HumanMessage, "assistant": AIMessage}
 
-app = FastAPI()
+# Read the token from env (or None if not set)
+AUTH_TOKEN: Optional[str] = os.getenv("AUTH_TOKEN")
+security = HTTPBearer()
+
+# Dependency to verify token
+def verify_token(credentials: HTTPAuthorizationCredentials = Depends(security)):
+    if AUTH_TOKEN is None:
+        return  # Auth disabled
+    if credentials.credentials != AUTH_TOKEN:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Invalid or missing token"
+        )
+
+# Apply globally only if AUTH_TOKEN is set
+dependencies = [Depends(verify_token)] if AUTH_TOKEN else []
+app = FastAPI(dependencies=dependencies)
 app.state.app_state = AppState(config)
 app.mount(
     "/static", StaticFiles(directory=DATA_DIR.resolve(), check_dir=True), name="static"
