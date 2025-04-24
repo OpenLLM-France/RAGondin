@@ -73,7 +73,7 @@ class ABCVectorDB(ABC):
         pass
 
     @abstractmethod
-    def file_exists(self, file_name: str, partition: Optional[str] = None):
+    def file_exists(self, file_id: str, partition: Optional[str] = None):
         pass
 
     @abstractmethod
@@ -252,6 +252,7 @@ class MilvusDB(ABCVectorDB):
                 ranker_type="rrf",
                 expr=expr,
             )
+            self.logger.info(f"Docs: {docs_scores}")
         else:
             docs_scores = (
                 await self.vector_store.asimilarity_search_with_relevance_scores(
@@ -495,27 +496,11 @@ class MilvusDB(ABCVectorDB):
         try:
             if not self.partition_file_manager.partition_exists(partition=partition):
                 return []
-
-            filter_expression = f"partition == '{partition}'"
-            offset = 0
-            results = set()
-
-            while True:
-                response = self.client.query(
-                    collection_name=self.collection_name,
-                    filter=filter_expression,
-                    output_fields=["file_id"],
-                    limit=1000,
-                    offset=offset,
+            else:
+                results = self.partition_file_manager.list_files_in_partition(
+                    partition=partition
                 )
-
-                if not response:
-                    break
-
-                results.update(res["file_id"] for res in response if "file_id" in res)
-                offset += len(response)
-
-            return list(results)
+                return results
 
         except Exception as e:
             self.logger.error(f"Failed to get file_ids in partition '{partition}': {e}")
