@@ -2,7 +2,7 @@ from typing import List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from fastapi.responses import JSONResponse
-from utils.dependencies import Indexer, get_indexer, vectordb
+from utils.dependencies import Indexer, get_indexer
 
 # Create an APIRouter instance
 router = APIRouter()
@@ -81,13 +81,13 @@ async def search_file(
     request: Request,
     partition: str,
     file_id: str,
-    query: str = Query(..., description="Text to search semantically"),
+    text: str = Query(..., description="Text to search semantically"),
     top_k: int = Query(5, description="Number of top results to return"),
     indexer: Indexer = Depends(get_indexer),
 ):
     try:
         results = await indexer.asearch.remote(
-            query=query,
+            query=text,
             top_k=top_k,
             partition=partition,
             filter={"file_id": file_id}

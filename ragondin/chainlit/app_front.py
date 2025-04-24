@@ -20,7 +20,8 @@ def get_base_url():
         return base_url
     except Exception as e:
         logger.error(f"Error retrieving Chainlit context: {e}")
-        return f"http://localhost:{os.environ['APP_PORT']}"  # Default fallback URL
+        port = os.environ.get("CONTAINER_PORT", "8080")
+        return f"http://localhost:{port}"  # Default fallback URL
 
 
 @cl.set_chat_profiles

@@ -20,18 +20,27 @@ def get_app_state(request: Request):
 @router.get("/models", summary="OpenAI-compatible model listing endpoint")
 async def list_models(app_state=Depends(get_app_state)):
     # Get available partitions from your backend
-    partitions = app_state.vectordb.list_partitions() + ["all"]
+    partitions = app_state.ragpipe.vectordb.list_partitions()
 
     # Format them as OpenAI models
     models = [
         {
-            "id": f"ragondin-{partition}",
+            "id": f"ragondin-{partition.partition}",
             "object": "model",
-            "created": 0,  # TODO: Add created time
+            "created": int(partition.created_at.timestamp()),
             "owned_by": "RAGondin",
         }
         for partition in partitions
     ]
+
+    models.append(
+        {
+            "id": "ragondin-all",
+            "object": "model",
+            "created": 0,
+            "owned_by": "RAGondin",
+        }
+    )
 
     return JSONResponse(content={"object": "list", "data": models})
 
@@ -141,7 +150,13 @@ async def openai_completion(
 
     # Load model name and partition
     model_name = request.model
-    partition = __get_partition_name(model_name, app_state)
+    if not model_name.startswith("ragondin-"):
+        raise HTTPException(status_code=404, detail="Model not found")
+    partition = model_name.split("ragondin-")[1]
+    if partition != "all" and not app_state.ragpipe.vectordb.partition_exists(
+        partition
+    ):
+        raise HTTPException(status_code=404, detail="Model not found")
     # Run RAG pipeline
     llm_output, _, sources = await app_state.ragpipe.completions(
         partition=[partition], payload=request.model_dump()

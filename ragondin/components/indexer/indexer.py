@@ -10,27 +10,37 @@ from .chunker import ABCChunker, ChunkerFactory
 from .embeddings import HFEmbedder
 from .loaders.loader import DocSerializer
 from .vectordb import ConnectorFactory
+from config import load_config
 
-if not ray.is_initialized():
-    ray.init(dashboard_host="0.0.0.0", ignore_reinit_error=True)
+# Load the configuration
+config = load_config()
+
+# Set ray resources
+NUM_GPUS = config.ray.get("num_gpus")
+NUM_CPUS = config.ray.get("num_cpus")
+
+# Set ray concurrency groups
+COMPUTE_CONCURRENCY = config.ray.get("compute_concurrency")
+SERIALIZE_CONCURRENCY = config.ray.get("serialize_concurrency")
+CHUNK_CONCURRENCY = config.ray.get("chunk_concurrency")
+
 
 if torch.cuda.is_available():
-    gpu, cpu = 1, 0
+    gpu, cpu = NUM_GPUS, NUM_CPUS
 else:
-    gpu, cpu = 0, 1
+    gpu, cpu = 0, NUM_CPUS
 
 
 @ray.remote(
     num_cpus=cpu,
     num_gpus=gpu,
-    concurrency_groups={"compute": 2, "serialize": 2, "chunk": 2},
-    max_task_retries=2,
-    max_restarts=-1,
+    concurrency_groups={"compute": COMPUTE_CONCURRENCY, "serialize": SERIALIZE_CONCURRENCY, "chunk": CHUNK_CONCURRENCY},
+    max_task_retries=2
 )
-class Indexer(metaclass=SingletonMeta):
+class IndexerWorker(metaclass=SingletonMeta):
     """This class bridges static files with the vector store database.*"""
 
-    def __init__(self, config, logger, device=None) -> None:
+    def __init__(self, config, device=None) -> None:
         """
         Initializes the Indexer class with the given configuration, logger, and optional device.
 
@@ -39,6 +49,7 @@ class Indexer(metaclass=SingletonMeta):
             logger (Logger): Logger object for logging information.
             device (str, optional): Device to be used by the embedder. Defaults to None.
         """
+        from loguru import logger
         self.embedder = HFEmbedder(embedder_config=config.embedder, device=device)
         self.serializer = DocSerializer(data_dir=config.paths.data_dir, config=config)
         self.chunker: ABCChunker = ChunkerFactory.create_chunker(
@@ -109,6 +120,38 @@ class Indexer(metaclass=SingletonMeta):
                 torch.cuda.empty_cache()
                 torch.cuda.ipc_collect()
 
+    def _check_partition_str(self, partition: Optional[str]):
+        if partition is None:
+            self.logger.warning("Partition not provided. Using default partition.")
+            partition = self.default_partition
+        elif not isinstance(partition, str):
+            raise ValueError("Partition should be a string.")
+        return partition
+
+
+
+@ray.remote(concurrency_groups={"compute": COMPUTE_CONCURRENCY})
+class Indexer():
+    def __init__(self, config, logger, device=None):
+        self.config = config
+        self.device = device
+        self.logger = logger
+        self.enable_insertion = self.config.vectordb["enable"]
+        self.embedder = HFEmbedder(
+            embedder_config=config.embedder, device=device
+        )
+        self.vectordb = ConnectorFactory.create_vdb(
+            config, logger, embeddings=self.embedder.get_embeddings()
+        )
+    def get_worker(self):
+        return IndexerWorker.remote(self.config, self.device)
+
+    @ray.method(concurrency_group="compute")
+    async def add_file(self, path, metadata, partition):
+        worker = self.get_worker()
+        await worker.add_file.remote(path, metadata, partition)
+        ray.kill(worker)
+
     def delete_file(self, file_id: str, partition: str):
         """
         Deletes files from the vector database based on the provided filters.
@@ -135,7 +178,7 @@ class Indexer(metaclass=SingletonMeta):
                 self.logger.info(f"No points found for file_id: {file_id}")
                 return
             # Delete the points
-            self.vectordb.delete_points(points)
+            self.vectordb.delete_file_points(points, file_id, partition)
             self.logger.info(f"File {file_id} deleted.")
         except Exception as e:
             self.logger.error(f"Error in `delete_files` for file_id {file_id}: {e}")
@@ -199,13 +242,8 @@ class Indexer(metaclass=SingletonMeta):
         )
         return results
 
-    def _check_partition_str(self, partition: Optional[str]):
-        if partition is None:
-            self.logger.warning("Partition not provided. Using default partition.")
-            partition = self.default_partition
-        elif not isinstance(partition, str):
-            raise ValueError("Partition should be a string.")
-        return partition
+    def delete_partition(self, partition: str):
+        return self.vectordb.delete_partition(partition)
 
     def _check_partition_list(self, partition: Optional[str]):
         if partition is None:

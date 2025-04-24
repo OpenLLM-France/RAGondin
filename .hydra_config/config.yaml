@@ -35,7 +35,7 @@ vectordb:
   host: ${oc.env:VDB_HOST, milvus}
   port: ${oc.env:VDB_PORT, 19530}
   connector_name: ${oc.env:VDB_CONNECTOR_NAME, milvus}
-  collection_name: vdb 
+  collection_name: vdb_test 
   hybrid_mode: true
   enable: true
 
@@ -58,6 +58,8 @@ verbose:
 paths:
   prompts_dir: ${oc.env:PROMPTS_DIR, ../prompts}
   data_dir: ${oc.env:DATA_DIR, ../data}
+  volumes_dir: ${oc.env:DOCKER_VOLUME_DIRECTORY, ../volumes}
+
 
 prompt:
   rag_sys_pmpt: rag_sys_prompt_template.txt # rag_sys_pmpt_tmpl_ifa.txt
@@ -65,13 +67,25 @@ prompt:
 
 loader:
   image_captioning: true
+  audio_model: ${oc.env:WHISPER_MODEL, base}
   file_loaders:
     docx: MarkItDownLoader
     pdf: ${oc.env:PDFLoader, DoclingLoader}  # DoclingLoader # MarkerLoader # CustomPyMuPDFLoader # Custompymupdf4llm
     doc: DocLoader
     pptx: PPTXLoader
     txt: TextLoader
-    # wav: VideoAudioLoader
-    # mp3: VideoAudioLoader
-    # mp4: VideoAudioLoader
+    wav: VideoAudioLoader
+    mp3: VideoAudioLoader
+    mp4: VideoAudioLoader
+    ogg: VideoAudioLoader
+    flv: VideoAudioLoader
+    wma: VideoAudioLoader
+    aac: VideoAudioLoader
     # odt: CustomDocLoader
+
+ray:
+  num_cpus: ${oc.decode:${oc.env:RAY_NUM_CPUS, 4}}
+  num_gpus: ${oc.decode:${oc.env:RAY_NUM_GPUS, 1}}
+  compute_concurrency: ${oc.decode:${oc.env:RAY_INDEX_CONCURRENCY, 2}}
+  chunk_concurrency: ${oc.decode:${oc.env:RAY_CHUNK_CONCURRENCY, 2}}
+  serialize_concurrency: ${oc.decode:${oc.env:RAY_SERIALIZE_CONCURRENCY, 2}}

@@ -94,9 +94,9 @@ class RagPipeline:
         self.chat_history_depth = config.rag["chat_history_depth"]
 
         self.llm_client = LLM(config.llm, self.logger)
-
+        self.vlm_client = LLM(config.vlm, self.logger)
         self.contextualizer = AsyncOpenAI(
-            base_url=config.llm["base_url"], api_key=config.llm["api_key"]
+            base_url=config.vlm["base_url"], api_key=config.vlm["api_key"]
         )
 
     async def generate_query(self, messages: list[dict]) -> str:
@@ -112,7 +112,7 @@ class RagPipeline:
                 for m in messages:
                     chat_history += f"{m['role']}: {m['content']}\n"
 
-                params = dict(self.config.llm_params)
+                params = dict(self.config.lm_params)
                 params.pop("max_retries")
                 response = await self.contextualizer.chat.completions.create(
                     model=self.config.llm["model"],
