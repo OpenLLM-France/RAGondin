@@ -14,7 +14,7 @@ x-ragondin: &ragondin_template
     - ./ragondin:/app/ragondin # For dev mode
 
   ports:
-    - ${APP_PORT:-8080}:8080
+    - ${APP_PORT:-8080}:${APP_PORT:-8080}
     - 8265:8265 # for ray
   env_file:
     - .env

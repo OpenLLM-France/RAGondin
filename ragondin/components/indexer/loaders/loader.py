@@ -43,18 +43,9 @@ class DocSerializer:
             logger.info(f"No loader for this file {p.name}")
             return None
 
-        sub_url_path = (
-            Path(path).resolve().relative_to(self.data_dir)
-        )  # for the static file server
         logger.debug(f"LOADING: {p.name}")
         loader = loader_cls(**self.kwargs)  # Propagate kwargs here!
-        metadata = {
-            "source": str(path),
-            "file_name": p.name,
-            "sub_url_path": str(sub_url_path),
-            "page_sep": loader.page_sep,
-            **metadata,
-        }
+        metadata = {"page_sep": loader.page_sep, **metadata}
         doc: Document = await loader.aload_document(
             file_path=path, metadata=metadata, save_md=False
         )

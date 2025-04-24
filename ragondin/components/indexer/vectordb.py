@@ -250,6 +250,7 @@ class MilvusDB(ABCVectorDB):
                 fetch_k=top_k,
                 ranker_type="rrf",
                 expr=expr,
+                # param={"range_filter": similarity_threshold},
             )
         else:
             docs_scores = (
