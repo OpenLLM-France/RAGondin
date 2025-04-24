@@ -9,7 +9,7 @@ from loguru import logger
 from components.utils import SingletonMeta
 from .DoclingLoader import DoclingLoader
 from .MarkerLoader import MarkerLoader
-from .VideoAudioLoader import AudioTranscriber
+from .VideoAudioLoader import VideoAudioLoader
 from .base import BaseLoader
 import gc
 
@@ -43,23 +43,14 @@ class DocSerializer:
             logger.info(f"No loader for this file {p.name}")
             return None
 
-        sub_url_path = (
-            Path(path).resolve().relative_to(self.data_dir)
-        )  # for the static file server
         logger.debug(f"LOADING: {p.name}")
         loader = loader_cls(**self.kwargs)  # Propagate kwargs here!
-        metadata = {
-            "source": str(path),
-            "file_name": p.name,
-            "sub_url_path": str(sub_url_path),
-            "page_sep": loader.page_sep,
-            **metadata,
-        }
+        metadata = {"page_sep": loader.page_sep, **metadata}
         doc: Document = await loader.aload_document(
             file_path=path, metadata=metadata, save_md=False
         )
 
-        if isinstance(loader, (DoclingLoader, MarkerLoader, AudioTranscriber)):
+        if isinstance(loader, (DoclingLoader, MarkerLoader, VideoAudioLoader)):
             loader_cls.destroy()
 
         del loader

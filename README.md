@@ -102,6 +102,8 @@ For PDF file indexing, multiple options are available:
 - **`MarkerLoader` and `DoclingLoader`** are recommended for the best performance (requires GPU).
 - **PyMuPDF4LLMLoader** or **PyMuPDFLoader**: Suggested for non-GPU users. Not that these loader doesn't handle Non-searchable PDF nor does it handle images (**`We will add it`**).
 
+Concerning the audio and video files, we use OpenAI's Whisper model to convert the audio into plain text. The file extensions supported by RAGondin are: .wav, .mp3, .mp4, .ogg, .flv, .wma, .aac. You can also choose the model used for transcription for speed or precision. Here are all the Whisper's models: tiny, base, small, medium, large, turbo. For more information, checkout [OpenAI Whisper](https://github.com/openai/whisper)
+
 Other file formats are pre-configured with optimal settings.
 
 ```bash
@@ -116,12 +118,15 @@ VLM_API_KEY=
 VLM_MODEL=
 
 # App
-APP_PORT=8080
+APP_PORT=8083
 APP_HOST=0.0.0.0
 ## More settings can be added (see .env.example)
 
 # Loaders
 PDFLoader=DoclingLoader
+
+# Audio
+WHISPER_MODEL=base
 ```
 
 ### 4.Deployment: Launch the app
@@ -137,7 +142,13 @@ docker compose up --build
 # Launch with CPU only (useful if GPU is unavailable)
 docker compose --profile cpu up --build
 ```
-> **Note**: The initial launch is longer due to the installation of required dependencies. Once the application is up and running, you can access the api documentation at `http://localhost:8080/docs` (8080 is the APP_PORT variable determined in your **`.env`**) to manage documents, execute searches, or interact with the RAG pipeline (see the **next section** about the api for more details). A default chat ui is also deployed using [chainlit](!https://docs.chainlit.io/get-started/overview). You can access to it at `http://localhost:8080/chainlit` chat with your documents with our RAG engine behind it.
+
+Once it is running, you can check everything is fine by doing:
+```bash
+curl http://localhost:8083/health_check
+```
+
+> **Note**: The initial launch is longer due to the installation of required dependencies. Once the application is up and running, you can access the api documentation at `http://localhost:8083/docs` (8083 is the APP_PORT variable determined in your **`.env`**) to manage documents, execute searches, or interact with the RAG pipeline (see the **next section** about the api for more details). A default chat ui is also deployed using [chainlit](!https://docs.chainlit.io/get-started/overview). You can access to it at `http://localhost:8083/chainlit` chat with your documents with our RAG engine behind it.
 
 
 * **Running on CPU**:  
@@ -268,7 +279,13 @@ Fetches a specific extract by its ID.
 **`POST /v1/chat/completions`**  
 OpenAI-compatible chat completion endpoint using a Retrieval-Augmented Generation (RAG) pipeline. Accepts `model`, `messages`, `temperature`, `top_p`, etc.
 
+---
 
+#### ℹ️ Utils
+
+**`GET /health_check`**
+
+Simple endpoint to ensure the server is running.
 
 
 ## Contribute

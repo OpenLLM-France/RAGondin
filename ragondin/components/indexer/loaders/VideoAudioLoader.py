@@ -1,11 +1,12 @@
 import os
 from pathlib import Path
-import whisperx
+import whisper
 from langchain_core.documents.base import Document
 from loguru import logger
 from pydub import AudioSegment
 from .base import BaseLoader
 from components.utils import SingletonMeta
+
 
 import torch
 
@@ -14,12 +15,11 @@ torch.backends.cudnn.allow_tf32 = True
 
 
 class AudioTranscriber(metaclass=SingletonMeta):
-    def __init__(
-        self, device="cpu", compute_type="float32", model_name="large-v2", language="fr"
-    ):
-        self.model = whisperx.load_model(
-            model_name, device=device, language=language, compute_type=compute_type
-        )
+    def __init__(self, device="cpu", compute_type="float32", model_name="base"):
+        # self.model = whisperx.load_model(
+        #     model_name, device=device, language=language, compute_type=compute_type
+        # )
+        self.model = whisper.load_model(name=model_name, device=device)
 
 
 class VideoAudioLoader(BaseLoader):
@@ -28,11 +28,11 @@ class VideoAudioLoader(BaseLoader):
 
         self.batch_size = 4
         self.page_sep = page_sep
-        self.formats = [".wav", ".mp3", ".mp4"]
+        self.formats = [".wav", ".mp3", ".mp4", ".ogg", ".flv", ".wma", ".aac"]
 
-        self.transcriber = AudioTranscriber(
-            device="cuda" if torch.cuda.is_available() else "cpu"
-        )
+        device = "cuda" if torch.cuda.is_available() else "cpu"
+        model = kwargs.get("config").loader["audio_model"]
+        self.transcriber = AudioTranscriber(device=device, model_name=model)
 
     @classmethod
     def destroy(cls):
@@ -58,21 +58,16 @@ class VideoAudioLoader(BaseLoader):
             sound.export(
                 audio_path_wav,
                 format="wav",
-                parameters=["-ar", "16000", "-ac", "1", "-ab", "32k"],
             )
 
         logger.info(f"SOUND: {file_path}")
-        audio = whisperx.load_audio(audio_path_wav)
+        result = self.transcriber.model.transcribe(str(audio_path_wav))
 
         if path.suffix != ".wav":
             os.remove(audio_path_wav)
 
-        transcription_l = self.transcriber.model.transcribe(
-            audio, batch_size=self.batch_size
-        )
-
-        content = " ".join([tr["text"] for tr in transcription_l["segments"]])
-        doc = Document(page_content=f"{content}{self.page_sep}", metadata=metadata)
+        content = result["text"]
+        doc = Document(page_content=content, metadata=metadata)
         if save_md:
             self.save_document(Document(page_content=content), str(file_path))
         return doc

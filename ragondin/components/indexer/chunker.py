@@ -42,7 +42,7 @@ template = """**Objectif** : Rédiger succinctement un texte de contextualisatio
 **Contexte** :
 - Source : {source}
 - Première page :
-{first_page}
+{first_chunk}
 - Fragment précédent :
 {prev_chunk}
 
@@ -81,7 +81,7 @@ class ChunkContextualizer:
 
     async def generate_context(
         self,
-        first_page: str,
+        first_chunk: str,
         prev_chunk: str,
         chunk: str,
         source: str,
@@ -92,7 +92,7 @@ class ChunkContextualizer:
             try:
                 return await self.context_generator.ainvoke(
                     {
-                        "first_page": first_page,
+                        "first_chunk": first_chunk,
                         "prev_chunk": prev_chunk,
                         "chunk": chunk,
                         "source": source,
@@ -122,7 +122,7 @@ class ChunkContextualizer:
         Raises:
             Exception: If an error occurs during the contextualization process, it logs a warning with the error message.
         """
-        if not self.contextual_retrieval:
+        if not self.contextual_retrieval or len(chunks) == 1:
             return [chunk.page_content for chunk in chunks]
 
         try:
@@ -132,7 +132,7 @@ class ChunkContextualizer:
                 curr_chunk = chunks[i]
                 tasks.append(
                     self.generate_context(
-                        first_page=pages[0],
+                        first_chunk=chunks[0],
                         prev_chunk=prev_chunk.page_content,
                         chunk=curr_chunk.page_content,
                         source=source,
@@ -339,5 +339,5 @@ class ChunkerFactory:
                 )
 
         # Include contextual retrieval if specified
-        chunker_params["llm"] = ChatOpenAI(**config.llm)
+        chunker_params["llm"] = ChatOpenAI(**config.vlm)
         return chunker_class(**chunker_params)

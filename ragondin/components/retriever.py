@@ -212,6 +212,6 @@ class RetrieverFactory:
             raise ValueError(f"Unknown retriever type: {retriever_type}")
 
         if retriever_type in ["hyde", "multiQuery"]:
-            retreiverConfig["llm"] = ChatOpenAI(**config.llm)
+            retreiverConfig["llm"] = ChatOpenAI(**config.vlm)
 
         return retriever_cls(**retreiverConfig)

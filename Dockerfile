@@ -28,7 +28,8 @@ WORKDIR /app
 COPY pyproject.toml uv.lock ./
 RUN pip3 install uv && \
     uv sync --no-dev
-
+COPY entrypoint.sh /app/entrypoint.sh
+RUN chmod +x /app/entrypoint.sh
 # Set workdir for source code
 WORKDIR /app/ragondin
 
@@ -40,8 +41,5 @@ COPY public/ /app/public/
 COPY prompts/ /app/prompts/
 COPY .hydra_config/ /app/.hydra_config/
 ENV PYTHONPATH=/app/ragondin/
-
-
-ARG APP_PORT
-ENV APP_PORT=${APP_PORT}
-ENTRYPOINT ["sh", "-c", "uv run uvicorn api:app --host 0.0.0.0 --port 8080 --reload"]
+ENV CONTAINER_PORT=${CONTAINER_PORT:-8080}
+ENTRYPOINT ../entrypoint.sh
