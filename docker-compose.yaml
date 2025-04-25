@@ -42,3 +42,14 @@ services:
     deploy: {}
     profiles:
       - 'cpu'
+
+  # SvelteKit indexer UI
+  indexer-ui:
+    build:
+      context: ./indexer-ui
+      dockerfile: Dockerfile
+    ports:
+      - "${INDEXER_UI_PORT:-3000}:3000"
+    env_file:
+      - .env
+    restart: unless-stopped

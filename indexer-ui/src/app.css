@@ -1,0 +1,7 @@
+@import 'tailwindcss';
+
+@layer components {
+    .btn {
+        @apply cursor-pointer rounded-md px-4 py-2 border border-slate-200 hover:bg-slate-50 focus:outline-none;
+    }
+}
