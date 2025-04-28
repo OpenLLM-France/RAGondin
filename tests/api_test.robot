@@ -15,9 +15,9 @@ Get Task Status
     RETURN  ${response.json()}
 
 Get Extract
-    [Arguments]  ${extract_id}  ${expected_status}=200
-    ${response}=  GET  ${BASE_URL}/extract/${extract_id}  expected_status=${expected_status}
-    RETURN  ${response.json()}
+    [Arguments]    ${extract_id}    ${partition}    ${expected_status}=200
+    ${response}=    GET    ${BASE_URL}/extract/${extract_id}    expected_status=${expected_status}
+    RETURN    ${response.json()}
 
 Index File
     [Arguments]    ${file_path}    ${file_id}    ${partition}    ${expected_status}=201
@@ -37,12 +37,24 @@ Index File
 Check File Exists 
     [Arguments]  ${file_id}  ${partition}  ${expected_status}=200
     ${response}=    GET    ${BASE_URL}/partition/check-file/${partition}/file/${file_id}    expected_status=${expected_status}
-    Should Be Equal As Strings    ${response.json()}    File '${file_id}' exists in partition '${partition}'.
-    
+    Run Keyword If    '${expected_status}' == '200'    Should Be Equal As Strings    ${response.json()}    File '${file_id}' exists in partition '${partition}'.
+    Run Keyword If    '${expected_status}' == '404'    Should Be Equal As Strings    ${response.json()}[detail]    File '${file_id}' not found in partition '${partition}'.
+
+
+Patch File
+    [Arguments]    ${file_id}    ${partition}    ${metadata}    ${expected_status}=200
+    ${response}=    PATCH    ${BASE_URL}/indexer/partition/${partition}/file/${file_id}    json=${metadata}    expected_status=${expected_status}
+    Run Keyword If    '${expected_status}' == '200'    Should Be Equal As Strings    ${response.json()}    File '${file_id}' updated in partition '${partition}'.
 
 Delete File
     [Arguments]  ${file_id}    ${partition}=test    ${expected_status}=204
     ${response}=    DELETE    ${BASE_URL}/indexer/partition/${partition}/file/${file_id}    expected_status=${expected_status}
+    RETURN    None
+
+
+Delete Partition
+    [Arguments]  ${partition}  ${expected_status}=204
+    ${response}=    DELETE    ${BASE_URL}/partition/${partition}    expected_status=${expected_status}
     RETURN    None
 
 *** Test Cases ***
@@ -50,6 +62,14 @@ Health Check
     ${response}=    GET    ${BASE_URL}/health_check    expected_status=200
     Should Be Equal As Strings    ${response.json()}    RAG API is up.
 
+Add File and Patch it with new metadata
+    Index File    ./Projet_2.pdf    0    test
+    ${metadata}=    Create Dictionary    title=Test Title    author=Test Author
+    Patch File    0    test    ${metadata}
+    ${response}=    Get Extract    0
+    Should Be Equal As Strings    ${response}[title]    Test Title
+    Should Be Equal As Strings    ${response}[author]    Test Author
+    Delete Partition    test
 
 Add File and Delete it
     Index File    ./info-paul.pdf    0    test
