@@ -57,7 +57,7 @@ verbose:
 paths:
   prompts_dir: ${oc.env:PROMPTS_DIR, ../prompts}
   data_dir: ${oc.env:DATA_DIR, ../data}
-  volumes_dir: ${oc.env:MILVUS_VOLUME_DIRECTORY, /app/volumes}
+  volumes_dir: /app/volumes
 
 
 prompt:
