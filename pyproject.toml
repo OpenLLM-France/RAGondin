@@ -33,6 +33,8 @@ dependencies = [
     "chardet>=5.2.0",
     "openai-whisper>=20240930",
     "torch>=2.4.1",
+    "robotframework>=7.2.2",
+    "robotframework-requests>=0.9.7",
 ]
 
 [dependency-groups]
