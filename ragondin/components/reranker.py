@@ -1,9 +1,8 @@
-import asyncio
 import gc
-
 import torch
-from langchain_core.documents.base import Document
+import asyncio
 from loguru import logger
+from langchain_core.documents.base import Document
 from ragatouille import RAGPretrainedModel
 
 
