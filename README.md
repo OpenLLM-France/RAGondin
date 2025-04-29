@@ -413,6 +413,26 @@ This repository is for research and educational purposes only. While we strive f
 ## License
 MIT License - See [LICENSE](LICENSE) file for details.
 
+## Troubleshooting
+
+### Error on dependencies installation
+
+After running `uv sync`, if you have this error:
+
+```
+error: Distribution `ray==2.43.0 @ registry+https://pypi.org/simple` can't be installed because it doesn't have a source distribution or wheel for the current platform
+
+hint: You're using CPython 3.13 (`cp313`), but `ray` (v2.43.0) only has wheels with the following Python ABI tag: `cp312`
+```
+
+This means your uv installation relies on cpython 3.13 while you are using python 3.12.
+
+To solve it, please run:
+```bash
+uv venv --python=3.12
+uv sync
+```
+
 ## TODO
 [] Better manage logs
 ```

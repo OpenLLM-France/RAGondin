@@ -253,6 +253,7 @@ class MilvusDB(ABCVectorDB):
                 param=SEARCH_PARAMS,
             )
             # self.logger.info(f"Docs: {docs_scores}")
+
         else:
             docs_scores = (
                 await self.vector_store.asimilarity_search_with_relevance_scores(
