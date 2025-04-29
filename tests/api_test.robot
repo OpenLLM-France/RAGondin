@@ -5,10 +5,20 @@ Library  String
 *** Variables
 ${BASE}  http://163.114.159.68
 ${PORT}  8089
+${test_file_1}    ./info-paul.pdf
+${test_file_2}    ./Projet_2.pdf
 ${BASE_URL}  ${BASE}:${PORT}
 
 
 *** Keywords ***
+Clean Up Test
+    [Arguments]  @{partition}
+    FOR    ${part}    IN    @{partition}
+        ${response}=    DELETE    ${BASE_URL}/partition/${part}    expected_status=any
+    END
+    RETURN    None
+
+
 Get Task Status
     [Arguments]  ${task_id}  ${expected_status}=200
     ${response}=  GET  ${BASE_URL}/indexer/task/${task_id}  expected_status=${expected_status}
@@ -34,17 +44,24 @@ Index File
         Sleep    1
     END
 
+Get File Metadata
+    [Arguments]  ${file_id}  ${partition}  ${expected_status}=200
+    ${response}=    GET    ${BASE_URL}/partition/${partition}/file/${file_id}    expected_status=${expected_status}
+    RETURN    ${response.json()}[metadata]
+    
+
 Check File Exists 
     [Arguments]  ${file_id}  ${partition}  ${expected_status}=200
     ${response}=    GET    ${BASE_URL}/partition/check-file/${partition}/file/${file_id}    expected_status=${expected_status}
     Run Keyword If    '${expected_status}' == '200'    Should Be Equal As Strings    ${response.json()}    File '${file_id}' exists in partition '${partition}'.
     Run Keyword If    '${expected_status}' == '404'    Should Be Equal As Strings    ${response.json()}[detail]    File '${file_id}' not found in partition '${partition}'.
 
-
 Patch File
     [Arguments]    ${file_id}    ${partition}    ${metadata}    ${expected_status}=200
-    ${response}=    PATCH    ${BASE_URL}/indexer/partition/${partition}/file/${file_id}    json=${metadata}    expected_status=${expected_status}
-    Run Keyword If    '${expected_status}' == '200'    Should Be Equal As Strings    ${response.json()}    File '${file_id}' updated in partition '${partition}'.
+    ${form_data}=    Create Dictionary    metadata=${metadata}
+    ${response}=    PATCH    ${BASE_URL}/indexer/partition/${partition}/file/${file_id}    data=${form_data}    expected_status=${expected_status}
+    Run Keyword If    '${expected_status}' == '200'    Should Be Equal As Strings    ${response.json()}[message]    Metadata for file '${file_id}' successfully updated.
+
 
 Delete File
     [Arguments]  ${file_id}    ${partition}=test    ${expected_status}=204
@@ -61,29 +78,35 @@ Delete Partition
 Health Check
     ${response}=    GET    ${BASE_URL}/health_check    expected_status=200
     Should Be Equal As Strings    ${response.json()}    RAG API is up.
+    [Teardown]
 
 Add File and Patch it with new metadata
-    Index File    ./Projet_2.pdf    0    test
+    Index File    ${test_file_2}    0    test
     ${metadata}=    Create Dictionary    title=Test Title    author=Test Author
+    ${metadata}=    Evaluate    json.dumps(${metadata})    json
+    Log To Console    ${metadata}
     Patch File    0    test    ${metadata}
-    ${response}=    Get Extract    0
+    ${response}=    Get File Metadata    0    test
+    Log To Console    ${response}
     Should Be Equal As Strings    ${response}[title]    Test Title
     Should Be Equal As Strings    ${response}[author]    Test Author
-    Delete Partition    test
+    [Teardown]    Clean Up Test    test
+
 
 Add File and Delete it
-    Index File    ./info-paul.pdf    0    test
+    Index File    ${test_file_1}    0    test
     Delete File    0    test
+    [Teardown]    Clean Up Test    test
 
 Add files to two partitions and search each partition
-    Index File    ./info-paul.pdf    0    test
-    Index File    ./info-paul.pdf    1    test2
+    Index File    ${test_file_1}    0    test
+    Index File    ${test_file_1}    1    test2
     Check File Exists    0    test
     Check File Exists    1    test    404
     Check File Exists    1    test2
     Check File Exists    0    test2    404
-    Delete File    0    test
-    Delete File    1    test2
+    [Teardown]    Clean Up Test    test    test2
+
 
 
 # Get Non Existent Task Status
