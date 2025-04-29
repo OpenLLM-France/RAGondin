@@ -114,6 +114,9 @@ async def openai_chat_completion(
             # Openai compatible streaming response
             async def stream_response():
                 async for chunk in llm_output:
+                    if "[DONE]" in chunk:
+                        yield f"data: Sources: {json.dumps(metadata)}\n\n"
+                        yield f"{chunk}\n\n"
                     yield chunk
 
             return StreamingResponse(
@@ -125,7 +128,10 @@ async def openai_chat_completion(
             # get the next chunk item of an async generator async
             try:
                 chunk = await llm_output.__anext__()
-                return chunk
+                return JSONResponse(
+                    content=chunk,
+                    headers={"X-Metadata-Sources": json.dumps(metadata)},
+                )
             except StopAsyncIteration:
                 raise HTTPException(status_code=500, detail="No response from LLM")
     except Exception as e:

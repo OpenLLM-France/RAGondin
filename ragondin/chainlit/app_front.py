@@ -102,6 +102,7 @@ async def __format_sources(metadata_sources, only_txt=True):
         logger.info(f"URL: {file_url}")
         doc_id = s["doc_id"]
         page = s["page"]
+        chunk_id = s["_id"]
         if only_txt:
             chunk_content = await __fetch_page_content(chunk_url=s["chunk_url"])
             elem = cl.Text(content=chunk_content, name=doc_id, display="side")
@@ -150,12 +151,14 @@ async def on_message(message: cl.Message):
                 headers=headers,
                 json=payload,
             ) as resp:
+                logger.debug(f"Headers: {resp.headers}")
                 metadata_sources = json.loads(resp.headers.get("X-Metadata-Sources"))
                 if metadata_sources:
                     elements, source_names = await __format_sources(metadata_sources)
                     msg = cl.Message(content="", elements=elements)
                 else:
-                    msg = cl.Message(content="")
+                    source_names = ''
+                    msg = cl.Message(content="") 
 
                 # STREAM Response
                 await msg.send()

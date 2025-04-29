@@ -12,6 +12,7 @@ from .chunker import ABCChunker, ChunkerFactory
 from .embeddings import HFEmbedder
 from .loaders.loader import DocSerializer
 from .vectordb import ConnectorFactory
+from components.reranker import Reranker
 
 # Load the configuration
 config = load_config()
@@ -134,6 +135,12 @@ class Indexer:
         self.vectordb = ConnectorFactory.create_vdb(
             config, logger, embeddings=self.embedder.get_embeddings()
         )
+        self.reranker = None
+        self.reranker_enabled = config.reranker["enable"]
+        self.reranker_top_k = int(config.reranker["top_k"])
+        if self.reranker_enabled:
+            self.logger.debug("Reranker enabled")
+            self.reranker = Reranker(self.logger, config)
         logger.info("Indexer supervisor actor initialized.")
 
     def get_worker(self):
@@ -232,8 +239,9 @@ class Indexer:
             similarity_threshold=similarity_threshold,
             filter=filter,
         )
+        if self.reranker_enabled:
+            results = await self.reranker.rerank(query, results, self.reranker_top_k)
         return results
-
     def delete_partition(self, partition: str):
         return self.vectordb.delete_partition(partition)
 

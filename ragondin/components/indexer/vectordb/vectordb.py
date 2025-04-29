@@ -253,7 +253,7 @@ class MilvusDB(ABCVectorDB):
                 expr=expr,
                 # param={"range_filter": similarity_threshold},
             )
-            self.logger.info(f"Docs: {docs_scores}")
+            # self.logger.info(f"Docs: {docs_scores}")
         else:
             docs_scores = (
                 await self.vector_store.asimilarity_search_with_relevance_scores(
