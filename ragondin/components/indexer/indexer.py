@@ -9,6 +9,7 @@ from langchain_core.documents.base import Document
 from loguru import logger
 
 from .chunker import ABCChunker, ChunkerFactory
+from ..reranker import Reranker
 from .embeddings import HFEmbedder
 from .loaders.loader import DocSerializer
 from .vectordb import ConnectorFactory
@@ -48,6 +49,14 @@ class Indexer(metaclass=SingletonMeta):
             config, logger=logger, embeddings=self.embedder.get_embeddings()
         )
         self.logger = logger
+
+        # reranker
+        self.reranker = None
+        self.reranker_enabled = config.reranker["enable"]
+        if self.reranker_enabled:
+            self.logger.debug(f"Reranker enabled: {self.reranker_enabled}")
+            self.reranker = Reranker(self.logger, config)
+
         self.logger.info("Indexer initialized...")
 
     async def serialize(self, path: str, metadata: Optional[Dict] = {}):
@@ -173,6 +182,11 @@ class Indexer(metaclass=SingletonMeta):
             similarity_threshold=similarity_threshold,
             filter=filter,
         )
+
+        if self.reranker_enabled:
+            self.logger.debug(f"Reranker enabled: {self.reranker_enabled}")
+            results = await self.reranker.rerank(query, documents=results, top_k=top_k)
+
         return results
 
     def check_file_exists_in_partition(self, file_id: str, partition: str):

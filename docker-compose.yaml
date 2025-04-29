@@ -7,9 +7,8 @@ x-ragondin: &ragondin_template
     dockerfile: Dockerfile
   volumes:
     - ./.hydra_config:/app/.hydra_config
-    # - ./model_weights:/app/model_weights
-    - ~/.cache/huggingface:/app/model_weights # For sharing models
-    - ./data:/app/data # PDF data for RAG
+    - ${MODEL_WEIGTHS:-~/.cache/huggingface}:/app/model_weights
+    - ./data:/app/data
     - ./ragondin:/app/ragondin # For dev mode
     - ${MILVUS_VOLUME_DIRECTORY:-./volumes}:/app/volumes
 

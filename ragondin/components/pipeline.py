@@ -60,7 +60,7 @@ class RetrieverPipeline:
             # rerank documents
             if self.reranker_enabled:
                 docs = await self.reranker.rerank(
-                    query, chunks=docs, k=self.reranker_top_k
+                    query, documents=docs, top_k=self.reranker_top_k
                 )
 
             else:
