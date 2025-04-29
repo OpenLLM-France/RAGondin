@@ -1,4 +1,7 @@
 from typing import List, Optional
+from loguru import logger
+from config import load_config
+from components.reranker import Reranker
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from fastapi.responses import JSONResponse
@@ -6,7 +9,8 @@ from utils.dependencies import Indexer, get_indexer
 
 # Create an APIRouter instance
 router = APIRouter()
-
+def get_app_state(request: Request):
+    return request.app.state.app_state
 
 @router.get("")
 async def search_multiple_partitions(
@@ -62,6 +66,7 @@ async def search_one_partition(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e)
         )
 
+    logger.debug(f"Chunks result: {results}")
     documents = [
         {"link": str(request.url_for("get_extract", extract_id=doc.metadata["_id"]))}
         for doc in results

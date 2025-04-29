@@ -147,6 +147,9 @@ async def openai_chat_completion(
             # Openai compatible streaming response
             async def stream_response():
                 async for chunk in llm_output:
+                    if "[DONE]" in chunk:
+                        yield f"data: Sources: {json.dumps(metadata)}\n\n"
+                        yield f"{chunk}\n\n"
                     yield chunk
 
             return StreamingResponse(

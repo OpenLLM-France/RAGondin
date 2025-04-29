@@ -17,6 +17,26 @@ resolution-markers = [
 ]
 
 [[package]]
+name = "accelerate"
+version = "1.6.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "huggingface-hub" },
+    { name = "numpy", version = "1.26.4", source = { registry = "https://pypi.org/simple" }, marker = "platform_machine == 'x86_64' and sys_platform == 'darwin'" },
+    { name = "numpy", version = "2.2.3", source = { registry = "https://pypi.org/simple" }, marker = "platform_machine != 'x86_64' or sys_platform != 'darwin'" },
+    { name = "packaging" },
+    { name = "psutil" },
+    { name = "pyyaml" },
+    { name = "safetensors" },
+    { name = "torch", version = "2.4.1", source = { registry = "https://pypi.org/simple" }, marker = "platform_machine == 'x86_64' and sys_platform == 'darwin'" },
+    { name = "torch", version = "2.6.0", source = { registry = "https://pypi.org/simple" }, marker = "platform_machine != 'x86_64' or sys_platform != 'darwin'" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/8a/6e/c29a1dcde7db07f47870ed63e5124086b11874ad52ccd533dc1ca2c799da/accelerate-1.6.0.tar.gz", hash = "sha256:28c1ef1846e690944f98b68dc7b8bb6c51d032d45e85dcbb3adb0c8b99dffb32", size = 363804 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/63/b1/8198e3cdd11a426b1df2912e3381018c4a4a55368f6d0857ba3ca418ef93/accelerate-1.6.0-py3-none-any.whl", hash = "sha256:1aee717d3d3735ad6d09710a7c26990ee4652b79b4e93df46551551b5227c2aa", size = 354748 },
+]
+
+[[package]]
 name = "aiofile"
 version = "3.9.0"
 source = { registry = "https://pypi.org/simple" }
@@ -285,6 +305,15 @@ wheels = [
 ]
 
 [[package]]
+name = "batched"
+version = "0.1.4"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/f2/a4/652b2cd4a7bc7828102806fb25e86919e23a29b4a2f72048f98eb7263434/batched-0.1.4.tar.gz", hash = "sha256:98344c450d23b1612d5c2d6462ad43428602c80c12cd8d803ead5e4616dd5c59", size = 23631 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/42/89/b37005696b8aa5eea1d17ff668f60e33fc4c1457591e2bec196cf2ba07c9/batched-0.1.4-py3-none-any.whl", hash = "sha256:c56addd5fa5ef2f87b5e8d74dd60b278ac70d9615d940656dd83edaeab36287a", size = 28972 },
+]
+
+[[package]]
 name = "beautifulsoup4"
 version = "4.13.3"
 source = { registry = "https://pypi.org/simple" }
@@ -545,8 +574,7 @@ dependencies = [
     { name = "python-dotenv" },
     { name = "scipy" },
     { name = "tqdm" },
-    { name = "transformers", version = "4.42.4", source = { registry = "https://pypi.org/simple" }, marker = "platform_machine == 'x86_64' and sys_platform == 'darwin'" },
-    { name = "transformers", version = "4.49.0", source = { registry = "https://pypi.org/simple" }, marker = "platform_machine != 'x86_64' or sys_platform != 'darwin'" },
+    { name = "transformers" },
     { name = "ujson" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/bc/dc/7edb06e3bb01326610ecfdfc8e396c6867ba7de6e58cda2356a604419899/colbert_ai-0.2.21.tar.gz", hash = "sha256:a8d6fdb4e2272f2b08ed37f8e5096072160d8415d1e40585751898b77e625bab", size = 87978 }
@@ -662,6 +690,27 @@ wheels = [
 ]
 
 [[package]]
+name = "deepsearch-glm"
+version = "1.0.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "pywin32", marker = "sys_platform == 'win32'" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/73/d5/a907234e57f5c4f6480c9ddbc3cdacc47f727c768e502be3d361719fac4e/deepsearch_glm-1.0.0.tar.gz", hash = "sha256:e8dce88ac519a693c260f28bd3c4ec409811e65ade84fb508f6c6e37ca065e62", size = 2401014 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/60/ca/6adbadc979910b11594cd0242f1991942c22528eead431d47de064ac2860/deepsearch_glm-1.0.0-cp312-cp312-macosx_13_0_x86_64.whl", hash = "sha256:56d9575df9eceb8c2ae33e3d15e133924cc195714c3d268599b6f8414c1f6bb8", size = 6308715 },
+    { url = "https://files.pythonhosted.org/packages/20/7c/bf1e9c458705c7143c6630cb6847554ad694d25dc6f1f038512b9c86160a/deepsearch_glm-1.0.0-cp312-cp312-macosx_14_0_arm64.whl", hash = "sha256:51f5c6522f60ba73eb12eeb7217bd98d871ba7c078337a4059d05878d8baf2d6", size = 5949609 },
+    { url = "https://files.pythonhosted.org/packages/21/b1/eb0cd0db50d05f2d7a510a77960e85e6caee727eb3d931ed0ec067917813/deepsearch_glm-1.0.0-cp312-cp312-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:c6211eaf497ad7cfcb68f80f9b5387940be0204fe149a9fc03988a95145f410a", size = 7433929 },
+    { url = "https://files.pythonhosted.org/packages/3a/7e/2b7db77ff02fe9eec41f3605fcd72e3eb4e6b48561b344d432b417a75cfe/deepsearch_glm-1.0.0-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:1b003bf457fce61ea4de79e2d7d0228a1ae349f677eb6570e745f79d4429804f", size = 7760438 },
+    { url = "https://files.pythonhosted.org/packages/ab/97/ffb2bb5d2432c7b0e9f3a3e6b5873fbcd6e19e82b620393bfb8e01bdecb1/deepsearch_glm-1.0.0-cp312-cp312-win_amd64.whl", hash = "sha256:9d61f66048e6ab60fe9f84c823fd593bf8517755833bd9efb59156d77a2b42d0", size = 7907583 },
+    { url = "https://files.pythonhosted.org/packages/38/06/08c5fd0e1144c2c8d76d06da1545a9cf589278a37f8b9e6235b5b416eb52/deepsearch_glm-1.0.0-cp313-cp313-macosx_13_0_x86_64.whl", hash = "sha256:7d558e8b365c27ee665d0589165fd074fb252c73715f9cc6aeb4304a63683f37", size = 6308867 },
+    { url = "https://files.pythonhosted.org/packages/ba/fb/f5f9787876b67ce83d5afa4903901be9f8071530bc0706dc2228afc0b6c0/deepsearch_glm-1.0.0-cp313-cp313-macosx_14_0_arm64.whl", hash = "sha256:3199093a9472e5756214b9b6563f827c19c001c7dd8ae00e03eed1140c12930d", size = 5949719 },
+    { url = "https://files.pythonhosted.org/packages/83/0f/42b5a4aa798acbc6309d748435b006c489e58102b6cb2278e7b8f0194743/deepsearch_glm-1.0.0-cp313-cp313-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:7f18d1ee68a0479592e0c714e6cbf9e2d0fa8edd692d580da64431c84cbef5c2", size = 7434981 },
+    { url = "https://files.pythonhosted.org/packages/17/6a/c2c4eaa4470b78dde6c03f055cbb09f3f7f15b8a6ff38f5bea5180339e6f/deepsearch_glm-1.0.0-cp313-cp313-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:62c1c0ea0a544219da15c017632f9e0be116ecdc335b865c6c5760429557fe23", size = 7760773 },
+    { url = "https://files.pythonhosted.org/packages/01/0a/7c3cf75bad38a8d6ff3842b78b3263dd81ad4eaf1d859f4b8e1ab465cad5/deepsearch_glm-1.0.0-cp313-cp313-win_amd64.whl", hash = "sha256:962f393dcec2204de1a5cb0f635c65258bde2424ad2d4e0f5df770139c3958de", size = 7908766 },
+]
+
+[[package]]
 name = "defusedxml"
 version = "0.7.1"
 source = { registry = "https://pypi.org/simple" }
@@ -720,11 +769,12 @@ wheels = [
 
 [[package]]
 name = "docling"
-version = "2.24.0"
+version = "2.15.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "beautifulsoup4" },
     { name = "certifi" },
+    { name = "deepsearch-glm" },
     { name = "docling-core", extra = ["chunking"] },
     { name = "docling-ibm-models" },
     { name = "docling-parse" },
@@ -735,7 +785,6 @@ dependencies = [
     { name = "marko" },
     { name = "openpyxl" },
     { name = "pandas" },
-    { name = "pillow" },
     { name = "pydantic" },
     { name = "pydantic-settings" },
     { name = "pypdfium2", version = "4.30.0", source = { registry = "https://pypi.org/simple" }, marker = "platform_machine != 'x86_64' or sys_platform != 'darwin'" },
@@ -745,17 +794,16 @@ dependencies = [
     { name = "requests" },
     { name = "rtree" },
     { name = "scipy" },
-    { name = "tqdm" },
     { name = "typer" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/6c/fa/580aaa40ad8a1482faae98ba4f8b4d1fca650cb1544587ee7c6692e6c34a/docling-2.24.0.tar.gz", hash = "sha256:b33062ed63c7693689032304223b5b65cde1af2298b79b1a9fcdf6a20414428e", size = 105855 }
+sdist = { url = "https://files.pythonhosted.org/packages/98/81/a87094510c9d55171488dddaae7102b40ef3c95b0403d6906de055799e8d/docling-2.15.1.tar.gz", hash = "sha256:578b4eb3c9833e95025aaa4174c0f3a1b9037c81a75fc616e49c16afbd217abf", size = 87966 }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/17/a6/57063901c0b6ae4c6e810e52f9cfa679ab941778e8dbbef92357a5bc682c/docling-2.24.0-py3-none-any.whl", hash = "sha256:c7bf7864cfc9c5b8fa94bcd43d5efa025ca901c3d6dfe0c662aee2acee63b218", size = 136614 },
+    { url = "https://files.pythonhosted.org/packages/24/f6/f06551fcea254b9c3458ae6b7dceed0846ee2eebbae549a052548ca91851/docling-2.15.1-py3-none-any.whl", hash = "sha256:409a49f19f019cd4d22a81888a1b0bcd7dee21c6657efd2c812cc83d5d201938", size = 113336 },
 ]
 
 [[package]]
 name = "docling-core"
-version = "2.20.0"
+version = "2.28.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "jsonref" },
@@ -769,43 +817,39 @@ dependencies = [
     { name = "typer" },
     { name = "typing-extensions" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/34/c6/10e2264fd82d43e3beb8aef9fab4debaf8d7ea8a1faf1e818f2910c43dc1/docling_core-2.20.0.tar.gz", hash = "sha256:9733581c15f5a9b5e3a6cb74fa995cc4078ff16668007f86c5f75d1ea9180d7f", size = 76311 }
+sdist = { url = "https://files.pythonhosted.org/packages/14/a8/02b6eb9abeb9f5cfa090d3cd6ec2080a3cb1839f20d8336711133f2e5e44/docling_core-2.28.1.tar.gz", hash = "sha256:38dc3c252ff22222b1623549888d753a5e169d28e997c0bfaadefa785c045f2c", size = 111972 }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/1e/5c/5b8fbef1348dd3dd755aaa138c1ff6d1172c4adc4edec4d90d59905bf822/docling_core-2.20.0-py3-none-any.whl", hash = "sha256:72f50fce277b7bb51f4134f443240c041582184305c3bcaabdea13fc5550f160", size = 96488 },
+    { url = "https://files.pythonhosted.org/packages/80/b1/f966d3516e314b8206fc069f9e6509d67f75331bd4bd29ceb3215a912305/docling_core-2.28.1-py3-none-any.whl", hash = "sha256:c1740fd209a26d933c21bc3e495562476479ae6678b8af1971ad1fa1b55b339d", size = 141666 },
 ]
 
 [package.optional-dependencies]
 chunking = [
     { name = "semchunk" },
-    { name = "transformers", version = "4.42.4", source = { registry = "https://pypi.org/simple" }, marker = "platform_machine == 'x86_64' and sys_platform == 'darwin'" },
-    { name = "transformers", version = "4.49.0", source = { registry = "https://pypi.org/simple" }, marker = "platform_machine != 'x86_64' or sys_platform != 'darwin'" },
+    { name = "transformers" },
 ]
 
 [[package]]
 name = "docling-ibm-models"
-version = "3.4.0"
+version = "3.1.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "docling-core" },
     { name = "huggingface-hub" },
     { name = "jsonlines" },
     { name = "numpy", version = "1.26.4", source = { registry = "https://pypi.org/simple" }, marker = "platform_machine == 'x86_64' and sys_platform == 'darwin'" },
     { name = "numpy", version = "2.2.3", source = { registry = "https://pypi.org/simple" }, marker = "platform_machine != 'x86_64' or sys_platform != 'darwin'" },
     { name = "opencv-python-headless" },
     { name = "pillow" },
-    { name = "pydantic" },
     { name = "safetensors", extra = ["torch"] },
     { name = "torch", version = "2.4.1", source = { registry = "https://pypi.org/simple" }, marker = "platform_machine == 'x86_64' and sys_platform == 'darwin'" },
     { name = "torch", version = "2.6.0", source = { registry = "https://pypi.org/simple" }, marker = "platform_machine != 'x86_64' or sys_platform != 'darwin'" },
     { name = "torchvision", version = "0.19.1", source = { registry = "https://pypi.org/simple" }, marker = "platform_machine == 'x86_64' and sys_platform == 'darwin'" },
     { name = "torchvision", version = "0.21.0", source = { registry = "https://pypi.org/simple" }, marker = "platform_machine != 'x86_64' or sys_platform != 'darwin'" },
     { name = "tqdm" },
-    { name = "transformers", version = "4.42.4", source = { registry = "https://pypi.org/simple" }, marker = "platform_machine == 'x86_64' and sys_platform == 'darwin'" },
-    { name = "transformers", version = "4.49.0", source = { registry = "https://pypi.org/simple" }, marker = "platform_machine != 'x86_64' or sys_platform != 'darwin'" },
+    { name = "transformers" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/d5/51/2d40f195d1a937add73c3cfdd90196823023e6ef8acb9e00750c53b55d32/docling_ibm_models-3.4.0.tar.gz", hash = "sha256:fb79beeb07d1bb9bc8acf9d0a44643cd7ce1910aa418cd685e2e477b13eeafee", size = 69838 }
+sdist = { url = "https://files.pythonhosted.org/packages/1d/34/bb7ff7734c2bfc671d6259a658d4a24fdbb83f2af2783821b8a1a87338d6/docling_ibm_models-3.1.1.tar.gz", hash = "sha256:ce2788ecace5de68bf0457e9d44131374f90f0db2db0bc00b4af69a186c4aa30", size = 58786 }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/c8/b6/7327c0789160a28dd237e5839feb8207435d48187284b0d43a312d9fc6a8/docling_ibm_models-3.4.0-py3-none-any.whl", hash = "sha256:186517ff1f76e76113600fa1e5a699927325081a8013fdd5d0551121c2e34190", size = 80881 },
+    { url = "https://files.pythonhosted.org/packages/c8/b3/667ba411ca2d4c840da256c607aa1d761531f5ad94cc46fae23578345053/docling_ibm_models-3.1.1-py3-none-any.whl", hash = "sha256:9b5c4cf737f6934ece03dc6ccc06ac494815c18a4e7e15242046006422f2fdd0", size = 65972 },
 ]
 
 [[package]]
@@ -945,7 +989,7 @@ dependencies = [
     { name = "pillow", marker = "python_full_version >= '3.13' and platform_machine == 'x86_64' and sys_platform == 'darwin'" },
     { name = "py-rust-stemmers", marker = "python_full_version >= '3.13' and platform_machine == 'x86_64' and sys_platform == 'darwin'" },
     { name = "requests", marker = "python_full_version >= '3.13' and platform_machine == 'x86_64' and sys_platform == 'darwin'" },
-    { name = "tokenizers", version = "0.19.1", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.13' and platform_machine == 'x86_64' and sys_platform == 'darwin'" },
+    { name = "tokenizers", marker = "python_full_version >= '3.13' and platform_machine == 'x86_64' and sys_platform == 'darwin'" },
     { name = "tqdm", marker = "python_full_version >= '3.13' and platform_machine == 'x86_64' and sys_platform == 'darwin'" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/40/8f/cb38459035148985a8d88625d01af1e7ba384d92a58601d3b61f234079da/fastembed_gpu-0.4.2.tar.gz", hash = "sha256:dc45f7412b284ac3b289686c353e34a6765e51778c74a94234826f1e7716b54f", size = 42105 }
@@ -980,8 +1024,7 @@ dependencies = [
     { name = "pillow", marker = "python_full_version < '3.13' or platform_machine != 'x86_64' or sys_platform != 'darwin'" },
     { name = "py-rust-stemmers", marker = "python_full_version < '3.13' or platform_machine != 'x86_64' or sys_platform != 'darwin'" },
     { name = "requests", marker = "python_full_version < '3.13' or platform_machine != 'x86_64' or sys_platform != 'darwin'" },
-    { name = "tokenizers", version = "0.19.1", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.13' and platform_machine == 'x86_64' and sys_platform == 'darwin'" },
-    { name = "tokenizers", version = "0.21.0", source = { registry = "https://pypi.org/simple" }, marker = "platform_machine != 'x86_64' or sys_platform != 'darwin'" },
+    { name = "tokenizers", marker = "python_full_version < '3.13' or platform_machine != 'x86_64' or sys_platform != 'darwin'" },
     { name = "tqdm", marker = "python_full_version < '3.13' or platform_machine != 'x86_64' or sys_platform != 'darwin'" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/f9/01/80494c51492b6aac8fddc7322fdc4166b2cd979fb96ae2b45a7c6dccb969/fastembed_gpu-0.5.1.tar.gz", hash = "sha256:2f6e40d97138b67b54d0bdb6a2b3f03a08c760550ace7bb32269b30709212494", size = 41963 }
@@ -1672,10 +1715,8 @@ dependencies = [
     { name = "huggingface-hub" },
     { name = "langchain-core" },
     { name = "sentence-transformers" },
-    { name = "tokenizers", version = "0.19.1", source = { registry = "https://pypi.org/simple" }, marker = "platform_machine == 'x86_64' and sys_platform == 'darwin'" },
-    { name = "tokenizers", version = "0.21.0", source = { registry = "https://pypi.org/simple" }, marker = "platform_machine != 'x86_64' or sys_platform != 'darwin'" },
-    { name = "transformers", version = "4.42.4", source = { registry = "https://pypi.org/simple" }, marker = "platform_machine == 'x86_64' and sys_platform == 'darwin'" },
-    { name = "transformers", version = "4.49.0", source = { registry = "https://pypi.org/simple" }, marker = "platform_machine != 'x86_64' or sys_platform != 'darwin'" },
+    { name = "tokenizers" },
+    { name = "transformers" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/a1/0f/8277d993d5307f06523e72c9bc8a505ed028f7b1c1e5276d8e89044b6036/langchain_huggingface-0.1.2.tar.gz", hash = "sha256:4a66d5c449298fd353bd84c9ed01f9bf4303bf2e4ffce14aab8c55c584eee57c", size = 16129 }
 wheels = [
@@ -2177,7 +2218,7 @@ dependencies = [
     { name = "texify", marker = "platform_machine == 'x86_64' and sys_platform == 'darwin'" },
     { name = "torch", version = "2.4.1", source = { registry = "https://pypi.org/simple" }, marker = "platform_machine == 'x86_64' and sys_platform == 'darwin'" },
     { name = "tqdm", marker = "platform_machine == 'x86_64' and sys_platform == 'darwin'" },
-    { name = "transformers", version = "4.42.4", source = { registry = "https://pypi.org/simple" }, marker = "platform_machine == 'x86_64' and sys_platform == 'darwin'" },
+    { name = "transformers", marker = "platform_machine == 'x86_64' and sys_platform == 'darwin'" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/f0/49/fe8a84718e4289de4fde66e42d8d190618304fb30c4023138fa7feffc2c2/marker_pdf-0.2.17.tar.gz", hash = "sha256:34e459b6560d205060d972ff91a30d7de05c97af6529fa740bd4b010ddb0f808", size = 57697 }
 wheels = [
@@ -2218,7 +2259,7 @@ dependencies = [
     { name = "surya-ocr", version = "0.13.0", source = { registry = "https://pypi.org/simple" }, marker = "platform_machine != 'x86_64' or sys_platform != 'darwin'" },
     { name = "torch", version = "2.6.0", source = { registry = "https://pypi.org/simple" }, marker = "platform_machine != 'x86_64' or sys_platform != 'darwin'" },
     { name = "tqdm", marker = "platform_machine != 'x86_64' or sys_platform != 'darwin'" },
-    { name = "transformers", version = "4.49.0", source = { registry = "https://pypi.org/simple" }, marker = "platform_machine != 'x86_64' or sys_platform != 'darwin'" },
+    { name = "transformers", marker = "platform_machine != 'x86_64' or sys_platform != 'darwin'" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/09/ba/70b29861d47fb83e83d0d85a34847642c460f8fde70518882f7ba8322b67/marker_pdf-1.6.1.tar.gz", hash = "sha256:7a6ddd770a31a34d0b48cafc4e77509fecf20650707e828e900f60e92be98d45", size = 118066 }
 wheels = [
@@ -2259,11 +2300,11 @@ wheels = [
 
 [[package]]
 name = "marko"
-version = "2.1.2"
+version = "2.1.3"
 source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/8c/38/6ea5d8600b94432656c669816a479580d9f1c49ef6b426282f4ba261ae9b/marko-2.1.2.tar.gz", hash = "sha256:a9170006b879376e6845c91b1ae3dce2992772954b99b70175ff888537186011", size = 142593 }
+sdist = { url = "https://files.pythonhosted.org/packages/f2/e7/b50627a7321668d0c30b193aa494fb59526548ff3e61d376a93ffbb692f0/marko-2.1.3.tar.gz", hash = "sha256:31aacb14867328f054cc39f884212907822a43d6a30cd75b0767e001a5e2f9fc", size = 142700 }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/ef/9b/3dbfbe6ee255b1c37a37e2a6046adb2e77763a020591dae63e5005a2c8d7/marko-2.1.2-py3-none-any.whl", hash = "sha256:c14aa7a77468aaaf53cf056dcd3d32398b9df4c3fb81f5e120dd37cbb9f8c859", size = 42089 },
+    { url = "https://files.pythonhosted.org/packages/fc/43/c82e8f528887cec56f5afa9152c921b01f98deeffaf9e1bcc3e54e90c291/marko-2.1.3-py3-none-any.whl", hash = "sha256:b4125d44b94606d6f13ddc77fef8cc4c87f70d54bc7d52d6547958b9f998a9d5", size = 42187 },
 ]
 
 [[package]]
@@ -2509,6 +2550,25 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/0a/7d/a988f258104dcd2ccf1ed40fdc97e26c4ac351eeaf81d76e266c52d84e2f/multiprocess-0.70.16-py312-none-any.whl", hash = "sha256:fc0544c531920dde3b00c29863377f87e1632601092ea2daca74e4beb40faa2e", size = 146741 },
     { url = "https://files.pythonhosted.org/packages/ea/89/38df130f2c799090c978b366cfdf5b96d08de5b29a4a293df7f7429fa50b/multiprocess-0.70.16-py38-none-any.whl", hash = "sha256:a71d82033454891091a226dfc319d0cfa8019a4e888ef9ca910372a446de4435", size = 132628 },
     { url = "https://files.pythonhosted.org/packages/da/d9/f7f9379981e39b8c2511c9e0326d212accacb82f12fbfdc1aa2ce2a7b2b6/multiprocess-0.70.16-py39-none-any.whl", hash = "sha256:a0bafd3ae1b732eac64be2e72038231c1ba97724b60b09400d68f229fcc2fbf3", size = 133351 },
+]
+
+[[package]]
+name = "mxbai-rerank"
+version = "0.1.3"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "accelerate" },
+    { name = "batched" },
+    { name = "numpy", version = "1.26.4", source = { registry = "https://pypi.org/simple" }, marker = "platform_machine == 'x86_64' and sys_platform == 'darwin'" },
+    { name = "numpy", version = "2.2.3", source = { registry = "https://pypi.org/simple" }, marker = "platform_machine != 'x86_64' or sys_platform != 'darwin'" },
+    { name = "torch", version = "2.4.1", source = { registry = "https://pypi.org/simple" }, marker = "platform_machine == 'x86_64' and sys_platform == 'darwin'" },
+    { name = "torch", version = "2.6.0", source = { registry = "https://pypi.org/simple" }, marker = "platform_machine != 'x86_64' or sys_platform != 'darwin'" },
+    { name = "tqdm" },
+    { name = "transformers" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/3e/8b/1b30c34ba116886e3ce335147ecb9dab47acdffddfff9036a00543a4a8d8/mxbai_rerank-0.1.3.tar.gz", hash = "sha256:c32846e743a8d29d2480fc1ff953275923eb0a54612e9d9fd405c80b0298e8e2", size = 20880 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/87/0c/aae9cfbb4dcbf1cd06bf937dfc5eef3ddafe2df696d732e43df7bf48c4de/mxbai_rerank-0.1.3-py3-none-any.whl", hash = "sha256:db0805fd32058974d9178936904680f24f410c6adfa7e33eb24f6da445375e2b", size = 17714 },
 ]
 
 [[package]]
@@ -3906,15 +3966,15 @@ wheels = [
 
 [[package]]
 name = "pywin32"
-version = "308"
+version = "307"
 source = { registry = "https://pypi.org/simple" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/00/7c/d00d6bdd96de4344e06c4afbf218bc86b54436a94c01c71a8701f613aa56/pywin32-308-cp312-cp312-win32.whl", hash = "sha256:587f3e19696f4bf96fde9d8a57cec74a57021ad5f204c9e627e15c33ff568897", size = 5939729 },
-    { url = "https://files.pythonhosted.org/packages/21/27/0c8811fbc3ca188f93b5354e7c286eb91f80a53afa4e11007ef661afa746/pywin32-308-cp312-cp312-win_amd64.whl", hash = "sha256:00b3e11ef09ede56c6a43c71f2d31857cf7c54b0ab6e78ac659497abd2834f47", size = 6543015 },
-    { url = "https://files.pythonhosted.org/packages/9d/0f/d40f8373608caed2255781a3ad9a51d03a594a1248cd632d6a298daca693/pywin32-308-cp312-cp312-win_arm64.whl", hash = "sha256:9b4de86c8d909aed15b7011182c8cab38c8850de36e6afb1f0db22b8959e3091", size = 7976033 },
-    { url = "https://files.pythonhosted.org/packages/a9/a4/aa562d8935e3df5e49c161b427a3a2efad2ed4e9cf81c3de636f1fdddfd0/pywin32-308-cp313-cp313-win32.whl", hash = "sha256:1c44539a37a5b7b21d02ab34e6a4d314e0788f1690d65b48e9b0b89f31abbbed", size = 5938579 },
-    { url = "https://files.pythonhosted.org/packages/c7/50/b0efb8bb66210da67a53ab95fd7a98826a97ee21f1d22949863e6d588b22/pywin32-308-cp313-cp313-win_amd64.whl", hash = "sha256:fd380990e792eaf6827fcb7e187b2b4b1cede0585e3d0c9e84201ec27b9905e4", size = 6542056 },
-    { url = "https://files.pythonhosted.org/packages/26/df/2b63e3e4f2df0224f8aaf6d131f54fe4e8c96400eb9df563e2aae2e1a1f9/pywin32-308-cp313-cp313-win_arm64.whl", hash = "sha256:ef313c46d4c18dfb82a2431e3051ac8f112ccee1a34f29c263c583c568db63cd", size = 7974986 },
+    { url = "https://files.pythonhosted.org/packages/90/4e/9c660fa6c34db3c9542c9682b0ccd9edd63a6a4cb6ac4d22014b2c3355c9/pywin32-307-cp312-cp312-win32.whl", hash = "sha256:07649ec6b01712f36debf39fc94f3d696a46579e852f60157a729ac039df0815", size = 5916997 },
+    { url = "https://files.pythonhosted.org/packages/9c/11/c56e771d2cdbd2dac8e656edb2c814e4b2239da2c9028aa7265cdfff8aed/pywin32-307-cp312-cp312-win_amd64.whl", hash = "sha256:00d047992bb5dcf79f8b9b7c81f72e0130f9fe4b22df613f755ab1cc021d8347", size = 6519708 },
+    { url = "https://files.pythonhosted.org/packages/cd/64/53b1112cb05f85a6c87339a9f90a3b82d67ecb46f16b45abaac3bf4dee2b/pywin32-307-cp312-cp312-win_arm64.whl", hash = "sha256:b53658acbfc6a8241d72cc09e9d1d666be4e6c99376bc59e26cdb6223c4554d2", size = 7952978 },
+    { url = "https://files.pythonhosted.org/packages/61/c2/bdff07ee75b9c0a0f87cd52bfb45152e40d4c6f99e7256336e243cf4da2d/pywin32-307-cp313-cp313-win32.whl", hash = "sha256:ea4d56e48dc1ab2aa0a5e3c0741ad6e926529510516db7a3b6981a1ae74405e5", size = 5915947 },
+    { url = "https://files.pythonhosted.org/packages/fd/59/b891cf47d5893ee87e09686e736a84b80a8c5112a1a80e37363ab8801f54/pywin32-307-cp313-cp313-win_amd64.whl", hash = "sha256:576d09813eaf4c8168d0bfd66fb7cb3b15a61041cf41598c2db4a4583bf832d2", size = 6518782 },
+    { url = "https://files.pythonhosted.org/packages/08/9b/3c797468a96f68ce86f84917c198f60fc4189ab2ddc5841bcd71ead7680f/pywin32-307-cp313-cp313-win_arm64.whl", hash = "sha256:b30c9bdbffda6a260beb2919f918daced23d32c79109412c2085cbc513338a0a", size = 7952027 },
 ]
 
 [[package]]
@@ -4009,6 +4069,7 @@ dependencies = [
     { name = "marker-pdf", version = "0.2.17", source = { registry = "https://pypi.org/simple" }, marker = "platform_machine == 'x86_64' and sys_platform == 'darwin'" },
     { name = "marker-pdf", version = "1.6.1", source = { registry = "https://pypi.org/simple" }, marker = "platform_machine != 'x86_64' or sys_platform != 'darwin'" },
     { name = "markitdown" },
+    { name = "mxbai-rerank" },
     { name = "openai" },
     { name = "openai-whisper" },
     { name = "pip" },
@@ -4035,7 +4096,7 @@ requires-dist = [
     { name = "aiopath", specifier = ">=0.7.7" },
     { name = "chainlit", specifier = ">=2.2.1" },
     { name = "chardet", specifier = ">=5.2.0" },
-    { name = "docling", specifier = ">=2.24.0" },
+    { name = "docling", specifier = ">=2.15.1" },
     { name = "einops", specifier = ">=0.8.1" },
     { name = "fastembed-gpu", specifier = ">=0.4.2" },
     { name = "hydra-core", specifier = ">=1.3.2" },
@@ -4049,6 +4110,7 @@ requires-dist = [
     { name = "loguru", specifier = ">=0.7.3" },
     { name = "marker-pdf", specifier = ">=0.2.17" },
     { name = "markitdown", specifier = ">=0.0.2" },
+    { name = "mxbai-rerank", specifier = ">=0.1.3" },
     { name = "openai", specifier = ">=1.64.0" },
     { name = "openai-whisper", specifier = ">=20240930" },
     { name = "pip", specifier = ">=25.0.1" },
@@ -4225,15 +4287,15 @@ wheels = [
 
 [[package]]
 name = "rich"
-version = "13.9.4"
+version = "14.0.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "markdown-it-py" },
     { name = "pygments" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/ab/3a/0316b28d0761c6734d6bc14e770d85506c986c85ffb239e688eeaab2c2bc/rich-13.9.4.tar.gz", hash = "sha256:439594978a49a09530cff7ebc4b5c7103ef57baf48d5ea3184f21d9a2befa098", size = 223149 }
+sdist = { url = "https://files.pythonhosted.org/packages/a1/53/830aa4c3066a8ab0ae9a9955976fb770fe9c6102117c8ec4ab3ea62d89e8/rich-14.0.0.tar.gz", hash = "sha256:82f1bc23a6a21ebca4ae0c45af9bdbc492ed20231dcb63f297d6d1021a9d5725", size = 224078 }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/19/71/39c7c0d87f8d4e6c020a393182060eaefeeae6c01dab6a84ec346f2567df/rich-13.9.4-py3-none-any.whl", hash = "sha256:6049d5e6ec054bf2779ab3358186963bac2ea89175919d699e378b99738c2a90", size = 242424 },
+    { url = "https://files.pythonhosted.org/packages/0d/9b/63f4c7ebc259242c89b3acafdb37b41d1185c07ff0011164674e9076b491/rich-14.0.0-py3-none-any.whl", hash = "sha256:1c9491e1951aac09caffd42f448ee3d04e58923ffe14993f6e83068dc395d7e0", size = 243229 },
 ]
 
 [[package]]
@@ -4319,19 +4381,19 @@ wheels = [
 
 [[package]]
 name = "rtree"
-version = "1.3.0"
+version = "1.4.0"
 source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/6e/79/44fdc619e87bd7b5388f76418719bd8b99de5565475f74a2e0d82b401062/rtree-1.3.0.tar.gz", hash = "sha256:b36e9dd2dc60ffe3d02e367242d2c26f7281b00e1aaf0c39590442edaaadd916", size = 48190 }
+sdist = { url = "https://files.pythonhosted.org/packages/18/b8/0091f020acafcb034daa5b062f0626f6a73c7e0d64826af23861390a9585/rtree-1.4.0.tar.gz", hash = "sha256:9d97c7c5dcf25f6c0599c76d9933368c6a8d7238f2c1d00e76f1a69369ca82a0", size = 50789 }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/06/cc/1b494bde9c99a5cf27e980bf36ef99e76abac6316736231007c04e3a7b28/Rtree-1.3.0-py3-none-macosx_10_9_x86_64.whl", hash = "sha256:80879d9db282a2273ca3a0d896c84583940e9777477727a277624ebfd424c517", size = 475526 },
-    { url = "https://files.pythonhosted.org/packages/dd/5b/085d6fad9d45c0cc2acbea5b78c3a2d7f1e7ccc7c05929633461a6a741d8/Rtree-1.3.0-py3-none-macosx_11_0_arm64.whl", hash = "sha256:4328e9e421797c347e6eb08efbbade962fe3664ebd60c1dffe82c40911b1e125", size = 432890 },
-    { url = "https://files.pythonhosted.org/packages/12/70/f0553ffb163c47a62c09e4bdc5e0c7fb3392a03cd5a3dbde965aa6a85052/Rtree-1.3.0-py3-none-manylinux2014_aarch64.manylinux_2_17_aarch64.whl", hash = "sha256:037130d3ce1fc029de81941ec416ba5546f66228380ba19bb41f2ea1294e8423", size = 500384 },
-    { url = "https://files.pythonhosted.org/packages/4e/92/3c972e534ce0508214b9ed0cfeba03d1e26d193e8fa624131b5324b91b25/Rtree-1.3.0-py3-none-manylinux2014_i686.manylinux_2_17_i686.whl", hash = "sha256:864a05d0c3b7ce6c5e34378b7ab630057603b79179368bc50624258bdf2ff631", size = 569246 },
-    { url = "https://files.pythonhosted.org/packages/70/db/6c8bc20061572c33766ade296071d0127e7365d4d3ff54a6c2c075de637b/Rtree-1.3.0-py3-none-manylinux2014_x86_64.manylinux_2_17_x86_64.whl", hash = "sha256:ec2ed6d1635753dab966e68f592a9c4896f3f4ec6ad2b09b776d592eacd883a9", size = 543195 },
-    { url = "https://files.pythonhosted.org/packages/71/2c/5d04fa6010f2d4d4b38078efdc6f371430f499ef2cf7eeced3d18f57daaa/Rtree-1.3.0-py3-none-musllinux_1_2_aarch64.whl", hash = "sha256:b4485fb3e5c5e85b94a95f0a930a3848e040d2699cfb012940ba5b0130f1e09a", size = 1416562 },
-    { url = "https://files.pythonhosted.org/packages/b6/63/0a2bee2940a8ba116d845ac8b360e49c315a57aeb4aa92ea12a4cb84eb4f/Rtree-1.3.0-py3-none-musllinux_1_2_i686.whl", hash = "sha256:7e2e9211f4fb404c06a08fd2cbebb03234214f73c51913bb371c3d9954e99cc9", size = 1630693 },
-    { url = "https://files.pythonhosted.org/packages/10/8a/8a50fc8d58807ba5780485ecc502136aa814f6a08e1cce4f9c4f109ba2b4/Rtree-1.3.0-py3-none-musllinux_1_2_x86_64.whl", hash = "sha256:c021f4772b25cc24915da8073e553ded6fa8d0b317caa4202255ed26b2344c1c", size = 1506863 },
-    { url = "https://files.pythonhosted.org/packages/85/d2/5bb7617faa3b23b51e2259f9d23e0b33f6ff0ed9811b0d05511e9b7ed84e/Rtree-1.3.0-py3-none-win_amd64.whl", hash = "sha256:97f835801d24c10bbf02381abe5e327345c8296ec711dde7658792376abafc66", size = 377458 },
+    { url = "https://files.pythonhosted.org/packages/f6/4c/8d54d6dc5ff8ba8ced1fad9378f89f9dd60addcc4cf0e525ee0e67b1769f/rtree-1.4.0-py3-none-macosx_10_9_x86_64.whl", hash = "sha256:4d1bebc418101480aabf41767e772dd2155d3b27b1376cccbd93e4509485e091", size = 482755 },
+    { url = "https://files.pythonhosted.org/packages/20/29/045e700d2135e9a67896086c831fde80fd4105971b443d5727a4093fcbf1/rtree-1.4.0-py3-none-macosx_11_0_arm64.whl", hash = "sha256:997f8c38d5dffa3949ea8adb4c8b291ea5cd4ef5ee69455d642dd171baf9991d", size = 439796 },
+    { url = "https://files.pythonhosted.org/packages/3d/fc/c3bd8cd67b10a12a6b9e2d06796779128c3e6968922dbf29fcd53af68d81/rtree-1.4.0-py3-none-manylinux2014_aarch64.manylinux_2_17_aarch64.whl", hash = "sha256:0133d9c54ab3ffe874ba6d411dbe0254765c5e68d92da5b91362c370f16fd997", size = 497549 },
+    { url = "https://files.pythonhosted.org/packages/a0/dd/49dc9ab037d0cb288ed40f8b7f498f69d44243e4745e241c05d5e457ea8b/rtree-1.4.0-py3-none-manylinux2014_i686.manylinux_2_17_i686.whl", hash = "sha256:d3b7bf1fe6463139377995ebe22a01a7005d134707f43672a3c09305e12f5f43", size = 568787 },
+    { url = "https://files.pythonhosted.org/packages/fe/e7/57737dff73ce789bdadd916d48ac12e977d8578176e1e890b1b8d89b9dbf/rtree-1.4.0-py3-none-manylinux2014_x86_64.manylinux_2_17_x86_64.whl", hash = "sha256:27e4a6d617d63dcb82fcd4c2856134b8a3741bd1af3b1a0d98e886054f394da5", size = 541090 },
+    { url = "https://files.pythonhosted.org/packages/8e/8f/1f3f716c4e8388670cfd5d0a3578e2354a1e6a3403648e234e1540e3e3bd/rtree-1.4.0-py3-none-musllinux_1_2_aarch64.whl", hash = "sha256:5258e826064eab82439760201e9421ce6d4340789d6d080c1b49367ddd03f61f", size = 1454194 },
+    { url = "https://files.pythonhosted.org/packages/22/ec/b42052b10e63a1c5d5d61ce234332f689736053644ba1756f7a632ea7659/rtree-1.4.0-py3-none-musllinux_1_2_i686.whl", hash = "sha256:20d5b3f9cf8bbbcc9fec42ab837c603c5dd86103ef29134300c8da2495c1248b", size = 1692814 },
+    { url = "https://files.pythonhosted.org/packages/c5/5b/a9920e9a2dc43b066ff13b7fde2e7bffcca315cfa43ae6f4cc15970e39eb/rtree-1.4.0-py3-none-musllinux_1_2_x86_64.whl", hash = "sha256:a67bee1233370a4c72c0969a96d2a1df1ba404ddd9f146849c53ab420eab361b", size = 1554860 },
+    { url = "https://files.pythonhosted.org/packages/ce/c2/362f2cc36a7a57b47380061c23fc109c7222c1a544ffd24cda289ba19673/rtree-1.4.0-py3-none-win_amd64.whl", hash = "sha256:ba83efc7b7563905b1bfdfc14490c4bfb59e92e5e6156bdeb6ec5df5117252f4", size = 385221 },
 ]
 
 [[package]]
@@ -4543,8 +4605,7 @@ dependencies = [
     { name = "torch", version = "2.4.1", source = { registry = "https://pypi.org/simple" }, marker = "platform_machine == 'x86_64' and sys_platform == 'darwin'" },
     { name = "torch", version = "2.6.0", source = { registry = "https://pypi.org/simple" }, marker = "platform_machine != 'x86_64' or sys_platform != 'darwin'" },
     { name = "tqdm" },
-    { name = "transformers", version = "4.42.4", source = { registry = "https://pypi.org/simple" }, marker = "platform_machine == 'x86_64' and sys_platform == 'darwin'" },
-    { name = "transformers", version = "4.49.0", source = { registry = "https://pypi.org/simple" }, marker = "platform_machine != 'x86_64' or sys_platform != 'darwin'" },
+    { name = "transformers" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/16/74/aca6f8a2b8d62b4daf8c9a0c49d2aa573381caf47dc35cbb343389229376/sentence_transformers-3.4.1.tar.gz", hash = "sha256:68daa57504ff548340e54ff117bd86c1d2f784b21e0fb2689cf3272b8937b24b", size = 223898 }
 wheels = [
@@ -4562,26 +4623,38 @@ wheels = [
 
 [[package]]
 name = "shapely"
-version = "2.0.7"
+version = "2.1.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "numpy", version = "1.26.4", source = { registry = "https://pypi.org/simple" }, marker = "platform_machine == 'x86_64' and sys_platform == 'darwin'" },
     { name = "numpy", version = "2.2.3", source = { registry = "https://pypi.org/simple" }, marker = "platform_machine != 'x86_64' or sys_platform != 'darwin'" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/21/c0/a911d1fd765d07a2b6769ce155219a281bfbe311584ebe97340d75c5bdb1/shapely-2.0.7.tar.gz", hash = "sha256:28fe2997aab9a9dc026dc6a355d04e85841546b2a5d232ed953e3321ab958ee5", size = 283413 }
+sdist = { url = "https://files.pythonhosted.org/packages/fb/fe/3b0d2f828ffaceadcdcb51b75b9c62d98e62dd95ce575278de35f24a1c20/shapely-2.1.0.tar.gz", hash = "sha256:2cbe90e86fa8fc3ca8af6ffb00a77b246b918c7cf28677b7c21489b678f6b02e", size = 313617 }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/4f/3e/ea100eec5811bafd0175eb21828a3be5b0960f65250f4474391868be7c0f/shapely-2.0.7-cp312-cp312-macosx_10_13_x86_64.whl", hash = "sha256:4c2b9859424facbafa54f4a19b625a752ff958ab49e01bc695f254f7db1835fa", size = 1482451 },
-    { url = "https://files.pythonhosted.org/packages/ce/53/c6a3487716fd32e1f813d2a9608ba7b72a8a52a6966e31c6443480a1d016/shapely-2.0.7-cp312-cp312-macosx_11_0_arm64.whl", hash = "sha256:5aed1c6764f51011d69a679fdf6b57e691371ae49ebe28c3edb5486537ffbd51", size = 1345765 },
-    { url = "https://files.pythonhosted.org/packages/fd/dd/b35d7891d25cc11066a70fb8d8169a6a7fca0735dd9b4d563a84684969a3/shapely-2.0.7-cp312-cp312-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:73c9ae8cf443187d784d57202199bf9fd2d4bb7d5521fe8926ba40db1bc33e8e", size = 2421540 },
-    { url = "https://files.pythonhosted.org/packages/62/de/8dbd7df60eb23cb983bb698aac982944b3d602ef0ce877a940c269eae34e/shapely-2.0.7-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:a9469f49ff873ef566864cb3516091881f217b5d231c8164f7883990eec88b73", size = 2525741 },
-    { url = "https://files.pythonhosted.org/packages/96/64/faf0413ebc7a84fe7a0790bf39ec0b02b40132b68e57aba985c0b6e4e7b6/shapely-2.0.7-cp312-cp312-win32.whl", hash = "sha256:6bca5095e86be9d4ef3cb52d56bdd66df63ff111d580855cb8546f06c3c907cd", size = 1296552 },
-    { url = "https://files.pythonhosted.org/packages/63/05/8a1c279c226d6ad7604d9e237713dd21788eab96db97bf4ce0ea565e5596/shapely-2.0.7-cp312-cp312-win_amd64.whl", hash = "sha256:f86e2c0259fe598c4532acfcf638c1f520fa77c1275912bbc958faecbf00b108", size = 1443464 },
-    { url = "https://files.pythonhosted.org/packages/c6/21/abea43effbfe11f792e44409ee9ad7635aa93ef1c8ada0ef59b3c1c3abad/shapely-2.0.7-cp313-cp313-macosx_10_13_x86_64.whl", hash = "sha256:a0c09e3e02f948631c7763b4fd3dd175bc45303a0ae04b000856dedebefe13cb", size = 1481618 },
-    { url = "https://files.pythonhosted.org/packages/d9/71/af688798da36fe355a6e6ffe1d4628449cb5fa131d57fc169bcb614aeee7/shapely-2.0.7-cp313-cp313-macosx_11_0_arm64.whl", hash = "sha256:06ff6020949b44baa8fc2e5e57e0f3d09486cd5c33b47d669f847c54136e7027", size = 1345159 },
-    { url = "https://files.pythonhosted.org/packages/67/47/f934fe2b70d31bb9774ad4376e34f81666deed6b811306ff574faa3d115e/shapely-2.0.7-cp313-cp313-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:5d6dbf096f961ca6bec5640e22e65ccdec11e676344e8157fe7d636e7904fd36", size = 2410267 },
-    { url = "https://files.pythonhosted.org/packages/f5/8a/2545cc2a30afc63fc6176c1da3b76af28ef9c7358ed4f68f7c6a9d86cf5b/shapely-2.0.7-cp313-cp313-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:adeddfb1e22c20548e840403e5e0b3d9dc3daf66f05fa59f1fcf5b5f664f0e98", size = 2514128 },
-    { url = "https://files.pythonhosted.org/packages/87/54/2344ce7da39676adec94e84fbaba92a8f1664e4ae2d33bd404dafcbe607f/shapely-2.0.7-cp313-cp313-win32.whl", hash = "sha256:a7f04691ce1c7ed974c2f8b34a1fe4c3c5dfe33128eae886aa32d730f1ec1913", size = 1295783 },
-    { url = "https://files.pythonhosted.org/packages/d7/1e/6461e5cfc8e73ae165b8cff6eb26a4d65274fad0e1435137c5ba34fe4e88/shapely-2.0.7-cp313-cp313-win_amd64.whl", hash = "sha256:aaaf5f7e6cc234c1793f2a2760da464b604584fb58c6b6d7d94144fd2692d67e", size = 1442300 },
+    { url = "https://files.pythonhosted.org/packages/4e/d1/6a9371ec39d3ef08e13225594e6c55b045209629afd9e6d403204507c2a8/shapely-2.1.0-cp312-cp312-macosx_10_13_x86_64.whl", hash = "sha256:53e7ee8bd8609cf12ee6dce01ea5affe676976cf7049315751d53d8db6d2b4b2", size = 1830732 },
+    { url = "https://files.pythonhosted.org/packages/32/87/799e3e48be7ce848c08509b94d2180f4ddb02e846e3c62d0af33da4d78d3/shapely-2.1.0-cp312-cp312-macosx_11_0_arm64.whl", hash = "sha256:3cab20b665d26dbec0b380e15749bea720885a481fa7b1eedc88195d4a98cfa4", size = 1638404 },
+    { url = "https://files.pythonhosted.org/packages/85/00/6665d77f9dd09478ab0993b8bc31668aec4fd3e5f1ddd1b28dd5830e47be/shapely-2.1.0-cp312-cp312-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:f4a38b39a09340273c3c92b3b9a374272a12cc7e468aeeea22c1c46217a03e5c", size = 2945316 },
+    { url = "https://files.pythonhosted.org/packages/34/49/738e07d10bbc67cae0dcfe5a484c6e518a517f4f90550dda2adf3a78b9f2/shapely-2.1.0-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:edaec656bdd9b71278b98e6f77c464b1c3b2daa9eace78012ff0f0b4b5b15b04", size = 3063099 },
+    { url = "https://files.pythonhosted.org/packages/88/b8/138098674559362ab29f152bff3b6630de423378fbb0324812742433a4ef/shapely-2.1.0-cp312-cp312-musllinux_1_2_aarch64.whl", hash = "sha256:c8a732ddd9b25e7a54aa748e7df8fd704e23e5d5d35b7d376d80bffbfc376d04", size = 3887873 },
+    { url = "https://files.pythonhosted.org/packages/67/a8/fdae7c2db009244991d86f4d2ca09d2f5ccc9d41c312c3b1ee1404dc55da/shapely-2.1.0-cp312-cp312-musllinux_1_2_x86_64.whl", hash = "sha256:9c93693ad8adfdc9138a5a2d42da02da94f728dd2e82d2f0f442f10e25027f5f", size = 4067004 },
+    { url = "https://files.pythonhosted.org/packages/ed/78/17e17d91b489019379df3ee1afc4bd39787b232aaa1d540f7d376f0280b7/shapely-2.1.0-cp312-cp312-win32.whl", hash = "sha256:d8ac6604eefe807e71a908524de23a37920133a1729fe3a4dfe0ed82c044cbf4", size = 1527366 },
+    { url = "https://files.pythonhosted.org/packages/b8/bd/9249bd6dda948441e25e4fb14cbbb5205146b0fff12c66b19331f1ff2141/shapely-2.1.0-cp312-cp312-win_amd64.whl", hash = "sha256:f4f47e631aa4f9ec5576eac546eb3f38802e2f82aeb0552f9612cb9a14ece1db", size = 1708265 },
+    { url = "https://files.pythonhosted.org/packages/8d/77/4e368704b2193e74498473db4461d697cc6083c96f8039367e59009d78bd/shapely-2.1.0-cp313-cp313-macosx_10_13_x86_64.whl", hash = "sha256:b64423295b563f43a043eb786e7a03200ebe68698e36d2b4b1c39f31dfb50dfb", size = 1830029 },
+    { url = "https://files.pythonhosted.org/packages/71/3c/d888597bda680e4de987316b05ca9db07416fa29523beff64f846503302f/shapely-2.1.0-cp313-cp313-macosx_11_0_arm64.whl", hash = "sha256:1b5578f45adc25b235b22d1ccb9a0348c8dc36f31983e57ea129a88f96f7b870", size = 1637999 },
+    { url = "https://files.pythonhosted.org/packages/03/8d/ee0e23b7ef88fba353c63a81f1f329c77f5703835db7b165e7c0b8b7f839/shapely-2.1.0-cp313-cp313-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:d1a7e83d383b27f02b684e50ab7f34e511c92e33b6ca164a6a9065705dd64bcb", size = 2929348 },
+    { url = "https://files.pythonhosted.org/packages/d1/a7/5c9cb413e4e2ce52c16be717e94abd40ce91b1f8974624d5d56154c5d40b/shapely-2.1.0-cp313-cp313-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:942031eb4d8f7b3b22f43ba42c09c7aa3d843aa10d5cc1619fe816e923b66e55", size = 3048973 },
+    { url = "https://files.pythonhosted.org/packages/84/23/45b90c0bd2157b238490ca56ef2eedf959d3514c7d05475f497a2c88b6d9/shapely-2.1.0-cp313-cp313-musllinux_1_2_aarch64.whl", hash = "sha256:d2843c456a2e5627ee6271800f07277c0d2652fb287bf66464571a057dbc00b3", size = 3873148 },
+    { url = "https://files.pythonhosted.org/packages/c0/bc/ed7d5d37f5395166042576f0c55a12d7e56102799464ba7ea3a72a38c769/shapely-2.1.0-cp313-cp313-musllinux_1_2_x86_64.whl", hash = "sha256:8c4b17469b7f39a5e6a7cfea79f38ae08a275427f41fe8b48c372e1449147908", size = 4052655 },
+    { url = "https://files.pythonhosted.org/packages/c0/8f/a1dafbb10d20d1c569f2db3fb1235488f624dafe8469e8ce65356800ba31/shapely-2.1.0-cp313-cp313-win32.whl", hash = "sha256:30e967abd08fce49513d4187c01b19f139084019f33bec0673e8dbeb557c45e4", size = 1526600 },
+    { url = "https://files.pythonhosted.org/packages/e3/f0/9f8cdf2258d7aed742459cea51c70d184de92f5d2d6f5f7f1ded90a18c31/shapely-2.1.0-cp313-cp313-win_amd64.whl", hash = "sha256:1dc8d4364483a14aba4c844b7bd16a6fa3728887e2c33dfa1afa34a3cf4d08a5", size = 1707115 },
+    { url = "https://files.pythonhosted.org/packages/75/ed/32952df461753a65b3e5d24c8efb361d3a80aafaef0b70d419063f6f2c11/shapely-2.1.0-cp313-cp313t-macosx_10_13_x86_64.whl", hash = "sha256:673e073fea099d1c82f666fb7ab0a00a77eff2999130a69357ce11941260d855", size = 1824847 },
+    { url = "https://files.pythonhosted.org/packages/ff/b9/2284de512af30b02f93ddcdd2e5c79834a3cf47fa3ca11b0f74396feb046/shapely-2.1.0-cp313-cp313t-macosx_11_0_arm64.whl", hash = "sha256:6d1513f915a56de67659fe2047c1ad5ff0f8cbff3519d1e74fced69c9cb0e7da", size = 1631035 },
+    { url = "https://files.pythonhosted.org/packages/35/16/a59f252a7e736b73008f10d0950ffeeb0d5953be7c0bdffd39a02a6ba310/shapely-2.1.0-cp313-cp313t-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:0d6a7043178890b9e028d80496ff4c79dc7629bff4d78a2f25323b661756bab8", size = 2968639 },
+    { url = "https://files.pythonhosted.org/packages/a5/0a/6a20eca7b0092cfa243117e8e145a58631a4833a0a519ec9b445172e83a0/shapely-2.1.0-cp313-cp313t-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:cb638378dc3d76f7e85b67d7e2bb1366811912430ac9247ac00c127c2b444cdc", size = 3055713 },
+    { url = "https://files.pythonhosted.org/packages/fb/44/eeb0c7583b1453d1cf7a319a1d738e08f98a5dc993fa1ef3c372983e4cb5/shapely-2.1.0-cp313-cp313t-musllinux_1_2_aarch64.whl", hash = "sha256:737124e87d91d616acf9a911f74ac55e05db02a43a6a7245b3d663817b876055", size = 3890478 },
+    { url = "https://files.pythonhosted.org/packages/5d/6e/37ff3c6af1d408cacb0a7d7bfea7b8ab163a5486e35acb08997eae9d8756/shapely-2.1.0-cp313-cp313t-musllinux_1_2_x86_64.whl", hash = "sha256:8e6c229e7bb87aae5df82fa00b6718987a43ec168cc5affe095cca59d233f314", size = 4036148 },
+    { url = "https://files.pythonhosted.org/packages/c8/6a/8c0b7de3aeb5014a23f06c5e9d3c7852ebcf0d6b00fe660b93261e310e24/shapely-2.1.0-cp313-cp313t-win32.whl", hash = "sha256:a9580bda119b1f42f955aa8e52382d5c73f7957e0203bc0c0c60084846f3db94", size = 1535993 },
+    { url = "https://files.pythonhosted.org/packages/a8/91/ae80359a58409d52e4d62c7eacc7eb3ddee4b9135f1db884b6a43cf2e174/shapely-2.1.0-cp313-cp313t-win_amd64.whl", hash = "sha256:e8ff4e5cfd799ba5b6f37b5d5527dbd85b4a47c65b6d459a03d0962d2a9d4d10", size = 1717777 },
 ]
 
 [[package]]
@@ -4802,7 +4875,7 @@ dependencies = [
     { name = "python-dotenv", marker = "platform_machine == 'x86_64' and sys_platform == 'darwin'" },
     { name = "tabulate", marker = "platform_machine == 'x86_64' and sys_platform == 'darwin'" },
     { name = "torch", version = "2.4.1", source = { registry = "https://pypi.org/simple" }, marker = "platform_machine == 'x86_64' and sys_platform == 'darwin'" },
-    { name = "transformers", version = "4.42.4", source = { registry = "https://pypi.org/simple" }, marker = "platform_machine == 'x86_64' and sys_platform == 'darwin'" },
+    { name = "transformers", marker = "platform_machine == 'x86_64' and sys_platform == 'darwin'" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/90/eb/353e1c60400b76b56ebd58f3dd684383f574cd6a092761b777a7a504cd07/surya_ocr-0.5.0.tar.gz", hash = "sha256:a80740c2b000d9630cf3d5525043c95096efaeb6b0892254ff32339a171e789a", size = 91661 }
 wheels = [
@@ -4835,7 +4908,7 @@ dependencies = [
     { name = "pypdfium2", version = "4.30.0", source = { registry = "https://pypi.org/simple" }, marker = "platform_machine != 'x86_64' or sys_platform != 'darwin'" },
     { name = "python-dotenv", marker = "platform_machine != 'x86_64' or sys_platform != 'darwin'" },
     { name = "torch", version = "2.6.0", source = { registry = "https://pypi.org/simple" }, marker = "platform_machine != 'x86_64' or sys_platform != 'darwin'" },
-    { name = "transformers", version = "4.49.0", source = { registry = "https://pypi.org/simple" }, marker = "platform_machine != 'x86_64' or sys_platform != 'darwin'" },
+    { name = "transformers", marker = "platform_machine != 'x86_64' or sys_platform != 'darwin'" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/15/f5/1cc5b15fd4451cd33dfec754c8d88f6b3e7a48a089bf56321f7d8c65200f/surya_ocr-0.13.0.tar.gz", hash = "sha256:93b866ced75d9599dbbb0f746498f114d10f5063f588013a27e5192b4d307cc9", size = 128069 }
 wheels = [
@@ -4919,7 +4992,7 @@ dependencies = [
     { name = "pypdfium2", version = "4.30.1", source = { registry = "https://pypi.org/simple" }, marker = "platform_machine == 'x86_64' and sys_platform == 'darwin'" },
     { name = "python-dotenv", marker = "platform_machine == 'x86_64' and sys_platform == 'darwin'" },
     { name = "torch", version = "2.4.1", source = { registry = "https://pypi.org/simple" }, marker = "platform_machine == 'x86_64' and sys_platform == 'darwin'" },
-    { name = "transformers", version = "4.42.4", source = { registry = "https://pypi.org/simple" }, marker = "platform_machine == 'x86_64' and sys_platform == 'darwin'" },
+    { name = "transformers", marker = "platform_machine == 'x86_64' and sys_platform == 'darwin'" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/d9/b4/6ccda35100faf9f3a9f0c7f840cab1cb23494c263dfd96552809716bb606/texify-0.1.10.tar.gz", hash = "sha256:3b3faf7bb392cd42db483d26550e541c828ac5fba8c6e32cb08d34a34809e050", size = 30247 }
 wheels = [
@@ -4937,15 +5010,15 @@ wheels = [
 
 [[package]]
 name = "tifffile"
-version = "2025.2.18"
+version = "2025.3.30"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "numpy", version = "1.26.4", source = { registry = "https://pypi.org/simple" }, marker = "platform_machine == 'x86_64' and sys_platform == 'darwin'" },
     { name = "numpy", version = "2.2.3", source = { registry = "https://pypi.org/simple" }, marker = "platform_machine != 'x86_64' or sys_platform != 'darwin'" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/de/1f/96d743b3417425f958dfed2518ad271b346a072d27b6859bb158e601bc21/tifffile-2025.2.18.tar.gz", hash = "sha256:8d731789e691b468746c1615d989bc550ac93cf753e9210865222e90a5a95d11", size = 365412 }
+sdist = { url = "https://files.pythonhosted.org/packages/3c/54/d5ebe66a9de349b833e570e87bdbd9eec76ec54bd505c24b0591a15783ad/tifffile-2025.3.30.tar.gz", hash = "sha256:3cdee47fe06cd75367c16bc3ff34523713156dae6cd498e3a392e5b39a51b789", size = 366039 }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/63/70/6f363ab13f9903557a567a4471a28ee231b962e34af8e1dd8d1b0f17e64e/tifffile-2025.2.18-py3-none-any.whl", hash = "sha256:54b36c4d5e5b8d8920134413edfe5a7cfb1c7617bb50cddf7e2772edb7149043", size = 226358 },
+    { url = "https://files.pythonhosted.org/packages/6e/be/10d23cfd4078fbec6aba768a357eff9e70c0b6d2a07398425985c524ad2a/tifffile-2025.3.30-py3-none-any.whl", hash = "sha256:0ed6eee7b66771db2d1bfc42262a51b01887505d35539daef118f4ff8c0f629c", size = 226837 },
 ]
 
 [[package]]
@@ -4974,38 +5047,10 @@ wheels = [
 
 [[package]]
 name = "tokenizers"
-version = "0.19.1"
-source = { registry = "https://pypi.org/simple" }
-resolution-markers = [
-    "python_full_version >= '3.13' and platform_machine == 'x86_64' and sys_platform == 'darwin'",
-    "python_full_version >= '3.12.4' and python_full_version < '3.13' and platform_machine == 'x86_64' and sys_platform == 'darwin'",
-    "python_full_version < '3.12.4' and platform_machine == 'x86_64' and sys_platform == 'darwin'",
-]
-dependencies = [
-    { name = "huggingface-hub", marker = "platform_machine == 'x86_64' and sys_platform == 'darwin'" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/48/04/2071c150f374aab6d5e92aaec38d0f3c368d227dd9e0469a1f0966ac68d1/tokenizers-0.19.1.tar.gz", hash = "sha256:ee59e6680ed0fdbe6b724cf38bd70400a0c1dd623b07ac729087270caeac88e3", size = 321039 }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/63/90/2890cd096898dcdb596ee172cde40c0f54a9cf43b0736aa260a5501252af/tokenizers-0.19.1-cp312-cp312-macosx_10_12_x86_64.whl", hash = "sha256:621d670e1b1c281a1c9698ed89451395d318802ff88d1fc1accff0867a06f153", size = 2530580 },
-]
-
-[[package]]
-name = "tokenizers"
 version = "0.21.0"
 source = { registry = "https://pypi.org/simple" }
-resolution-markers = [
-    "python_full_version >= '3.13' and platform_machine != 'x86_64' and sys_platform == 'darwin'",
-    "python_full_version >= '3.13' and platform_machine == 'aarch64' and sys_platform == 'linux'",
-    "(python_full_version >= '3.13' and platform_machine != 'aarch64' and sys_platform == 'linux') or (python_full_version >= '3.13' and sys_platform != 'darwin' and sys_platform != 'linux')",
-    "python_full_version >= '3.12.4' and python_full_version < '3.13' and platform_machine != 'x86_64' and sys_platform == 'darwin'",
-    "python_full_version >= '3.12.4' and python_full_version < '3.13' and platform_machine == 'aarch64' and sys_platform == 'linux'",
-    "(python_full_version >= '3.12.4' and python_full_version < '3.13' and platform_machine != 'aarch64' and sys_platform == 'linux') or (python_full_version >= '3.12.4' and python_full_version < '3.13' and sys_platform != 'darwin' and sys_platform != 'linux')",
-    "python_full_version < '3.12.4' and platform_machine != 'x86_64' and sys_platform == 'darwin'",
-    "python_full_version < '3.12.4' and platform_machine == 'aarch64' and sys_platform == 'linux'",
-    "(python_full_version < '3.12.4' and platform_machine != 'aarch64' and sys_platform == 'linux') or (python_full_version < '3.12.4' and sys_platform != 'darwin' and sys_platform != 'linux')",
-]
 dependencies = [
-    { name = "huggingface-hub", marker = "platform_machine != 'x86_64' or sys_platform != 'darwin'" },
+    { name = "huggingface-hub" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/20/41/c2be10975ca37f6ec40d7abd7e98a5213bb04f284b869c1a24e6504fd94d/tokenizers-0.21.0.tar.gz", hash = "sha256:ee0894bf311b75b0c03079f33859ae4b2334d675d4e93f5a4132e1eae2834fe4", size = 343021 }
 wheels = [
@@ -5184,56 +5229,20 @@ wheels = [
 
 [[package]]
 name = "transformers"
-version = "4.42.4"
-source = { registry = "https://pypi.org/simple" }
-resolution-markers = [
-    "python_full_version >= '3.13' and platform_machine == 'x86_64' and sys_platform == 'darwin'",
-    "python_full_version >= '3.12.4' and python_full_version < '3.13' and platform_machine == 'x86_64' and sys_platform == 'darwin'",
-    "python_full_version < '3.12.4' and platform_machine == 'x86_64' and sys_platform == 'darwin'",
-]
-dependencies = [
-    { name = "filelock", marker = "platform_machine == 'x86_64' and sys_platform == 'darwin'" },
-    { name = "huggingface-hub", marker = "platform_machine == 'x86_64' and sys_platform == 'darwin'" },
-    { name = "numpy", version = "1.26.4", source = { registry = "https://pypi.org/simple" }, marker = "platform_machine == 'x86_64' and sys_platform == 'darwin'" },
-    { name = "packaging", marker = "platform_machine == 'x86_64' and sys_platform == 'darwin'" },
-    { name = "pyyaml", marker = "platform_machine == 'x86_64' and sys_platform == 'darwin'" },
-    { name = "regex", marker = "platform_machine == 'x86_64' and sys_platform == 'darwin'" },
-    { name = "requests", marker = "platform_machine == 'x86_64' and sys_platform == 'darwin'" },
-    { name = "safetensors", marker = "platform_machine == 'x86_64' and sys_platform == 'darwin'" },
-    { name = "tokenizers", version = "0.19.1", source = { registry = "https://pypi.org/simple" }, marker = "platform_machine == 'x86_64' and sys_platform == 'darwin'" },
-    { name = "tqdm", marker = "platform_machine == 'x86_64' and sys_platform == 'darwin'" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/84/eb/259afff0df9ece338dc224007bbe7dd6c9aae8e26957dc4033a3ec857588/transformers-4.42.4.tar.gz", hash = "sha256:f956e25e24df851f650cb2c158b6f4352dfae9d702f04c113ed24fc36ce7ae2d", size = 8054872 }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/6a/dc/23c26b7b0bce5aaccf2b767db3e9c4f5ae4331bd47688c1f2ef091b23696/transformers-4.42.4-py3-none-any.whl", hash = "sha256:6d59061392d0f1da312af29c962df9017ff3c0108c681a56d1bc981004d16d24", size = 9337817 },
-]
-
-[[package]]
-name = "transformers"
 version = "4.49.0"
 source = { registry = "https://pypi.org/simple" }
-resolution-markers = [
-    "python_full_version >= '3.13' and platform_machine != 'x86_64' and sys_platform == 'darwin'",
-    "python_full_version >= '3.13' and platform_machine == 'aarch64' and sys_platform == 'linux'",
-    "(python_full_version >= '3.13' and platform_machine != 'aarch64' and sys_platform == 'linux') or (python_full_version >= '3.13' and sys_platform != 'darwin' and sys_platform != 'linux')",
-    "python_full_version >= '3.12.4' and python_full_version < '3.13' and platform_machine != 'x86_64' and sys_platform == 'darwin'",
-    "python_full_version >= '3.12.4' and python_full_version < '3.13' and platform_machine == 'aarch64' and sys_platform == 'linux'",
-    "(python_full_version >= '3.12.4' and python_full_version < '3.13' and platform_machine != 'aarch64' and sys_platform == 'linux') or (python_full_version >= '3.12.4' and python_full_version < '3.13' and sys_platform != 'darwin' and sys_platform != 'linux')",
-    "python_full_version < '3.12.4' and platform_machine != 'x86_64' and sys_platform == 'darwin'",
-    "python_full_version < '3.12.4' and platform_machine == 'aarch64' and sys_platform == 'linux'",
-    "(python_full_version < '3.12.4' and platform_machine != 'aarch64' and sys_platform == 'linux') or (python_full_version < '3.12.4' and sys_platform != 'darwin' and sys_platform != 'linux')",
-]
 dependencies = [
-    { name = "filelock", marker = "platform_machine != 'x86_64' or sys_platform != 'darwin'" },
-    { name = "huggingface-hub", marker = "platform_machine != 'x86_64' or sys_platform != 'darwin'" },
+    { name = "filelock" },
+    { name = "huggingface-hub" },
+    { name = "numpy", version = "1.26.4", source = { registry = "https://pypi.org/simple" }, marker = "platform_machine == 'x86_64' and sys_platform == 'darwin'" },
     { name = "numpy", version = "2.2.3", source = { registry = "https://pypi.org/simple" }, marker = "platform_machine != 'x86_64' or sys_platform != 'darwin'" },
-    { name = "packaging", marker = "platform_machine != 'x86_64' or sys_platform != 'darwin'" },
-    { name = "pyyaml", marker = "platform_machine != 'x86_64' or sys_platform != 'darwin'" },
-    { name = "regex", marker = "platform_machine != 'x86_64' or sys_platform != 'darwin'" },
-    { name = "requests", marker = "platform_machine != 'x86_64' or sys_platform != 'darwin'" },
-    { name = "safetensors", marker = "platform_machine != 'x86_64' or sys_platform != 'darwin'" },
-    { name = "tokenizers", version = "0.21.0", source = { registry = "https://pypi.org/simple" }, marker = "platform_machine != 'x86_64' or sys_platform != 'darwin'" },
-    { name = "tqdm", marker = "platform_machine != 'x86_64' or sys_platform != 'darwin'" },
+    { name = "packaging" },
+    { name = "pyyaml" },
+    { name = "regex" },
+    { name = "requests" },
+    { name = "safetensors" },
+    { name = "tokenizers" },
+    { name = "tqdm" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/79/50/46573150944f46df8ec968eda854023165a84470b42f69f67c7d475dabc5/transformers-4.49.0.tar.gz", hash = "sha256:7e40e640b5b8dc3f48743f5f5adbdce3660c82baafbd3afdfc04143cdbd2089e", size = 8610952 }
 wheels = [
