@@ -78,5 +78,5 @@ class LLM:
                     data = response.json()  # Modify the fields here
                     data["model"] = ragondin_model
                     yield data
-                except json.JSONDecodeError as e:
+                except Exception as e:
                     raise ValueError(f"Invalid JSON in API response: {str(e)}")
