@@ -1,7 +1,6 @@
 import asyncio
-
 import torch
-from components.utils import SingletonMeta, SingletonABCMeta
+from components.utils import SingletonMeta
 from docling.datamodel.document import ConversionResult
 from docling_core.types.doc.document import PictureItem
 from langchain_core.documents.base import Document
@@ -36,7 +35,7 @@ class DoclingConverter(metaclass=SingletonMeta):
     """
 
     def __init__(self):
-        img_scale = 2
+        img_scale = 1
         pipeline_options = PdfPipelineOptions(
             do_ocr=True,
             do_table_structure=True,
