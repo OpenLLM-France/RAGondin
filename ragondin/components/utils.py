@@ -127,18 +127,17 @@ def format_context(docs: list[Document]) -> str:
         content: \n{doc.page_content.strip()}\n
         """
 
-        # document = (f"""<chunk document_id={doc_id}>\n{doc.page_content.strip()}\n</chunk>\n""")
-        # Source: {source} (Page: {page})
-
         context += document
         context += "-" * 40 + "\n\n"
 
         sources.append(
             {
                 "doc_id": doc_id,
+                "_id": doc.metadata["_id"],
                 "source": doc.metadata["source"],
-                "sub_url_path": doc.metadata["sub_url_path"],
+                "filename": doc.metadata["filename"],
                 "page": doc.metadata["page"],
+                'partition': doc.metadata['partition'],
                 "content": doc.page_content,
             }
         )

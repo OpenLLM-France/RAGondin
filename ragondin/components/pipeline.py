@@ -1,13 +1,9 @@
-import gc
+import copy
+from enum import Enum
 import sys
-from collections import deque
 from pathlib import Path
-
-import torch
 from langchain_core.documents.base import Document
-from langchain_core.messages import AIMessage, HumanMessage
-from langchain_core.output_parsers import StrOutputParser
-from langchain_core.prompts import ChatPromptTemplate
+from openai import AsyncOpenAI
 from loguru import logger
 
 from .grader import Grader
@@ -18,151 +14,198 @@ from .retriever import ABCRetriever, RetrieverFactory
 from .utils import format_context, load_sys_template
 
 
-class RagPipeline:
+class RAGMODE(Enum):
+    SIMPLERAG = "SimpleRag"
+    CHATBOTRAG = "ChatBotRag"
+
+
+class RetrieverPipeline:
     def __init__(self, config, vectordb: ABCVectorDB, logger=None) -> None:
         self.config = config
-        self.logger = self.set_logger(config) if logger is None else logger
+        self.logger = logger
+
+        # vectordb
         self.vectordb: ABCVectorDB = vectordb
 
-        self.reranker = None
-        self.reranker_enabled = config.reranker["enable"]
-        logger.info(f"Reranker enabled: {self.reranker_enabled}")
-        self.reranker_top_k = int(config.reranker["top_k"])
-        if self.reranker_enabled:
-            self.reranker = Reranker(self.logger, config)
-
-        self.prompts_dir = Path(config.paths.prompts_dir)
-        self.rag_sys_prompt: str = load_sys_template(
-            self.prompts_dir / config.prompt["rag_sys_pmpt"]
-        )
-
-        self.context_pmpt_tmpl = config.prompt["context_pmpt_tmpl"]
-
+        # retriever
         self.retriever: ABCRetriever = RetrieverFactory.create_retriever(
             config=config, logger=self.logger
         )
 
+        # reranker
+        self.reranker = None
+        self.reranker_enabled = config.reranker["enable"]
+        self.reranker_top_k = int(config.reranker["top_k"])
+        if self.reranker_enabled:
+            self.logger.debug(f"Reranker enabled: {self.reranker_enabled}")
+            self.reranker = Reranker(self.logger, config)
+
+        # grader
         self.grader: Grader = None
         self.grader_enabled = config.grader["enable"]
         if self.grader_enabled:
             self.grader = Grader(config, logger=self.logger)
 
+    async def retrieve_docs(self, partition: list[str], query: str) -> list[Document]:
+        docs = await self.retriever.retrieve(
+            partition=partition, query=query, db=self.vectordb
+        )
+        self.logger.debug(f"{len(docs)} Documents retreived")
+
+        if docs:
+            # grade and filter out irrelevant docs
+            if self.grader_enabled:
+                docs = await self.grader.grade_docs(user_input=query, docs=docs)
+
+            # rerank documents
+            if self.reranker_enabled:
+                docs = await self.reranker.rerank(
+                    query, documents=docs, top_k=self.reranker_top_k
+                )
+
+            else:
+                docs = docs[: self.reranker_top_k]
+
+        return docs
+
+
+class RagPipeline:
+    def __init__(self, config, vectordb: ABCVectorDB, logger=None) -> None:
+        self.config = config
+        self.logger = self.set_logger(config) if logger is None else logger
+
+        # retriever pipeline
+        self.retriever_pipeline = RetrieverPipeline(
+            config=config, vectordb=vectordb, logger=self.logger
+        )
+
+        self.prompts_dir = Path(config.paths.prompts_dir)
+        # contextualizer prompt
+        self.contextualizer_pmpt = load_sys_template(
+            self.prompts_dir / config.prompt["contextualizer_pmpt"]
+        )
+
+        # rag sys prompt
+        self.rag_sys_prompt: str = load_sys_template(
+            self.prompts_dir / config.prompt["rag_sys_pmpt"]
+        )
+
         self.rag_mode = config.rag["mode"]
         self.chat_history_depth = config.rag["chat_history_depth"]
 
-        self._chat_history: deque = deque(maxlen=self.chat_history_depth)
         self.llm_client = LLM(config.llm, self.logger)
-
-    async def get_contextualized_docs(
-        self, partition: list[str], question: str, chat_history: list
-    ) -> list[Document]:
-        """With this function, the new question is reformulated as a standalone question that takes into account the chat_history.
-        The new contextualized question is better suited for retreival.
-        This contextualisation allows to have a RAG agent that also takes into account history, so chatbot RAG.
-
-        Args:
-            `question` (str): The user question
-            `chat_history` (list): The conversation history
-        """
-        if (
-            self.rag_mode == "SimpleRag"
-        ):  # for the SimpleRag, we don't need the contextualize as questions are treated independently regardless of the chat_history
-            docs = await self.retriever.retrieve(
-                partition=partition, question=question, db=self.vectordb
-            )
-            contextualized_question = question
-
-        if self.rag_mode == "ChatBotRag":
-            template = load_sys_template(
-                self.prompts_dir
-                / self.context_pmpt_tmpl  # get the prompt for contextualizing
-            )
-
-            contextualize_q_prompt = ChatPromptTemplate.from_template(template)
-
-            history_aware_retriever = (
-                contextualize_q_prompt | self.llm_client.client | StrOutputParser()
-            )
-            input_ = {
-                "query": question,
-                "chat_history": chat_history,
-            }
-            contextualized_question = await history_aware_retriever.ainvoke(input_)
-            logger.debug(f"Query: {contextualized_question}")
-
-            docs = await self.retriever.retrieve(
-                partition=partition, question=contextualized_question, db=self.vectordb
-            )
-            logger.debug(f"{len(docs)} Documents retreived")
-            gc.collect()
-            torch.cuda.empty_cache()
-        return docs, contextualized_question
-
-    async def run(
-        self,
-        partition: list[str],
-        question: str = "",
-        chat_history: list[AIMessage | HumanMessage] = None,
-    ):
-        """
-        Executes the pipeline to process a given question and chat history, retrieve relevant documents, and generate an answer.
-        Args:
-            question (str): The question to be processed. Defaults to an empty string.
-            chat_history (list[AIMessage | HumanMessage], optional): The chat history provided by the user. Defaults to None.
-        Returns:
-            tuple: A tuple containing the answer generated by the LLM, the context used for generating the answer, and the sources of the context.
-        """
-        if chat_history:  # when the user provides chat_history (in api_mode)
-            chat_history = chat_history[-self.chat_history_depth :]
-        else:
-            chat_history = list(self._chat_history)  # use the saved chat history
-
-        # 1. contextualize the question and retreive relevant documents
-        docs, contextualized_question = await self.get_contextualized_docs(
-            partition=partition, question=question, chat_history=chat_history
+        self.vlm_client = LLM(config.vlm, self.logger)
+        self.contextualizer = AsyncOpenAI(
+            base_url=config.vlm["base_url"], api_key=config.vlm["api_key"]
         )
 
-        if docs:
-            # grade and filter irrelevant docs
-            if self.grader_enabled:
-                docs = self.grader.filter_docs(
-                    user_input=contextualized_question, docs=docs
+    async def generate_query(self, messages: list[dict]) -> str:
+        match RAGMODE(self.rag_mode):
+            case RAGMODE.SIMPLERAG:
+                # For SimpleRag, we don't need to contextualize the query as the chat history is not taken into account
+                last_msg = messages[-1]
+                return last_msg["content"]
+
+            case RAGMODE.CHATBOTRAG:
+                # Contextualize the query based on the chat history
+                chat_history = ""
+                for m in messages:
+                    chat_history += f"{m['role']}: {m['content']}\n"
+
+                params = dict(self.config.llm_params)
+                params.pop("max_retries")
+                response = await self.contextualizer.chat.completions.create(
+                    model=self.config.vlm["model"],
+                    messages=[
+                        {"role": "system", "content": self.contextualizer_pmpt},
+                        {
+                            "role": "user",
+                            "content": f"Given the following chat, generate a query. \n{chat_history}\n",
+                        },
+                    ],
+                    **params,
                 )
 
-            # 2. rerank documents is asked
-            if self.reranker_enabled:
-                docs = await self.reranker.rerank(
-                    contextualized_question, chunks=docs, k=self.reranker_top_k
-                )
-            else:
-                docs = docs[: self.reranker_top_k]
+                contextualized_query = response.choices[0].message.content
+                return contextualized_query
+
+    async def _prepare_for_chat_completion(self, partition: list[str], payload: dict):
+        messages = payload["messages"]
+        self.logger.info(f"Chat Length before {len(messages)}")
+        messages = messages[-self.chat_history_depth :]  # limit history depth
+        self.logger.info(f"Chat Length After {len(messages)}")
+
+        # 1. get the query
+        query = await self.generate_query(messages)
+        self.logger.debug(f"Query: {query}")
+
+        # 2. get docs
+        docs = await self.retriever_pipeline.retrieve_docs(
+            partition=partition, query=query
+        )
+        logger.info(f"{len(docs)} Documents retrieved")
 
         # 3. Format the retrieved docs
         context, sources = format_context(docs)
 
-        # 4. run the llm for inference
-        answer = self.llm_client.run(
-            question=question,
-            chat_history=chat_history,
-            context=context,
-            sys_pmpt_tmpl=self.rag_sys_prompt,
+        # 4. prepare the output
+        messages: list = copy.deepcopy(messages)
+
+        # prepend the messages with the system prompt
+        messages.insert(
+            0,
+            {
+                "role": "system",
+                "content": self.rag_sys_prompt.format(context=context),
+            },
+        )
+        # messages.append({"role": "tool", "name": "retriever", "content": f"Here are the retrieved documents: {context}"})
+
+        payload["messages"] = messages
+        return payload, context, sources
+
+    async def _prepare_for_completions(self, partition: list[str], payload: dict):
+        prompt = payload["prompt"]
+
+        # 1. get the query
+        query = await self.generate_query(
+            messages=[{"role": "user", "content": prompt}]
+        )
+        self.logger.debug(f"Query: {query}")
+
+        # 2. get docs
+        docs = await self.retriever_pipeline.retrieve_docs(
+            partition=partition, query=query
         )
 
-        self.free_memory()
+        # 3. Format the retrieved docs
+        context, sources = format_context(docs)
 
-        return answer, context, sources
+        # 4. prepare the output
+        prompt = (
+            f"Given the context: \n{context}\n" if docs else ""
+        ) + f"Complete the following prompt: {prompt}"
+        payload["prompt"] = prompt
 
-    def free_memory(self):
-        gc.collect()
-        torch.cuda.empty_cache()
+        return payload, context, sources
 
-    def update_history(self, question: str, answer: str):
-        self._chat_history.extend(
-            [
-                HumanMessage(content=question),
-                AIMessage(content=answer),
-            ]
+    async def completions(self, partition: list[str], payload: dict):
+        payload, context, sources = await self._prepare_for_completions(
+            partition=partition, payload=payload
         )
+        llm_output = self.llm_client.completions(request=payload)
+        return llm_output, context, sources
+
+    async def chat_completion(self, partition: list[str], payload: dict):
+        try:
+            payload, context, sources = await self._prepare_for_chat_completion(
+                partition=partition, payload=payload
+            )
+
+            llm_output = self.llm_client.chat_completion(request=payload)
+            return llm_output, context, sources
+        except Exception as e:
+            raise e
 
     @staticmethod
     def set_logger(config):

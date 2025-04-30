@@ -4,7 +4,6 @@ from langchain_core.documents.base import Document
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_openai import ChatOpenAI
 from pydantic import BaseModel, Field
-from .llm import LLM
 from .utils import llmSemaphore
 
 

@@ -88,7 +88,6 @@ class MarkerLoader(BaseLoader):
         if self.config["loader"]["image_captioning"]:
             img_dict = render.images
             logger.info(f"Found {len(img_dict)} images in the document.")
-
             captions_dict = await self.get_captions(img_dict)
 
             for key, desc in captions_dict.items():

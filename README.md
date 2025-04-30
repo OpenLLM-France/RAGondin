@@ -120,6 +120,10 @@ VLM_MODEL=
 # App
 APP_PORT=8080
 APP_HOST=0.0.0.0
+
+# To enable HTTP authentication via HTTPBearer
+AUTH_TOKEN=super-secret-token
+
 ## More settings can be added (see .env.example)
 
 # Loaders
@@ -142,6 +146,12 @@ docker compose up --build
 # Launch with CPU only (useful if GPU is unavailable)
 docker compose --profile cpu up --build
 ```
+
+Once it is running, you can check everything is fine by doing:
+```bash
+curl http://localhost:0/health_check
+```
+
 > **Note**: The initial launch is longer due to the installation of required dependencies. Once the application is up and running, you can access the api documentation at `http://localhost:8080/docs` (8080 is the APP_PORT variable determined in your **`.env`**) to manage documents, execute searches, or interact with the RAG pipeline (see the **next section** about the api for more details). A default chat ui is also deployed using [chainlit](!https://docs.chainlit.io/get-started/overview). You can access to it at `http://localhost:8080/chainlit` chat with your documents with our RAG engine behind it.
 
 
@@ -156,6 +166,115 @@ docker compose --profile cpu up --build
   Optimal values are already configured for GPU usage. However, you can modify these settings if you wish to experiment with different configurations depending on the capacity of machine.
 
 Now, that your app is launched, files can be added in order to chat with your documents. The following sections deals with that.
+
+### 5. Distributed deployment in a Ray cluster
+
+To scale RAGondin across multiple machines using Ray, follow these steps:
+
+---
+
+#### ✅ 1. Set environment variables
+
+Make sure to set your `.env` file with the necessary variables. In addition to the usual ones, add **Ray-specific variables** from `.env.example`:
+```env
+RAY_RUNTIME_ENV_HOOK=ray._private.runtime_env.uv_runtime_env_hook.hook
+CONFIG_PATH=/ray_mount/.hydra_config
+DATA_DIR=/ray_mount/data
+HF_HOME=/ray_mount/model_weights
+HF_HUB_CACHE=/ray_mount/model_weights/hub
+DATA_VOLUME_DIRECTORY=/app/volumes
+SHARED_ENV=/ray_mount/.env
+
+RAY_NUM_CPUS=4
+RAY_NUM_GPUS=0.6
+```
+
+The last 2 settings define the per-actor resource requirements. Adjust them according to your workload and GPU size. For example, a single indexation uses at most 7GB VRAM, and each GPU has 16GB, setting `RAY_NUM_GPUS=0.5` allows **2 concurrent indexers per node**, meaning a 2-node cluster can handle **up to 4 concurrent indexation tasks**.
+
+---
+
+#### 📁 2. Set up shared storage (e.g. with NFS)
+
+Workers need shared access to:
+- `.env`
+- `.hydra_config`
+- SQLite DB (`/volumes`)
+- Uploaded files (`/data`)
+- Model weights (e.g. `/model_weights` if using HF local cache)
+
+Example using **NFS**:
+
+**On the Ray head node (NFS server):**
+
+```bash
+sudo mkdir -p /ray_mount
+```
+
+Add to `/etc/exports`:
+```
+/ray_mount 192.168.42.0/24(rw,sync,no_subtree_check)
+```
+
+Update and enable the NFS service:
+```bash
+sudo exportfs -a
+sudo systemctl restart nfs-kernel-server
+```
+
+**On other Ray nodes (clients):**
+
+```bash
+sudo mount -t nfs 192.168.42.226:/ray_mount /ray_mount
+```
+
+To make the mount persistent:
+```bash
+echo "192.168.42.226:/ray_mount /ray_mount nfs defaults 0 0" | sudo tee -a /etc/fstab
+```
+
+Then copy required files to the shared mount:
+```bash
+sudo cp -r .hydra_config /ray_mount/
+sudo cp .env /ray_mount/
+sudo mkdir /ray_mount/volumes /ray_mount/data /ray_mount/model_weights
+sudo chown -R ubuntu:ubuntu /ray_mount
+```
+
+---
+
+#### 🐳 3. Launch `ragondin` with Ray in host mode
+
+Use a dedicated Ray-enabled docker compose file:
+
+```bash
+docker compose -f docker-compose-ray.yaml up -d
+```
+
+The `ragondin` container must run in `host` mode so that the Ray head node is reachable by other machines. Make sure `RAY_RUNTIME_ENV_HOOK` is set properly to support `uv`:
+
+```env
+RAY_RUNTIME_ENV_HOOK=ray._private.runtime_env.uv_runtime_env_hook.hook
+```
+
+---
+
+#### 🔗 4. Join the cluster from other nodes
+
+Run the following on other machines to connect to the Ray cluster:
+
+```bash
+uv run ray start --address='192.168.201.85:6379'
+```
+
+Or if you're not using `uv`:
+
+```bash
+ray start --address='192.168.201.85:6379'
+```
+
+Replace `192.168.201.85` with your head node’s actual IP address.
+
+
 
 ### 🧠 API Overview
 
@@ -273,7 +392,13 @@ Fetches a specific extract by its ID.
 **`POST /v1/chat/completions`**  
 OpenAI-compatible chat completion endpoint using a Retrieval-Augmented Generation (RAG) pipeline. Accepts `model`, `messages`, `temperature`, `top_p`, etc.
 
+---
 
+#### ℹ️ Utils
+
+**`GET /health_check`**
+
+Simple endpoint to ensure the server is running.
 
 
 ## Contribute
@@ -287,6 +412,26 @@ This repository is for research and educational purposes only. While we strive f
 
 ## License
 MIT License - See [LICENSE](LICENSE) file for details.
+
+## Troubleshooting
+
+### Error on dependencies installation
+
+After running `uv sync`, if you have this error:
+
+```
+error: Distribution `ray==2.43.0 @ registry+https://pypi.org/simple` can't be installed because it doesn't have a source distribution or wheel for the current platform
+
+hint: You're using CPython 3.13 (`cp313`), but `ray` (v2.43.0) only has wheels with the following Python ABI tag: `cp312`
+```
+
+This means your uv installation relies on cpython 3.13 while you are using python 3.12.
+
+To solve it, please run:
+```bash
+uv venv --python=3.12
+uv sync
+```
 
 ## TODO
 [] Better manage logs

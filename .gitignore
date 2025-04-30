@@ -49,3 +49,12 @@ logs/
 old_logs/
 
 data2/
+
+*.db
+
+volumes/
+volumes/*
+!volumes/.gitkeep # Keep the placeholder
+
+# benchmarking
+evaluation-embedder-reranker

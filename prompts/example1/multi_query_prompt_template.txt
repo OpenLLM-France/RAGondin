@@ -4,4 +4,4 @@ Ces variantes aideront à trouver des documents pertinents dans une base de donn
 
 Example : Question 1?[SEP]Question 2?[SEP]Question 3?
 
-Question originale : {question}
+Question originale : {query}
