@@ -1,22 +1,25 @@
 *** Settings ***
-Library  RequestsLibrary
-Library  String
+Library    RequestsLibrary
+Library    String
+Library    Collections
 
 *** Variables
-${BASE}  http://163.114.159.68
-${PORT}  8089
-${test_file_1}    ./info-paul.pdf
-${test_file_2}    ./Projet_2.pdf
+${BASE}  
+${PORT}  
+${test_file_1}    
+${test_file_2}    
 ${BASE_URL}  ${BASE}:${PORT}
 
 
 *** Keywords ***
 Clean Up Test
-    [Arguments]  @{partition}
+    [Arguments]    @{partition}
+    ${allowed_status}=    Create List    204    404
     FOR    ${part}    IN    @{partition}
         ${response}=    DELETE    ${BASE_URL}/partition/${part}    expected_status=any
+        ${status_code}=    Convert To String    ${response.status_code}
+        List Should Contain Value    ${allowed_status}    ${status_code}
     END
-    RETURN    None
 
 
 Get Task Status
@@ -84,10 +87,8 @@ Add File and Patch it with new metadata
     Index File    ${test_file_2}    0    test
     ${metadata}=    Create Dictionary    title=Test Title    author=Test Author
     ${metadata}=    Evaluate    json.dumps(${metadata})    json
-    Log To Console    ${metadata}
     Patch File    0    test    ${metadata}
     ${response}=    Get File Metadata    0    test
-    Log To Console    ${response}
     Should Be Equal As Strings    ${response}[title]    Test Title
     Should Be Equal As Strings    ${response}[author]    Test Author
     [Teardown]    Clean Up Test    test
