@@ -21,7 +21,7 @@ class Reranker:
             config.reranker["model_name"],
             automodel_args={"torch_dtype": "auto"},
             trust_remote_code=True,
-            device="cuda:0"
+            # device="cuda:0"
         )
 
         # Semaphore to limit concurrent GPU operations
@@ -44,16 +44,24 @@ class Reranker:
             list[str]: Top k reranked document strings.
         """
 
-        logger.debug("Reranking documents")
+        logger.debug(f"Reranking documents: {self.model.device}")
         async with self.semaphore:
             k = min(k, len(chunks))  # k must be <= the number of documents
-            rankings = self.model.rank(query, [doc.page_content for doc in chunks], return_documents=True, convert_to_tensor=True)
-            ranked_txt = [{
-                'content': ranking['text'],
-                'score': ranking['score'],
-                'rank': rankings.index(ranking),
-                'result_index': ranking['corpus_id']
-                } for ranking in rankings[:k]]
+            rankings = self.model.rank(
+                query,
+                [doc.page_content for doc in chunks],
+                return_documents=True,
+                convert_to_tensor=True,
+            )
+            ranked_txt = [
+                {
+                    "content": ranking["text"],
+                    "score": ranking["score"],
+                    "rank": rankings.index(ranking),
+                    "result_index": ranking["corpus_id"],
+                }
+                for ranking in rankings[:k]
+            ]
             # ranked_txt = await asyncio.to_thread(
             #     lambda: self.model.rerank(
             #         query, [d.page_content for d in chunks], k=k, bsize="auto"

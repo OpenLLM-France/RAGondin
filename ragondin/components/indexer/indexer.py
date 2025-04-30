@@ -239,9 +239,11 @@ class Indexer:
             similarity_threshold=similarity_threshold,
             filter=filter,
         )
-        if self.reranker_enabled:
-            results = await self.reranker.rerank(query, results, self.reranker_top_k)
+        # if self.reranker_enabled:
+        #     results = await self.reranker.rerank(query, results, self.reranker_top_k)
         return results
+    
+    
     def delete_partition(self, partition: str):
         return self.vectordb.delete_partition(partition)
 
