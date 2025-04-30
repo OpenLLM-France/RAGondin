@@ -20,11 +20,6 @@ services:
     environment:
       MINIO_ACCESS_KEY: minioadmin
       MINIO_SECRET_KEY: minioadmin
-
-    # ports:
-      # - "9001:9001"
-      # - "9000:9000"
-
     volumes:
       - ${MILVUS_VOLUME_DIRECTORY:-../volumes}/minio:/minio_data
     command: minio server /minio_data --console-address ":9001"
@@ -51,8 +46,7 @@ services:
       timeout: 20s
       retries: 3
     ports:
-      - "19536:19530"
-      # - "9091:9091"
+      - "${VDB_PORT:-19530}:${VDB_iPORT:-19530}"
     depends_on:
       - "etcd"
       - "minio"
