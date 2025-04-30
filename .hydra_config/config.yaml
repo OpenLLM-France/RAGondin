@@ -8,7 +8,6 @@ llm_params: &llm_params
   temperature: 0.3
   timeout: 60
   max_retries: 2
-  #frequency_penalty: 0.2
   logprobs: true
 
 llm:
@@ -38,10 +37,6 @@ vectordb:
   collection_name: vdb_test 
   hybrid_mode: true
   enable: true
-
-insertion:
-  n_concurrent_loading: 2 # Number of concurrent loading operations (2-3 is recommended, knowing that some loaders use gpu)
-  n_concurrent_chunking: 2 # Number of concurrent chunking operations
 
 reranker:
   enable: ${oc.decode:${oc.env:RERANKER_ENABLED, true}}

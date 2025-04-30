@@ -68,7 +68,6 @@ async def on_chat_start():
         "model": chat_profile,
         "temperature": 0,
         "stream": True,
-        "max_tokens": 1000,
     }
 
     cl.user_session.set("messages", [])

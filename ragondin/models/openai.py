@@ -19,7 +19,7 @@ class OpenAIChatCompletionRequest(BaseModel):
     temperature: Optional[float] = Field(0.3)
     top_p: Optional[float] = Field(1.0)
     stream: Optional[bool] = Field(False)
-    max_tokens: Optional[int] = Field(1000)
+    max_tokens: Optional[int] = Field(500)
     logprobs: Optional[int] = Field(None)
 
 
