@@ -1,0 +1,822 @@
+[
+    {
+        "file": "Politique en Argentine.txt",
+        "question": "Quelle est la principale caractéristique du système politique argentin, en termes de partage du pouvoir entre les institutions?"
+    },
+    {
+        "file": "Argentine.txt",
+        "question": "Quelle est la superficie de l'Argentine et comment cela la place parmi les pays d'Amérique du Sud ?"
+    },
+    {
+        "file": "Aviation civile.txt",
+        "question": "Quelle est la principale responsabilité de la Direction générale de l'Aviation civile (DGAC) en France ?"
+    },
+    {
+        "file": "Alfred Nobel.txt",
+        "question": "Quel est le nom de l'entreprise que Alfred Nobel a fondée en 1871 et qu'il a rachetée en 1894 ?"
+    },
+    {
+        "file": "Alain-Fournier.txt",
+        "question": "Quel est le lieu exact de la sépulture d'Alain-Fournier, et quand a-t-il été découvert ?"
+    },
+    {
+        "file": "Bès.txt",
+        "question": "Quel est le rôle principal de Bès dans la mythologie égyptienne et comment a-t-il évolué au fil du temps ?"
+    },
+    {
+        "file": "Alcatel.txt",
+        "question": "Quelle était la principale activité d'Alcatel avant sa fusion avec Lucent Technologies en 2006 ?"
+    },
+    {
+        "file": "Aruba.txt",
+        "question": "Quelle est la superficie de l'île d'Aruba et quel est son point culminant ?"
+    },
+    {
+        "file": "AOL.txt",
+        "question": "Quelle était la principale raison pour laquelle AOL a été rachetée par Verizon en 2015, et quelles ont été les conséquences de cette acquisition sur les activités de AOL en Europe et aux États-Unis ?"
+    },
+    {
+        "file": "Ada (langage).txt",
+        "question": "Quelle est la principale caractéristique qui a permis à Ada de devenir un langage de programmation de pointe, notamment dans les systèmes embarqués et temps réel ?"
+    },
+    {
+        "file": "Albanais.txt",
+        "question": "Quelle est la répartition géographique des locuteurs d'albanais et comment cela a-t-il évolué au fil du temps ?"
+    },
+    {
+        "file": "Albert King.txt",
+        "question": "Quel est le surnom de Albert King et pourquoi a-t-il été surnommé ainsi ?"
+    },
+    {
+        "file": "Asie.txt",
+        "question": "Quelle est la frontière la plus arbitraire entre l'Europe et l'Asie, et pourquoi ?"
+    },
+    {
+        "file": "Akseli Gallen-Kallela.txt",
+        "question": "Quel est le style artistique dominant de Gallen-Kallela et comment a-t-il évolué au fil de sa carrière ?"
+    },
+    {
+        "file": "Aleochara.txt",
+        "question": "Quel est le rôle des Aleochara spadicea dans le contrôle des populations de diptères sur les arbres fruitiers et les cultures agricoles ?"
+    },
+    {
+        "file": "Bulgarie.txt",
+        "question": "Quelle est la principale caractéristique géographique de la Bulgarie et comment se distribue-t-elle en termes d'altitude ?"
+    },
+    {
+        "file": "Andorre.txt",
+        "question": "Quelle est la superficie de la principauté d'Andorre et combien de personnes y vivent en 2024 ?"
+    },
+    {
+        "file": "Biologie moléculaire.txt",
+        "question": "Quelle est la technique de biologie moléculaire la plus couramment utilisée pour étudier l'expression des gènes et comment fonctionne-t-elle ?"
+    },
+    {
+        "file": "Arsène Lupin.txt",
+        "question": "Quel est le premier roman dans lequel Arsène Lupin apparaît ?"
+    },
+    {
+        "file": "Blanquette de veau.txt",
+        "question": "Quelle est la signification de la blanquette de veau et comment a-t-elle évolué au fil du temps ?"
+    },
+    {
+        "file": "Liste d'abréviations en informatique.txt",
+        "question": "Quels sont les systèmes de fichiers exotiques mentionnés dans le document et comment fonctionnent-ils ?"
+    },
+    {
+        "file": "Alcène.txt",
+        "question": "Quelle est la différence entre les alcènes mono et poly, et comment cela influence leur nomenclature ?"
+    },
+    {
+        "file": "Adalia.txt",
+        "question": "Quelle est la date de publication du nom valide complet \"Adalia\" Mulsant, 1846 ?"
+    },
+    {
+        "file": "Agriculture de précision.txt",
+        "question": "Quelles sont les principales étapes et outils nécessaires pour mettre en place une agriculture de précision, et comment ces étapes contribuent-elles à l'optimisation des rendements et des investissements dans l'agriculture ?"
+    },
+    {
+        "file": "Aurélien Sauvageot.txt",
+        "question": "Quelle est la contribution la plus significative d'Aurélien Sauvageot à la linguistique et aux études finno-ougriennes en France ?"
+    },
+    {
+        "file": "Bernard Lang.txt",
+        "question": "Quel projet informatique a-t-il travaillé sur à la fin des années 1970, et quelles technologies a-t-il contribué à développer en tant que pionnier de la recherche sur HTML et XML ?"
+    },
+    {
+        "file": "Aka.txt",
+        "question": "Quel est le lien entre le sigle \"AKA\" et le concept d'anthroponyme en ethnologie et en linguistique ?"
+    },
+    {
+        "file": "Lampe à incandescence.txt",
+        "question": "Quelle est la principale raison pour laquelle les lampes à incandescence sont progressivement remplacées par d'autres types d'éclairage au cours du XXIe siècle ?"
+    },
+    {
+        "file": "Amstrad CPC 464.txt",
+        "question": "Quels étaient les principaux avantages et inconvénients des capacités graphiques et sonores de l'Amstrad CPC 464 par rapport aux autres ordinateurs de l'époque, en particulier en comparaison avec le Commodore 64 et le ZX Spectrum ?"
+    },
+    {
+        "file": "Biologie.txt",
+        "question": "Quelle est la différence entre la théorie de Lamarck et celle de Darwin concernant l'évolution des espèces ?"
+    },
+    {
+        "file": "Armée républicaine irlandaise.txt",
+        "question": "Quelle est l'acronyme utilisé pour désigner l'Armée républicaine irlandaise ?"
+    },
+    {
+        "file": "Barbacane.txt",
+        "question": "Quelle est la différence entre une barbacane et une bastille en termes de taille et de fonctionnement?"
+    },
+    {
+        "file": "Aveyron (département).txt",
+        "question": "Quelle est la superficie totale du département de l'Aveyron en métropole et en incluant la Guyane ?"
+    },
+    {
+        "file": "Baba.txt",
+        "question": "Quels sont les différents domaines dans lesquels le terme \"Baba\" peut être utilisé ou désigner quelque chose, et dans quelles situations ou lieux ces usages sont-ils les plus courants ?"
+    },
+    {
+        "file": "Amset.txt",
+        "question": "Quel est le rôle précis d'Amset dans la protection des viscères des morts et comment son association avec la déesse Isis et le point cardinal Sud contribue-t-il à cette protection ?"
+    },
+    {
+        "file": "Autriche.txt",
+        "question": "Quelle est la date de la première mention écrite du nom d'Autriche et quel est son sens en vieil allemand ?"
+    },
+    {
+        "file": "Astéroïde.txt",
+        "question": "Quel est le premier astéroïde découvert et quand a-t-il été découvert ?"
+    },
+    {
+        "file": "Port AGP.txt",
+        "question": "Quelle est la principale différence entre les versions 1.0, 2.0 et 3.0 de la spécification AGP, et comment cela a-t-il affecté les performances des cartes graphiques AGP ?"
+    },
+    {
+        "file": "Antoine de Saint-Exupéry.txt",
+        "question": "Quel est le titre du premier roman d'Antoine de Saint-Exupéry et quand a-t-il été publié ?"
+    },
+    {
+        "file": "Amsterdam.txt",
+        "question": "Quelle est la population de la commune d'Amsterdam en 2023 et quel est le nom de la digue qui a contribué à la fondation de la ville ?"
+    },
+    {
+        "file": "Akira Kurosawa.txt",
+        "question": "Quel est le titre du film \"La Légende du grand judo\" réalisé par Akira Kurosawa en 1943 ?"
+    },
+    {
+        "file": "Alberta.txt",
+        "question": "Quelle est la superficie de l'Alberta en kilomètres carrés et combien d'habitants y a-t-il en 2016 ?"
+    },
+    {
+        "file": "Algorithme.txt",
+        "question": "Quel est le rôle de l'algorithmique dans le développement de l'intelligence artificielle et comment cela influence-t-il notre quotidien ?"
+    },
+    {
+        "file": "ADSL.txt",
+        "question": "Quelle est la différence entre la technologie ADSL et les technologies SDSL et VDSL2 en termes de débit et de symétrie ?"
+    },
+    {
+        "file": "Anvers.txt",
+        "question": "Quelle est la population actuelle d'Anvers et quel est son rôle économique dans l'Europe et le monde ?"
+    },
+    {
+        "file": "Active Server Pages.txt",
+        "question": "Quelle est la principale différence entre ASP et ASP.NET en termes de technologie et de fonctionnalités ?"
+    },
+    {
+        "file": "Adessif.txt",
+        "question": "Quelle est la différence entre l'adessif et l'inessif en linguistique, et comment cette différence se manifeste-t-elle dans les langues comme le finnois ?"
+    },
+    {
+        "file": "Algèbre de Boole (logique).txt",
+        "question": "Quelle est la différence entre la disjonction inclusive (ou \"OU inclusif\") et la disjonction exclusive (ou \"OU exclusif\") en algèbre de Boole, et comment sont-elles notées et définies mathématiquement ?"
+    },
+    {
+        "file": "Aube (département).txt",
+        "question": "Quelle est la superficie totale de la surface agricole utile dans le département de l'Aube ?"
+    },
+    {
+        "file": "Agnosticisme.txt",
+        "question": "Quelle est la principale différence entre l'agnosticisme provisoire en pratique (APP) et l'agnosticisme définitif de principe (ADP) ?"
+    },
+    {
+        "file": "Politique en Arabie saoudite.txt",
+        "question": "Quelle est la principale caractéristique de la succession au trône en Arabie saoudite et comment cela a-t-il été modifié en 1992 ?"
+    },
+    {
+        "file": "Amphétamine.txt",
+        "question": "Quels sont les principaux effets secondaires et les risques liés à la consommation d'amphétamines, en particulier à long terme ?"
+    },
+    {
+        "file": "Astronomie.txt",
+        "question": "Quelle est la contribution majeure de l'astronomie mésopotamienne à l'astronomie grecque tardive, et comment ces observations ont-elles influencé les théories astronomiques grecques ?"
+    },
+    {
+        "file": "Art nouveau.txt",
+        "question": "Quel est le rôle d'Eugène Viollet-le-Duc dans l'émergence de l'Art nouveau en France ?"
+    },
+    {
+        "file": "Alphabet phonétique international.txt",
+        "question": "Quelle est la principale différence entre la transcription phonétique et la transcription phonologique selon l'API ?"
+    },
+    {
+        "file": "Anarchie.txt",
+        "question": "Quelle est la différence entre l'anarchie et l'anomie selon le texte ?"
+    },
+    {
+        "file": "Alvar Aalto.txt",
+        "question": "Quel est le style architectural prédominant chez Alvar Aalto et comment a-t-il évolué au fil de sa carrière ?"
+    },
+    {
+        "file": "Akhenaton.txt",
+        "question": "Quelle est la date exacte de naissance et de mort d'Akhenaton, et comment ces dates sont-elles déterminées ?"
+    },
+    {
+        "file": "Bourgogne (ancienne région administrative).txt",
+        "question": "Quelle est la superficie totale de la région de Bourgogne en hectares, et quel pourcentage de cette superficie est occupée par la surface agricole utile (SAU) ?"
+    },
+    {
+        "file": "Archaea.txt",
+        "question": "Quel est le domaine et le règne des archées, et comment ont-ils été définis historiquement ?"
+    },
+    {
+        "file": "Amplificateur électronique.txt",
+        "question": "Quel est le rôle principal d'un amplificateur électronique et comment fonctionne-t-il en termes de composants et de principe de base ?"
+    },
+    {
+        "file": "Alphabet phonétique de l'OTAN.txt",
+        "question": "Quel est le but principal de l'alphabet phonétique de l'OTAN et comment a-t-il été créé ?"
+    },
+    {
+        "file": "Bangladesh.txt",
+        "question": "Quelle est la date de la partition des Indes en 1947 et comment cela a-t-il affecté le développement politique et économique du Bangladesh ?"
+    },
+    {
+        "file": "Code Morse international.txt",
+        "question": "Quel est le rôle du code Morse dans les communications militaires et comment a-t-il évolué avec le temps ?"
+    },
+    {
+        "file": "Animisme.txt",
+        "question": "Quelle est la différence entre l'animisme et le vitalisme, selon Georg Stahl, et comment cela se distingue-t-il du mécanisme et de l'ontologie animiste selon Edward Tylor ?"
+    },
+    {
+        "file": "Auvergne.txt",
+        "question": "Quelle est la signification historique et culturelle de l'Auvergne, et comment son territoire a-t-il évolué au fil du temps ?"
+    },
+    {
+        "file": "Amstrad CPC 6128.txt",
+        "question": "Quelle était la principale différence entre l'Amstrad CPC 6128 et son prédécesseur, l'Amstrad CPC 464 ?"
+    },
+    {
+        "file": "Bat (déesse).txt",
+        "question": "Quel est le rôle de Bat dans le contexte de la mythologie égyptienne et comment son culte a-t-il évolué au fil du temps ?"
+    },
+    {
+        "file": "Alchimie.txt",
+        "question": "Quelle est la théorie selon laquelle les métaux sont composés, et comment cette théorie a-t-elle influencé les objectifs et les pratiques de l'alchimie ?"
+    },
+    {
+        "file": "Akhenaton (rappeur).txt",
+        "question": "Quel est le thème principal de l'album \"Sol Invictus\" et comment Akhenaton exprime-t-il ses sentiments dans ce travail ?"
+    },
+    {
+        "file": "Bahamas.txt",
+        "question": "Quelle est la principale source d'emploi et de revenu pour les Bahamas, et comment cela a-t-il évolué au fil du temps ?"
+    },
+    {
+        "file": "Aéronautique.txt",
+        "question": "Quelle est la différence entre l'aéronautique et l'astronautique, et comment se distinguent-ils dans leur domaine d'application et leurs techniques utilisées ?"
+    },
+    {
+        "file": "Art ASCII.txt",
+        "question": "Quelle est la différence entre l'art ASCII et l'art ANSI, et comment ces deux formes d'art ont-elles évolué au fil du temps ?"
+    },
+    {
+        "file": "Atari ST.txt",
+        "question": "Quel était le rôle de l'Atari ST dans l'histoire de la musique assistée par ordinateur et comment a-t-il contribué à la démocratisation de la norme MIDI ?"
+    },
+    {
+        "file": "Ampoule.txt",
+        "question": "Qu'est-ce que l'ampoule peut désigner dans le contexte de cette page?"
+    },
+    {
+        "file": "Allier (département).txt",
+        "question": "Quelle est la superficie du département de l'Allier et quel est son centre géographique ?"
+    },
+    {
+        "file": "Art amarnien.txt",
+        "question": "Quelle est la caractéristique la plus remarquable de l'art amarnien en termes de représentation des personnages, et comment cela se manifeste-t-il dans la sculpture et la peinture ?"
+    },
+    {
+        "file": "Bruxelles.txt",
+        "question": "Quelle est l'origine exacte du nom \"Bruxelles\" et quelles sont les différentes hypothèses sur son étymologie ?"
+    },
+    {
+        "file": "Alpes-de-Haute-Provence.txt",
+        "question": "Quelle est la superficie du département des Alpes-de-Haute-Provence et quel est son rang parmi les départements français par rapport à sa superficie ?"
+    },
+    {
+        "file": "Liste d'archéologues.txt",
+        "question": "Quel est le but de cette liste d'archéologues et comment est-elle organisée ?"
+    },
+    {
+        "file": "Bouches-du-Rhône.txt",
+        "question": "Quelle est la préfecture du département des Bouches-du-Rhône et quel est son code INSEE ?"
+    },
+    {
+        "file": "Anubis.txt",
+        "question": "Quelle est la signification la plus probable du nom \"Anubis\" selon les hypothèses les plus récentes et les plus acceptées par les égyptologues ?"
+    },
+    {
+        "file": "Anoukis.txt",
+        "question": "Quelle est la signification de l'animal sacré d'Anoukis et où pouvait-on le trouver en Égypte antique ?"
+    },
+    {
+        "file": "Bastet.txt",
+        "question": "Quelle est la signification de la déesse Bastet et comment son rôle évolue-t-il au fil du temps dans la mythologie égyptienne ?"
+    },
+    {
+        "file": "Amérique du Sud.txt",
+        "question": "Quelle est la superficie de l'Amérique du Sud en pourcentage de la surface des terres émergées de la Terre ?"
+    },
+    {
+        "file": "Algèbre générale.txt",
+        "question": "Quelle est la différence entre l'algèbre générale et l'algèbre élémentaire ?"
+    },
+    {
+        "file": "Boys band.txt",
+        "question": "Quel est le phénomène qui a conduit à la fin rapide de nombreux boy bands après quelques années de gloire, et comment cela a-t-il affecté les membres de ces groupes ?"
+    },
+    {
+        "file": "Amblyseius.txt",
+        "question": "Quel est le rôle des espèces du genre Amblyseius dans le contrôle biologique des ravageurs des cultures ?"
+    },
+    {
+        "file": "Arts visuels.txt",
+        "question": "Quel est le rôle de l'artiste dans le développement et l'élargissement du concept d'arts visuels au cours du mouvement moderne et de l'art contemporain ?"
+    },
+    {
+        "file": "Aisne (département).txt",
+        "question": "Quelle est la superficie boisée du département de l'Aisne selon le recensement de 2003 ?"
+    },
+    {
+        "file": "Babaï.txt",
+        "question": "Quel est le rôle de Babaï dans le contexte de la pesée du cœur dans l'au-delà selon la mythologie égyptienne ?"
+    },
+    {
+        "file": "Advanced Micro Devices.txt",
+        "question": "Quelle est la date de fondation d'Advanced Micro Devices (AMD) et quel était le capital initial de la société à cette époque ?"
+    },
+    {
+        "file": "Attributs du pharaon.txt",
+        "question": "Quel est le rôle symbolique et protecteur de l'uræus sur le front des pharaons et des dieux en Égypte antique ?"
+    },
+    {
+        "file": "Apophis.txt",
+        "question": "Quel est le rôle de Seth dans la mythologie égyptienne en relation avec Apophis ?"
+    },
+    {
+        "file": "Anthocoris.txt",
+        "question": "Quel est le rôle écologique des Anthocoris dans les écosystèmes agricoles et forestiers ?"
+    },
+    {
+        "file": "Agriculture durable.txt",
+        "question": "Quels sont les principaux objectifs de l'agriculture durable et comment ces objectifs sont-ils liés aux trois dimensions du développement durable ?"
+    },
+    {
+        "file": "Forme de Backus-Naur.txt",
+        "question": "Quelle est la différence entre les extensions proposées pour faciliter la rédaction et la lecture des documents BNF, et comment ces extensions aident-elles à améliorer la clarté et la lisibilité des définitions de grammaires formelles ?"
+    },
+    {
+        "file": "Aton.txt",
+        "question": "Quel est le nom du pharaon qui a encouragé le culte d'Aton et comment a-t-il influencé la religion égyptienne de son époque ?"
+    },
+    {
+        "file": "American National Standards Institute.txt",
+        "question": "Quelle est la principale fonction de l'American National Standards Institute (ANSI) et comment contribue-t-il à la normalisation des produits et des services aux États-Unis ?"
+    },
+    {
+        "file": "AND.txt",
+        "question": "Quel est le sens le plus courant du sigle \"AND\" dans le contexte des projets Wikimedia ?"
+    },
+    {
+        "file": "Amemet.txt",
+        "question": "Quelle est la signification de la couronne rouge portée par Amemet et par les pharaons de Basse-Égypte ?"
+    },
+    {
+        "file": "Andalousie.txt",
+        "question": "Quelle est la superficie de l'Andalousie en Espagne et quelle est sa densité de population ?"
+    },
+    {
+        "file": "Antonin Artaud.txt",
+        "question": "Voici une question basée sur le contenu du fichier 'Antonin Artaud.txt':\n\nComment Antonin Artaud a-t-il influencé le théâtre américain et les mouvements artistiques de la fin des années 1960, et quelles sont les principales œuvres qui ont contribué à cette influence ?"
+    },
+    {
+        "file": "Amon.txt",
+        "question": "Quelle est la signification de la triade thébaine formée par Amon, Mout et Khonsou, et comment cette triade a-t-elle évolué au fil du temps dans la mythologie égyptienne ?"
+    },
+    {
+        "file": "Aïkido.txt",
+        "question": "Quelle est la philosophie fondamentale de l'aïkido et comment se traduit-elle dans la pratique de l'art martial ?"
+    },
+    {
+        "file": "Atome.txt",
+        "question": "Quelle est la différence entre les quarks et les leptons en termes de particules subatomiques, et comment se manifeste cette différence dans leur interaction avec les forces fondamentales de la nature ?"
+    },
+    {
+        "file": "Aldous Huxley.txt",
+        "question": "Quel est le sujet principal de l'œuvre d'Aldous Huxley, et comment a-t-il influencé le mouvement littéraire de l'époque ?"
+    },
+    {
+        "file": "Acier.txt",
+        "question": "Quelle est la différence entre les aciers non alliés et les aciers alliés en termes de teneur en carbone et de composition chimique ?"
+    },
+    {
+        "file": "Afghanistan.txt",
+        "question": "Quel est le nom de la capitale de l'Afghanistan et quelles sont les principales villes du pays ?"
+    },
+    {
+        "file": "Géographie de l'Arabie saoudite.txt",
+        "question": "Quelle est la principale caractéristique géologique de l'Arabie saoudite et comment cela a-t-il influencé la géographie du pays ?"
+    },
+    {
+        "file": "Aker.txt",
+        "question": "Quel rôle joue Aker dans la mythologie égyptienne et comment son rôle est-il lié à la régénération et à la renaissance du soleil ?"
+    },
+    {
+        "file": "Antoine Parmentier.txt",
+        "question": "Quelle était la contribution majeure d'Antoine Augustin Parmentier à la promotion de la pomme de terre en France, et comment a-t-il réussi à surmonter les réticences face à cette culture ?"
+    },
+    {
+        "file": "Arabie saoudite.txt",
+        "question": "Quelle est la superficie totale de l'Arabie saoudite en kilomètres carrés ?"
+    },
+    {
+        "file": "Affixe.txt",
+        "question": "Quels sont les différents types d'affixes et comment sont-ils classés en fonction de leur emplacement par rapport au radical ?"
+    },
+    {
+        "file": "Ariège (département).txt",
+        "question": "Quelle est la superficie totale du département de l'Ariège en kilomètres carrés ?"
+    },
+    {
+        "file": "Algorithmique.txt",
+        "question": "Quel est le rôle de la terminaison dans l'algorithmique et comment peut-on prouver qu'un algorithme est terminatif ?"
+    },
+    {
+        "file": "Arthur John Evans.txt",
+        "question": "Quel est le principal contribution d'Arthur John Evans à l'archéologie et comment a-t-il découvert la civilisation minoenne ?"
+    },
+    {
+        "file": "Autorisation d'un produit phytopharmaceutique.txt",
+        "question": "Quelle est la date à laquelle l'Agence française de sécurité sanitaire des aliments a été chargée de l'évaluation de la toxicologie et de l'efficacité des produits phytopharmaceutiques et des adjuvants, préalable à l'autorisation de mise sur le marché en France ?"
+    },
+    {
+        "file": "Amenhotep III.txt",
+        "question": "Quelle est la durée exacte du règne d'Amenhotep III et quelles sont les principales caractéristiques de son règne en termes de politique, économie et culture ?"
+    },
+    {
+        "file": "Angola.txt",
+        "question": "Quelle est la superficie totale de l'Angola et quelle est sa densité de population ?"
+    },
+    {
+        "file": "Agriculture en Arabie saoudite.txt",
+        "question": "Quelle est la principale caractéristique de l'agriculture en Arabie saoudite et comment cela a-t-il évolué au fil du temps ?"
+    },
+    {
+        "file": "Alejandro Toledo.txt",
+        "question": "Quel est le contexte historique et politique qui a conduit à l'élection de Alejandro Toledo en tant que président du Pérou en 2001, et comment son mandat a-t-il été marqué par des controverses et des affaires de corruption ?"
+    },
+    {
+        "file": "Alpes-Maritimes.txt",
+        "question": "Quel est le point culminant du département des Alpes-Maritimes et quel est son altitude ?"
+    },
+    {
+        "file": "Antoine Meillet.txt",
+        "question": "Quel est le principal domaine d'étude de Antoine Meillet et comment a-t-il influencé le développement de la linguistique comparée et de la sociolinguistique ?"
+    },
+    {
+        "file": "Industrie pétrolière de l'Arabie saoudite.txt",
+        "question": "Quelle est la capacité totale de production de pétrole de l'Aramco en 1991, et comment cela a-t-il évolué depuis ?"
+    },
+    {
+        "file": "Ampère.txt",
+        "question": "Quelle est la différence entre les sondes à effet Hall et les sondes à effet Néel en termes de mesure de courant et de précision ?"
+    },
+    {
+        "file": "Bretèche.txt",
+        "question": "Quelle était la fonction principale des bretèches au Moyen Âge et comment ont-elles évolué au fil du temps ?"
+    },
+    {
+        "file": "Sid Meier's Alpha Centauri.txt",
+        "question": "Quelle est la principale caractéristique qui distingue \"Alpha Centauri\" de la série \"Civilization\" et comment cela influence-t-il le gameplay ?"
+    },
+    {
+        "file": "Afrique du Sud.txt",
+        "question": "Quelle est la population de l'Afrique du Sud en 2018, et comment est-elle répartie en fonction de la race ou de l'ethnie ?"
+    },
+    {
+        "file": "Arménien.txt",
+        "question": "Quelle est la principale caractéristique qui distingue l'arménien de la plupart des autres langues indo-européennes ?"
+    },
+    {
+        "file": "Armement médiéval.txt",
+        "question": "Quelle est la principale évolution de l'armement des Francs mérovingiens et comment cela a-t-il influencé leurs succès militaires ?"
+    },
+    {
+        "file": "Anthropologie de la religion.txt",
+        "question": "Quelle est la différence entre une religion et une civilisation selon l'anthropologie de la religion, selon le texte ?"
+    },
+    {
+        "file": "Alfred Hitchcock.txt",
+        "question": "Quel est le rôle de Alma Reville dans la carrière d'Alfred Hitchcock ?"
+    },
+    {
+        "file": "Azote.txt",
+        "question": "Quelle est la principale source d'azote alimentaire pour les êtres humains et comment est-elle mesurée en pratique ?"
+    },
+    {
+        "file": "Apple I.txt",
+        "question": "Quel était le prix initial de l'Apple I en 1976, et comment ce prix a-t-il été déterminé ?"
+    },
+    {
+        "file": "Aphidolète.txt",
+        "question": "Quel est le rôle des larves d'Aphidoletes aphidimyza dans le contrôle biologique des acariens et des pucerons ?"
+    },
+    {
+        "file": "Arendt.txt",
+        "question": "Quelle est l'origine géographique du patronyme Arendt et quelles sont ses variantes ?"
+    },
+    {
+        "file": "Abréviation.txt",
+        "question": "Voici une question basée sur le contenu du fichier 'Abréviation.txt':\n\nQuelles sont les méthodes les plus courantes pour abréger des groupes de mots, et comment sont utilisés les points dans les abréviations ?\n\nCette question vise à tester la compréhension des méthodes d'abréviation mentionnées dans le texte, ainsi que l'utilisation des points dans les abréviations."
+    },
+    {
+        "file": "Allemand.txt",
+        "question": "Quelle est la période historique marquante pour l'émergence de l'allemand moderne et comment a-t-elle influencé la langue allemande ?"
+    },
+    {
+        "file": "Beaujolais.txt",
+        "question": "Quelle est la principale caractéristique du vignoble du Beaujolais et quel est le cépage dominant utilisé pour produire ses vins rouges ?"
+    },
+    {
+        "file": "Ammout.txt",
+        "question": "Quel est le rôle d'Âmmout lors de la pesée du cœur dans la mythologie égyptienne ?"
+    },
+    {
+        "file": "Ablatif.txt",
+        "question": "Quelle est la différence entre l'ablatif en basque et en finnois, et comment se traduit-il en français ?"
+    },
+    {
+        "file": "Antigua-et-Barbuda.txt",
+        "question": "Quel est le principal secteur économique de l'Antigua-et-Barbuda et comment cela influence-t-il la structure de la société et de l'économie du pays ?"
+    },
+    {
+        "file": "Arthur Honegger.txt",
+        "question": "Quel est le thème principal de la Symphonie no 3 de Honegger, intitulée \"Liturgique\" ?"
+    },
+    {
+        "file": "Aude (département).txt",
+        "question": "Quel est le point culminant du département de l'Aude et à quel altitude se trouve-t-il ?"
+    },
+    {
+        "file": "Belgique.txt",
+        "question": "Quelle est la situation géographique de la Belgique en Europe et comment se caractérise son paysage naturel ?"
+    },
+    {
+        "file": "Akihabara.txt",
+        "question": "Quel est le rôle historique de la construction d'une station de métro à Akihabara en 1890 dans le développement du quartier ?"
+    },
+    {
+        "file": "Anarcho-capitalisme.txt",
+        "question": "Quelle est la principale différence entre l'anarcho-capitalisme et le minarchisme selon le texte ?"
+    },
+    {
+        "file": "Aha.txt",
+        "question": "Quel est le rôle principal d'Aha dans la mythologie égyptienne et comment se manifeste-t-il dans les représentations artistiques ?"
+    },
+    {
+        "file": "Auteur-compositeur-interprète.txt",
+        "question": "Quels sont les droits que peuvent bénéficier les auteurs-compositeurs-interprètes en France, et comment sont-ils protégés par le droit d'auteur et les droits des artistes-interprètes ?"
+    },
+    {
+        "file": "Baal.txt",
+        "question": "Quelle est la signification du nom divin \"Ba'al\" et comment a-t-il évolué au fil du temps dans les différentes cultures du Proche-Orient ancien ?"
+    },
+    {
+        "file": "Halobacteria.txt",
+        "question": "Quels sont les principaux caractéristiques des Halobacteria et comment se distinguent-ils des bactéries halophiles ?"
+    },
+    {
+        "file": "Aston Martin.txt",
+        "question": "Quel est le premier modèle de voiture produit par Aston Martin en 1913 et quel était son objectif initial ?"
+    },
+    {
+        "file": "American Standard Code for Information Interchange.txt",
+        "question": "Quelle est la principale limitation de l'ASCII et comment cela a-t-il conduit à l'introduction de normes de codage de caractères plus étendues ?"
+    },
+    {
+        "file": "Liste de sigles en espagnol.txt",
+        "question": "Quels sont les sigles les plus couramment utilisés en espagnol et pour quels domaines sont-ils principalement employés ?\""
+    },
+    {
+        "file": "Asthme.txt",
+        "question": "Quelles sont les principales causes environnementales de l'asthme, selon le contenu du fichier 'Asthme.txt'?"
+    },
+    {
+        "file": "Astarté (homonymie).txt",
+        "question": "Quelle est la signification de la divinité Astarté dans la mythologie Cananéenne ?"
+    },
+    {
+        "file": "Économie de l'Arabie saoudite.txt",
+        "question": "Quel est le principal secteur économique de l'Arabie saoudite et comment a-t-il évolué au fil du temps ?"
+    },
+    {
+        "file": "Histoire économique de l'Arabie saoudite.txt",
+        "question": "Quelle est la principale transformation économique que l'Arabie saoudite a connue après la découverte du pétrole en 1938 ?"
+    },
+    {
+        "file": "Anastylose.txt",
+        "question": "Quelle est la principale différence entre l'anastylose et d'autres techniques de restauration de monuments archéologiques ?"
+    },
+    {
+        "file": "Atoum.txt",
+        "question": "Quelle est la signification de la genèse d'Atoum selon les différentes légendes égyptiennes ?"
+    },
+    {
+        "file": "Apis.txt",
+        "question": "Quel était le rôle de l'Apis dans le culte égyptien et comment était-il associé à d'autres divinités ?"
+    },
+    {
+        "file": "Baguettes (couverts asiatiques).txt",
+        "question": "Quelle est la principale raison pour laquelle les baguettes ont commencé à être utilisées comme ustensiles de repas en Chine, Corée, Japon et Viêt Nam ?"
+    },
+    {
+        "file": "Ange (homonymie).txt",
+        "question": "Quel est le rôle d'un ange dans les religions chrétiennes et comment ce rôle a-t-il évolué au fil du temps ?"
+    },
+    {
+        "file": "Accusatif.txt",
+        "question": "Quelle est la différence entre l'accusatif et le datif en allemand ?"
+    },
+    {
+        "file": "BEL20.txt",
+        "question": "Quel est le critère principal pour que les sociétés soient sélectionnées pour intégrer l'indice BEL20 ?"
+    },
+    {
+        "file": "Ardèche (département).txt",
+        "question": "Quelle est la population actuelle du département de l'Ardèche et comment cela compare-t-il à la population française en général ?"
+    },
+    {
+        "file": "Acteur pornographique.txt",
+        "question": "Quelle est la différence de traitement entre les acteurs et les actrices dans le cinéma pornographique selon les informations fournies dans ce texte ?"
+    },
+    {
+        "file": "Architecture.txt",
+        "question": "Quelle est la différence entre l'architecture et la construction, selon le texte ?"
+    },
+    {
+        "file": "André Gide.txt",
+        "question": "Quel est le sujet principal de la biographie d'André Gide, et comment se manifeste-t-il dans son œuvre littéraire ?"
+    },
+    {
+        "file": "Association francophone des utilisateurs de logiciels libres.txt",
+        "question": "Quelle est la principale activité de l'Association francophone des utilisateurs de logiciels libres (AFUL) et comment a-t-elle évolué au fil des ans ?"
+    },
+    {
+        "file": "Blender.txt",
+        "question": "Quelle est la date de sortie de la première version de Blender et comment a-t-elle été développée ?"
+    },
+    {
+        "file": "Apple.txt",
+        "question": "Quel est le chiffre d'affaires de l'entreprise Apple pour le 4e trimestre 2023, et quel est son bénéfice net pour cette même période ?"
+    },
+    {
+        "file": "Andrew Wiles.txt",
+        "question": "Quel est le rôle de la conjecture de Shimura-Taniyama-Weil dans la démonstration du dernier théorème de Fermat par Andrew Wiles ?"
+    },
+    {
+        "file": "Amharique.txt",
+        "question": "Quelle est la situation linguistique de l'amharique en Éthiopie depuis la Constitution de 1994 ?"
+    },
+    {
+        "file": "Australopithèque.txt",
+        "question": "Quelle est la période géologique pendant laquelle les Australopithèques ont vécu et quelles sont les principales caractéristiques de leur évolution ?"
+    },
+    {
+        "file": "Arvo Pärt.txt",
+        "question": "Quelle est la date de naissance d'Arvo Pärt et où est-il né ?"
+    },
+    {
+        "file": "Alain Madelin.txt",
+        "question": "Quelle est la date de naissance d'Alain Madelin et dans quel arrondissement de Paris a-t-il passé son enfance ?"
+    },
+    {
+        "file": "Brésil.txt",
+        "question": "Quelle est la superficie totale du Brésil en millions de kilomètres carrés, selon le contenu du fichier 'Brésil.txt'?"
+    },
+    {
+        "file": "Archée thermophile.txt",
+        "question": "Quel est l'optimum de croissance des archées thermophiles et comment se distinguent-elles des archées hyperthermophiles ?"
+    },
+    {
+        "file": "Bas-Rhin.txt",
+        "question": "Quelle est la superficie du département du Bas-Rhin et quel est son code INSEE ?"
+    },
+    {
+        "file": "Aïkibudo.txt",
+        "question": "Quel est le rôle du professeur dans l'enseignement de l'aïkibudo, selon le contenu du fichier 'Aïkibudo.txt'?"
+    },
+    {
+        "file": "Beaufort.txt",
+        "question": "Quels sont les différents types de noms de famille, de lieux et de lieux nommés que le fichier 'Beaufort.txt' mentionne, et quelles sont les catégories correspondantes pour chaque type de nom ?"
+    },
+    {
+        "file": "Anime.txt",
+        "question": "Quel est le rôle de la Toei Animation dans l'histoire de l'animation japonaise et comment a-t-elle influencé le développement de l'anime ?"
+    },
+    {
+        "file": "Antiquité.txt",
+        "question": "Quelle est la période exacte de début de l'Antiquité selon les historiens, et quelles sont les principales caractéristiques de cette période ?"
+    },
+    {
+        "file": "Assistant personnel.txt",
+        "question": "Quelle est la différence entre un assistant personnel et un assistant personnel intelligent ?"
+    },
+    {
+        "file": "Ahmôsis II.txt",
+        "question": "Quel est le contexte historique et politique dans lequel Ahmôsis II a exercé son pouvoir, et comment son règne a-t-il influencé l'Égypte antique ?"
+    },
+    {
+        "file": "Lampe à incandescence halogène.txt",
+        "question": "Quels sont les principaux avantages et inconvénients des lampes à incandescence halogène par rapport aux ampoules classiques ?"
+    },
+    {
+        "file": "Anthropologie.txt",
+        "question": "Quelle est la différence entre l'anthropologie et l'ethnologie, et comment ces deux disciplines se sont-elles développées au fil du temps ?"
+    },
+    {
+        "file": "Algèbre linéaire.txt",
+        "question": "Quel est le rôle fondamental des espaces vectoriels dans l'algèbre linéaire et comment ont-ils évolué au fil du temps pour devenir une structure omniprésente en mathématiques ?"
+    },
+    {
+        "file": "Alfred de Musset.txt",
+        "question": "Quel est le titre de la pièce de théâtre \"À quoi rêvent les jeunes filles\" et dans quelle année a-t-elle été créée ?"
+    },
+    {
+        "file": "Archéologie sous-marine.txt",
+        "question": "Quelle est la principale différence entre l'archéologie sous-marine et l'archéologie subaquatique en France ?"
+    },
+    {
+        "file": "Anarchisme.txt",
+        "question": "Quels sont les principaux courants de l'anarchisme et comment se distinguent-ils les uns des autres ?"
+    },
+    {
+        "file": "Atractotomus.txt",
+        "question": "Quel est le rôle des larves et des adultes du genre Atractotomus dans le contrôle biologique des insectes nuisibles ?"
+    },
+    {
+        "file": "Allatif.txt",
+        "question": "Quelle est la différence entre l'allatif et l'ablatif en linguistique, et comment sont-ils utilisés dans les langues finno-ougriennes ?"
+    },
+    {
+        "file": "Bénin.txt",
+        "question": "Quelle est la superficie du Bénin et quelles sont ses frontières terrestres ?"
+    },
+    {
+        "file": "Abessif.txt",
+        "question": "Quelle est la différence entre l'abessif finno-ougrien et l'abessif estonien en termes de fréquence d'utilisation à l'oral et à l'écrit ?"
+    },
+    {
+        "file": "Afrique.txt",
+        "question": "Quelle est la superficie totale de l'Afrique, y compris les îles, et quel est son rang parmi les continents en termes de superficie ?"
+    },
+    {
+        "file": "Alger.txt",
+        "question": "Quelle est la population actuelle de l'agglomération d'Alger selon les sources officielles et non-officielles ?"
+    },
+    {
+        "file": "Arc de triomphe de l'Étoile.txt",
+        "question": "Quel est le coût total de la construction de l'Arc de Triomphe, et quelles sont les dimensions de ce monument emblématique de Paris ?"
+    },
+    {
+        "file": "Amstrad.txt",
+        "question": "Quelle était la stratégie marketing d'Amstrad pour se démarquer sur le marché de la micro-informatique domestique dans les années 1980 ?"
+    },
+    {
+        "file": "Arménie.txt",
+        "question": "Quelle est la date de fondation de la capitale actuelle de l'Arménie, Erevan, selon les preuves archéologiques ?"
+    },
+    {
+        "file": "Arlette Laguiller.txt",
+        "question": "Quelle est la date de naissance d'Arlette Laguiller et dans quel arrondissement de Paris a-t-elle été née ?"
+    },
+    {
+        "file": "Bouddhisme.txt",
+        "question": "Quelle est la différence entre le bouddhisme Theravada et le bouddhisme Mahayana, et comment ces différences se reflètent-elles dans leurs pratiques et leurs croyances ?"
+    },
+    {
+        "file": "Alliage.txt",
+        "question": "Quel est le rôle des éléments d'alliage dans l'amélioration des caractéristiques mécaniques des métaux purs ?"
+    }
+]
