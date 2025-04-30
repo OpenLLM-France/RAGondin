@@ -110,4 +110,4 @@ app.include_router(openai_router, prefix="/v1", tags=[Tags.OPENAI])
 
 
 if __name__ == "__main__":
-    uvicorn.run("api:app", host="0.0.0.0", port=8083, reload=True, proxy_headers=True)
+    uvicorn.run("api:app", host="0.0.0.0", port=8080, reload=True, proxy_headers=True)

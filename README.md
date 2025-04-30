@@ -118,7 +118,7 @@ VLM_API_KEY=
 VLM_MODEL=
 
 # App
-APP_PORT=8083
+APP_PORT=8080
 APP_HOST=0.0.0.0
 
 # To enable HTTP authentication via HTTPBearer
@@ -149,10 +149,10 @@ docker compose --profile cpu up --build
 
 Once it is running, you can check everything is fine by doing:
 ```bash
-curl http://localhost:8083/health_check
+curl http://localhost:0/health_check
 ```
 
-> **Note**: The initial launch is longer due to the installation of required dependencies. Once the application is up and running, you can access the api documentation at `http://localhost:8083/docs` (8083 is the APP_PORT variable determined in your **`.env`**) to manage documents, execute searches, or interact with the RAG pipeline (see the **next section** about the api for more details). A default chat ui is also deployed using [chainlit](!https://docs.chainlit.io/get-started/overview). You can access to it at `http://localhost:8083/chainlit` chat with your documents with our RAG engine behind it.
+> **Note**: The initial launch is longer due to the installation of required dependencies. Once the application is up and running, you can access the api documentation at `http://localhost:8080/docs` (8080 is the APP_PORT variable determined in your **`.env`**) to manage documents, execute searches, or interact with the RAG pipeline (see the **next section** about the api for more details). A default chat ui is also deployed using [chainlit](!https://docs.chainlit.io/get-started/overview). You can access to it at `http://localhost:8080/chainlit` chat with your documents with our RAG engine behind it.
 
 
 * **Running on CPU**:  

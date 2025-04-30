@@ -20,7 +20,7 @@ def get_base_url():
         return base_url
     except Exception as e:
         logger.error(f"Error retrieving Chainlit context: {e}")
-        port = os.environ.get("CONTAINER_PORT", "8080")
+        port = os.environ.get("APP_iPORT", "8080")
         logger.info(f"PORT: {port}")
         return f"http://localhost:{port}"  # Default fallback URL
 

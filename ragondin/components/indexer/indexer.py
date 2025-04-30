@@ -21,7 +21,7 @@ config = load_config()
 # Set ray resources
 NUM_GPUS = config.ray.get("num_gpus")
 NUM_CPUS = config.ray.get("num_cpus")
-N_PARALLELE_INDEXATION = config.ray.get("n_parallele_indexation")
+N_PARALLEL_INDEXATION = config.ray.get("n_parallel_indexation")
 
 if torch.cuda.is_available():
     gpu, cpu = NUM_GPUS, NUM_CPUS
@@ -34,7 +34,7 @@ else:
     num_gpus=gpu,
     max_task_retries=2,
     max_restarts=-1,
-    concurrency_groups={"compute": N_PARALLELE_INDEXATION},
+    concurrency_groups={"compute": N_PARALLEL_INDEXATION},
 )
 class Indexer(metaclass=SingletonMeta):
     def __init__(self, config, logger, device=None):

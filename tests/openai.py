@@ -136,7 +136,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--url",
         type=str,
-        default="http://localhost:8083",
+        default="http://localhost:8080",
         help="URL de base de l'API RAGondin",
     )
     parser.add_argument(
