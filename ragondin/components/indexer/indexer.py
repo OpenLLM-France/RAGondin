@@ -169,7 +169,7 @@ class Indexer(metaclass=SingletonMeta):
         self,
         query: str,
         top_k: int = 5,
-        similarity_threshold: int = 0.80,
+        similarity_threshold: int = 0.6,
         partition: Optional[str | List[str]] = None,
         filter: Optional[Dict] = {},
     ) -> List[Document]:
@@ -183,9 +183,9 @@ class Indexer(metaclass=SingletonMeta):
             filter=filter,
         )
 
-        if self.reranker_enabled:
-            self.logger.debug(f"Reranker enabled: {self.reranker_enabled}")
-            results = await self.reranker.rerank(query, documents=results, top_k=top_k)
+        # if self.reranker_enabled:
+        #     self.logger.debug(f"Reranker enabled: {self.reranker_enabled}")
+        #     results = await self.reranker.rerank(query, documents=results, top_k=top_k)
 
         return results
 
