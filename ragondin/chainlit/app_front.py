@@ -12,22 +12,21 @@ headers = {"accept": "application/json", "Content-Type": "application/json"}
 
 
 def get_base_url():
-    # try:
-    #     context = get_context()
-    #     referer = context.session.http_referer
-    #     parsed_url = urlparse(referer)  # Parse the referer URL
-    #     base_url = f"{parsed_url.scheme}://{parsed_url.netloc}"
-    #     return base_url
-    # except Exception as e:
-    #     logger.error(f"Error retrieving Chainlit context: {e}")
-    port = os.environ.get("CONTAINER_PORT", "8080")
-    logger.info(f"PORT: {port}")
-
-    return f"http://localhost:{port}"  # Default fallback URL
+    try:
+        context = get_context()
+        referer = context.session.http_referer
+        parsed_url = urlparse(referer)  # Parse the referer URL
+        base_url = f"{parsed_url.scheme}://{parsed_url.netloc}"
+        return base_url
+    except Exception as e:
+        logger.error(f"Error retrieving Chainlit context: {e}")
+        port = os.environ.get("APP_iPORT", "8080")
+        logger.info(f"PORT: {port}")
+        return f"http://localhost:{port}"  # Default fallback URL
 
 
 @cl.set_chat_profiles
-async def chat_profile(current_user: cl.User):
+async def chat_profile():
     base_url = get_base_url()
     client = AsyncOpenAI(base_url=f"{base_url}/v1", api_key="sk-1234")
 
@@ -65,7 +64,11 @@ async def on_chat_start():
     logger.debug(f"BASE URL: {base_url}")
 
     chat_profile = cl.user_session.get("chat_profile")
-    settings = {"model": chat_profile, "temperature": 0, "stream": True}
+    settings = {
+        "model": chat_profile,
+        "temperature": 0,
+        "stream": True,
+    }
 
     cl.user_session.set("messages", [])
 
@@ -93,7 +96,7 @@ async def __fetch_page_content(chunk_url):
         return data.get("page_content", "")
 
 
-async def __format_sources(metadata_sources, only_txt=True):
+async def __format_sources(metadata_sources, only_txt=False):
     elements = []
     source_names = []
     for s in metadata_sources:
@@ -117,7 +120,7 @@ async def __format_sources(metadata_sources, only_txt=True):
                 case ".mp3":
                     elem = cl.Audio(name=doc_id, url=file_url, display="side")
                 case _:
-                    logger.info(f"Hello {s['chunk_url']}")
+                    # logger.info(f"Link: {s['chunk_url']}")
                     chunk_content = await __fetch_page_content(chunk_url=s["chunk_url"])
                     elem = cl.Text(content=chunk_content, name=doc_id, display="side")
 
@@ -188,12 +191,7 @@ async def on_message(message: cl.Message):
                 cl.user_session.set("messages", messages)
 
                 # Show sources
-                s = (
-                    "\n\n"
-                    + "-" * 50
-                    + "\n\nRetrieved Docs: \n"
-                    + "\n".join(source_names)
-                )
+                s = "\n\n" + "-" * 50 + "\n\nSources: \n" + "\n".join(source_names)
                 await msg.stream_token(s)
                 await msg.update()
 

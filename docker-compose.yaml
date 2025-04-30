@@ -7,14 +7,14 @@ x-ragondin: &ragondin_template
     dockerfile: Dockerfile
   volumes:
     - ./.hydra_config:/app/.hydra_config
-    - ./model_weights:/app/model_weights
-    - ./data:/app/data # PDF data for RAG
+    - ${MODEL_WEIGTHS:-~/.cache/huggingface}:/app/model_weights
+    - ./data:/app/data
     - ./ragondin:/app/ragondin # For dev mode
-    - ${DATA_VOLUME_DIR:-./volumes}:/app/volumes
+    - ${MILVUS_VOLUME_DIRECTORY:-./volumes}:/app/volumes
 
   ports:
-    - "${APP_PORT:-8083}:${CONTAINER_PORT:-8080}"
-    - ${RAY_DASHBOARD_PORT:-8266}:${RAY_DASHBOARD_PORT:-8265} # for ray dashboard
+    - "${APP_PORT:-8080}:${APP_iPORT:-8080}"
+    - ${RAY_DASHBOARD_PORT:-8265}:${RAY_DASHBOARD_PORT:-8265} # for ray dashboard
 
   env_file:
     - .env

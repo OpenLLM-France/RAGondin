@@ -2,13 +2,12 @@ defaults:
   - _self_  # TODO: Silences the hydra version migration warning (PLEASE REVIEW FOR BREAKING CHANGES)
   - chunker: recursive_splitter #semantic_splitter
   - retriever: multiQuery
-  - rag: SimpleRag
+  - rag: ChatBotRag
 
 llm_params: &llm_params
-  temperature: 0
+  temperature: 0.3
   timeout: 60
   max_retries: 2
-  #frequency_penalty: 0.2
   logprobs: true
 
 llm:
@@ -33,19 +32,16 @@ embedder:
   
 vectordb:
   host: ${oc.env:VDB_HOST, milvus}
-  port: ${oc.env:VDB_PORT, 19530}
+  port: ${oc.env:VDB_iPORT, 19530}
   connector_name: ${oc.env:VDB_CONNECTOR_NAME, milvus}
   collection_name: vdb_test 
   hybrid_mode: true
   enable: true
 
-insertion:
-  n_concurrent_loading: 2 # Number of concurrent loading operations (2-3 is recommended, knowing that some loaders use gpu)
-  n_concurrent_chunking: 2 # Number of concurrent chunking operations
-
 reranker:
   enable: ${oc.decode:${oc.env:RERANKER_ENABLED, true}}
   model_name: ${oc.env:RERANKER_MODEL, jinaai/jina-colbert-v2}
+  reranker_type: ${oc.decode:${oc.env:RERANKER_MODEL_TYPE, colbert}}
   top_k: ${oc.decode:${oc.env:RERANKER_TOP_K, 4}}
 
 grader:
@@ -58,12 +54,12 @@ verbose:
 paths:
   prompts_dir: ${oc.env:PROMPTS_DIR, ../prompts}
   data_dir: ${oc.env:DATA_DIR, ../data}
-  volumes_dir: ${oc.env:MILVUS_VOLUME_DIRECTORY, /app/volumes}
+  volumes_dir: /app/volumes
 
 
 prompt:
   rag_sys_pmpt: rag_sys_prompt_template.txt # rag_sys_pmpt_tmpl_ifa.txt
-  context_pmpt_tmpl: contextualize_prompt_template.txt
+  contextualizer_pmpt: contextualizer_pmpt.txt
 
 loader:
   image_captioning: true
@@ -86,3 +82,5 @@ loader:
 ray:
   num_cpus: ${oc.decode:${oc.env:RAY_NUM_CPUS, 4}}
   num_gpus: ${oc.decode:${oc.env:RAY_NUM_GPUS, 1}}
+  local_deployment: ${oc.decode:${oc.env:LOCAL_DEPLOYMENT, true}} # set false for cluster deployment
+  n_parallel_indexation: ${oc.decode:${oc.env:N_PARALLEL_INDEXATION, 2}}

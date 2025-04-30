@@ -4,6 +4,8 @@ from config import load_config
 
 from components import ABCVectorDB
 from components.indexer.indexer import Indexer
+from components.indexer.indexer_deployment import Indexer as IndexerForDeployment
+from loguru import logger
 
 
 class VDBProxy:
@@ -40,8 +42,15 @@ class VDBProxy:
 
 # load config
 config = load_config()
+
 # Initialize components once
-indexer = Indexer.remote()
+local_deployment = config.ray["local_deployment"]
+
+if local_deployment:
+    indexer = Indexer.remote(config, logger)
+else:
+    indexer = IndexerForDeployment()
+
 vectordb: ABCVectorDB = VDBProxy(
     indexer_actor=indexer
 )  # vectordb is not of type ABCVectorDB, but it mimics it

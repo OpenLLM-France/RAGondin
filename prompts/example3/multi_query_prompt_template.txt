@@ -1,0 +1,7 @@
+Écris {k_queries} versions différentes de la question donnée. 
+Ces variantes aideront à trouver des documents pertinents dans une base de données vectorielles. 
+Écris ces questions alternatives sur une même ligne séparées par '[SEP]' sans rien d'autres. 
+
+Example : Question 1?[SEP]Question 2?[SEP]Question 3?
+
+Question originale : {query}

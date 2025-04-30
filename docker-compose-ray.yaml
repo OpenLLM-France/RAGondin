@@ -10,7 +10,7 @@ x-ragondin: &ragondin_template
     - ./model_weights:/app/model_weights
     - ./data:/app/data # PDF data for RAG
     - ./ragondin:/app/ragondin # For dev mode
-    - ${DATA_VOLUME_DIR:-./volumes}:/app/volumes
+    - ${MILVUS_VOLUME_DIRECTORY:-./volumes}:/app/volumes
   network_mode: host
   env_file:
     - .env

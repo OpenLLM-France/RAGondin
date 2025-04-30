@@ -60,7 +60,7 @@ class RetrieverPipeline:
             # rerank documents
             if self.reranker_enabled:
                 docs = await self.reranker.rerank(
-                    query, chunks=docs, k=self.reranker_top_k
+                    query, documents=docs, top_k=self.reranker_top_k
                 )
 
             else:
@@ -81,8 +81,8 @@ class RagPipeline:
 
         self.prompts_dir = Path(config.paths.prompts_dir)
         # contextualizer prompt
-        self.context_pmpt_tmpl = load_sys_template(
-            self.prompts_dir / config.prompt["context_pmpt_tmpl"]
+        self.contextualizer_pmpt = load_sys_template(
+            self.prompts_dir / config.prompt["contextualizer_pmpt"]
         )
 
         # rag sys prompt
@@ -112,12 +112,12 @@ class RagPipeline:
                 for m in messages:
                     chat_history += f"{m['role']}: {m['content']}\n"
 
-                params = dict(self.config.lm_params)
+                params = dict(self.config.llm_params)
                 params.pop("max_retries")
                 response = await self.contextualizer.chat.completions.create(
-                    model=self.config.llm["model"],
+                    model=self.config.vlm["model"],
                     messages=[
-                        {"role": "system", "content": self.context_pmpt_tmpl},
+                        {"role": "system", "content": self.contextualizer_pmpt},
                         {
                             "role": "user",
                             "content": f"Given the following chat, generate a query. \n{chat_history}\n",
@@ -197,12 +197,15 @@ class RagPipeline:
         return llm_output, context, sources
 
     async def chat_completion(self, partition: list[str], payload: dict):
-        payload, context, sources = await self._prepare_for_chat_completion(
-            partition=partition, payload=payload
-        )
+        try:
+            payload, context, sources = await self._prepare_for_chat_completion(
+                partition=partition, payload=payload
+            )
 
-        llm_output = self.llm_client.chat_completion(request=payload)
-        return llm_output, context, sources
+            llm_output = self.llm_client.chat_completion(request=payload)
+            return llm_output, context, sources
+        except Exception as e:
+            raise e
 
     @staticmethod
     def set_logger(config):

@@ -57,7 +57,6 @@ class Tags(Enum):
 class AppState:
     def __init__(self, config):
         self.config = config
-        self.model_name = config.llm.model
         self.ragpipe = ragPipe
         self.vectordb = vectordb
         self.data_dir = Path(config.paths.data_dir)
@@ -67,15 +66,16 @@ class AppState:
 AUTH_TOKEN: Optional[str] = os.getenv("AUTH_TOKEN")
 security = HTTPBearer()
 
+
 # Dependency to verify token
 def verify_token(credentials: HTTPAuthorizationCredentials = Depends(security)):
     if AUTH_TOKEN is None:
         return  # Auth disabled
     if credentials.credentials != AUTH_TOKEN:
         raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Invalid or missing token"
+            status_code=status.HTTP_403_FORBIDDEN, detail="Invalid or missing token"
         )
+
 
 # Apply globally only if AUTH_TOKEN is set
 dependencies = [Depends(verify_token)] if AUTH_TOKEN else []
@@ -90,6 +90,7 @@ app.mount(
 
 @app.get("/health_check", summary="Toy endpoint to check that the api is up")
 async def health_check(request: Request):
+    # TODO : Error reporting about llm and vlm
     return "RAG API is up."
 
 
@@ -109,4 +110,4 @@ app.include_router(openai_router, prefix="/v1", tags=[Tags.OPENAI])
 
 
 if __name__ == "__main__":
-    uvicorn.run("api:app", host="0.0.0.0", port=8083, reload=True, proxy_headers=True)
+    uvicorn.run("api:app", host="0.0.0.0", port=8080, reload=True, proxy_headers=True)
