@@ -4002,6 +4002,8 @@ dependencies = [
     { name = "python-dotenv" },
     { name = "ragatouille" },
     { name = "ray", extra = ["default"] },
+    { name = "robotframework" },
+    { name = "robotframework-requests" },
     { name = "spire-doc" },
     { name = "torch", version = "2.4.1", source = { registry = "https://pypi.org/simple" }, marker = "platform_machine == 'x86_64' and sys_platform == 'darwin'" },
     { name = "torch", version = "2.6.0", source = { registry = "https://pypi.org/simple" }, marker = "platform_machine != 'x86_64' or sys_platform != 'darwin'" },
@@ -4039,6 +4041,8 @@ requires-dist = [
     { name = "python-dotenv", specifier = ">=1.0.1" },
     { name = "ragatouille", specifier = ">=0.0.9" },
     { name = "ray", extras = ["default"], specifier = ">=2.43.0" },
+    { name = "robotframework", specifier = ">=7.2.2" },
+    { name = "robotframework-requests", specifier = ">=0.9.7" },
     { name = "spire-doc", specifier = ">=13.1.0" },
     { name = "torch", specifier = ">=2.4.1" },
 ]
@@ -4213,6 +4217,28 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/ab/3a/0316b28d0761c6734d6bc14e770d85506c986c85ffb239e688eeaab2c2bc/rich-13.9.4.tar.gz", hash = "sha256:439594978a49a09530cff7ebc4b5c7103ef57baf48d5ea3184f21d9a2befa098", size = 223149 }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/19/71/39c7c0d87f8d4e6c020a393182060eaefeeae6c01dab6a84ec346f2567df/rich-13.9.4-py3-none-any.whl", hash = "sha256:6049d5e6ec054bf2779ab3358186963bac2ea89175919d699e378b99738c2a90", size = 242424 },
+]
+
+[[package]]
+name = "robotframework"
+version = "7.2.2"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/01/55/e6decd3155929c1ae0156df0219c991377b6e1c19b7c4a2ef88560069724/robotframework-7.2.2.tar.gz", hash = "sha256:9c420f6d35e9c8cd4b75b77cc78e36407604534ec4ab0cbddf699d7c0b2fc435", size = 624811 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/4a/9a/7498a0a40a32ba522840da2b8c0ecb4794114ec332992fda09a0733c25a0/robotframework-7.2.2-py3-none-any.whl", hash = "sha256:1cb4ec69d52aae515bf6037cee66a2a2d8dc3256368081c0f4b3d4578d40904e", size = 777676 },
+]
+
+[[package]]
+name = "robotframework-requests"
+version = "0.9.7"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "requests" },
+    { name = "robotframework" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/61/e2/b17b940985e7b35f53767d908897870fcf4e143a2a7c2da76d152e4abc4c/robotframework-requests-0.9.7.tar.gz", hash = "sha256:c2a2839813e1dc6b299e7d336314c9982c225c5b7e001ec893dc3555c6a95740", size = 19404 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/cd/18/03ef4d1132f50b55220af5308db91e1cc5481b8b063cac5fafa625b00f64/robotframework_requests-0.9.7-py3-none-any.whl", hash = "sha256:96315066318778cbcf5523cdb6175f5a0b8fec33275030a20dade3a3d98aeca2", size = 21055 },
 ]
 
 [[package]]
