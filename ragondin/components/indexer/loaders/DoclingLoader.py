@@ -1,7 +1,6 @@
 import asyncio
-
 import torch
-from components.utils import SingletonMeta, SingletonABCMeta
+from components.utils import SingletonMeta
 from docling.datamodel.document import ConversionResult
 from docling_core.types.doc.document import PictureItem
 from langchain_core.documents.base import Document

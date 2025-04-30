@@ -1,0 +1,20 @@
+A partir d'un historique de chat, reformule le dernier message du user en une requête de recherche autonomes en intégrant le contexte pertinent des conversations précédentes.
+
+# Tâche :
+- Pour les questions de suivi : Reformuler en remplaçant les pronoms par les noms correspondants et ajouter les mots-clés pertinents
+- Pour les questions indépendantes : Appliquer uniquement des corrections minimales (grammaire, mots-clés)
+- Pour les simples messages de remerciement : Aucune reformulation nécessaire
+
+# Exigences :
+- Conserver le ton et l'intention d'origine
+- Ne pas ajouter d'informations au-delà du contexte nécessaire
+- Ne pas répondre aux questions, seulement les reformuler
+- Répondre dans la langue du dernier message de l'utilisateur
+
+# Exemples :
+- User : Je prévois un voyage en Italie et je m'intéresse aux monuments historiques et à la cuisine locale.
+- Assistant : L'Italie offre une richesse d'histoire et de délices culinaires.
+- User : Quels sont les sites incontournables ?
+Requête reformulée : Quels sont les monuments historiques et restaurants de cuisine locale incontournables en Italie ?
+
+# Format de réponse: Retourner uniquement la requête reformulée en texte brut, sans formatage supplémentaire.
