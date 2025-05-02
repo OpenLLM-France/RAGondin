@@ -1,16 +1,20 @@
 import json
 import numpy as np
 from loguru import logger
-from sentence_transformers import CrossEncoder
 from tqdm import tqdm
-
+from reranker import Reranker
+import time
 
 # load the model
+evaluate_with_reranking = True
+
+# model_name = "jinaai/jina-colbert-v2"
+# reranker_type = "colbert"
+
 model_name = "jinaai/jina-reranker-v2-base-multilingual"
-rerank = False
-model = CrossEncoder(
-    model_name, automodel_args={"torch_dtype": "auto"}, trust_remote_code=True
-)
+reranker_type = "crossencoder"
+
+reranker = Reranker(reranker_type=reranker_type, model_name=model_name)
 
 
 def compute_hits(relevant_chunks, all_retrieved_chunks):
@@ -51,6 +55,8 @@ with open(path, "r", encoding="utf-8") as json_file:
 HITS = []
 INVERTED_RANKS = []
 
+start = time.time()
+
 for row in tqdm(question_relevant_chunks, desc="Computing metrics"):
     file_name = row["file"]  # get the file name
     question = row["question"]  # get the question
@@ -58,21 +64,18 @@ for row in tqdm(question_relevant_chunks, desc="Computing metrics"):
 
     all_retrieved_chunks = row["all_retrieved_chunks"]  # get the all retrieved chunks
 
-    if rerank:
-        results = model.rank(
-            query=question,
-            documents=[chunk["content"] for chunk in all_retrieved_chunks],
-            return_documents=True,
+    if evaluate_with_reranking:
+        all_retrieved_chunks = reranker.rerank(
+            query=question, chunks=all_retrieved_chunks, top_k=len(all_retrieved_chunks)
         )
-        all_retrieved_chunks = [
-            all_retrieved_chunks[res["corpus_id"]] for res in results
-        ]
-
     HITS.extend(compute_hits(relevant_chunks, all_retrieved_chunks))
     INVERTED_RANKS.extend(compute_inverted_ranks(relevant_chunks, all_retrieved_chunks))
+
+end = time.time()
 
 hit_rate = np.array(HITS).mean()
 Mrr = np.array(INVERTED_RANKS).mean()
 
 print(f"Hit Rate: {hit_rate}")
 print(f"MRR: {Mrr}")
+print(f"Time taken: {end - start} seconds")
