@@ -19,3 +19,42 @@
 
 ![alt text](./assets/image-3.png)
 ![alt text](./assets/image-4.png)
+
+# Benchmark Pipeline
+
+## 1. Create the folder for the benchmark task
+
+```bash
+mkdir your_benchmark_folder
+cd your_benchmark_folder
+```
+
+## 2. Data preparation
+
+Create a sub folder for your data files
+```bash
+mkdir data
+```
+
+Look for a text retrieval task dataset online (like [HuggingFace](https://huggingface.co/datasets?task_categories=task_categories:text-retrieval&sort=trending)), then download and store them in form of .csv in ./data/ like in the 2 examples folders.
+
+Copy all the necessary .py files
+```bash
+cp ../benchmark-with-reference/*.py .
+```
+
+## 3. Run the benchmark
+
+First, make sure your RAGondin is running with docker compose.
+Then, by running the index_data.py file, you will index all the data source that you downloaded online into RAGondin.
+```bash 
+python index_data.py
+```
+
+Next, create a json file with complete informations, such as questions, the id of the responses and the metadata of all the reponses found by the model. (take a look at /home/ubuntu/an/RAGondin-an/evaluation-embedder-reranker/benchmark-with-reference/data/retrieved_chunks_paraphase_MiniLM_L12.json as an example). Make sure that your .csv files have appropriate structure.
+
+```bash
+python generate_dataset.py
+```
+
+Lastly, run the compute_metrics.py file to have the metric scores of the dataset (here we have hit rate and MRR).

@@ -36,7 +36,8 @@ def compute_nDCG(true_chunk_ids: list[str], all_retrieved_chunks: list[dict]):
     return [val_DCG / iDCG]
 
 # load json file
-path = "./data/retrieved_chunks_snowflake.json"
+embedder = os.environ.get('EMBEDDER_MODEL_NAME')
+path = f"./data/retrieved_chunks_{embedder}.json"
 with open(path, "r", encoding="utf-8") as json_file:
     question_relevant_chunks = json.load(json_file)
 

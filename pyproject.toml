@@ -45,6 +45,3 @@ dependencies = [
 dev = [
     "ruff>=0.11.0",
 ]
-
-[tool.uv.workspace]
-members = ["../OCR-benchmark"]
