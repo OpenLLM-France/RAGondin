@@ -25,20 +25,17 @@ async def search_multiple_partitions(
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
     except Exception as e:
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e)
+        )
 
     documents = [
-        {
-            "link": str(
-                request.url_for("get_extract", extract_id=doc.metadata["_id"])
-            )
-        }
+        {"link": str(request.url_for("get_extract", extract_id=doc.metadata["_id"]))}
         for doc in results
     ]
 
     return JSONResponse(
-        status_code=status.HTTP_200_OK,
-        content={"documents": documents}
+        status_code=status.HTTP_200_OK, content={"documents": documents}
     )
 
 
@@ -48,31 +45,30 @@ async def search_one_partition(
     partition: str,
     text: str = Query(..., description="Text to search semantically"),
     top_k: int = Query(5, description="Number of top results to return"),
+    # similarity_threshold: float = Query(0.2, description="Similarity threshold"),
     indexer: Indexer = Depends(get_indexer),
 ):
     try:
         results = await indexer.asearch.remote(
             query=text,
             top_k=top_k,
-            partition=partition
+            # similarity_threshold=similarity_threshold,
+            partition=partition,
         )
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
     except Exception as e:
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e)
+        )
 
     documents = [
-        {
-            "link": str(
-                request.url_for("get_extract", extract_id=doc.metadata["_id"])
-            )
-        }
+        {"link": str(request.url_for("get_extract", extract_id=doc.metadata["_id"]))}
         for doc in results
     ]
 
     return JSONResponse(
-        status_code=status.HTTP_200_OK,
-        content={"documents": documents}
+        status_code=status.HTTP_200_OK, content={"documents": documents}
     )
 
 
@@ -87,27 +83,20 @@ async def search_file(
 ):
     try:
         results = await indexer.asearch.remote(
-            query=text,
-            top_k=top_k,
-            partition=partition,
-            filter={"file_id": file_id}
+            query=text, top_k=top_k, partition=partition, filter={"file_id": file_id}
         )
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
     except Exception as e:
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e)
+        )
 
     documents = [
-        {
-            "link": str(
-                request.url_for("get_extract", extract_id=doc.metadata["_id"])
-            )
-        }
+        {"link": str(request.url_for("get_extract", extract_id=doc.metadata["_id"]))}
         for doc in results
     ]
 
     return JSONResponse(
-        status_code=status.HTTP_200_OK,
-        content={"documents": documents}
+        status_code=status.HTTP_200_OK, content={"documents": documents}
     )
-

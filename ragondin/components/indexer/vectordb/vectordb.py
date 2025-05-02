@@ -16,7 +16,7 @@ INDEX_PARAMS = [
         "index_type": "SPARSE_INVERTED_INDEX",
     },  # Fovr sparse vector
     {
-        "metric_type": "COSINE",
+        "metric_type": "IP",
         "index_type": "HNSW",
         "params": {"M": 32, "efConstruction": 100},
     },  # For dense vector
@@ -230,17 +230,17 @@ class MilvusDB(ABCVectorDB):
 
         # Join all parts with " and " only if there are multiple conditions
         expr = " and ".join(expr_parts) if expr_parts else ""
-
+        # self.logger.debug(f"Sim threshold: {similarity_threshold}")
         SEARCH_PARAMS = [
             {
-                "metric_type": "COSINE",
+                "metric_type": "IP",
                 "params": {
                     "ef": 15,
                     "radius": similarity_threshold,
                     "range_filter": 1.0,
                 },
             },
-            {"metric_type": "BM25", "params": {"drop_ratio_build": 0.2}},
+            {"metric_type": "BM25", "params": {"drop_ratio_search": 0.2}},
         ]
 
         if self.hybrid_mode:

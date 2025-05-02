@@ -102,7 +102,7 @@ async def __format_sources(metadata_sources, only_txt=False):
     for s in metadata_sources:
         filename = Path(s["filename"])
         file_url = s["file_url"]
-        logger.info(f"URL: {file_url}")
+        # logger.info(f"URL: {file_url}")
         doc_id = s["doc_id"]
         page = s["page"]
         if only_txt:
@@ -178,7 +178,6 @@ async def on_message(message: cl.Message):
                         continue
 
                     # parse JSON
-                    data = json.loads(content)
                     token = data.get("choices", [{}])[0].get("delta", {}).get("content")
                     if token:
                         await msg.stream_token(token)
