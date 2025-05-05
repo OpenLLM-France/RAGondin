@@ -18,7 +18,7 @@ settings = {
     "max_retries": 3,
     "timeout": 60,
     "model": "Qwen2.5-VL-7B-Instruct",
-    "api_key": "sk-qEoN3RedKamDQNuZJH7F9Q",
+    "api_key": "sk-1234",
     "base_url": "https://chat.lucie.ovh.linagora.com/v1",
 }
 
