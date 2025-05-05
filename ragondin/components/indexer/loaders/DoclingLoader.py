@@ -1,13 +1,22 @@
 import asyncio
-
+import torch
 from components.utils import SingletonMeta
 from docling.datamodel.document import ConversionResult
 from docling_core.types.doc.document import PictureItem
 from langchain_core.documents.base import Document
 from loguru import logger
 from tqdm.asyncio import tqdm
-
 from .base import BaseLoader
+from docling.backend.pypdfium2_backend import PyPdfiumDocumentBackend
+from docling.datamodel.base_models import InputFormat
+from docling.datamodel.pipeline_options import (
+    AcceleratorDevice,
+    AcceleratorOptions,
+    PdfPipelineOptions,
+    TableFormerMode,
+    TableStructureOptions,
+)
+from docling.document_converter import DocumentConverter, PdfFormatOption
 
 
 class DoclingConverter(metaclass=SingletonMeta):
@@ -26,26 +35,7 @@ class DoclingConverter(metaclass=SingletonMeta):
     """
 
     def __init__(self):
-        try:
-            from docling.backend.pypdfium2_backend import PyPdfiumDocumentBackend
-            from docling.datamodel.base_models import InputFormat
-            from docling.datamodel.document import ConversionResult
-            from docling.datamodel.pipeline_options import (
-                AcceleratorDevice,
-                AcceleratorOptions,
-                PdfPipelineOptions,
-                TableFormerMode,
-                TableStructureOptions,
-            )
-            from docling.document_converter import DocumentConverter, PdfFormatOption
-
-        except ImportError as e:
-            logger.warning(
-                f"Docling is not installed. {e}. Install it using `pip install docling`"
-            )
-            raise e
-
-        img_scale = 2
+        img_scale = 1
         pipeline_options = PdfPipelineOptions(
             do_ocr=True,
             do_table_structure=True,
@@ -70,7 +60,8 @@ class DoclingConverter(metaclass=SingletonMeta):
         )
 
     async def convert_to_md(self, file_path) -> ConversionResult:
-        return await asyncio.to_thread(self.converter.convert, str(file_path))
+        o = await asyncio.to_thread(self.converter.convert, str(file_path))
+        return o
 
 
 class DoclingLoader(BaseLoader):
@@ -110,8 +101,14 @@ class DoclingLoader(BaseLoader):
         self.page_sep = page_sep
         self.converter = DoclingConverter()
 
+    @classmethod
+    def destroy(cls):
+        if DoclingConverter in SingletonMeta._instances:
+            del SingletonMeta._instances[DoclingConverter]
+
     async def aload_document(self, file_path, metadata, save_md=False):
-        result = await self.converter.convert_to_md(file_path)
+        with torch.no_grad():
+            result = await self.converter.convert_to_md(file_path)
 
         n_pages = len(result.pages)
         s = f"{self.page_sep}".join(
@@ -120,10 +117,8 @@ class DoclingLoader(BaseLoader):
                 for i in range(1, n_pages + 1)
             ]
         )
-
         enriched_content = s
-
-        if self.config["loader"]["image_captioning"]:
+        if self.config.loader["image_captioning"]:
             pictures = result.document.pictures
             descriptions = await self.get_captions(pictures)
             for description in descriptions:
@@ -140,17 +135,13 @@ class DoclingLoader(BaseLoader):
 
     async def get_captions(self, pictures: list[PictureItem]):
         tasks = []
-
         for picture in pictures:
             tasks.append(self.get_image_description(picture.image.pil_image))
         try:
-            results = await tqdm.gather(
-                *tasks, desc="Captioning imgs"
-            )  # asyncio.gather(*tasks)
+            results = await tqdm.gather(*tasks, desc="Captioning imgs")
         except asyncio.CancelledError:
             for task in tasks:
                 task.cancel()
-
             raise
         return results
 

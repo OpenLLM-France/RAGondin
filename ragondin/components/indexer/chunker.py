@@ -13,8 +13,6 @@ from langchain_openai import ChatOpenAI
 from loguru import logger
 from omegaconf import OmegaConf
 from tqdm.asyncio import tqdm
-
-from ..llm import LLM
 from ..utils import llmSemaphore
 
 
@@ -28,8 +26,7 @@ class ABCChunker(ABC):
         pass
 
 
-template = """
-**Objectif** : Rédiger un texte de contextualisation pour le fragment suivant en intégrant les éléments fournis.
+template = """**Objectif** : Rédiger succinctement un texte de contextualisation pour le fragment suivant en intégrant les éléments fournis.
 
 **Consignes de rédaction** :
 1. Prendre en compte :
@@ -45,7 +42,7 @@ template = """
 **Contexte** :
 - Source : {source}
 - Première page :
-{first_page}
+{first_chunk}
 - Fragment précédent :
 {prev_chunk}
 
@@ -84,7 +81,7 @@ class ChunkContextualizer:
 
     async def generate_context(
         self,
-        first_page: str,
+        first_chunk: str,
         prev_chunk: str,
         chunk: str,
         source: str,
@@ -95,7 +92,7 @@ class ChunkContextualizer:
             try:
                 return await self.context_generator.ainvoke(
                     {
-                        "first_page": first_page,
+                        "first_chunk": first_chunk,
                         "prev_chunk": prev_chunk,
                         "chunk": chunk,
                         "source": source,
@@ -125,7 +122,7 @@ class ChunkContextualizer:
         Raises:
             Exception: If an error occurs during the contextualization process, it logs a warning with the error message.
         """
-        if not self.contextual_retrieval:
+        if not self.contextual_retrieval or len(chunks) == 1:
             return [chunk.page_content for chunk in chunks]
 
         try:
@@ -135,7 +132,7 @@ class ChunkContextualizer:
                 curr_chunk = chunks[i]
                 tasks.append(
                     self.generate_context(
-                        first_page=pages[0],
+                        first_chunk=chunks[0],
                         prev_chunk=prev_chunk.page_content,
                         chunk=curr_chunk.page_content,
                         source=source,
@@ -146,7 +143,7 @@ class ChunkContextualizer:
                 total=len(tasks),
                 desc=f"Contextualizing chunks of *{Path(source).name}*",
             )
-            chunk_format = "chunks' context: {chunk_context}\n\n=> chunk: {chunk}"
+            chunk_format = "chunks' context: {chunk_context}\n\n=> chunk: \n{chunk}"
             return [
                 chunk_format.format(chunk=chunk.page_content, chunk_context=task)
                 for chunk, task in zip(chunks[1:], contexts)
@@ -342,5 +339,5 @@ class ChunkerFactory:
                 )
 
         # Include contextual retrieval if specified
-        chunker_params["llm"] = LLM(config, logger=None).client
+        chunker_params["llm"] = ChatOpenAI(**config.vlm)
         return chunker_class(**chunker_params)

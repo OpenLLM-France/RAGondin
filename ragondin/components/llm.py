@@ -1,45 +1,82 @@
-from typing import AsyncIterator
-
-from langchain_core.messages import AIMessage, BaseMessage, HumanMessage
-from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
-from langchain_openai import ChatOpenAI
+import httpx
+import json
+import copy
 
 
 class LLM:
-    def __init__(self, config, logger=None):
+    def __init__(self, llm_config, logger=None):
         self.logger = logger
-        self.client: ChatOpenAI = ChatOpenAI(**config.llm)
+        default_llm_config = dict(llm_config)
+        self._api_key = default_llm_config.pop("api_key", None)
+        self._base_url = default_llm_config.pop("base_url", None)
+        self.default_llm_config = default_llm_config
 
-    def run(
-        self,
-        question: str,
-        context: str,
-        chat_history: list[AIMessage | HumanMessage],
-        sys_pmpt_tmpl: str,
-    ) -> AsyncIterator[BaseMessage]:
-        """This method runs the LLM given the user's input (`question`), `chat_history`, and the system prompt template (`sys_prompt_tmpl`)
-
-        Args:
-            question (str): The input from the user; not necessarily a question.
-            context (str): It's the retrieved documents (formatted into a string)
-            chat_history (list[AIMessage  |  HumanMessage]): The Chat history.
-            sys_prompt_tmpl (str): The system prompt
-        Returns:
-            AsyncIterator[BaseMessage]
-        """
-
-        qa_prompt = ChatPromptTemplate.from_messages(
-            [
-                ("system", sys_pmpt_tmpl),
-                MessagesPlaceholder("chat_history"),
-                ("human", "{input}"),
-            ]
-        )
-        rag_chain = qa_prompt | self.client.with_retry(stop_after_attempt=3)
-
-        input_ = {
-            "input": question,
-            "context": context,
-            "chat_history": chat_history,
+        self.headers = {
+            "Content-Type": "application/json",
+            "Authorization": f"Bearer {self._api_key}",
         }
-        return rag_chain.astream(input_)
+
+    async def completions(self, request: dict):
+        ragondin_model = request.pop("model", None)
+        payload = copy.deepcopy(self.default_llm_config)
+        payload.update(request)
+
+        timeout = httpx.Timeout(4 * 10)
+        async with httpx.AsyncClient(timeout=timeout) as client:
+            response = await client.post(
+                url=f"{self._base_url}completions", headers=self.headers, json=payload
+            )
+            response.raise_for_status()
+
+            data = response.json()
+            data["model"] = ragondin_model
+            yield data
+
+    async def chat_completion(self, request: dict):
+        ragondin_model = request.pop("model", None)
+        payload = copy.deepcopy(self.default_llm_config)
+        payload.update(request)
+
+        stream = request["stream"]
+
+        timeout = httpx.Timeout(4 * 60)
+        async with httpx.AsyncClient(timeout=timeout) as client:
+            if stream:
+                try:
+                    async with client.stream(
+                        "POST",
+                        url=f"{self._base_url}chat/completions",
+                        headers=self.headers,
+                        json=payload,
+                    ) as response:
+                        async for line in response.aiter_lines():
+                            if line.startswith("data:"):
+                                if "[DONE]" in line:
+                                    yield f"{line}\n\n"
+                                else:
+                                    try:
+                                        data_str = line[len("data: ") :]
+                                        data = json.loads(data_str)
+                                        data["model"] = ragondin_model
+                                        new_line = f"data: {json.dumps(data)}\n\n"
+                                        yield new_line
+                                    except json.JSONDecodeError as e:
+                                        raise e
+
+                except Exception as e:
+                    raise e
+
+            else:  # Handle non-streaming response
+                try:
+                    response = await client.post(
+                        url=f"{self._base_url}chat/completions",
+                        headers=self.headers,
+                        json=payload,
+                    )
+                    response.raise_for_status()
+
+                    data = response.json()  # Modify the fields here
+                    data["model"] = ragondin_model
+                    yield data
+                except Exception as e:
+                    raise ValueError(f"Invalid JSON in API response: {str(e)}")

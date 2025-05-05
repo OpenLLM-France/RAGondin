@@ -1,12 +1,15 @@
-import ray.actor
-from components import ConnectorFactory, HFEmbedder, Indexer, ABCVectorDB
-from config import load_config
-from loguru import logger
 import ray
+import ray.actor
+from config import load_config
+
+from components import ABCVectorDB
+from components.indexer.indexer import Indexer
+from components.indexer.indexer_deployment import Indexer as IndexerForDeployment
+from loguru import logger
 
 
 class VDBProxy:
-    """Serializable class that delegates method calls to the remote vectordb."""
+    """Class that delegates method calls to the remote vectordb."""
 
     def __init__(self, indexer_actor: ray.actor.ActorHandle):
         self.indexer_actor = indexer_actor  # Reference to the remote actor
@@ -39,8 +42,15 @@ class VDBProxy:
 
 # load config
 config = load_config()
+
 # Initialize components once
-indexer = Indexer.remote(config, logger)
+local_deployment = config.ray["local_deployment"]
+
+if local_deployment:
+    indexer = Indexer.remote(config, logger)
+else:
+    indexer = IndexerForDeployment()
+
 vectordb: ABCVectorDB = VDBProxy(
     indexer_actor=indexer
 )  # vectordb is not of type ABCVectorDB, but it mimics it

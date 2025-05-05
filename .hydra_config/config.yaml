@@ -3,30 +3,49 @@ defaults:
   - chunker: recursive_splitter #semantic_splitter
   - retriever: multiQuery
   - rag: ChatBotRag
-  - llm: qwen
+
+llm_params: &llm_params
+  temperature: 0.3
+  timeout: 60
+  max_retries: 2
+  logprobs: true
+
+llm:
+  <<: *llm_params
+  base_url: ${oc.env:BASE_URL}
+  model: ${oc.env:MODEL}
+  api_key: ${oc.env:API_KEY}
+
+vlm:
+  <<: *llm_params
+  base_url: ${oc.env:VLM_BASE_URL}
+  model: ${oc.env:VLM_MODEL}  
+  api_key: ${oc.env:VLM_API_KEY}
+
+semaphore:
+  llm_semaphore: ${oc.decode:${oc.env:LLM_SEMAPHORE, 10}}
+  vlm_semaphore: ${oc.decode:${oc.env:VLM_SEMAPHORE, 10}}
 
 embedder:
   type: huggingface
-  model_name: HIT-TMG/KaLM-embedding-multilingual-mini-v1
+  model_name: ${oc.env:EMBEDDER_MODEL_NAME, HIT-TMG/KaLM-embedding-multilingual-mini-v1}
   
 vectordb:
   host: ${oc.env:VDB_HOST, milvus}
-  port: ${oc.env:VDB_PORT, 19530}
+  port: ${oc.env:VDB_iPORT, 19530}
   connector_name: ${oc.env:VDB_CONNECTOR_NAME, milvus}
-  collection_name: vdb_test
+  collection_name: vdb_test 
   hybrid_mode: true
   enable: true
 
-insertion:
-  n_concurrent_loading: 2 # Number of concurrent loading operations (2-3 is recommended, knowing that some loaders use gpu)
-  n_concurrent_chunking: 2 # Number of concurrent chunking operations
-
 reranker:
-  model_name: jinaai/jina-colbert-v2
-  top_k: 4 # 8
+  enable: ${oc.decode:${oc.env:RERANKER_ENABLED, true}}
+  model_name: ${oc.env:RERANKER_MODEL, jinaai/jina-colbert-v2}
+  reranker_type: ${oc.decode:${oc.env:RERANKER_MODEL_TYPE, colbert}}
+  top_k: ${oc.decode:${oc.env:RERANKER_TOP_K, 4}}
 
 grader:
-  grade_documents: false
+  enable: false
 
 verbose:
   verbose: true
@@ -35,20 +54,33 @@ verbose:
 paths:
   prompts_dir: ${oc.env:PROMPTS_DIR, ../prompts}
   data_dir: ${oc.env:DATA_DIR, ../data}
+  volumes_dir: /app/volumes
+
 
 prompt:
   rag_sys_pmpt: rag_sys_prompt_template.txt # rag_sys_pmpt_tmpl_ifa.txt
-  context_pmpt_tmpl: contextualize_prompt_template.txt
+  contextualizer_pmpt: contextualizer_pmpt.txt
 
 loader:
   image_captioning: true
+  audio_model: ${oc.env:WHISPER_MODEL, base}
   file_loaders:
     docx: MarkItDownLoader
-    pdf: DoclingLoader # MarkerLoader
+    pdf: ${oc.env:PDFLoader, DoclingLoader}  # DoclingLoader # MarkerLoader # CustomPyMuPDFLoader # Custompymupdf4llm
     doc: DocLoader
     pptx: PPTXLoader
-    # txt: TextLoader
+    txt: TextLoader
+    wav: VideoAudioLoader
+    mp3: VideoAudioLoader
+    mp4: VideoAudioLoader
+    ogg: VideoAudioLoader
+    flv: VideoAudioLoader
+    wma: VideoAudioLoader
+    aac: VideoAudioLoader
     # odt: CustomDocLoader
 
-semaphore:
-  llm_semaphore: ${oc.decode:${oc.env:LLM_SEMAPHORE, 10}}
+ray:
+  num_cpus: ${oc.decode:${oc.env:RAY_NUM_CPUS, 4}}
+  num_gpus: ${oc.decode:${oc.env:RAY_NUM_GPUS, 1}}
+  local_deployment: ${oc.decode:${oc.env:LOCAL_DEPLOYMENT, true}} # set false for cluster deployment
+  n_parallel_indexation: ${oc.decode:${oc.env:N_PARALLEL_INDEXATION, 2}}

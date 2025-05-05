@@ -1,6 +1,7 @@
 import json
 from pathlib import Path
 from typing import Any, Optional
+import re
 
 import ray
 from config.config import load_config
@@ -23,17 +24,63 @@ from utils.dependencies import Indexer, get_indexer, vectordb
 # load config
 config = load_config()
 DATA_DIR = config.paths.data_dir
+ACCEPTED_FILE_FORMATS = dict(config.loader["file_loaders"]).keys()
+FORBIDDEN_CHARS_IN_FILE_ID = set("/")  # set('"<>#%{}|\\^`[]')
+
+
 # Create an APIRouter instance
 router = APIRouter()
+
+
+def is_file_id_valid(file_id: str) -> bool:
+    return not any(c in file_id for c in FORBIDDEN_CHARS_IN_FILE_ID)
+
+
+async def validate_file_id(file_id: str):
+    if not is_file_id_valid(file_id):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"File ID contains forbidden characters: {', '.join(FORBIDDEN_CHARS_IN_FILE_ID)}",
+        )
+
+    if not file_id.strip():
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="File ID cannot be empty."
+        )
+    return file_id
+
+
+async def validate_file_format(file: UploadFile):
+    file_extension = (
+        file.filename.split(".")[-1].lower() if "." in file.filename else ""
+    )
+    if file_extension not in ACCEPTED_FILE_FORMATS:
+        raise HTTPException(
+            status_code=status.HTTP_415_UNSUPPORTED_MEDIA_TYPE,
+            detail=f"Unsupported file format: {file_extension}. Supported formats are: {', '.join(ACCEPTED_FILE_FORMATS)}",
+        )
+
+    return file
+
+
+async def validate_metadata(metadata: Optional[Any] = Form(None)):
+    try:
+        processed_metadata = metadata or "{}"
+        processed_metadata = json.loads(processed_metadata)
+        return processed_metadata
+    except json.JSONDecodeError:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid JSON in metadata"
+        )
 
 
 @router.post("/partition/{partition}/file/{file_id}")
 async def add_file(
     request: Request,
     partition: str,
-    file_id: str,
-    file: UploadFile = File(...),
-    metadata: Optional[Any] = Form(None),
+    file_id: str = Depends(validate_file_id),
+    file: UploadFile = Depends(validate_file_format),
+    metadata: dict = Depends(validate_metadata),
     indexer: Indexer = Depends(get_indexer),
 ):
     # Check if file exists
@@ -41,19 +88,6 @@ async def add_file(
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
             detail=f"File '{file_id}' already exists in partition {partition}",
-        )
-    # Load metadata
-    try:
-        metadata = metadata or "{}"
-        metadata = json.loads(metadata)
-    except json.JSONDecodeError:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid JSON in metadata"
-        )
-    if not isinstance(metadata, dict):
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Metadata must be a dictionary",
         )
 
     # Add file_id to metadata
@@ -65,6 +99,8 @@ async def add_file(
 
     # Save the uploaded file
     file_path = save_dir / Path(file.filename).name
+
+    metadata.update({"source": str(file_path), "filename": file.filename})
     logger.info(f"Processing file: {file.filename} and saving to {file_path}")
     try:
         with open(file_path, "wb") as buffer:
@@ -80,6 +116,7 @@ async def add_file(
         task = indexer.add_file.remote(
             path=file_path, metadata=metadata, partition=partition
         )
+        # TODO: More specific errors with details and appropriate error codes
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -124,9 +161,9 @@ async def delete_file(
 async def put_file(
     request: Request,
     partition: str,
-    file_id: str,
-    file: UploadFile = File(...),
-    metadata: Optional[Any] = Form(None),
+    file_id: str = Depends(validate_file_id),
+    file: UploadFile = Depends(validate_file_format),
+    metadata: dict = Depends(validate_metadata),
     indexer: Indexer = Depends(get_indexer),
 ):
     # Validate file existence
@@ -144,18 +181,6 @@ async def put_file(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to delete existing file: {str(e)}",
-        )
-
-    # Parse metadata
-    try:
-        metadata = metadata or "{}"
-        metadata = json.loads(metadata)
-        if not isinstance(metadata, dict):
-            raise ValueError("Metadata is not a dictionary.")
-    except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Invalid metadata: {str(e)}",
         )
 
     metadata["file_id"] = file_id
@@ -199,8 +224,8 @@ async def put_file(
 @router.patch("/partition/{partition}/file/{file_id}")
 async def patch_file(
     partition: str,
-    file_id: str,
-    metadata: Optional[Any] = Form(None),
+    file_id: str = Depends(validate_file_id),
+    metadata: Optional[Any] = Depends(validate_metadata),
     indexer: Indexer = Depends(get_indexer),
 ):
     # Check if file exists
@@ -208,18 +233,6 @@ async def patch_file(
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"File '{file_id}' not found in partition '{partition}'.",
-        )
-
-    # Parse metadata
-    try:
-        metadata = metadata or "{}"
-        metadata = json.loads(metadata)
-        if not isinstance(metadata, dict):
-            raise ValueError("Metadata must be a JSON object.")
-    except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Invalid metadata: {str(e)}",
         )
 
     metadata["file_id"] = file_id
@@ -241,64 +254,17 @@ async def patch_file(
 
 @router.get("/task/{task_id}")
 async def get_task_status(task_id: str, indexer: Indexer = Depends(get_indexer)):
-    task = get_task(task_id)
+    try:
+        task = get_task(task_id)
+    except Exception as e:
+        logger.debug(f"Error in `get_task_status`: {e}")
+        task = None
 
     if task is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail=f"Task '{task_id}' not found."
         )
-
     return JSONResponse(
         status_code=status.HTTP_200_OK,
         content={"task_id": task_id, "task_state": task.state},
     )
-
-
-@router.post("/sync-db", response_model=None)
-async def sync_db(indexer: Indexer = Depends(get_indexer)):
-    try:
-        data_dir = Path(DATA_DIR)
-        if not data_dir.exists():
-            raise HTTPException(status_code=400, detail="DATA_DIR does not exist")
-
-        sync_summary = {}
-
-        for collection_path in data_dir.iterdir():
-            if collection_path.is_dir():  # Ensure it's a collection folder
-                collection_name = collection_path.name
-                up_to_date_files = []
-                missing_files = []
-
-                for file_path in collection_path.iterdir():
-                    if file_path.is_file() and file_path.suffix != ".md":
-                        if vectordb.file_exists(file_path.name, collection_name):
-                            up_to_date_files.append(file_path.name)
-                        else:
-                            missing_files.append(file_path.name)
-                            await indexer.add_files(
-                                path=file_path,
-                                metadata={},
-                                collection_name=collection_name,
-                            )
-
-                if not missing_files:
-                    logger.info(
-                        f"Collection '{collection_name}' is already up to date."
-                    )
-                else:
-                    logger.info(
-                        f"Collection '{collection_name}' updated. Added files: {missing_files}"
-                    )
-
-                sync_summary[collection_name] = {
-                    "up_to_date": up_to_date_files,
-                    "added": missing_files,
-                }
-
-        return JSONResponse(
-            content={"message": "Database sync completed.", "details": sync_summary},
-            status_code=200,
-        )
-
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))

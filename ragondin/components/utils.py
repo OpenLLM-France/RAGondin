@@ -3,12 +3,9 @@ import atexit
 import threading
 from abc import ABCMeta
 from pathlib import Path
-
 from config.config import load_config
 from langchain_core.documents.base import Document
 import ray
-
-config = load_config()
 
 
 class SingletonMeta(type):
@@ -130,18 +127,17 @@ def format_context(docs: list[Document]) -> str:
         content: \n{doc.page_content.strip()}\n
         """
 
-        # document = (f"""<chunk document_id={doc_id}>\n{doc.page_content.strip()}\n</chunk>\n""")
-        # Source: {source} (Page: {page})
-
         context += document
         context += "-" * 40 + "\n\n"
 
         sources.append(
             {
                 "doc_id": doc_id,
+                "_id": doc.metadata["_id"],
                 "source": doc.metadata["source"],
-                "sub_url_path": doc.metadata["sub_url_path"],
+                "filename": doc.metadata["filename"],
                 "page": doc.metadata["page"],
+                'partition': doc.metadata['partition'],
                 "content": doc.page_content,
             }
         )
@@ -149,5 +145,12 @@ def format_context(docs: list[Document]) -> str:
 
 
 # Global variables
+config = load_config()
+
 # llmSemaphore = LLMSemaphore(max_concurrent_ops=config.semaphore.llm_semaphore)
-llmSemaphore = DistributedSemaphore(max_concurrent_ops=config.semaphore.llm_semaphore)
+llmSemaphore = DistributedSemaphore(
+    name="llmSemaphore", max_concurrent_ops=config.semaphore.llm_semaphore
+)
+vlmSemaphore = DistributedSemaphore(
+    name="vlmSemaphore", max_concurrent_ops=config.semaphore.vlm_semaphore
+)
