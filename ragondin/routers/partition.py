@@ -78,6 +78,35 @@ async def list_files(
     return JSONResponse(status_code=status.HTTP_200_OK, content={"files": files})
 
 
+@router.get("/{partition}/sample")
+async def sample_chunks(
+    request: Request, partition: str, n_ids: int = 200, seed: int | None = None
+):
+    # Check if partition exists
+    if not vectordb.partition_exists(partition):
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Partition '{partition}' not found.",
+        )
+
+    try:
+        list_ids = vectordb.sample_chunk_ids(
+            partition=partition, n_ids=n_ids, seed=seed
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e)
+        )
+
+    chunks = [
+        {"link": str(request.url_for("get_extract", extract_id=id))} for id in list_ids
+    ]
+
+    return JSONResponse(status_code=status.HTTP_200_OK, content={"chunk_urls": chunks})
+
+
 @router.get("/check-file/{partition}/file/{file_id}")
 async def check_file_exists_in_partition(
     request: Request,

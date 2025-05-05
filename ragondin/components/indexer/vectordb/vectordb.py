@@ -9,6 +9,7 @@ from langchain_qdrant import FastEmbedSparse, QdrantVectorStore, RetrievalMode
 from pymilvus import MilvusClient
 from qdrant_client import QdrantClient, models
 from .utils import PartitionFileManager
+import random
 
 INDEX_PARAMS = [
     {
@@ -70,6 +71,12 @@ class ABCVectorDB(ABC):
 
     @abstractmethod
     def collection_exists(self, collection_name: str):
+        pass
+
+    @abstractmethod
+    def sample_chunk_ids(
+        self, partition: str, n_ids: int = 100, seed: int | None = None
+    ):
         pass
 
 
@@ -556,6 +563,52 @@ class MilvusDB(ABCVectorDB):
                 f"Error in `partition_exists` for partition {partition}: {e}"
             )
             return False
+
+    def sample_chunk_ids(
+        self, partition: str, n_ids: int = 100, seed: int | None = None
+    ):
+        """
+        Sample chunk IDs from a given partition."""
+
+        try:
+            if not self.partition_file_manager.partition_exists(partition):
+                return []
+
+            file_ids = self.partition_file_manager.sample_file_ids(
+                partition=partition, n_file_id=10_000
+            )
+            if not file_ids:
+                return []
+
+            # Create a filter expression for the query
+            filter_expression = f"partition == '{partition}' and file_id in {file_ids}"
+
+            ids = []
+            iterator = self.client.query_iterator(
+                collection_name=self.collection_name,
+                filter=filter_expression,
+                batch_size=16000,
+                output_fields=["_id"],
+            )
+
+            ids = []
+            while True:
+                result = iterator.next()
+                if not result:
+                    iterator.close()
+                    break
+
+                ids.extend([res["_id"] for res in result])
+
+            random.seed(seed)
+            sampled_ids = random.sample(ids, min(n_ids, len(ids)))
+            return sampled_ids
+
+        except Exception as e:
+            self.logger.error(
+                f"Error in `sample_chunks` for partition {partition}: {e}"
+            )
+            raise e
 
 
 class QdrantDB(ABCVectorDB):

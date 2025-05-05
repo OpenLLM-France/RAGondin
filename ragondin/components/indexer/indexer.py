@@ -195,6 +195,9 @@ class Indexer(metaclass=SingletonMeta):
     def delete_partition(self, partition: str):
         return self.vectordb.delete_partition(partition)
 
+    def sample_chunk_ids(self, partition: str, n_ids: int = 100):
+        return self.vectordb.sample_chunk_ids(partition=partition, n_ids=n_ids)
+
     def _check_partition_list(self, partition: Optional[str]):
         if partition is None:
             self.logger.warning("Partition not provided. Using default partition.")
