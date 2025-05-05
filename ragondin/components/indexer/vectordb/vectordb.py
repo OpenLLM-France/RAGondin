@@ -10,6 +10,7 @@ from pymilvus import MilvusClient
 from qdrant_client import QdrantClient, models
 from .utils import PartitionFileManager
 import random
+import hashlib
 
 INDEX_PARAMS = [
     {
@@ -175,7 +176,7 @@ class MilvusDB(ABCVectorDB):
             connection_args={"uri": self.uri},
             collection_name=name,
             embedding_function=self.embeddings,
-            auto_id=True,
+            # auto_id=True,
             index_params=self.index_params,
             primary_field="_id",
             enable_dynamic_field=True,
@@ -327,7 +328,21 @@ class MilvusDB(ABCVectorDB):
                     f"No Insertion: This File ({file_id}) already exists in Partition ({partition})"
                 )
 
-        await self.vector_store.aadd_documents(chunks)
+        chunk_ids = []
+        for c in chunks:
+            if "=> chunk: \n" in c.page_content:
+                txt = c.page_content.split("=> chunk: \n")[-1]
+            else:
+                txt = c.page_content
+
+            # convert txt to hexadecimal
+            chunk_id = hashlib.sha256(txt.encode()).hexdigest()
+            chunk_id = int(chunk_id, 16) % (10**18)
+            chunk_ids.append(str(chunk_id))
+
+        self.logger.info(f"CHUNK IDs: {chunk_ids}")
+
+        await self.vector_store.aadd_documents(chunks, ids=chunk_ids)
 
         for partition, file_id in partition_file_list:
             self.partition_file_manager.add_file_to_partition(
@@ -448,7 +463,7 @@ class MilvusDB(ABCVectorDB):
         try:
             response = self.client.query(
                 collection_name=self.collection_name,
-                filter=f"_id == {chunk_id}",
+                filter=f"_id == '{chunk_id}'",
                 limit=1,
             )
             if response:
