@@ -65,7 +65,6 @@ async def search_one_partition(
     except Exception as e:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
 
-    logger.debug(f"Chunks result: {results}")
     documents = [
         {
             "link": str(

@@ -27,7 +27,7 @@ async def retrieve_docs(entry, semaphore=asyncio.Semaphore(5)):
     async with semaphore:
         file_name = entry["file"]
         question = entry["question"]
-        relevant_docs = entry["relevant chunk"]
+        relevant_docs = entry["relevant_chunk"]
 
         response_chunks_id = [relevant_docs[i]["id"] for i in range(len(relevant_docs))]
 
@@ -59,7 +59,7 @@ async def retrieve_docs(entry, semaphore=asyncio.Semaphore(5)):
 
 
 async def main():
-    out_file = "./evaluation-embedder-reranker/complete_dataset_v2.json"
+    out_file = "./output/question_and_chunks.json"
 
     json_file = open(out_file, "r", encoding="utf-8")
     list_questions = json.load(json_file)
