@@ -11,6 +11,7 @@ import httpx
 from pydantic import BaseModel, Field
 from typing import Literal
 from loguru import logger
+from tenacity import retry, stop_after_attempt, wait_fixed
 
 settings = {
     "temperature": 0.2,
@@ -21,7 +22,7 @@ settings = {
     "base_url": "https://chat.lucie.ovh.linagora.com/v1",
 }
 
-endpoint_base_url = f"http://163.114.159.151:8080"
+endpoint_base_url = "http://163.114.159.151:8087"
 
 sys_pmpt = """Tu es un expert en évaluation de la pertinence des documents. Ta tâche consiste à évaluer les documents par rapport à une question posée par l'utilisateur"""
 
@@ -87,9 +88,9 @@ async def get_relevant_chunks(
 
     return relevant_chunks, all_retrieved_chunks
 
-
+@retry(stop=stop_after_attempt(3), wait=wait_fixed(2))
 async def fetch_chunk(chunk_url):
-    async with httpx.AsyncClient(timeout=httpx.Timeout(4 * 10)) as client:
+    async with httpx.AsyncClient(timeout=httpx.Timeout(10 * 60)) as client:
         response = await client.get(chunk_url)
         response.raise_for_status()  # raises exception for 4xx/5xx responses
         data = response.json()
@@ -106,7 +107,7 @@ async def __get_relevant_chunks(
     try:
         query = entry["question"]
         async with question_semaphore:
-            async with httpx.AsyncClient(timeout=httpx.Timeout(4 * 60)) as client:
+            async with httpx.AsyncClient(timeout=httpx.Timeout(10 * 60), http2=True) as client:
                 res = await client.get(
                     url=f"{endpoint_base_url}/search/partition/{partition}",
                     params={
@@ -127,8 +128,17 @@ async def __get_relevant_chunks(
         relevant_chunks, all_retrieved_chunks = await get_relevant_chunks(
             query, chunks, llm_semaphore=llm_semaphore
         )
-        entry["relevant_chunks"] = relevant_chunks
-        entry["all_retrieved_chunks"] = all_retrieved_chunks
+        entry["relevant chunks"] = relevant_chunks
+        entry["all retrieved chunks"] = all_retrieved_chunks
+
+        list_chunks_id = [chunk["id"] for chunk in all_retrieved_chunks]
+        list_file_name = [chunk["filename"] for chunk in all_retrieved_chunks]
+        list_file_content = [chunk["content"] for chunk in all_retrieved_chunks]
+        entry["reranker's input"] = {
+                "chunks id": list_chunks_id,
+                "file name": list_file_name,
+                "file content": list_file_content
+            }
         return entry
 
     except Exception as e:
@@ -163,9 +173,8 @@ async def main():
     question_relevant_chunks = await tqdm.gather(
         *tasks, desc="Getting relevant chunks for questions", total=len(tasks)
     )
-
     question_relevant_chunks = [
-        entry for entry in question_relevant_chunks if entry["relevant_chunks"]
+        entry for entry in question_relevant_chunks if entry is not None and entry["relevant chunks"]
     ]
 
     with open(output_file, "w", encoding="utf-8") as json_file:

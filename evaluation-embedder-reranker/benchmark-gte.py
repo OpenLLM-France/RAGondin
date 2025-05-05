@@ -72,7 +72,7 @@ async def retrieve_docs(entry, semaphore=asyncio.Semaphore(5)):
 
 
 async def main():
-    out_file = "./evaluation-embedder-reranker/complete_dataset_v2.json"
+    out_file = "./output/question_and_chunks.json"
 
     json_file = open(out_file, "r", encoding="utf-8")
     list_questions = json.load(json_file)
