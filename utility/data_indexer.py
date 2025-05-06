@@ -3,7 +3,7 @@ from loguru import logger
 from pathlib import Path
 import uuid
 
-base_url = "https://demo-ragondin.linagora.com"  # the base url of your running app
+base_url = ...  # the base url of your running app for instance: 'http://localhost:8080'
 
 dir_name = "../data2/tuto2"  # Replace with your directory path
 dir_path = Path(dir_name).resolve()
