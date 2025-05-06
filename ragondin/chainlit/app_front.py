@@ -66,7 +66,7 @@ async def on_chat_start():
     chat_profile = cl.user_session.get("chat_profile")
     settings = {
         "model": chat_profile,
-        "temperature": 0,
+        "temperature": 0.0,
         "stream": True,
     }
 
