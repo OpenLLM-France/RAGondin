@@ -22,12 +22,11 @@ def get_app_state(request: Request):
     return request.app.state.app_state
 
 
-async def validate_llm_models(request: Request):
+async def check_llm_model_availability(request: Request):
     models = {"VLM": config.llm, "LLM": config.vlm}
     for model_type, param in models.items():
         try:
             client = AsyncOpenAI(api_key=param["api_key"], base_url=param["base_url"])
-            logger.info(f"base _url: {param}")
             openai_models = await client.models.list()
             available_models = {m.id for m in openai_models.data}
             if param["model"] not in available_models:
@@ -44,7 +43,7 @@ async def validate_llm_models(request: Request):
 
 @router.get("/models", summary="OpenAI-compatible model listing endpoint")
 async def list_models(
-    app_state=Depends(get_app_state), _: None = Depends(validate_llm_models)
+    app_state=Depends(get_app_state), _: None = Depends(check_llm_model_availability)
 ):
     # Get available partitions from your backend
     partitions = app_state.vectordb.list_partitions()
@@ -74,11 +73,15 @@ async def list_models(
 
 def __get_partition_name(model_name, app_state):
     if not model_name.startswith("ragondin-"):
-        raise HTTPException(status_code=404, detail="Model not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Model not found"
+        )
 
     partition = model_name.split("ragondin-")[1]
     if partition != "all" and not app_state.vectordb.partition_exists(partition):
-        raise HTTPException(status_code=404, detail="Model not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Model not found"
+        )
 
     return partition
 
@@ -112,13 +115,15 @@ async def openai_chat_completion(
     request2: Request,
     request: OpenAIChatCompletionRequest = Body(...),
     app_state=Depends(get_app_state),
+    _: None = Depends(check_llm_model_availability),
 ):
     # TODO: Better handle error
     try:
         # Get the last user message
         if not request.messages:
             raise HTTPException(
-                status_code=400, detail="At least one user message is required"
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="At least one user message is required",
             )
         if not request.messages[-1].role == "user":
             raise HTTPException(
@@ -162,9 +167,19 @@ async def openai_chat_completion(
                     content=chunk, headers={"X-Metadata-Sources": json.dumps(metadata)}
                 )
             except StopAsyncIteration:
-                raise HTTPException(status_code=500, detail="No response from LLM")
+                err_str = "No response from LLM"
+                logger.debug(err_str)
+                raise HTTPException(
+                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                    detail=err_str,
+                )
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error: {str(e)}")
+        err_str = f"Error: {str(e)}"
+        logger.debug(err_str)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=err_str,
+        )
 
 
 @router.post("/completions", summary="OpenAI compatible completion endpoint using RAG")
@@ -172,23 +187,31 @@ async def openai_completion(
     request2: Request,
     request: OpenAICompletionRequest,
     app_state=Depends(get_app_state),
+    _: None = Depends(check_llm_model_availability),
 ):
     # Get the last user message
     if not request.prompt:
-        raise HTTPException(status_code=400, detail="tThe prompt is required")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="tThe prompt is required"
+        )
 
     if request.stream:
         raise HTTPException(
-            status_code=400, detail="Streaming is not supported for this endpoint"
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Streaming is not supported for this endpoint",
         )
 
     # Load model name and partition
     model_name = request.model
     if not model_name.startswith("ragondin-"):
-        raise HTTPException(status_code=404, detail="Model not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Model not found"
+        )
     partition = model_name.split("ragondin-")[1]
     if partition != "all" and not app_state.vectordb.partition_exists(partition):
-        raise HTTPException(status_code=404, detail="Model not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Model not found"
+        )
     # Run RAG pipeline
     llm_output, _, sources = await app_state.ragpipe.completions(
         partition=[partition], payload=request.model_dump()
@@ -204,4 +227,7 @@ async def openai_completion(
             headers={"X-Metadata-Sources": json.dumps(metadata)},
         )
     except StopAsyncIteration:
-        raise HTTPException(status_code=500, detail="No response from LLM")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="No response from LLM",
+        )
