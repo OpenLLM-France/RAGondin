@@ -11,7 +11,7 @@ evaluate_with_reranking = True
 # model_name = "jinaai/jina-colbert-v2"
 # reranker_type = "colbert"
 
-model_name = "jinaai/jina-reranker-v2-base-multilingual"
+model_name = "Alibaba-NLP/gte-multilingual-reranker-base"
 reranker_type = "crossencoder"
 
 reranker = Reranker(reranker_type=reranker_type, model_name=model_name)
@@ -48,7 +48,7 @@ def compute_inverted_ranks(relevant_chunks, all_retrieved_chunks):
 
 
 # load json file
-path = "./output/question_and_chunks.json"
+path = "./output/retrieved_chunks_gte_Qwen2.json"
 with open(path, "r", encoding="utf-8") as json_file:
     question_relevant_chunks = json.load(json_file)
 
@@ -66,7 +66,7 @@ for row in tqdm(question_relevant_chunks, desc="Computing metrics"):
 
     if evaluate_with_reranking:
         all_retrieved_chunks = reranker.rerank(
-            query=question, chunks=all_retrieved_chunks, top_k=len(all_retrieved_chunks)
+            query=question, chunks=all_retrieved_chunks, top_k=5
         )
     HITS.extend(compute_hits(relevant_chunks, all_retrieved_chunks))
     INVERTED_RANKS.extend(compute_inverted_ranks(relevant_chunks, all_retrieved_chunks))
