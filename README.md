@@ -286,13 +286,6 @@ This FastAPI-powered backend offers capabilities for document-based question ans
 
 ---
 
-#### 🔍 LLM Calls
-
-**`POST /{partition}/generate`**  
-Generates an answer to a user’s input based on a chat history and a document corpus in a given partition. Supports asynchronous streaming response.
-
----
-
 #### 📦 Indexer
 
 **`POST /indexer/partition/{partition}/file/{file_id}`**  
