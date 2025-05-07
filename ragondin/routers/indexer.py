@@ -20,6 +20,7 @@ from fastapi.responses import JSONResponse
 from loguru import logger
 from ray.util.state import get_task
 from utils.dependencies import Indexer, get_indexer, vectordb
+from loguru import logger
 
 # load config
 config = load_config()
@@ -106,9 +107,11 @@ async def add_file(
         with open(file_path, "wb") as buffer:
             buffer.write(await file.read())
     except Exception as e:
+        err_str = f"Failed to save file: {str(e)}"
+        logger.debug(err_str)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to save file: {str(e)}",
+            detail=err_str,
         )
 
     # Queue the file for indexing
@@ -118,9 +121,11 @@ async def add_file(
         )
         # TODO: More specific errors with details and appropriate error codes
     except Exception as e:
+        err_str = f"Indexing error: {str(e)}"
+        logger.debug(err_str)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Indexing error: {str(e)}",
+            detail=err_str,
         )
 
     return JSONResponse(
@@ -143,9 +148,11 @@ async def delete_file(
     try:
         deleted = ray.get(indexer.delete_file.remote(file_id, partition))
     except Exception as e:
+        err_str = f"Error while deleting file '{file_id}': {str(e)}"
+        logger.debug(err_str)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Error while deleting file '{file_id}': {str(e)}",
+            detail=err_str,
         )
 
     if not deleted:
@@ -178,9 +185,11 @@ async def put_file(
         ray.get(indexer.delete_file.remote(file_id, partition))
         logger.info(f"File {file_id} deleted.")
     except Exception as e:
+        err_str = f"Failed to delete existing file: {str(e)}"
+        logger.debug(err_str)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to delete existing file: {str(e)}",
+            detail=err_str,
         )
 
     metadata["file_id"] = file_id
@@ -195,9 +204,11 @@ async def put_file(
         with open(file_path, "wb") as buffer:
             buffer.write(await file.read())
     except Exception as e:
+        err_str = f"Failed to save file: {str(e)}"
+        logger.debug(err_str)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to save file: {str(e)}",
+            detail=err_str,
         )
 
     # Queue indexing task
@@ -206,9 +217,11 @@ async def put_file(
             path=file_path, metadata=metadata, partition=partition
         )
     except Exception as e:
+        err_str = f"Indexing error: {str(e)}"
+        logger.debug(err_str)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Indexing error: {str(e)}",
+            detail=err_str,
         )
 
     return JSONResponse(
@@ -241,9 +254,11 @@ async def patch_file(
     try:
         ray.get(indexer.update_file_metadata.remote(file_id, metadata, partition))
     except Exception as e:
+        err_str = f"Failed to update metadata: {str(e)}"
+        logger.debug(err_str)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to update metadata: {str(e)}",
+            detail=err_str,
         )
 
     return JSONResponse(
