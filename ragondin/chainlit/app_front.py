@@ -97,6 +97,9 @@ async def __fetch_page_content(chunk_url):
 
 
 async def __format_sources(metadata_sources, only_txt=False):
+    if not metadata_sources:
+        return None, None
+
     elements = []
     source_names = []
     for s in metadata_sources:
@@ -153,12 +156,16 @@ async def on_message(message: cl.Message):
                 headers=headers,
                 json=payload,
             ) as resp:
-                metadata_sources = json.loads(resp.headers.get("X-Metadata-Sources"))
-                if metadata_sources:
-                    elements, source_names = await __format_sources(metadata_sources)
-                    msg = cl.Message(content="", elements=elements)
-                else:
-                    msg = cl.Message(content="")
+                try:
+                    metadata = resp.headers.get("X-Metadata-Sources")
+                    logger.debug(f"Metadata: {metadata}")
+                    metadata_sources = json.loads(metadata)
+                except Exception as e:
+                    metadata_sources = None
+                    pass
+
+                elements, source_names = await __format_sources(metadata_sources)
+                msg = cl.Message(content="", elements=elements)
 
                 # STREAM Response
                 await msg.send()
@@ -188,9 +195,10 @@ async def on_message(message: cl.Message):
                 cl.user_session.set("messages", messages)
 
                 # Show sources
-                s = "\n\n" + "-" * 50 + "\n\nSources: \n" + "\n".join(source_names)
-                await msg.stream_token(s)
-                await msg.update()
+                if source_names:
+                    s = "\n\n" + "-" * 50 + "\n\nSources: \n" + "\n".join(source_names)
+                    await msg.stream_token(s)
+                    await msg.update()
 
 
 if __name__ == "__main__":
