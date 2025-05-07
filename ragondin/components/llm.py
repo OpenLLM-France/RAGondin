@@ -21,7 +21,7 @@ class LLM:
         payload = copy.deepcopy(self.default_llm_config)
         payload.update(request)
 
-        timeout = httpx.Timeout(4 * 10)
+        timeout = httpx.Timeout(18 * 10)
         async with httpx.AsyncClient(timeout=timeout) as client:
             response = await client.post(
                 url=f"{self._base_url}completions", headers=self.headers, json=payload
