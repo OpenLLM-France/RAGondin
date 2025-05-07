@@ -5,7 +5,7 @@ defaults:
   - rag: ChatBotRag
 
 llm_params: &llm_params
-  temperature: 0.3
+  temperature: 0.1
   timeout: 60
   max_retries: 2
   logprobs: true

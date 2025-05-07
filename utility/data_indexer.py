@@ -3,12 +3,10 @@ from loguru import logger
 from pathlib import Path
 import uuid
 
-base_url = "http://localhost:8080"  # the base url of your running app
+base_url = ...  # the base url of your running app for instance: 'http://localhost:8080'
 
-dir_name = "../data2/S2_RAG/Sources RAG"  # Replace with your directory path
+dir_name = "../data2/tuto2"  # Replace with your directory path
 dir_path = Path(dir_name).resolve()
-
-partition = input("Write the name of your partition: ")
 
 
 def __check_api(base_url):
@@ -23,6 +21,9 @@ def __check_api(base_url):
 
 
 __check_api(base_url)
+
+partition = input("Write the name of your partition: ")
+
 
 print(dir_path.is_dir())
 
