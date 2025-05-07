@@ -257,7 +257,7 @@ async def get_task_status(task_id: str, indexer: Indexer = Depends(get_indexer))
     try:
         task = get_task(task_id)
     except Exception as e:
-        logger.debug(f"Error in `get_task_status`: {e}")
+        logger.warning(f"Task {task_id} not found.")
         task = None
 
     if task is None:
