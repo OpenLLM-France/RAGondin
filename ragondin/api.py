@@ -69,9 +69,10 @@ security = HTTPBearer()
 
 # Dependency to verify token
 def verify_token(credentials: HTTPAuthorizationCredentials = Depends(security)):
+    token = credentials.credentials
     if AUTH_TOKEN is None:
         return  # Auth disabled
-    if credentials.credentials != AUTH_TOKEN:
+    if token != AUTH_TOKEN:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN, detail="Invalid or missing token"
         )
@@ -94,8 +95,13 @@ async def health_check(request: Request):
     return "RAG API is up."
 
 
-# Mount the default front
-mount_chainlit(app, "./chainlit/app_front.py", path="/chainlit")
+ONLY_SEARCH_AND_INDEXER_API: Optional[bool] = os.getenv(
+    "ONLY_SEARCH_AND_INDEXER_API", False
+)
+
+if not ONLY_SEARCH_AND_INDEXER_API:
+    # Mount the default front
+    mount_chainlit(app, "./chainlit/app_front.py", path="/chainlit")
 
 # Mount the indexer router
 app.include_router(indexer_router, prefix="/indexer", tags=[Tags.INDEXER])
@@ -105,8 +111,10 @@ app.include_router(extract_router, prefix="/extract", tags=[Tags.EXTRACT])
 app.include_router(search_router, prefix="/search", tags=[Tags.SEARCH])
 # Mount the partition router
 app.include_router(partition_router, prefix="/partition", tags=[Tags.PARTITION])
-# Mount the openai router
-app.include_router(openai_router, prefix="/v1", tags=[Tags.OPENAI])
+
+if not ONLY_SEARCH_AND_INDEXER_API:
+    # Mount the openai router
+    app.include_router(openai_router, prefix="/v1", tags=[Tags.OPENAI])
 
 
 if __name__ == "__main__":
