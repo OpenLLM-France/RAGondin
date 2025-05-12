@@ -34,11 +34,6 @@ class VideoAudioLoader(BaseLoader):
         model = kwargs.get("config").loader["audio_model"]
         self.transcriber = AudioTranscriber(device=device, model_name=model)
 
-    @classmethod
-    def destroy(cls):
-        if AudioTranscriber in SingletonMeta._instances:
-            del SingletonMeta._instances[AudioTranscriber]
-
     async def aload_document(self, file_path, metadata: dict = None, save_md=False):
         path = Path(file_path)
         if path.suffix not in self.formats:
