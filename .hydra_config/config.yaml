@@ -52,7 +52,7 @@ verbose:
   level: INFO
 
 paths:
-  prompts_dir: ${oc.env:PROMPTS_DIR, ../prompts}
+  prompts_dir: ${oc.env:PROMPTS_DIR, ../prompts/example3}
   data_dir: ${oc.env:DATA_DIR, ../data}
   volumes_dir: /app/volumes
 
