@@ -25,9 +25,6 @@ class MarkerLoader(BaseLoader):
         if self._started:
             await self.manager.shutdown()
             self._started = False
-
-    async def destroy(self):
-        await self.shutdown()
         
 
     async def aload_document(self, file_path, metadata: dict = None, save_md=False):

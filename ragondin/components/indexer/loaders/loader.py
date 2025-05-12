@@ -52,7 +52,7 @@ class DocSerializer:
         )
 
         if isinstance(loader, (MarkerLoader)):
-            await loader.destroy()
+            await loader.shutdown()
 
         del loader
 
