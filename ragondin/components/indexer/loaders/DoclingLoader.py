@@ -101,11 +101,6 @@ class DoclingLoader(BaseLoader):
         self.page_sep = page_sep
         self.converter = DoclingConverter()
 
-    @classmethod
-    def destroy(cls):
-        if DoclingConverter in SingletonMeta._instances:
-            del SingletonMeta._instances[DoclingConverter]
-
     async def aload_document(self, file_path, metadata, save_md=False):
         with torch.no_grad():
             result = await self.converter.convert_to_md(file_path)

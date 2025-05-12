@@ -51,8 +51,8 @@ class DocSerializer:
             file_path=path, metadata=metadata, save_md=False
         )
 
-        if isinstance(loader, (DoclingLoader, MarkerLoader, VideoAudioLoader)):
-            loader_cls.destroy()
+        if isinstance(loader, (MarkerLoader)):
+            await loader.shutdown()
 
         del loader
 
