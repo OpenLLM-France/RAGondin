@@ -21,12 +21,13 @@ settings = {
     "temperature": 0.2,
     "max_retries": 3,
     "timeout": 60,
-    "model": "Qwen2.5-VL-7B-Instruct",
+    "model": "Qwen2.5-VL-7B-Instruct", #Qwen
     "api_key": os.environ.get("VLM_API_KEY"),
     "base_url": os.environ.get("VLM_BASE_URL"),
 }
 
-sys_prompt = """Tu es un expert en génération de questions. Ta tâche consiste à générer une question pertinente qui pourrait être posée par un utilisateur et qui pourrait être répondue par le document donné"""
+sys_prompt = """Tu es un expert en génération de questions. Ta tâche consiste à générer une question pertinente qui pourrait être posée par un utilisateur et qui pourrait être répondue par le document donné
+ Mais la question doit etre aussi pouvoir etre répondue par un ou plusieurs autres documents"""
 sllm = ChatOpenAI(**settings).with_retry(stop_after_attempt=2)
 
 
@@ -104,7 +105,7 @@ async def main():
     llm_semaphore = asyncio.Semaphore(20)
     semaphore = asyncio.Semaphore(10)
 
-    ragondin_api_base_url = "http://163.114.159.151:8080"
+    ragondin_api_base_url = "http://163.114.159.68:8085"
     n_chunks_for_evaluation = 300
 
     chunk_urls = await sample_chunk_links_for_evaluation(

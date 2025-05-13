@@ -60,7 +60,7 @@ async def infer_chunk_relevancy(
             return chunk
         except Exception as e:
             logger.debug(f"Error in `infer_chunk_relevancy`: {e}")
-            chunk["relevancy"] = output.relevancy
+            chunk["relevancy"] = "non"
             return chunk
 
 
@@ -121,8 +121,9 @@ async def __get_relevant_chunks(
 
 
 async def main():
+    embedder_name = "30-1"  # "ragondin" or "ragondin-reranker"
     input_file = "./output/evaluation_data.json"
-    output_file = "./output/retrieved_chunks.json"
+    output_file = f"./output/retrieved_chunks_{embedder_name}.json"
 
     partition = "frwiki"
     top_k = 10
@@ -130,11 +131,11 @@ async def main():
     llm_semaphore = asyncio.Semaphore(20)
     semaphore = asyncio.Semaphore(10)
 
-    ragondin_api_base_url = "http://163.114.159.151:8080"
+    ragondin_api_base_url = "http://163.114.159.68:8085"  #mettre l'id de mon API
 
     # load json file
     with open(input_file, "r", encoding="utf-8") as json_file:
-        question_relevant_chunks = json.load(json_file)
+        question_relevant_chunks = json.load(json_file)  # get the first 10 rows
 
     tasks = [
         __get_relevant_chunks(
@@ -146,7 +147,7 @@ async def main():
             llm_semaphore=llm_semaphore,
             add_chunk_relevancy=True,
         )
-        for entry in question_relevant_chunks[:5]
+        for entry in question_relevant_chunks
     ]
 
     data = await tqdm.gather(*tasks, desc="Generating data for evaluation")
