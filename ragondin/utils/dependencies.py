@@ -49,7 +49,7 @@ local_deployment = config.ray["local_deployment"]
 if local_deployment:
     indexer = Indexer.remote(config, logger)
 else:
-    indexer = IndexerForDeployment()
+    indexer = IndexerForDeployment.remote()
 
 vectordb: ABCVectorDB = VDBProxy(
     indexer_actor=indexer
