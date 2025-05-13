@@ -104,8 +104,8 @@ async def main():
     llm_semaphore = asyncio.Semaphore(20)
     semaphore = asyncio.Semaphore(10)
 
-    ragondin_api_base_url = "http://163.114.159.151:8087"
-    n_chunks_for_evaluation = 300
+    ragondin_api_base_url = "http://163.114.159.68:8080"
+    n_chunks_for_evaluation = 30
 
     chunk_urls = await sample_chunk_links_for_evaluation(
         partition=partition,

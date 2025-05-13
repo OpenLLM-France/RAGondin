@@ -1,6 +1,7 @@
 import json
 import asyncio
 import numpy as np
+import time
 from tqdm.asyncio import tqdm
 from collections import Counter
 
@@ -8,6 +9,7 @@ from ragatouille import RAGPretrainedModel
 
 
 model = RAGPretrainedModel.from_pretrained("jinaai/jina-colbert-v2")
+list_time = []
 
 def apply_permutation(base_list, target_list_1, target_list_2, permuted_base):
     # Create a mapping from value to its new index in the permuted list
@@ -25,41 +27,47 @@ def apply_permutation(base_list, target_list_1, target_list_2, permuted_base):
 
 async def retrieve_docs(entry, semaphore=asyncio.Semaphore(5)):
     async with semaphore:
-        file_name = entry["file"]
         question = entry["question"]
-        relevant_docs = entry["relevant_chunk"]
+        all_chunks = entry["all_retrieved_chunks"]
 
-        response_chunks_id = [relevant_docs[i]["id"] for i in range(len(relevant_docs))]
+        # Chunks response to the question
+        all_relevant_chunks_id = entry["article_ids"].split(',') # List[Str]
 
-        list_file_content = entry["reranker's input"]["file content"]
-        list_chunks_id = entry["reranker's input"]["chunks id"]
-        list_file_name = entry["reranker's input"]["file name"]
+        # Best chunk
+        true_chunk_id = all_relevant_chunks_id[0]
+
+        list_file_content = [all_chunks[i]["content"] for i in range(len(all_chunks))]
+        list_chunks_id = [all_chunks[i]["article_id"] for i in range(len(all_chunks))]
+        list_file_name = [all_chunks[i]["filename"] for i in range(len(all_chunks))]
         
+        start = time.time()
         ranked_txt = await asyncio.to_thread(
             lambda: model.rerank(
-                question, list_file_content, k=min(len(list_file_content), 4), bsize="auto"
+                question, list_file_content, k=min(len(list_file_content), 5), bsize="auto"
             )
         )
+        list_time.append(time.time() - start)
 
         list_index = [ranked_txt[i]['result_index'] for i in range(len(ranked_txt))]
         # list_chunks_id, list_file_name = apply_permutation(list_file_content, list_chunks_id, list_file_name, [ranked_txt[i]['content'] for i in range(len(ranked_txt))])
         list_chunks_id = [list_chunks_id[list_index[i]] for i in range(len(list_index))]
         list_file_name = [list_file_name[list_index[i]] for i in range(len(list_index))]
         # Get hit rate 
-        hit_rate = 1 if file_name in list_file_name else 0
+        hit_rate = 1 if true_chunk_id in list_chunks_id else 0
         # Get MRR
-        Mrr = 1 / (list_file_name.index(file_name) + 1) if hit_rate == 1 else 0
+        Mrr = 1 / (list_chunks_id.index(true_chunk_id) + 1) if hit_rate == 1 else 0
         # Get precision
         counter = Counter(list_chunks_id)
-        total = sum(counter[element] for element in (set(response_chunks_id) & set(list_chunks_id)))
+        total = sum(counter[element] for element in (set(all_relevant_chunks_id) & set(list_chunks_id)))
         Precision = total / len(list_chunks_id) if len(list_chunks_id) > 0 else 0
         # Get recall 
-        Recall = len(set(response_chunks_id) & set(list_chunks_id)) / len(response_chunks_id) if len(response_chunks_id) > 0 else 0
+        Recall = len(set(all_relevant_chunks_id) & set(list_chunks_id)) / len(all_relevant_chunks_id) if len(all_relevant_chunks_id) > 0 else 0
         return [hit_rate, Mrr, Precision, Recall]
 
 
+
 async def main():
-    out_file = "./output/question_and_chunks.json"
+    out_file = "./output/retrieved_chunks_OrdalieTech.json"
 
     json_file = open(out_file, "r", encoding="utf-8")
     list_questions = json.load(json_file)
@@ -79,6 +87,7 @@ async def main():
     print(f"MRR: {Mrr}")
     print(f"Precision: {Precision}")
     print(f"Recall: {Recall}")
-    
+    print(f"Time per query: {sum(list_time) / len(list_time)}")
+
 if __name__ == "__main__":
     asyncio.run(main())

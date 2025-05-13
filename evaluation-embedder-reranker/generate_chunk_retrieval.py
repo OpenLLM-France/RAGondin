@@ -117,12 +117,12 @@ async def __get_relevant_chunks(
             return chunks
         except Exception as e:
             logger.debug(f"Error fetching chunks: {e}")
-            return None
+            return None 
 
 
 async def main():
     input_file = "./output/evaluation_data.json"
-    output_file = "./output/retrieved_chunks.json"
+    output_file = "./output/retrieved_chunks_OrdalieTech.json"
 
     partition = "frwiki"
     top_k = 10
@@ -130,7 +130,7 @@ async def main():
     llm_semaphore = asyncio.Semaphore(20)
     semaphore = asyncio.Semaphore(10)
 
-    ragondin_api_base_url = "http://163.114.159.151:8087"
+    ragondin_api_base_url = "http://163.114.159.68:8080"
 
     # load json file
     with open(input_file, "r", encoding="utf-8") as json_file:

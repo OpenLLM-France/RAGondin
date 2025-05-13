@@ -19,3 +19,11 @@
 
 ![alt text](./assets/image-3.png)
 ![alt text](./assets/image-4.png)
+https://huggingface.co/datasets/maastrichtlawtech/bsard
+
+https://huggingface.co/datasets/antoinelb7/alloprof
+
+https://huggingface.co/datasets/lyon-nlp/mteb-fr-retrieval-syntec-s2p
+ 
+https://huggingface.co/collections/lyon-nlp/mteb-french-68013afc32b4a4201abf2f7b
+ 
