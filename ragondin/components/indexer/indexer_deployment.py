@@ -57,12 +57,6 @@ class IndexerWorker:
             self.config, logger=logger, embeddings=self.embedder.get_embeddings()
         )
         self.logger = logger
-        self.n_concurrent_loading = config.insertion.get(
-            "n_concurrent_loading", 2
-        )  # Number of concurrent loading operations
-        self.n_concurrent_chunking = config.insertion.get(
-            "n_concurrent_chunking", 2
-        )  # Number of concurrent chunking operations
         self.default_partition = "_default"
         self.enable_insertion = self.config.vectordb["enable"]
         self.logger.info("Indexer worker initialized.")
