@@ -235,7 +235,7 @@ class MilvusDB(ABCVectorDB):
             {
                 "metric_type": "COSINE",
                 "params": {
-                    "ef": 15,
+                    "ef": 20,
                     "radius": similarity_threshold,
                     "range_filter": 1.0,
                 },
@@ -243,12 +243,15 @@ class MilvusDB(ABCVectorDB):
             {"metric_type": "BM25", "params": {"drop_ratio_build": 0.2}},
         ]
 
+        # "params": {"drop_ratio_build": 0.2, "bm25_k1": 1.2, "bm25_b": 0.75},
+
         if self.hybrid_mode:
             docs_scores = await self.vector_store.asimilarity_search_with_score(
                 query=query,
                 k=top_k,
                 fetch_k=top_k,
                 ranker_type="rrf",
+                ranker_params={"k": 100},
                 expr=expr,
                 param=SEARCH_PARAMS,
             )
