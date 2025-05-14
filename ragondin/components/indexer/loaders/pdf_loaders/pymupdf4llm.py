@@ -2,7 +2,7 @@ import asyncio
 import pymupdf4llm
 from langchain_core.documents.base import Document
 
-from .base import BaseLoader
+from ..base import BaseLoader
 
 
 class PyMuPDF4LLMLoader(BaseLoader):

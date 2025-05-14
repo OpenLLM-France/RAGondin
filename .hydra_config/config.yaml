@@ -52,7 +52,7 @@ verbose:
   level: INFO
 
 paths:
-  prompts_dir: ${oc.env:PROMPTS_DIR, ../prompts}
+  prompts_dir: ${oc.env:PROMPTS_DIR, ../prompts/example3}
   data_dir: ${oc.env:DATA_DIR, ../data}
   volumes_dir: /app/volumes
 
@@ -65,11 +65,14 @@ loader:
   image_captioning: true
   audio_model: ${oc.env:WHISPER_MODEL, base}
   file_loaders:
-    docx: MarkItDownLoader
-    pdf: ${oc.env:PDFLoader, DoclingLoader}  # DoclingLoader # MarkerLoader # CustomPyMuPDFLoader # Custompymupdf4llm
-    doc: DocLoader
-    pptx: PPTXLoader
     txt: TextLoader
+    pdf: ${oc.env:PDFLoader, DoclingLoader}  # DoclingLoader # MarkerLoader # CustomPyMuPDFLoader # Custompymupdf4llm
+    docx: MarkItDownLoader
+    pptx: PPTXLoader
+    doc: DocLoader
+    png: ImageLoader
+    jpeg: ImageLoader
+    jpg: ImageLoader
     wav: VideoAudioLoader
     mp3: VideoAudioLoader
     mp4: VideoAudioLoader
@@ -77,7 +80,6 @@ loader:
     flv: VideoAudioLoader
     wma: VideoAudioLoader
     aac: VideoAudioLoader
-    # odt: CustomDocLoader
 
 ray:
   num_cpus: ${oc.decode:${oc.env:RAY_NUM_CPUS, 4}}

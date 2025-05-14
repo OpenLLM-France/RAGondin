@@ -1,7 +1,6 @@
 import html
 import re
 from io import BytesIO
-
 import pptx
 from langchain_core.documents.base import Document
 from PIL import Image
@@ -112,10 +111,8 @@ class PPTXConverter:
 
 class PPTXLoader(BaseLoader):
     def __init__(self, page_sep: str = "[PAGE_SEP]", **kwargs) -> None:
-        super().__init__(**kwargs)
-        self.page_sep = page_sep
+        super().__init__(page_sep, **kwargs)
         self.image_placeholder = r"<image>"
-
         self.converter = PPTXConverter(
             image_placeholder=self.image_placeholder, page_separator=page_sep
         )

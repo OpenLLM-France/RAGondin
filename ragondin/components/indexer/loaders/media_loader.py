@@ -6,40 +6,32 @@ from loguru import logger
 from pydub import AudioSegment
 from .base import BaseLoader
 from components.utils import SingletonMeta
-
-
 import torch
 
 torch.backends.cuda.matmul.allow_tf32 = True
 torch.backends.cudnn.allow_tf32 = True
 
+MEDIA_FORMATS = [".wav", ".mp3", ".mp4", ".ogg", ".flv", ".wma", ".aac"]
+
 
 class AudioTranscriber(metaclass=SingletonMeta):
     def __init__(self, device="cpu", compute_type="float32", model_name="base"):
-        # self.model = whisperx.load_model(
-        #     model_name, device=device, language=language, compute_type=compute_type
-        # )
         self.model = whisper.load_model(name=model_name, device=device)
 
 
 class VideoAudioLoader(BaseLoader):
     def __init__(self, page_sep: str = "[PAGE_SEP]", **kwargs):
-        super().__init__(**kwargs)
-
-        self.batch_size = 4
-        self.page_sep = page_sep
-        self.formats = [".wav", ".mp3", ".mp4", ".ogg", ".flv", ".wma", ".aac"]
-
+        super().__init__(page_sep, **kwargs)
         device = "cuda" if torch.cuda.is_available() else "cpu"
         model = kwargs.get("config").loader["audio_model"]
         self.transcriber = AudioTranscriber(device=device, model_name=model)
 
     async def aload_document(self, file_path, metadata: dict = None, save_md=False):
         path = Path(file_path)
-        if path.suffix not in self.formats:
+        if path.suffix not in MEDIA_FORMATS:
             logger.warning(
                 f"This audio/video file ({path.suffix}) is not supported."
-                f"The format should be {self.formats}"
+                f"The format should be {MEDIA_FORMATS}"
             )
             return None
 

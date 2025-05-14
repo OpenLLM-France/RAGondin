@@ -1,15 +1,13 @@
 from pathlib import Path
-
 from langchain_community.document_loaders import PyMuPDFLoader as pymupdf_loader
 from langchain_core.documents.base import Document
 
-from .base import BaseLoader
+from ..base import BaseLoader
 
 
 class PyMuPDFLoader(BaseLoader):
-    def __init__(self, page_sep: str = "[PAGE_SEP]", **kwargs) -> None:
-        super().__init__(**kwargs)
-        self.page_sep = page_sep
+    def __init__(self, page_sep="[PAGE_SEP]", **kwargs):
+        super().__init__(page_sep, **kwargs)
 
     async def aload_document(self, file_path, metadata: dict = None, save_md=False):
         loader = pymupdf_loader(
