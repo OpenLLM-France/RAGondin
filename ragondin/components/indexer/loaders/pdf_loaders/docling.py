@@ -6,7 +6,7 @@ from docling_core.types.doc.document import PictureItem
 from langchain_core.documents.base import Document
 from loguru import logger
 from tqdm.asyncio import tqdm
-from .base import BaseLoader
+from ..base import BaseLoader
 from docling.backend.pypdfium2_backend import PyPdfiumDocumentBackend
 from docling.datamodel.base_models import InputFormat
 from docling.datamodel.pipeline_options import (
@@ -20,20 +20,6 @@ from docling.document_converter import DocumentConverter, PdfFormatOption
 
 
 class DoclingConverter(metaclass=SingletonMeta):
-    """
-    A class to handle document conversion using the Docling library.
-    Attributes:
-    -----------
-    converter : DocumentConverter
-        An instance of the DocumentConverter class from the Docling library configured with specific pipeline options.
-    Methods:
-    --------
-    __init__():
-        Initializes the DoclingConverter with specific pipeline options for PDF conversion.
-    async convert_to_md(file_path) -> ConversionResult:
-        Asynchronously converts a document at the given file path to Markdown format.
-    """
-
     def __init__(self):
         img_scale = 1
         pipeline_options = PdfPipelineOptions(
@@ -65,40 +51,8 @@ class DoclingConverter(metaclass=SingletonMeta):
 
 
 class DoclingLoader(BaseLoader):
-    """
-    DoclingLoader is responsible for loading and processing documents, converting them to markdown format,
-    and optionally enriching them with image captions.
-    Attributes:
-        page_sep (str): The separator used between pages in the markdown output.
-        converter (DoclingConverter): An instance of the DoclingConverter class used for document conversion.
-    Methods:
-        __init__(page_sep: str='[PAGE_SEP]', **kwargs) -> None:
-            Initializes the DoclingLoader with the given page separator and additional keyword arguments.
-        async aload_document(file_path, metadata, save_md=False):
-            Asynchronously loads and processes a document, converting it to markdown and optionally saving it.
-            Args:
-                file_path (str): The path to the document file.
-                metadata (dict): Metadata associated with the document.
-                save_md (bool): Whether to save the markdown content to a file.
-        async get_captions(pictures: list[PictureItem], n_semaphores=10):
-            Asynchronously retrieves captions for a list of pictures using a specified number of semaphores.
-            Args:
-                pictures (list[PictureItem]): A list of PictureItem objects to caption.
-                n_semaphores (int): The number of semaphores to use for concurrent captioning.
-        async convert_to_md(file_path) -> ConversionResult:
-            Asynchronously converts a document to markdown format.
-            Args:
-                file_path (str): The path to the document file.
-        async parse(file_path, page_seperator='[PAGE_SEP]'):
-            Asynchronously parses a document, converting it to markdown and enriching it with image captions.
-            Args:
-                file_path (str): The path to the document file.
-                page_seperator (str): The separator used between pages in the markdown output.
-    """
-
-    def __init__(self, page_sep: str = "[PAGE_SEP]", **kwargs) -> None:
-        super().__init__(**kwargs)
-        self.page_sep = page_sep
+    def __init__(self, page_sep="[PAGE_SEP]", **kwargs):
+        super().__init__(page_sep, **kwargs)
         self.converter = DoclingConverter()
 
     async def aload_document(self, file_path, metadata, save_md=False):

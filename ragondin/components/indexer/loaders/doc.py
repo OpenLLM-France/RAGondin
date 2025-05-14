@@ -2,7 +2,7 @@ import os
 import tempfile
 from spire.doc import Document, FileFormat
 from .base import BaseLoader
-from .MarkItDownLoader import MarkItDownLoader
+from .markItdown import MarkItDownLoader
 
 
 class DocLoader(BaseLoader):

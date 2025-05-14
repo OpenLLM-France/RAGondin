@@ -67,11 +67,14 @@ loader:
   image_captioning: true
   audio_model: ${oc.env:WHISPER_MODEL, base}
   file_loaders:
-    docx: MarkItDownLoader
-    pdf: ${oc.env:PDFLoader, DoclingLoader}  # DoclingLoader # MarkerLoader # CustomPyMuPDFLoader # Custompymupdf4llm
-    doc: DocLoader
-    pptx: PPTXLoader
     txt: TextLoader
+    pdf: ${oc.env:PDFLoader, DoclingLoader}  # DoclingLoader # MarkerLoader # CustomPyMuPDFLoader # Custompymupdf4llm
+    docx: MarkItDownLoader
+    pptx: PPTXLoader
+    doc: DocLoader
+    png: ImageLoader
+    jpeg: ImageLoader
+    jpg: ImageLoader
     wav: VideoAudioLoader
     mp3: VideoAudioLoader
     mp4: VideoAudioLoader
