@@ -7,11 +7,27 @@ from loguru import logger
 from pathlib import Path
 
 
-parser = argparse.ArgumentParser(description='Index documents from local file system')
-parser.add_argument('-u', '--url', default='http://localhost:8080', type=str, help='The base url of your RAGondin instance')
-parser.add_argument('-a', '--auth', required=False, type=str, help='AUTH_KEY (see the .env.example')
-parser.add_argument('-d', '--dir', required=True, type=str, help='The location of the documents to index')
-parser.add_argument('-p', '--partition', required=True, type=str, help='Target partition')
+parser = argparse.ArgumentParser(description="Index documents from local file system")
+parser.add_argument(
+    "-u",
+    "--url",
+    default="http://localhost:8080",
+    type=str,
+    help="The base url of your RAGondin instance",
+)
+parser.add_argument(
+    "-a", "--auth", required=False, type=str, help="AUTH_KEY (see the .env.example"
+)
+parser.add_argument(
+    "-d",
+    "--dir",
+    required=True,
+    type=str,
+    help="The location of the documents to index",
+)
+parser.add_argument(
+    "-p", "--partition", required=True, type=str, help="Target partition"
+)
 args = parser.parse_args()
 
 headers = {"accept": "application/json"}
@@ -58,10 +74,10 @@ for file_path in dir_path.glob("**/*"):
         file_id = filename  # or generate a unique ID if necessary
 
         if __check_file_exists(args.url, args.partition, filename, headers):
-            logger.info(f'\"{filename}\" exists')
+            logger.info(f'"{filename}" exists')
             continue
         else:
-            logger.info(f'\"{filename}\" doesn\'t exist')
+            logger.info(f'"{filename}" doesn\'t exist')
 
         # file_id = str(uuid.uuid4())
 
@@ -76,4 +92,3 @@ for file_path in dir_path.glob("**/*"):
 
             response = httpx.post(url, files=files, headers=headers)
             print(f"Uploaded {filename}: {response.status_code} - {response.text}")
-

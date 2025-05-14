@@ -7,6 +7,9 @@ from openai import AsyncOpenAI
 import os
 from urllib.parse import urlparse
 from chainlit.context import get_context
+import os
+
+AUTH_TOKEN = os.environ.get("AUTH_TOKEN", "")
 
 AUTH_TOKEN = os.environ.get("AUTH_TOKEN", "")
 logger.debug(f"TOken: {AUTH_TOKEN}")
@@ -111,7 +114,7 @@ async def __format_sources(metadata_sources, only_txt=False):
             chunk_content = await __fetch_page_content(chunk_url=s["chunk_url"])
             elem = cl.Text(content=chunk_content, name=source_name, display="side")
         else:
-            match filename.suffix:
+            match filename.suffix.lower():
                 case ".pdf":
                     elem = cl.Pdf(
                         name=source_name,
