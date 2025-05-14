@@ -12,7 +12,7 @@ from ..reranker import Reranker
 from ..utils import SingletonMeta
 from .chunker import ABCChunker, ChunkerFactory
 from .embeddings import HFEmbedder
-from .loaders.loader import DocSerializer
+from .loaders.serializer import DocSerializer
 from .vectordb import ConnectorFactory
 
 # Load the configuration
