@@ -6,14 +6,12 @@ x-ragondin: &ragondin_template
     context: .
     dockerfile: Dockerfile
   volumes:
-    - /ray_mount:/ray_mount
-    - ./model_weights:/app/model_weights
-    - ./data:/app/data # PDF data for RAG
+    - /ray_mount/data:/app/data # PDF data for RAG
     - ./ragondin:/app/ragondin # For dev mode
     - ${MILVUS_VOLUME_DIRECTORY:-./volumes}:/app/volumes
   network_mode: host
   env_file:
-    - .env
+    - /ray_mount/.env
   shm_size: 10.24gb
 
   depends_on:

@@ -1,14 +1,12 @@
 import json
 from pathlib import Path
 from typing import Any, Optional
-import re
 
 import ray
 from config.config import load_config
 from fastapi import (
     APIRouter,
     Depends,
-    File,
     Form,
     HTTPException,
     Request,
@@ -18,9 +16,7 @@ from fastapi import (
 )
 from fastapi.responses import JSONResponse
 from loguru import logger
-from ray.util.state import get_task
-from utils.dependencies import Indexer, get_indexer, vectordb
-from loguru import logger
+from utils.dependencies import Indexer, get_indexer, get_ray_task_status, vectordb
 
 # load config
 config = load_config()
@@ -270,8 +266,8 @@ async def patch_file(
 @router.get("/task/{task_id}")
 async def get_task_status(task_id: str, indexer: Indexer = Depends(get_indexer)):
     try:
-        task = get_task(task_id)
-    except Exception as e:
+        task = ray.get(get_ray_task_status.remote(task_id))
+    except Exception:
         logger.warning(f"Task {task_id} not found.")
         task = None
 

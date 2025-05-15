@@ -1,11 +1,11 @@
 import ray
 import ray.actor
-from config import load_config
-
 from components import ABCVectorDB
 from components.indexer.indexer import Indexer
 from components.indexer.indexer_deployment import Indexer as IndexerForDeployment
+from config import load_config
 from loguru import logger
+from ray.util.state import get_task
 
 
 class VDBProxy:
@@ -58,3 +58,9 @@ vectordb: ABCVectorDB = VDBProxy(
 
 def get_indexer():
     return indexer
+
+
+@ray.remote
+def get_ray_task_status(task_id: str):
+    """Get the status of a task."""
+    return get_task(task_id)
