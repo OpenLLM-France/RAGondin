@@ -6,42 +6,12 @@ import asyncio
 import itertools
 from tqdm.asyncio import tqdm
 
-from langchain_core.messages import HumanMessage, SystemMessage
 from langchain_core.documents.base import Document
-from langchain_openai import ChatOpenAI
 import httpx
-from pydantic import BaseModel, Field
-from typing import Literal
 from loguru import logger
 from dotenv import load_dotenv
 
 load_dotenv()
-
-import os
-
-settings = {
-    "temperature": 0.2,
-    "max_retries": 3,
-    "timeout": 60,
-    "model": "Qwen2.5-VL-7B-Instruct",
-    "api_key": os.environ.get("VLM_API_KEY"),
-    "base_url": os.environ.get("VLM_BASE_URL"),
-}
-
-sys_pmpt = """Tu es un expert en évaluation de la pertinence des documents. Ta tâche consiste à évaluer les documents par rapport à une question posée par l'utilisateur"""
-
-
-class DocRelevancy(BaseModel):
-    relevancy: Literal["oui", "non"] = Field(
-        description="Indique si le document contient des informations pertinentes par rapport à la question posée"
-    )
-
-
-sllm = (
-    ChatOpenAI(**settings)
-    .with_structured_output(DocRelevancy)
-    .with_retry(stop_after_attempt=2)
-)
 
 
 async def fetch_chunk_data(chunk_url) -> Document:
@@ -53,14 +23,14 @@ async def fetch_chunk_data(chunk_url) -> Document:
         return {
             "id": metadata.get("_id"),
             "filename": metadata.get("filename"),
-            "article_id": metadata.get("filename").split('.')[0],
+            "corpus_id": metadata.get("filename").split(".")[0],
             "content": data.get("page_content"),
         }
 
 
 async def __get_relevant_chunks(
     query: str,
-    partition: str = "articles",
+    partition: str = "all",
     top_k: int = 8,
     ragondin_api_base_url: str = None,
     sempahore: asyncio.Semaphore = None,
@@ -87,14 +57,16 @@ async def __get_relevant_chunks(
             return chunks
         except Exception as e:
             logger.debug(f"Error fetching chunks: {e}")
-            return None 
+            return None
 
 
 async def main():
-    input_file = "./output/questions.csv"
-    output_file = "./output/retrieved_chunks_OrdalieTech.json"
+    instruction_file = "./output-instruct-IR/instruction.csv"
+    query_file = "./output-instruct-IR/queries.csv"
+    qrel_file = "./output-instruct-IR/qrels.csv"
+    output_file = "./output-instruct-IR/retrieved_chunks_OrdalieTech.json"
 
-    partition = "articles"
+    partition = "corpus_instruction_IR"
     top_k = 10
 
     llm_semaphore = asyncio.Semaphore(20)
@@ -102,13 +74,23 @@ async def main():
 
     ragondin_api_base_url = "http://163.114.159.68:8080"
 
-    # load json file
-    csv_file = open(input_file, "r", encoding="utf-8")
-    question_answer = csv.DictReader(csv_file)
+    # load files
+    instruction_file = open(instruction_file, "r", encoding="utf-8")
+    query_file = open(query_file, "r", encoding="utf-8")
+    qrel_file = open(qrel_file, "r", encoding="utf-8")
+
+    instructions = csv.DictReader(instruction_file)
+    instructions_list = list(itertools.islice(instructions, 500))
+
+    queries = csv.DictReader(instruction_file)
+    queries_list = list(itertools.islice(queries, 500))
+
+    qrels = csv.DictReader(instruction_file)
+    qrels_list = list(itertools.islice(qrels, 500))
 
     tasks = [
         __get_relevant_chunks(
-            query=entry["question"],
+            query=entry_instruction["instruction"] + entry_queries["text"],
             partition=partition,
             top_k=top_k,
             ragondin_api_base_url=ragondin_api_base_url,
@@ -116,15 +98,17 @@ async def main():
             llm_semaphore=llm_semaphore,
             add_chunk_relevancy=True,
         )
-        for i, entry in enumerate(itertools.islice(question_answer, 3)) 
+        for entry_instruction, entry_queries in zip(instructions_list, queries_list)
     ]
 
     data = await tqdm.gather(*tasks, desc="Generating data for evaluation")
 
     data2 = []
-    for entry, chunks in zip(question_answer, data):
-        entry["all_retrieved_chunks"] = chunks
-        data2.append(entry)
+    for instruction, query, qrel, chunks in zip(instructions_list, queries_list, qrels_list, data):
+        instruction["query"] = query["text"]
+        instruction["response_id"] = qrel["corpus-id"]
+        instruction["all_retrieved_chunks"] = chunks
+        data2.append(instruction)
 
     with open(output_file, "w", encoding="utf-8") as json_file:
         json.dump(data2, json_file, indent=4, ensure_ascii=False)

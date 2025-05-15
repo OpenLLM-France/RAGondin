@@ -31,18 +31,18 @@ def apply_permutation(base_list, target_list_1, target_list_2, permuted_base):
 
 async def retrieve_docs(entry, semaphore=asyncio.Semaphore(5)):
     async with semaphore:
-        question = entry["question"]
+        question = entry["instruction"] + entry["query"]
         
         all_chunks = entry["all_retrieved_chunks"]
 
         # Chunks response to the question
-        all_relevant_chunks_id = entry["article_ids"].split(',') # List[Str]
+        all_relevant_chunks_id = entry["response_id"]
 
         # Best chunk
-        true_chunk_id = all_relevant_chunks_id[0]
+        true_chunk_id = all_relevant_chunks_id
 
         list_file_content = [all_chunks[i]["content"] for i in range(len(all_chunks))]
-        list_chunks_id = [all_chunks[i]["article_id"] for i in range(len(all_chunks))]
+        list_chunks_id = [all_chunks[i]["corpus_id"] for i in range(len(all_chunks))]
         list_file_name = [all_chunks[i]["filename"] for i in range(len(all_chunks))]
         
         start = time.time()
@@ -58,18 +58,18 @@ async def retrieve_docs(entry, semaphore=asyncio.Semaphore(5)):
         hit_rate = 1 if true_chunk_id in list_chunks_id else 0
         # Get MRR
         Mrr = 1 / (list_chunks_id.index(true_chunk_id) + 1) if hit_rate == 1 else 0
-        # Get precision
-        counter = Counter(list_chunks_id)
-        total = sum(counter[element] for element in (set(all_relevant_chunks_id) & set(list_chunks_id)))
-        Precision = total / len(list_chunks_id) if len(list_chunks_id) > 0 else 0
-        # Get recall 
-        Recall = len(set(all_relevant_chunks_id) & set(list_chunks_id)) / len(all_relevant_chunks_id) if len(all_relevant_chunks_id) > 0 else 0
-        return [hit_rate, Mrr, Precision, Recall]
+        # # Get precision
+        # counter = Counter(list_chunks_id)
+        # total = sum(counter[element] for element in (set(all_relevant_chunks_id) & set(list_chunks_id)))
+        # Precision = total / len(list_chunks_id) if len(list_chunks_id) > 0 else 0
+        # # Get recall 
+        # Recall = len(set(all_relevant_chunks_id) & set(list_chunks_id)) / len(all_relevant_chunks_id) if len(all_relevant_chunks_id) > 0 else 0
+        return [hit_rate, Mrr] #, Precision, Recall]
 
 
 
 async def main():
-    out_file = "./output/retrieved_chunks_OrdalieTech.json"
+    out_file = "./output-instruct-IR/retrieved_chunks_OrdalieTech.json"
 
     json_file = open(out_file, "r", encoding="utf-8")
     list_questions = json.load(json_file)
@@ -92,12 +92,12 @@ async def main():
 
     hit_rate = np.mean(table_evaluation[:, 0])
     Mrr = np.mean(table_evaluation[:, 1])
-    Precision = np.mean(table_evaluation[:, 2])
-    Recall = np.mean(table_evaluation[:, 3])
+    # Precision = np.mean(table_evaluation[:, 2])
+    # Recall = np.mean(table_evaluation[:, 3])
     print(f"Hit Rate: {hit_rate}")
     print(f"MRR: {Mrr}")
-    print(f"Precision: {Precision}")
-    print(f"Recall: {Recall}")
+    # print(f"Precision: {Precision}")
+    # print(f"Recall: {Recall}")
     print(f"Time per query: {sum(list_time) / len(list_time)}")
     
 if __name__ == "__main__":
