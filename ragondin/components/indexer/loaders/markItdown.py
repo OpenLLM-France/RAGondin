@@ -11,20 +11,8 @@ from .base import BaseLoader
 
 
 class MarkItDownLoader(BaseLoader):
-    """
-    A loader class for converting documents to Markdown format and processing images within the documents.
-    Attributes:
-        page_sep (str): The separator used to denote page breaks in the document.
-        converter (MarkItDownConverter): An instance of the MarkItDownConverter class.
-        settings (dict): Configuration settings for the ChatOpenAI model.
-        llm (ChatOpenAI): An instance of the ChatOpenAI class for language model interactions.
-        semaphore (asyncio.Semaphore): A semaphore to limit the number of concurrent tasks.
-    """
-
-    def __init__(self, page_sep: str = "[PAGE_SEP]", **kwargs) -> None:
-        super().__init__(**kwargs)
-
-        self.page_sep = page_sep
+    def __init__(self, page_sep="[PAGE_SEP]", **kwargs):
+        super().__init__(page_sep, **kwargs)
         self.converter = MarkItDown()
 
     async def aload_document(self, file_path, metadata, save_md=False):

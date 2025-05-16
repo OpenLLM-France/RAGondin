@@ -11,7 +11,7 @@ from loguru import logger
 from .chunker import ABCChunker, ChunkerFactory
 from ..reranker import Reranker
 from .embeddings import HFEmbedder
-from .loaders.loader import DocSerializer
+from .loaders.serializer import DocSerializer
 from .vectordb import ConnectorFactory
 from ..utils import SingletonMeta
 

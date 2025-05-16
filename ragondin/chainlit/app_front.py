@@ -7,8 +7,13 @@ from openai import AsyncOpenAI
 import os
 from urllib.parse import urlparse
 from chainlit.context import get_context
+import os
+
+AUTH_TOKEN = os.environ.get("AUTH_TOKEN", "")
 
 headers = {"accept": "application/json", "Content-Type": "application/json"}
+if AUTH_TOKEN:
+    headers["Authorization"] = f"Bearer {AUTH_TOKEN}"
 
 
 def get_base_url():
@@ -28,7 +33,9 @@ def get_base_url():
 @cl.set_chat_profiles
 async def chat_profile():
     base_url = get_base_url()
-    client = AsyncOpenAI(base_url=f"{base_url}/v1", api_key="sk-1234")
+    client = AsyncOpenAI(
+        base_url=f"{base_url}/v1", api_key=AUTH_TOKEN if AUTH_TOKEN else "sk-1234"
+    )
 
     try:
         output = await client.models.list()
@@ -90,7 +97,7 @@ async def on_chat_start():
 
 async def __fetch_page_content(chunk_url):
     async with httpx.AsyncClient() as client:
-        response = await client.get(chunk_url)
+        response = await client.get(chunk_url, headers=headers)
         response.raise_for_status()  # raises exception for 4xx/5xx responses
         data = response.json()
         return data.get("page_content", "")
@@ -112,11 +119,15 @@ async def __format_sources(metadata_sources, only_txt=False):
             chunk_content = await __fetch_page_content(chunk_url=s["chunk_url"])
             elem = cl.Text(content=chunk_content, name=doc_id, display="side")
         else:
-            match filename.suffix:
+            match filename.suffix.lower():
                 case ".pdf":
                     elem = cl.Pdf(
                         name=doc_id, url=file_url, page=int(s["page"]), display="side"
                     )
+
+                case suffix if suffix in [".png", ".jpg", ".jpeg"]:
+                    elem = cl.Image(name=doc_id, url=file_url, display="side")
+
                 case ".mp4":
                     elem = cl.Video(name=doc_id, url=file_url, display="side")
                 case ".mp3":

@@ -1,21 +1,23 @@
 import asyncio
 import base64
+from pathlib import Path
 import re
 from abc import ABC, abstractmethod
 from io import BytesIO
+from typing import Dict, Optional, Union
 
 from langchain_core.documents.base import Document
 from langchain_core.messages import HumanMessage
 from langchain_openai import ChatOpenAI
 from loguru import logger
-
 from ...utils import vlmSemaphore
 
 IMAGE_DESCRIPTION_PROMPT = """Provide a complete, structured and precise description of this image or figure in the same language (french) as its content. If the image contains tables, render them in markdown."""
 
 
 class BaseLoader(ABC):
-    def __init__(self, **kwargs) -> None:
+    def __init__(self, page_sep: str = "[PAGE_SEP]", **kwargs) -> None:
+        self.page_sep = page_sep
         self.config = kwargs.get("config")
         vlm_config = self.config.vlm
         model_settings = {
@@ -31,7 +33,11 @@ class BaseLoader(ABC):
         self.min_height_pixels = 100  # minimum height in pixels
 
     @abstractmethod
-    async def aload_document(self, file_path, metadata: dict = None, save_md=False):
+    async def aload_document(
+        file_path: Union[str, Path],
+        metadata: Optional[Dict] = None,
+        save_md: bool = False,
+    ):
         pass
 
     def save_document(self, doc: Document, path: str):

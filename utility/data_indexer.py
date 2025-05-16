@@ -4,8 +4,14 @@ from pathlib import Path
 import uuid
 
 base_url = ...  # the base url of your running app for instance: 'http://localhost:8080'
+AUTH_KEY = ...  # set to '' if authorization feature is deactivated
 
-dir_name = "../data2/tuto2"  # Replace with your directory path
+headers = {"accept": "application/json"}
+if AUTH_KEY:
+    headers["Authorization"] = f"Bearer {AUTH_KEY}"
+
+
+dir_name = ...  # Replace with your directory path
 dir_path = Path(dir_name).resolve()
 
 
@@ -46,7 +52,5 @@ for file_path in dir_path.glob("**/*"):
                 "metadata": (None, ""),
             }
 
-            response = httpx.post(
-                url, files=files, headers={"accept": "application/json"}
-            )
+            response = httpx.post(url, files=files, headers=headers)
             print(f"Uploaded {filename}: {response.status_code} - {response.text}")
