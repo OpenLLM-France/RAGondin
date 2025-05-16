@@ -8,7 +8,13 @@ import os
 from urllib.parse import urlparse
 from chainlit.context import get_context
 
-headers = {"accept": "application/json", "Content-Type": "application/json"}
+AUTH_TOKEN = os.environ.get("AUTH_TOKEN", "")
+headers = {
+    "accept": "application/json",
+    "Content-Type": "application/json",
+}
+if AUTH_TOKEN:
+    headers["Authorization"] = f"Bearer {AUTH_TOKEN}"
 
 
 def get_base_url():
@@ -28,13 +34,11 @@ def get_base_url():
 @cl.set_chat_profiles
 async def chat_profile():
     base_url = get_base_url()
-    client = AsyncOpenAI(base_url=f"{base_url}/v1", api_key="sk-1234")
-
+    client = AsyncOpenAI(base_url=f"{base_url}/v1", api_key=AUTH_TOKEN)
     try:
         output = await client.models.list()
         models = output.data
         chat_profiles = []
-
         for i, m in enumerate(models, start=1):
             partition = m.id.split("ragondin-")[1]
             description_template = "You are interacting with the **{name}** LLM.\n" + (
@@ -42,7 +46,6 @@ async def chat_profile():
                 if "all" in m.id
                 else "The LLM's answers will be grounded only on the partition named **{partition}**."
             )
-
             chat_profiles.append(
                 cl.ChatProfile(
                     name=m.id,
@@ -53,7 +56,6 @@ async def chat_profile():
                 )
             )
         return chat_profiles
-
     except Exception as e:
         await cl.Message(content=f"An error occured: {str(e)}").send()
 
@@ -70,7 +72,6 @@ async def on_chat_start():
         ) as client:
             response = await client.get(url=f"{base_url}/health_check", headers=headers)
             print(response.text)
-
     except Exception as e:
         logger.error(f"An error happened: {e}")
         logger.warning("Make sur the fastapi is up!!")
@@ -79,7 +80,7 @@ async def on_chat_start():
 
 async def __fetch_page_content(chunk_url):
     async with httpx.AsyncClient() as client:
-        response = await client.get(chunk_url)
+        response = await client.get(chunk_url, headers=headers)
         response.raise_for_status()  # raises exception for 4xx/5xx responses
         data = response.json()
         return data.get("page_content", "")
@@ -111,10 +112,8 @@ async def __format_sources(metadata_sources, only_txt=False):
                 case ".mp3":
                     elem = cl.Audio(name=doc_id, url=file_url, display="side")
                 case _:
-                    # logger.info(f"Link: {s['chunk_url']}")
                     chunk_content = await __fetch_page_content(chunk_url=s["chunk_url"])
                     elem = cl.Text(content=chunk_content, name=doc_id, display="side")
-
         elements.append(elem)
         source_names.append(f"{doc_id}: {filename} (page: {page})")
 
@@ -135,6 +134,7 @@ async def on_message(message: cl.Message):
         "messages": messages,
         "temperature": 0.3,
         "stream": True,
+        "frequency_penalty": 0.4,
     }
 
     async with cl.Step(name="Searching for relevant documents..."):

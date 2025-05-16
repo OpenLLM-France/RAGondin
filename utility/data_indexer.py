@@ -1,11 +1,17 @@
 import httpx
 from loguru import logger
 from pathlib import Path
-import uuid
 
-base_url = ...  # the base url of your running app for instance: 'http://localhost:8080'
 
-dir_name = "../data2/tuto2"  # Replace with your directory path
+base_url = "http://localhost:8080"  # the base url of your running app for instance: 'http://localhost:8080'
+AUTH_TOKEN = ...  # your AUTH_KEY see the .env.example
+
+headers = {
+    "accept": "application/json",
+    "Authorization": f"Bearer {AUTH_TOKEN}",
+}
+
+dir_name = "../data2/S2_RAG/Sources RAG/AI/"  # Replace with your directory path
 dir_path = Path(dir_name).resolve()
 
 
@@ -23,7 +29,6 @@ def __check_api(base_url):
 __check_api(base_url)
 
 partition = input("Write the name of your partition: ")
-
 
 print(dir_path.is_dir())
 
@@ -46,7 +51,5 @@ for file_path in dir_path.glob("**/*"):
                 "metadata": (None, ""),
             }
 
-            response = httpx.post(
-                url, files=files, headers={"accept": "application/json"}
-            )
+            response = httpx.post(url, files=files, headers=headers)
             print(f"Uploaded {filename}: {response.status_code} - {response.text}")
