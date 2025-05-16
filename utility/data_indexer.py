@@ -6,10 +6,9 @@ from pathlib import Path
 base_url = "http://localhost:8080"  # the base url of your running app for instance: 'http://localhost:8080'
 AUTH_TOKEN = ...  # your AUTH_KEY see the .env.example
 
-headers = {
-    "accept": "application/json",
-    "Authorization": f"Bearer {AUTH_TOKEN}",
-}
+headers = {"accept": "application/json"}
+if AUTH_TOKEN:
+    headers["Authorization"] = f"Bearer {AUTH_TOKEN}"
 
 dir_name = "../data2/S2_RAG/Sources RAG/AI/"  # Replace with your directory path
 dir_path = Path(dir_name).resolve()
