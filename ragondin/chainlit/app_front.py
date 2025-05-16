@@ -149,7 +149,8 @@ async def on_message(message: cl.Message):
             stream = await client.chat.completions.create(**data)
             async for chunk in stream:
                 if sources is None:
-                    sources = json.loads(chunk.sources)
+                    extra = json.loads(chunk.extra)
+                    sources = extra["sources"]
                     elements, source_names = await __format_sources(sources)
                     msg.elements = elements if elements else []
                     await msg.update()

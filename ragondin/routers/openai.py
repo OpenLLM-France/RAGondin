@@ -183,7 +183,7 @@ async def openai_chat_completion(
 
     # Handle the sources
     metadata = __prepare_sources(request2, sources)
-    metadata_json = json.dumps(metadata)
+    metadata_json = json.dumps({"sources": metadata})
 
     if request.stream:
         # Openai compatible streaming response
@@ -197,7 +197,7 @@ async def openai_chat_completion(
                             data_str = line[len("data: ") :]
                             data = json.loads(data_str)
                             data["model"] = model_name
-                            data["sources"] = metadata_json
+                            data["extra"] = metadata_json
                             new_line = f"data: {json.dumps(data)}\n\n"
                             yield new_line
                         except json.JSONDecodeError as e:
@@ -212,7 +212,7 @@ async def openai_chat_completion(
         try:
             chunk = await llm_output.__anext__()
             chunk["model"] = model_name
-            chunk["sources"] = metadata_json
+            chunk["extra"] = metadata_json
             return JSONResponse(content=chunk)
 
         except StopAsyncIteration:
@@ -280,11 +280,11 @@ async def openai_completion(
 
     # Handle the sources
     metadata = __prepare_sources(request2, sources)
-    metadata_json = json.dumps(metadata)
+    metadata_json = json.dumps({"sources": metadata})
 
     try:
         complete_response = await llm_output.__anext__()
-        complete_response["sources"] = metadata_json
+        complete_response["extra"] = metadata_json
         return JSONResponse(content=complete_response)
     except StopAsyncIteration:
         raise HTTPException(
