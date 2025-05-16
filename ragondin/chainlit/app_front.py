@@ -9,6 +9,7 @@ from urllib.parse import urlparse
 from chainlit.context import get_context
 
 AUTH_TOKEN = os.environ.get("AUTH_TOKEN", "")
+logger.debug(f"TOken: {AUTH_TOKEN}")
 headers = {
     "accept": "application/json",
     "Content-Type": "application/json",
@@ -34,7 +35,10 @@ def get_base_url():
 @cl.set_chat_profiles
 async def chat_profile():
     base_url = get_base_url()
-    client = AsyncOpenAI(base_url=f"{base_url}/v1", api_key=AUTH_TOKEN)
+    client = AsyncOpenAI(
+        base_url=f"{base_url}/v1",
+        api_key=AUTH_TOKEN if AUTH_TOKEN else "sk-1234",
+    )
     try:
         output = await client.models.list()
         models = output.data
@@ -126,7 +130,10 @@ async def on_message(message: cl.Message):
     model: str = cl.user_session.get("chat_profile")
 
     base_url = get_base_url()
-    client = AsyncOpenAI(base_url=f"{base_url}/v1", api_key="sk-1234")
+    client = AsyncOpenAI(
+        base_url=f"{base_url}/v1",
+        api_key=AUTH_TOKEN if AUTH_TOKEN else "sk-1234",
+    )
 
     messages.append({"role": "user", "content": message.content})
     data = {
