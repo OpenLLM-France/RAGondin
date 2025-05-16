@@ -8,11 +8,17 @@ import time
 # load the model
 evaluate_with_reranking = True
 
-# model_name = "jinaai/jina-colbert-v2"
-# reranker_type = "colbert"
+model_name = "jinaai/jina-colbert-v2"
+reranker_type = "colbert"
 
-model_name = "cross-encoder/mmarco-mMiniLMv2-L12-H384-v1"
-reranker_type = "crossencoder"
+# model_name = "cross-encoder/mmarco-mMiniLMv2-L12-H384-v1"
+# reranker_type = "crossencoder"
+
+# model_name = "jinaai/jina-reranker-v2-base-multilingual"
+# reranker_type = "crossencoder"
+
+# model_name = "Alibaba-NLP/gte-multilingual-reranker-base"
+# reranker_type = "crossencoder"
 
 reranker = Reranker(reranker_type=reranker_type, model_name=model_name)
 
@@ -25,8 +31,7 @@ def compute_hits(true_chunk_id, all_retrieved_chunks):
 def compute_inverted_ranks(true_chunk_id, all_retrieved_chunks):
     # see link: https://chatgpt.com/share/6813f998-2e88-8002-a472-6af2e9a64b61
     inverted_ranks = []
-    retrieved_ids = [c["id"] for c in all_retrieved_chunks]
-
+    retrieved_ids = [c["corpus_id"] for c in all_retrieved_chunks]
     key = False
     try:
         rank = retrieved_ids.index(true_chunk_id) + 1

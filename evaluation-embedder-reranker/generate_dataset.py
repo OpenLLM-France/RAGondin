@@ -82,15 +82,15 @@ async def main():
     instructions = csv.DictReader(instruction_file)
     instructions_list = list(itertools.islice(instructions, 500))
 
-    queries = csv.DictReader(instruction_file)
+    queries = csv.DictReader(query_file)
     queries_list = list(itertools.islice(queries, 500))
 
-    qrels = csv.DictReader(instruction_file)
+    qrels = csv.DictReader(qrel_file)
     qrels_list = list(itertools.islice(qrels, 500))
 
     tasks = [
         __get_relevant_chunks(
-            query=entry_instruction["instruction"] + entry_queries["text"],
+            query=entry_instruction["instruction"] + entry_query["text"],
             partition=partition,
             top_k=top_k,
             ragondin_api_base_url=ragondin_api_base_url,
@@ -98,7 +98,7 @@ async def main():
             llm_semaphore=llm_semaphore,
             add_chunk_relevancy=True,
         )
-        for entry_instruction, entry_queries in zip(instructions_list, queries_list)
+        for entry_instruction, entry_query in zip(instructions_list, queries_list)
     ]
 
     data = await tqdm.gather(*tasks, desc="Generating data for evaluation")
@@ -107,7 +107,7 @@ async def main():
     for instruction, query, qrel, chunks in zip(instructions_list, queries_list, qrels_list, data):
         instruction["query"] = query["text"]
         instruction["response_id"] = qrel["corpus-id"]
-        instruction["all_retrieved_chunks"] = chunks
+        # instruction["all_retrieved_chunks"] = chunks
         data2.append(instruction)
 
     with open(output_file, "w", encoding="utf-8") as json_file:
