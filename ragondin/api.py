@@ -89,7 +89,7 @@ app.mount(
 )
 
 
-@app.get("/health_check", summary="Toy endpoint to check that the api is up")
+@app.get("/health_check", summary="Toy endpoint to check that the api is up", dependencies=[])
 async def health_check(request: Request):
     # TODO : Error reporting about llm and vlm
     return "RAG API is up."
