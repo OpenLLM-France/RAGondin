@@ -35,7 +35,7 @@ class DoclingConverter(metaclass=SingletonMeta):
         )
 
         pipeline_options.accelerator_options = AcceleratorOptions(
-            num_threads=12, device=AcceleratorDevice.AUTO
+            device=AcceleratorDevice.AUTO
         )
         self.converter = DocumentConverter(
             format_options={
