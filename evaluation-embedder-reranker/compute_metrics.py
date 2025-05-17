@@ -48,7 +48,7 @@ def compute_inverted_ranks(true_chunk_id, all_retrieved_chunks):
 
 
 # load json file
-path = "./output-instruct-IR/retrieved_chunks_OrdalieTech.json"
+path = "./output-instruct-IR/retrieved_chunks_LinqAI.json"
 with open(path, "r", encoding="utf-8") as json_file:
     question_relevant_chunks = json.load(json_file)
 

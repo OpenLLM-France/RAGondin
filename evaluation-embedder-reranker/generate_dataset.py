@@ -64,7 +64,7 @@ async def main():
     instruction_file = "./output-instruct-IR/instruction.csv"
     query_file = "./output-instruct-IR/queries.csv"
     qrel_file = "./output-instruct-IR/qrels.csv"
-    output_file = "./output-instruct-IR/retrieved_chunks_OrdalieTech.json"
+    output_file = "./output-instruct-IR/retrieved_chunks_Lajavaness.json"
 
     partition = "corpus_instruction_IR"
     top_k = 10
@@ -107,7 +107,7 @@ async def main():
     for instruction, query, qrel, chunks in zip(instructions_list, queries_list, qrels_list, data):
         instruction["query"] = query["text"]
         instruction["response_id"] = qrel["corpus-id"]
-        # instruction["all_retrieved_chunks"] = chunks
+        instruction["all_retrieved_chunks"] = chunks
         data2.append(instruction)
 
     with open(output_file, "w", encoding="utf-8") as json_file:

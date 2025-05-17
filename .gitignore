@@ -55,4 +55,3 @@ data2/
 volumes/
 volumes/*
 !volumes/.gitkeep # Keep the placeholder
-*.json
