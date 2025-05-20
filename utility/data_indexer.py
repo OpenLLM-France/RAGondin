@@ -1,7 +1,6 @@
 import httpx
 from loguru import logger
 from pathlib import Path
-import uuid
 
 base_url = ...  # the base url of your running app for instance: 'http://localhost:8080'
 AUTH_KEY = ...  # set to '' if authorization feature is deactivated
@@ -29,7 +28,6 @@ def __check_api(base_url):
 __check_api(base_url)
 
 partition = input("Write the name of your partition: ")
-
 
 print(dir_path.is_dir())
 

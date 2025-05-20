@@ -4,14 +4,16 @@ import httpx
 import chainlit as cl
 from loguru import logger
 from openai import AsyncOpenAI
-import os
 from urllib.parse import urlparse
 from chainlit.context import get_context
 import os
 
-AUTH_TOKEN = os.environ.get("AUTH_TOKEN", "")
 
-headers = {"accept": "application/json", "Content-Type": "application/json"}
+AUTH_TOKEN = os.environ.get("AUTH_TOKEN", "")
+headers = {
+    "accept": "application/json",
+    "Content-Type": "application/json",
+}
 if AUTH_TOKEN:
     headers["Authorization"] = f"Bearer {AUTH_TOKEN}"
 
@@ -34,14 +36,13 @@ def get_base_url():
 async def chat_profile():
     base_url = get_base_url()
     client = AsyncOpenAI(
-        base_url=f"{base_url}/v1", api_key=AUTH_TOKEN if AUTH_TOKEN else "sk-1234"
+        base_url=f"{base_url}/v1",
+        api_key=AUTH_TOKEN if AUTH_TOKEN else "sk-1234",
     )
-
     try:
         output = await client.models.list()
         models = output.data
         chat_profiles = []
-
         for i, m in enumerate(models, start=1):
             partition = m.id.split("ragondin-")[1]
             description_template = "You are interacting with the **{name}** LLM.\n" + (
@@ -49,7 +50,6 @@ async def chat_profile():
                 if "all" in m.id
                 else "The LLM's answers will be grounded only on the partition named **{partition}**."
             )
-
             chat_profiles.append(
                 cl.ChatProfile(
                     name=m.id,
@@ -60,7 +60,6 @@ async def chat_profile():
                 )
             )
         return chat_profiles
-
     except Exception as e:
         await cl.Message(content=f"An error occured: {str(e)}").send()
 
@@ -69,26 +68,14 @@ async def chat_profile():
 async def on_chat_start():
     base_url = get_base_url()
     logger.debug(f"BASE URL: {base_url}")
-
-    chat_profile = cl.user_session.get("chat_profile")
-    settings = {
-        "model": chat_profile,
-        "temperature": 0.0,
-        "stream": True,
-    }
-
     cl.user_session.set("messages", [])
-
     logger.debug("New Chat Started")
-    cl.user_session.set("settings", settings)
-
     try:
         async with httpx.AsyncClient(
             timeout=httpx.Timeout(timeout=httpx.Timeout(4 * 60.0)), headers=headers
         ) as client:
             response = await client.get(url=f"{base_url}/health_check", headers=headers)
             print(response.text)
-
     except Exception as e:
         logger.error(f"An error happened: {e}")
         logger.warning("Make sur the fastapi is up!!")
@@ -133,10 +120,8 @@ async def __format_sources(metadata_sources, only_txt=False):
                 case ".mp3":
                     elem = cl.Audio(name=doc_id, url=file_url, display="side")
                 case _:
-                    # logger.info(f"Link: {s['chunk_url']}")
                     chunk_content = await __fetch_page_content(chunk_url=s["chunk_url"])
                     elem = cl.Text(content=chunk_content, name=doc_id, display="side")
-
         elements.append(elem)
         source_names.append(f"{doc_id}: {filename} (page: {page})")
 
@@ -145,71 +130,59 @@ async def __format_sources(metadata_sources, only_txt=False):
 
 @cl.on_message
 async def on_message(message: cl.Message):
-    settings = cl.user_session.get("settings")
     messages: list = cl.user_session.get("messages", [])
-    messages.append({"role": "user", "content": message.content})
+    model: str = cl.user_session.get("chat_profile")
 
     base_url = get_base_url()
-    client = AsyncOpenAI(base_url=f"{base_url}/v1", api_key="sk-1234")
+    client = AsyncOpenAI(
+        base_url=f"{base_url}/v1",
+        api_key=AUTH_TOKEN if AUTH_TOKEN else "sk-1234",
+    )
 
-    payload = {
+    messages.append({"role": "user", "content": message.content})
+    data = {
+        "model": model,
         "messages": messages,
-        **dict(settings),
+        "temperature": 0.3,
+        "stream": True,
+        "frequency_penalty": 0.4,
     }
 
     async with cl.Step(name="Searching for relevant documents..."):
-        async with httpx.AsyncClient(
-            timeout=httpx.Timeout(timeout=httpx.Timeout(4 * 60.0)), http2=True
-        ) as client:
-            async with client.stream(
-                "POST",
-                url=f"{base_url}/v1/chat/completions",
-                headers=headers,
-                json=payload,
-            ) as resp:
-                try:
-                    metadata = resp.headers.get("X-Metadata-Sources")
-                    logger.debug(f"Metadata: {metadata}")
-                    metadata_sources = json.loads(metadata)
-                except Exception as e:
-                    metadata_sources = None
-                    pass
+        response_content = ""
+        sources, elements, source_names = None, None, None
+        # Create message content to display
+        msg = cl.Message(content="")
+        await msg.send()
 
-                elements, source_names = await __format_sources(metadata_sources)
-                msg = cl.Message(content="", elements=elements)
-
-                # STREAM Response
-                await msg.send()
-
-                async for line in resp.aiter_lines():
-                    if not line or not line.startswith("data: "):
-                        continue
-
-                    content = line.removeprefix("data: ").strip()
-                    if content == "[DONE]":
-                        break
-
-                    try:
-                        data = json.loads(content)
-                    except json.JSONDecodeError as e:
-                        logger.error(f"Erreur JSON sur chunk : {e!r}")
-                        continue
-
-                    # parse JSON
-                    data = json.loads(content)
-                    token = data.get("choices", [{}])[0].get("delta", {}).get("content")
-                    if token:
-                        await msg.stream_token(token)
-
-                await msg.update()
-                messages.append({"role": "assistant", "content": msg.content})
-                cl.user_session.set("messages", messages)
-
-                # Show sources
-                if source_names:
-                    s = "\n\n" + "-" * 50 + "\n\nSources: \n" + "\n".join(source_names)
-                    await msg.stream_token(s)
+        try:
+            # Stream the response using OpenAI client directly
+            stream = await client.chat.completions.create(**data)
+            async for chunk in stream:
+                if sources is None:
+                    extra = json.loads(chunk.extra)
+                    sources = extra["sources"]
+                    elements, source_names = await __format_sources(sources)
+                    msg.elements = elements if elements else []
                     await msg.update()
+
+                if chunk.choices and chunk.choices[0].delta.content:
+                    token = chunk.choices[0].delta.content
+                    response_content += token
+                    await msg.stream_token(token)
+
+            await msg.update()
+            messages.append({"role": "assistant", "content": response_content})
+            cl.user_session.set("messages", messages)
+
+            # Show sources
+            if source_names:
+                s = "\n\n" + "-" * 50 + "\n\nSources: \n" + "\n".join(source_names)
+                await msg.stream_token(s)
+                await msg.update()
+        except Exception as e:
+            logger.error(f"Error during chat completion: {e}")
+            await cl.Message(content=f"An error occurred: {str(e)}").send()
 
 
 if __name__ == "__main__":

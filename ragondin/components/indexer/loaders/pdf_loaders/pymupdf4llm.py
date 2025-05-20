@@ -7,8 +7,7 @@ from ..base import BaseLoader
 
 class PyMuPDF4LLMLoader(BaseLoader):
     def __init__(self, page_sep: str = "[PAGE_SEP]", config=None, **kwargs) -> None:
-        super().__init__(config=config, **kwargs)
-        self.page_sep = page_sep
+        super().__init__(page_sep=page_sep, **kwargs)
 
     async def aload_document(self, file_path, metadata: dict = None, save_md=False):
         pages = await asyncio.to_thread(

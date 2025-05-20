@@ -14,7 +14,7 @@ INDEX_PARAMS = [
     {
         "metric_type": "BM25",
         "index_type": "SPARSE_INVERTED_INDEX",
-    },  # Fovr sparse vector
+    },  # For sparse vector
     {
         "metric_type": "COSINE",
         "index_type": "HNSW",
@@ -177,8 +177,6 @@ class MilvusDB(ABCVectorDB):
             vector_field=["sparse", "vector"] if self.hybrid_mode else None,
             consistency_level="Strong",
         )
-
-        self.logger.info(f"VOLUME: {self.volumes_dir}")
 
         self.partition_file_manager = PartitionFileManager(
             database_url=f"sqlite:///{self.volumes_dir}/partitions_for_collection_{name}.db",
