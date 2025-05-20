@@ -6,10 +6,10 @@ import ray
 import torch
 from config import load_config
 from langchain_core.documents.base import Document
+from langchain_openai import OpenAIEmbeddings
 from loguru import logger
 
 from .chunker import ABCChunker, ChunkerFactory
-from .embeddings import HFEmbedder
 from .loaders.loader import DocSerializer
 from .vectordb import ConnectorFactory
 
@@ -40,21 +40,25 @@ class IndexerWorker:
             device (str, optional): Device to be used by the embedder. Defaults to None.
         """
         from config import load_config
+        from langchain_openai import OpenAIEmbeddings
         from loguru import logger
 
-        from .embeddings import HFEmbedder
         from .vectordb import ConnectorFactory
 
         self.config = load_config()
-        self.embedder = HFEmbedder(embedder_config=self.config.embedder, device=None)
+        self.embedder = OpenAIEmbeddings(
+            model=self.config.embedder.get("model_name"),
+            base_url=self.config.embedder.get("base_url"),
+            api_key=self.config.embedder.get("api_key"),
+        )
         self.serializer = DocSerializer(
             data_dir=self.config.paths.data_dir, config=self.config
         )
         self.chunker: ABCChunker = ChunkerFactory.create_chunker(
-            self.config, embedder=self.embedder.get_embeddings()
+            self.config, embedder=self.embedder
         )
         self.vectordb = ConnectorFactory.create_vdb(
-            self.config, logger=logger, embeddings=self.embedder.get_embeddings()
+            self.config, logger=logger, embeddings=self.embedder
         )
         self.logger = logger
         self.default_partition = "_default"
@@ -121,12 +125,15 @@ class Indexer:
     def __init__(self):
         config = load_config()
         self.config = config
-        device = None
         self.logger = logger
         self.enable_insertion = self.config.vectordb["enable"]
-        self.embedder = HFEmbedder(embedder_config=config.embedder, device=device)
+        self.embedder = OpenAIEmbeddings(
+            model=self.config.embedder.get("model_name"),
+            base_url=self.config.embedder.get("base_url"),
+            api_key=self.config.embedder.get("api_key"),
+        )
         self.vectordb = ConnectorFactory.create_vdb(
-            config, logger, embeddings=self.embedder.get_embeddings()
+            config, logger, embeddings=self.embedder
         )
         logger.info("Indexer supervisor actor initialized.")
 

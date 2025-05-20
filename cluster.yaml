@@ -17,7 +17,7 @@ docker:
     - --env-file /ray_mount/.env
 auth:
   ssh_user: ubuntu
-  ssh_private_key: path/to/private/key
+  ssh_private_key: ./lucie_chat_id_rsa
 
 head_setup_commands:
     - bash /app/ray-cluster/start_head.sh
