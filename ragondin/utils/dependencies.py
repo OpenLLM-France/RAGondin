@@ -58,9 +58,3 @@ vectordb: ABCVectorDB = VDBProxy(
 
 def get_indexer():
     return indexer
-
-
-@ray.remote
-def get_ray_task_status(task_id: str):
-    """Get the status of a task."""
-    return get_task(task_id)

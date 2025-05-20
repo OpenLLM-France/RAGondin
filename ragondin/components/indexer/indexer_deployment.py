@@ -8,6 +8,7 @@ from config import load_config
 from langchain_core.documents.base import Document
 from langchain_openai import OpenAIEmbeddings
 from loguru import logger
+from ray.util.state import get_task
 
 from .chunker import ABCChunker, ChunkerFactory
 from .loaders.loader import DocSerializer
@@ -238,6 +239,10 @@ class Indexer:
 
     def delete_partition(self, partition: str):
         return self.vectordb.delete_partition(partition)
+
+    def get_task_status(self, task_id: str):
+        """Get the status of a task."""
+        return get_task(task_id)
 
     def _check_partition_list(self, partition: Optional[str]):
         if partition is None:

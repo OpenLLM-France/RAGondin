@@ -16,7 +16,7 @@ from fastapi import (
 )
 from fastapi.responses import JSONResponse
 from loguru import logger
-from utils.dependencies import Indexer, get_indexer, get_ray_task_status, vectordb
+from utils.dependencies import Indexer, get_indexer, vectordb
 
 # load config
 config = load_config()
@@ -266,7 +266,7 @@ async def patch_file(
 @router.get("/task/{task_id}")
 async def get_task_status(task_id: str, indexer: Indexer = Depends(get_indexer)):
     try:
-        task = ray.get(get_ray_task_status.remote(task_id))
+        task = ray.get(indexer.get_task_status.remote(task_id))
     except Exception:
         logger.warning(f"Task {task_id} not found.")
         task = None
