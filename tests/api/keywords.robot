@@ -4,8 +4,8 @@ Library     Collections
 Library    RequestsLibrary
 
 *** Variables ***
-${BASE}           http://163.114.159.151
-${PORT}           8888
+${BASE}           
+${PORT}           
 ${test_file_1}    test_file_1.pdf
 ${test_file_2}    test_file_2.pdf
 ${test_part_1}    test
