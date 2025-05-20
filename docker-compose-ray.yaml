@@ -57,6 +57,6 @@ services:
       - ./vllm_cache:/root/.cache/huggingface
     command: >
       --model ${EMBEDDER_MODEL_NAME:-jinaai/jina-embeddings-v3}
-      --api-key ${EMBEDDER_API_KEY,-EMPTY}
+      --trust-remote-code
     ports:
       - 8000:8000
