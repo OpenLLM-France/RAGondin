@@ -1,11 +1,11 @@
 import ray
 import ray.actor
-from config import load_config
-
 from components import ABCVectorDB
 from components.indexer.indexer import Indexer
 from components.indexer.indexer_deployment import Indexer as IndexerForDeployment
+from config import load_config
 from loguru import logger
+from ray.util.state import get_task
 
 
 class VDBProxy:
