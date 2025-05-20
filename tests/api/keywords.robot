@@ -102,3 +102,7 @@ Get File Metadata
     ELSE
         Log    No expected metadata to validate.
     END
+
+Get Models
+    ${response}=    GET    ${BASE_URL}/v1/models
+    Log To Console    ${response}
