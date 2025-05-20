@@ -28,13 +28,13 @@ This allows your **main machine (Ray head + API host)** to share directories wit
 #### On the **main machine (server)**
 ```bash
 sudo apt update
-sudo apt install nfs-kernel-server
+sudo apt install -y nfs-kernel-server
 ```
 
 #### On all **worker nodes (clients)**
 ```bash
 sudo apt update
-sudo apt install nfs-common
+sudo apt install -y nfs-common
 ```
 
 ---
@@ -69,6 +69,7 @@ sudo systemctl restart nfs-kernel-server
 
 Mount the shared folder:
 ```bash
+sudo mkdir -p /ray_mount
 sudo mount -t nfs 192.168.42.226:/ray_mount /ray_mount
 ```
 > ⚠ Replace `192.168.42.226` with the **IP of the main machine**.

@@ -116,3 +116,16 @@ Once running, **RAGondin will auto-connect** to the Ray cluster using `RAY_ADDRE
 ---
 
 With this setup, your app is now fully distributed and ready to handle concurrent tasks across your Ray cluster.
+
+
+## 🛠️ Troubleshooting
+
+### ❌ Permission Denied Errors
+
+If you encounter errors like `Permission denied` when Ray or Docker tries to access shared folders (SQL database, model files, ...), it's likely due to insufficient permissions on the host system.
+
+👉 To resolve this, you can set full read/write/execute permissions on the shared directory:
+
+```bash
+sudo chmod -R 777 /ray_mount
+```

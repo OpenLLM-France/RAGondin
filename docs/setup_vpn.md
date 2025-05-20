@@ -10,7 +10,7 @@ Run the following on **each machine** (server and clients):
 
 ```bash
 sudo apt update
-sudo apt install wireguard
+sudo apt install -y wireguard
 ```
 
 ---
