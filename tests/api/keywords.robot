@@ -32,6 +32,18 @@ Get Extract
     ${response}=    GET    ${BASE_URL}/extract/${extract_id}    expected_status=${expected_status}
     RETURN    ${response.json()}
 
+Index File Non Blocking
+    [Arguments]    ${file_path}    ${id}    ${part}    ${expected_status}=201
+    ${file}=    Get File For Streaming Upload    ${file_path}
+    ${files}=    Create Dictionary    file=${file}
+    ${response}=    POST
+    ...    ${BASE_URL}/indexer/partition/${part}/file/${id}
+    ...    files=${files}
+    ...    expected_status=${expected_status}
+    ${response}=    Set Variable    ${response.json()}
+    Should Match Regexp    ${response}[task_status_url]    ${BASE_URL}/indexer/task/[a-fA-F0-9]{48}
+    RETURN    ${response}
+
 Index File
     [Arguments]    ${file_path}    ${id}    ${part}    ${expected_status}=201
     ${file}=    Get File For Streaming Upload    ${file_path}

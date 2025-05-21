@@ -44,3 +44,28 @@ Get Invalid File Id (-1)
 
 Get Invalid File Id (`"&é\'-!")
     Get File Metadata    id="&é\'-!    part=test    expected_status=404
+
+Test Indexer Overload
+    ${task_ids}=    Create List
+    FOR    ${i}    IN RANGE    0    100
+        ${response}=    Index File Non Blocking    ${CURDIR}/${test_file_1}    ${i}    test
+        ${task_url}=    Set Variable    ${response}[task_status_url]
+        ${task_id}=    Fetch From Right    ${task_url}    /
+        Append To List    ${task_ids}    ${task_id}
+    END
+    Sleep    1
+    FOR    ${i}    IN RANGE    0    1200
+        FOR    ${task_id}    IN    @{task_ids}
+            ${response}=    Get Task Status    ${task_id}
+            ${task_state}=    ${response}[task_state]
+            IF    '${task_state}' == 'FAILED'
+                Fail    Task '${task_id}' failed.
+            ELSE IF    '${task_state}' == 'FINISHED'
+                Remove From List    ${task_ids}    ${task_id}
+            END
+        END
+        Sleep    1
+        IF    ${task_ids}
+            Log    ${task_ids}
+        END
+    END
