@@ -3,7 +3,6 @@ import copy
 import torch
 import asyncio
 from enum import Enum
-from ragatouille import RAGPretrainedModel
 from sentence_transformers import CrossEncoder
 from langchain_core.documents.base import Document
 from .utils import SingletonMeta
@@ -39,6 +38,8 @@ class Reranker(metaclass=SingletonMeta):
                 )
             case RerankerType.COLBERT:
                 # Initialize ColBERT model here
+                from ragatouille import RAGPretrainedModel
+
                 self.model = RAGPretrainedModel.from_pretrained(
                     pretrained_model_name_or_path=model_name
                 )
