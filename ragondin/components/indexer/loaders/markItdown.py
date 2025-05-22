@@ -15,7 +15,7 @@ class MarkItDownLoader(BaseLoader):
         super().__init__(page_sep, **kwargs)
         self.converter = MarkItDown()
 
-    async def aload_document(self, file_path, metadata, save_md=False):
+    async def aload_document(self, file_path, metadata, save_markdown=False):
         result = self.converter.convert(file_path).text_content
 
         if self.config["loader"]["image_captioning"]:
@@ -32,7 +32,7 @@ class MarkItDownLoader(BaseLoader):
             logger.info("Image captioning disabled. Ignoring images.")
 
         doc = Document(page_content=result, metadata=metadata)
-        if save_md:
+        if save_markdown:
             self.save_document(Document(page_content=result), str(file_path))
         return doc
 

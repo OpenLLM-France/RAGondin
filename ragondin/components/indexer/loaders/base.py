@@ -36,7 +36,7 @@ class BaseLoader(ABC):
     async def aload_document(
         file_path: Union[str, Path],
         metadata: Optional[Dict] = None,
-        save_md: bool = False,
+        save_markdown: bool = False,
     ):
         pass
 
@@ -44,6 +44,7 @@ class BaseLoader(ABC):
         path = re.sub(r"\..*", ".md", path)
         with open(path, "w", encoding="utf-8") as f:
             f.write(doc.page_content)
+        logger.info(f"Document saved to {path}")
 
     async def get_image_description(
         self, image, semaphore: asyncio.Semaphore = vlmSemaphore
