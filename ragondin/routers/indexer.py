@@ -266,16 +266,16 @@ async def patch_file(
 @router.get("/task/{task_id}")
 async def get_task_status(task_id: str, indexer: Indexer = Depends(get_indexer)):
     try:
-        task = ray.get(indexer.get_task_status.remote(task_id))
+        state = await indexer.get_task_status.remote(task_id)
     except Exception:
         logger.warning(f"Task {task_id} not found.")
-        task = None
+        state = None
 
-    if task is None:
+    if state is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail=f"Task '{task_id}' not found."
         )
     return JSONResponse(
         status_code=status.HTTP_200_OK,
-        content={"task_id": task_id, "task_state": task.state},
+        content={"task_id": task_id, "task_state": state},
     )

@@ -9,7 +9,7 @@ env_vars = dotenv_values(SHARED_ENV) if SHARED_ENV else {}
 env_vars["PYTHONPATH"] = "/app/ragondin"
 
 
-ray.init()
+ray.init(dashboard_host="0.0.0.0")
 
 
 import os

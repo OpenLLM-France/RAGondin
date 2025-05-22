@@ -8,12 +8,11 @@ from config import load_config
 from langchain_core.documents.base import Document
 from langchain_openai import OpenAIEmbeddings
 from loguru import logger
-from ray.util.state import get_task
 
 from .chunker import ABCChunker, ChunkerFactory
 from .loaders.loader import DocSerializer
 from .vectordb import ConnectorFactory
-
+import asyncio
 # Load the configuration
 config = load_config()
 
@@ -64,6 +63,9 @@ class IndexerWorker:
         self.logger = logger
         self.default_partition = "_default"
         self.enable_insertion = self.config.vectordb["enable"]
+        self.task_state_manager = ray.get_actor(
+            "TaskStateManager", namespace="ragondin"
+        )
         self.logger.info("Indexer worker initialized.")
 
     async def serialize(self, path: str, metadata: Optional[Dict] = {}):
@@ -86,17 +88,26 @@ class IndexerWorker:
 
     async def add_file(
         self,
+        task_id: str,
         path: str | list[str],
         metadata: Optional[Dict] = {},
-        partition: Optional[str] = None,
-    ):
+        partition: Optional[str] = None
+    ):  
         partition = self._check_partition_str(partition)
         metadata = {**metadata, "partition": partition}
+
+        # Serialize document
+        self.task_state_manager.set_state.remote(task_id, "SERIALIZING")
         doc = await self.serialize(path, metadata=metadata)
+
+        # Chunk docs
+        self.task_state_manager.set_state.remote(task_id, "CHUNKING")
         chunks = await self.chunk(doc, path)
 
+        # Add chunks to the vector database
         try:
             if self.enable_insertion:
+                self.task_state_manager.set_state.remote(task_id, "INSERTING")
                 await self.vectordb.async_add_documents(chunks)
                 self.logger.debug(f"Documents {path} added.")
             else:
@@ -136,14 +147,29 @@ class Indexer:
         self.vectordb = ConnectorFactory.create_vdb(
             config, logger, embeddings=self.embedder
         )
+        self.task_state_manager = ray.get_actor("TaskStateManager", namespace="ragondin")
         logger.info("Indexer supervisor actor initialized.")
 
     def get_worker(self):
         return IndexerWorker.remote()
 
     async def add_file(self, path, metadata, partition):
+        # Retrieve task_id from the Ray runtime context
+        task_id = ray.get_runtime_context().get_task_id()
+
+        # Start a worker for the task
         worker = self.get_worker()
-        await worker.add_file.remote(path, metadata, partition)
+        
+        self.task_state_manager.set_state.remote(task_id, "QUEUED")
+
+        # Send the task
+        try:
+            await worker.add_file.remote(task_id, path, metadata, partition)
+        except Exception as e:
+            self.logger.error(f"Error in `add_file` for path {path}: {e}")
+            self.task_state_manager.set_state.remote(task_id, "FAILED")
+            raise
+        self.task_state_manager.set_state.remote(task_id, "COMPLETED")
         ray.kill(worker)
 
     def delete_file(self, file_id: str, partition: str):
@@ -240,9 +266,9 @@ class Indexer:
     def delete_partition(self, partition: str):
         return self.vectordb.delete_partition(partition)
 
-    def get_task_status(self, task_id: str):
+    async def get_task_status(self, task_id: str):
         """Get the status of a task."""
-        return get_task(task_id)
+        return await self.task_state_manager.get_state.remote(task_id)
 
     def _check_partition_list(self, partition: Optional[str]):
         if partition is None:
@@ -271,3 +297,23 @@ class Indexer:
         """Helper method to check if a vectordb method is async."""
         method = getattr(self.vectordb, method_name, None)
         return inspect.iscoroutinefunction(method) if method else False
+
+
+@ray.remote
+class TaskStateManager:
+    def __init__(self):
+        self.states = {}
+        self.lock = asyncio.Lock()
+
+    async def set_state(self, task_id: str, state: str):
+        async with self.lock:
+            self.states[task_id] = state
+
+    async def get_state(self, task_id: str) -> Optional[str]:
+        async with self.lock:
+            state = self.states.get(task_id, None)
+            return state
+
+    async def get_all_states(self):
+        async with self.lock:
+            return dict(self.states)
