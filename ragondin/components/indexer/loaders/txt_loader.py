@@ -21,7 +21,7 @@ class TextLoader(BaseLoader):
         self,
         file_path: Union[str, Path],
         metadata: Optional[Dict] = None,
-        save_md: bool = False,
+        save_markdown: bool = False,
     ) -> Document:
         if metadata is None:
             metadata = {}
@@ -41,7 +41,7 @@ class TextLoader(BaseLoader):
         )
 
         # Save if requested
-        if save_md:
+        if save_markdown:
             self.save_document(doc, str(path))
 
         return doc

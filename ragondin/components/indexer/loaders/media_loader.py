@@ -26,7 +26,9 @@ class VideoAudioLoader(BaseLoader):
         model = kwargs.get("config").loader["audio_model"]
         self.transcriber = AudioTranscriber(device=device, model_name=model)
 
-    async def aload_document(self, file_path, metadata: dict = None, save_md=False):
+    async def aload_document(
+        self, file_path, metadata: dict = None, save_markdown=False
+    ):
         path = Path(file_path)
         if path.suffix not in MEDIA_FORMATS:
             logger.warning(
@@ -55,6 +57,6 @@ class VideoAudioLoader(BaseLoader):
 
         content = result["text"]
         doc = Document(page_content=content, metadata=metadata)
-        if save_md:
+        if save_markdown:
             self.save_document(Document(page_content=content), str(file_path))
         return doc

@@ -6,11 +6,10 @@ the loading and serialization of documents from various file types.
 """
 
 import gc
-from pathlib import Path
 from typing import Dict, Optional, Union
 
 import torch
-from aiopath import AsyncPath
+from pathlib import Path
 from langchain_core.documents.base import Document
 from loguru import logger
 
@@ -22,6 +21,7 @@ class DocSerializer:
         self.data_dir = data_dir
         self.kwargs = kwargs
         self.config = kwargs.get("config", {})
+        self.save_markdown = self.config.loader.get("save_markdown", False)
 
         # Initialize loader classes:
         self.loader_classes = get_loader_classes(config=self.config)
@@ -34,7 +34,7 @@ class DocSerializer:
         if metadata is None:
             metadata = {}
 
-        p = AsyncPath(path)
+        p = Path(path)
         file_ext = p.suffix
 
         # Get appropriate loader for the file type
@@ -51,12 +51,15 @@ class DocSerializer:
         try:
             # Load the doc
             doc: Document = await loader.aload_document(
-                file_path=path, metadata=metadata, save_md=False
+                file_path=path, metadata=metadata, save_markdown=self.save_markdown
             )
 
-            # Clean up resources for specific loader types
-            if hasattr(loader, "shutdown") and callable(loader.shutdown):
-                await loader.shutdown()
+            # # Clean up resources for specific loader types
+            # if hasattr(loader, "cleanup_resources") and callable(
+            #     loader.cleanup_resources
+            # ):
+            #     logger.debug(f"Cleaning up resources for {loader.__class__.__name__}")
+            #     loader.cleanup_resources()
 
             # Clean up resources
             del loader

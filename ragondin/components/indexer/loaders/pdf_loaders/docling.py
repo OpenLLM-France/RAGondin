@@ -55,7 +55,7 @@ class DoclingLoader(BaseLoader):
         super().__init__(page_sep, **kwargs)
         self.converter = DoclingConverter()
 
-    async def aload_document(self, file_path, metadata, save_md=False):
+    async def aload_document(self, file_path, metadata, save_markdown=False):
         with torch.no_grad():
             result = await self.converter.convert_to_md(file_path)
 
@@ -78,7 +78,7 @@ class DoclingLoader(BaseLoader):
             logger.info("Image captioning disabled. Ignoring images.")
 
         doc = Document(page_content=enriched_content, metadata=metadata)
-        if save_md:
+        if save_markdown:
             self.save_document(Document(page_content=enriched_content), str(file_path))
         return doc
 
