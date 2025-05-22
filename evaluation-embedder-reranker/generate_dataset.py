@@ -38,33 +38,40 @@ async def __get_relevant_chunks(
     add_chunk_relevancy: bool = False,
 ):
     async with sempahore:
-        try:
-            async with httpx.AsyncClient(timeout=httpx.Timeout(4 * 60)) as client:
-                res = await client.get(
-                    url=f"{ragondin_api_base_url}/search/partition/{partition}",
-                    params={
-                        "text": query,
-                        "top_k": top_k,
-                    },
-                )
-                res.raise_for_status()
-                data: dict = res.json()
-            # Extract the documents
-            chunk_links = [doc["link"] for doc in data.get("documents", [])]
-            # Extract the content and metadata
-            chunks_tasks = [fetch_chunk_data(link) for link in chunk_links]
-            chunks = await asyncio.gather(*chunks_tasks)
-            return chunks
-        except Exception as e:
-            logger.debug(f"Error fetching chunks: {e}")
-            return None
+        retries = 3  # Number of retries
+        delay = 1  # Delay in seconds between retries
+        for attempt in range(retries):
+            try:
+                async with httpx.AsyncClient(timeout=httpx.Timeout(4 * 60)) as client:
+                    res = await client.get(
+                        url=f"{ragondin_api_base_url}/search/partition/{partition}",
+                        params={
+                            "text": query,
+                            "top_k": top_k,
+                        },
+                    )
+                    res.raise_for_status()
+                    data: dict = res.json()
+                # Extract the documents
+                chunk_links = [doc["link"] for doc in data.get("documents", [])]
+                # Extract the content and metadata
+                chunks_tasks = [fetch_chunk_data(link) for link in chunk_links]
+                chunks = await asyncio.gather(*chunks_tasks)
+                return chunks
+            except Exception as e:
+                logger.debug(f"Attempt {attempt + 1} failed: {e}")
+                if attempt < retries - 1:
+                    await asyncio.sleep(delay)  # Wait before retrying
+                else:
+                    logger.debug(f"Error fetching chunks after {retries} attempts: {e}")
+                    return None
 
 
 async def main():
     instruction_file = "./output-instruct-IR/instruction.csv"
     query_file = "./output-instruct-IR/queries.csv"
     qrel_file = "./output-instruct-IR/qrels.csv"
-    output_file = "./output-instruct-IR/retrieved_chunks_Lajavaness.json"
+    output_file = "./output-instruct-IR/retrieved_chunks_intfloat.json"
 
     partition = "corpus_instruction_IR"
     top_k = 10
