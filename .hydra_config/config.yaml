@@ -28,7 +28,7 @@ semaphore:
 
 embedder:
   type: huggingface
-  model_name: ${oc.env:EMBEDDER_MODEL_NAME, HIT-TMG/KaLM-embedding-multilingual-mini-v1}
+  model_name: ${oc.env:EMBEDDER_MODEL_NAME}
   
 vectordb:
   host: ${oc.env:VDB_HOST, milvus}
