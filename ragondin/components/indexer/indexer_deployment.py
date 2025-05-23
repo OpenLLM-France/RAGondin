@@ -13,12 +13,17 @@ from .chunker import ABCChunker, ChunkerFactory
 from .loaders.loader import DocSerializer
 from .vectordb import ConnectorFactory
 import asyncio
+from ray.util.actor_pool import ActorPool
+
 # Load the configuration
 config = load_config()
 
 # Set ray resources
 NUM_GPUS = config.ray.get("num_gpus")
 NUM_CPUS = config.ray.get("num_cpus")
+POOL_SIZE = config.ray.get("pool_size")
+POOL_TIMEOUT = config.ray.get("pool_timeout")
+MAX_TASKS_PER_WORKER = config.ray.get("max_tasks_per_worker")
 
 if torch.cuda.is_available():
     gpu, cpu = NUM_GPUS, NUM_CPUS
@@ -66,6 +71,7 @@ class IndexerWorker:
         self.task_state_manager = ray.get_actor(
             "TaskStateManager", namespace="ragondin"
         )
+        self.task_count = 0
         self.logger.info("Indexer worker initialized.")
 
     async def serialize(self, path: str, metadata: Optional[Dict] = {}):
@@ -93,6 +99,8 @@ class IndexerWorker:
         metadata: Optional[Dict] = {},
         partition: Optional[str] = None
     ):  
+        self.task_count += 1
+
         partition = self._check_partition_str(partition)
         metadata = {**metadata, "partition": partition}
 
@@ -130,6 +138,9 @@ class IndexerWorker:
         elif not isinstance(partition, str):
             raise ValueError("Partition should be a string.")
         return partition
+    
+    async def get_task_count(self):
+        return self.task_count
 
 
 @ray.remote(max_restarts=-1)
@@ -148,29 +159,41 @@ class Indexer:
             config, logger, embeddings=self.embedder
         )
         self.task_state_manager = ray.get_actor("TaskStateManager", namespace="ragondin")
+        self.worker_pool = ActorPool([IndexerWorker.remote() for _ in range(POOL_SIZE)])
         logger.info("Indexer supervisor actor initialized.")
-
-    def get_worker(self):
-        return IndexerWorker.remote()
 
     async def add_file(self, path, metadata, partition):
         # Retrieve task_id from the Ray runtime context
         task_id = ray.get_runtime_context().get_task_id()
-
-        # Start a worker for the task
-        worker = self.get_worker()
         
         self.task_state_manager.set_state.remote(task_id, "QUEUED")
 
         # Send the task
         try:
+            # Wait for a free worker
+            for _ in range(POOL_TIMEOUT):
+                if self.worker_pool.has_free():
+                    worker = self.worker_pool.pop_idle()
+                    break
+                await asyncio.sleep(1)
+            else:
+                raise TimeoutError("No free worker available after X seconds")
+            
+            # Send task to the worker
             await worker.add_file.remote(task_id, path, metadata, partition)
+
         except Exception as e:
             self.logger.error(f"Error in `add_file` for path {path}: {e}")
             self.task_state_manager.set_state.remote(task_id, "FAILED")
             raise
+        finally:
+            task_count = await worker.get_task_count.remote()
+            if task_count >= MAX_TASKS_PER_WORKER:
+                logger.info("Worker reached max task count, restarting...")
+                ray.kill(worker)
+                worker = IndexerWorker.remote()
+            self.worker_pool.push(worker)
         self.task_state_manager.set_state.remote(task_id, "COMPLETED")
-        ray.kill(worker)
 
     def delete_file(self, file_id: str, partition: str):
         """
