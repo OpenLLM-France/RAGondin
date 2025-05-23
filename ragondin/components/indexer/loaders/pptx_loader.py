@@ -1,7 +1,6 @@
 import html
 import re
 from io import BytesIO
-
 import pptx
 from langchain_core.documents.base import Document
 from PIL import Image
@@ -112,10 +111,8 @@ class PPTXConverter:
 
 class PPTXLoader(BaseLoader):
     def __init__(self, page_sep: str = "[PAGE_SEP]", **kwargs) -> None:
-        super().__init__(**kwargs)
-        self.page_sep = page_sep
+        super().__init__(page_sep, **kwargs)
         self.image_placeholder = r"<image>"
-
         self.converter = PPTXConverter(
             image_placeholder=self.image_placeholder, page_separator=page_sep
         )
@@ -124,7 +121,7 @@ class PPTXLoader(BaseLoader):
         tasks = [self.get_image_description(image=img) for img in images]
         return await tqdm.gather(*tasks, desc="Generating captions")
 
-    async def aload_document(self, file_path, metadata=None, save_md=False):
+    async def aload_document(self, file_path, metadata=None, save_markdown=False):
         md_content, imgs = self.converter.convert(local_path=file_path)
         images_captions = await self.get_captions(imgs)
 
@@ -137,6 +134,6 @@ class PPTXLoader(BaseLoader):
             )
 
         doc = Document(page_content=md_content, metadata=metadata)
-        if save_md:
+        if save_markdown:
             self.save_document(Document(page_content=md_content), str(file_path))
         return doc

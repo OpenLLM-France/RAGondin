@@ -61,14 +61,18 @@ prompt:
   contextualizer_pmpt: contextualizer_pmpt.txt
 
 loader:
-  image_captioning: true
+  image_captioning: false
+  save_markdown: true
   audio_model: ${oc.env:WHISPER_MODEL, base}
   file_loaders:
-    docx: MarkItDownLoader
-    pdf: ${oc.env:PDFLoader, DoclingLoader}  # DoclingLoader # MarkerLoader # CustomPyMuPDFLoader # Custompymupdf4llm
-    doc: DocLoader
-    pptx: PPTXLoader
     txt: TextLoader
+    pdf: ${oc.env:PDFLoader, DoclingLoader}  # DoclingLoader # MarkerLoader # PyMuPDFLoader # Custompymupdf4llm
+    docx: MarkItDownLoader
+    pptx: PPTXLoader
+    doc: DocLoader
+    png: ImageLoader
+    jpeg: ImageLoader
+    jpg: ImageLoader
     wav: VideoAudioLoader
     mp3: VideoAudioLoader
     mp4: VideoAudioLoader
@@ -76,10 +80,9 @@ loader:
     flv: VideoAudioLoader
     wma: VideoAudioLoader
     aac: VideoAudioLoader
-    # odt: CustomDocLoader
 
 ray:
-  num_cpus: ${oc.decode:${oc.env:RAY_NUM_CPUS, 4}}
+  num_cpus: ${oc.decode:${oc.env:RAY_NUM_CPUS, 12}} # if not supplied, will use all available CPUs in the machine
   num_gpus: ${oc.decode:${oc.env:RAY_NUM_GPUS, 1}}
   local_deployment: ${oc.decode:${oc.env:LOCAL_DEPLOYMENT, true}} # set false for cluster deployment
   n_parallel_indexation: ${oc.decode:${oc.env:N_PARALLEL_INDEXATION, 2}}
