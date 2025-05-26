@@ -29,7 +29,7 @@ def relevance(val, true_chunk_ids):
 def compute_nDCG(true_chunk_ids: list[str], all_retrieved_chunks: list[dict]):
     val_DCG = 0
     for i, val in enumerate(all_retrieved_chunks):
-        val_DCG += relevance(val, true_chunk_ids) / math.log2(i + 2)
+        val_DCG += relevance(val["corpus_id"], true_chunk_ids) / math.log2(i + 2)
     iDCG = 0
     for i in range(max(len(true_chunk_ids), len(all_retrieved_chunks))):
         iDCG += 1 / math.log2(i + 2)
@@ -59,7 +59,7 @@ for row in tqdm(question_relevant_chunks, desc="Computing metrics"):
         e_rerank_time = time.time()
         RERANKING_TIME.append(e_rerank_time - s_rerank_time)
 
-    NDCG.extend()
+    NDCG.extend(compute_nDCG(true_chunk_ids, all_retrieved_chunks))
 end = time.time()
 
 nDCG = np.array(NDCG).mean()

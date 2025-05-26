@@ -6,7 +6,7 @@ from reranker import Reranker
 import time
 
 # load the model
-evaluate_with_reranking = False
+evaluate_with_reranking = True
 
 model_name = "jinaai/jina-colbert-v2"
 reranker_type = "colbert"
