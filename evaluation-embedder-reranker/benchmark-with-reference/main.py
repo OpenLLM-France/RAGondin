@@ -70,7 +70,7 @@ async def __get_relevant_chunks(
 async def main():
     query_file = "./data/queries.csv"
     qrel_file = "./data/qrels.csv"
-    output_file = "./data/retrieved_chunks_paraphase_MiniLM_L12.json"
+    output_file = "./data/retrieved_chunks_intfloat.json"
 
     partition = "scifact"
     top_k = 10
