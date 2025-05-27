@@ -69,7 +69,7 @@ docker:
 
 auth:
   ssh_user: ubuntu
-  ssh_private_key: path/to/private/key
+  ssh_private_key: path/to/private/key # Replace with your actual ssh key path
 
 head_setup_commands:
   - bash /app/ray-cluster/start_head.sh

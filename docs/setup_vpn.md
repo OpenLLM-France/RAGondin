@@ -64,7 +64,7 @@ PrivateKey = <CLIENT_PRIVATE_KEY>
 [Peer]
 # VPN Server
 PublicKey = <SERVER_PUBLIC_KEY>
-Endpoint = 162.19.92.65:51820
+Endpoint = 162.19.92.65:51820 # Replace with your VPN server IP
 AllowedIPs = 10.0.0.0/24
 PersistentKeepalive = 25
 ```
