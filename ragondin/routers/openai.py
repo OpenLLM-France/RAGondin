@@ -10,6 +10,7 @@ from urllib.parse import urlparse, quote
 from loguru import logger
 from config.config import load_config
 from fastapi import status
+from langchain_core.documents.base import Document
 
 
 config = load_config()
@@ -101,25 +102,21 @@ def __get_partition_name(model_name, app_state):
     return partition
 
 
-def __prepare_sources(request: Request, sources: list):
+def __prepare_sources(request: Request, docs: list[Document]):
     links = []
-    for source in sources:
-        filename = source["filename"]
-        file_url = str(request.url_for("static", path=filename))
+    for doc in docs:
+        doc_metadata = dict(doc.metadata)
+        file_url = str(request.url_for("static", path=doc_metadata["filename"]))
         encoded_url = quote(file_url, safe=":/")
         links.append(
             {
-                "doc_id": source["doc_id"],
                 "file_url": encoded_url,
-                "filename": source["filename"],
-                "_id": source["_id"],
                 "chunk_url": str(
-                    request.url_for("get_extract", extract_id=source["_id"])
+                    request.url_for("get_extract", extract_id=doc_metadata["_id"])
                 ),
-                "page": source["page"],
+                **doc_metadata,
             }
         )
-
     return links
 
 
@@ -170,7 +167,7 @@ async def openai_chat_completion(
 
     try:
         # Run RAG pipeline
-        llm_output, _, sources = await app_state.ragpipe.chat_completion(
+        llm_output, docs = await app_state.ragpipe.chat_completion(
             partition=[partition], payload=request.model_dump()
         )
     except Exception as e:
@@ -182,7 +179,7 @@ async def openai_chat_completion(
         )
 
     # Handle the sources
-    metadata = __prepare_sources(request2, sources)
+    metadata = __prepare_sources(request2, docs)
     metadata_json = json.dumps({"sources": metadata})
 
     if request.stream:
@@ -267,7 +264,7 @@ async def openai_completion(
     # Run RAG pipeline
     try:
         # Run RAG pipeline
-        llm_output, _, sources = await app_state.ragpipe.completions(
+        llm_output, docs = await app_state.ragpipe.completions(
             partition=[partition], payload=request.model_dump()
         )
     except Exception as e:
@@ -279,7 +276,7 @@ async def openai_completion(
         )
 
     # Handle the sources
-    metadata = __prepare_sources(request2, sources)
+    metadata = __prepare_sources(request2, docs)
     metadata_json = json.dumps({"sources": metadata})
 
     try:

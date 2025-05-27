@@ -162,7 +162,7 @@ class RagPipeline:
         # messages.append({"role": "tool", "name": "retriever", "content": f"Here are the retrieved documents: {context}"})
 
         payload["messages"] = messages
-        return payload, context, sources
+        return payload, docs
 
     async def _prepare_for_completions(self, partition: list[str], payload: dict):
         prompt = payload["prompt"]
@@ -187,23 +187,23 @@ class RagPipeline:
         ) + f"Complete the following prompt: {prompt}"
         payload["prompt"] = prompt
 
-        return payload, context, sources
+        return payload, docs
 
     async def completions(self, partition: list[str], payload: dict):
-        payload, context, sources = await self._prepare_for_completions(
+        payload, docs = await self._prepare_for_completions(
             partition=partition, payload=payload
         )
         llm_output = self.llm_client.completions(request=payload)
-        return llm_output, context, sources
+        return llm_output, docs
 
     async def chat_completion(self, partition: list[str], payload: dict):
         try:
-            payload, context, sources = await self._prepare_for_chat_completion(
+            payload, docs = await self._prepare_for_chat_completion(
                 partition=partition, payload=payload
             )
 
             llm_output = self.llm_client.chat_completion(request=payload)
-            return llm_output, context, sources
+            return llm_output, docs
         except Exception as e:
             raise e
 
