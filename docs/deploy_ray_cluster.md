@@ -17,7 +17,6 @@ RAY_RUNTIME_ENV_HOOK=ray._private.runtime_env.uv_runtime_env_hook.hook
 SHARED_ENV=/ray_mount/.env
 DATA_VOLUME = /ray_mount/data
 MODEL_WEIGHTS_VOLUME = /ray_mount/model_weights
-LOCAL_DEPLOYMENT=false
 RAY_ADDRESS=ray://<HEAD_NODE_IP>:10001
 
 # Worker pool settings
