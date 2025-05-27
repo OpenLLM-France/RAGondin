@@ -21,12 +21,18 @@ LOCAL_DEPLOYMENT=false
 RAY_ADDRESS=ray://<HEAD_NODE_IP>:10001
 
 # Worker pool settings
-RAY_POOL_SIZE=4
+RAY_POOL_SIZE=8
 RAY_MAX_TASKS_PER_WORKER=5 # Worker restarts after 5 tasks to avoid memory leak
 
 # Resource requirements per indexation task
 RAY_NUM_GPUS=0.5
 ```
+
+✅ Use host IPs instead of Docker service names :
+
+- EMBEDDER_BASE_URL=http://<HOST-IP>:8000/v1  # ✅ instead of http://vllm:8000/v1
+- VDB_HOST=<HOST-IP>                          # ✅ instead of VDB_HOST=milvus
+
 
 > 🧠 **Tips**  
 >
