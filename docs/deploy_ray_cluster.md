@@ -15,16 +15,27 @@ RAY_RUNTIME_ENV_HOOK=ray._private.runtime_env.uv_runtime_env_hook.hook
 
 # Ray cluster-specific
 SHARED_ENV=/ray_mount/.env
+DATA_VOLUME = /ray_mount/data
+MODEL_WEIGHTS_VOLUME = /ray_mount/model_weights
 LOCAL_DEPLOYMENT=false
 RAY_ADDRESS=ray://<HEAD_NODE_IP>:10001
 
-# Resource allocation per actor
-RAY_NUM_CPUS=4
+# Worker pool settings
+RAY_POOL_SIZE=4
+RAY_MAX_TASKS_PER_WORKER=5 # Worker restarts after 5 tasks to avoid memory leak
+
+# Resource requirements per indexation task
 RAY_NUM_GPUS=0.5
 ```
 
-> 🧠 **Tip**: The last two variables define **per-actor resource usage**.  
-> For example, if one indexation consumes ~7GB of VRAM and your GPU has 16GB, setting `RAY_NUM_GPUS=0.5` lets you run **2 indexers per node**. In a 2-node cluster, that means **4 concurrent indexation tasks**.
+> 🧠 **Tips**  
+>
+> - `RAY_NUM_GPUS` defines **per-actor resource requirements**. Ray will not start a task until these resources are available on one of the nodes.  
+>   For example, if one indexation consumes ~1GB of VRAM and your GPU has 4GB, setting `RAY_NUM_GPUS=0.25` allows you to run **4 indexers per node**. In a 2-node cluster, that means up to **8 concurrent indexation tasks**.  
+>
+> - `RAY_POOL_SIZE` defines the number of worker actors that will be created to handle indexation tasks. It acts like a **maximum concurrency limit**.  
+>   Using the previous example, you can set `POOL_SIZE=8` to fully utilize your cluster capacity.  
+>   ⚠️ If other GPU-intensive services are running on your nodes (e.g. vLLM, the RAG API), make sure to **reserve enough GPU memory** for them and subtract that from your total when calculating the safe pool size.
 
 ---
 

@@ -20,17 +20,16 @@ config = load_config()
 
 # Set ray resources
 NUM_GPUS = config.ray.get("num_gpus")
-NUM_CPUS = config.ray.get("num_cpus")
 POOL_SIZE = config.ray.get("pool_size")
 MAX_TASKS_PER_WORKER = config.ray.get("max_tasks_per_worker")
 
 if torch.cuda.is_available():
-    gpu, cpu = NUM_GPUS, NUM_CPUS
+    gpu = NUM_GPUS
 else:
-    gpu, cpu = 0, NUM_CPUS
+    gpu = 0
 
 
-@ray.remote(num_cpus=cpu, num_gpus=gpu, max_task_retries=2)
+@ray.remote(num_gpus=gpu, max_task_retries=2)
 class IndexerWorker:
     """This class bridges static files with the vector store database.*"""
 
