@@ -29,6 +29,7 @@ from routers.extract import router as extract_router
 from routers.indexer import router as indexer_router
 from routers.openai import router as openai_router
 from routers.partition import router as partition_router
+from routers.queue import router as queue_router
 from routers.search import router as search_router
 from utils.dependencies import vectordb
 
@@ -45,6 +46,7 @@ class Tags(Enum):
     OPENAI = ("OpenAI Compatible API",)
     EXTRACT = ("Document extracts",)
     PARTITION = ("Partitions & files",)
+    QUEUE = ("Queue management",)
 
 
 class AppState:
@@ -82,7 +84,9 @@ app.mount(
 )
 
 
-@app.get("/health_check", summary="Toy endpoint to check that the api is up", dependencies=[])
+@app.get(
+    "/health_check", summary="Toy endpoint to check that the api is up", dependencies=[]
+)
 async def health_check(request: Request):
     # TODO : Error reporting about llm and vlm
     return "RAG API is up."
@@ -104,6 +108,8 @@ app.include_router(extract_router, prefix="/extract", tags=[Tags.EXTRACT])
 app.include_router(search_router, prefix="/search", tags=[Tags.SEARCH])
 # Mount the partition router
 app.include_router(partition_router, prefix="/partition", tags=[Tags.PARTITION])
+# Mount the queue router
+app.include_router(queue_router, prefix="/queue", tags=[Tags.QUEUE])
 
 if not ONLY_SEARCH_AND_INDEXER_API:
     # Mount the openai router

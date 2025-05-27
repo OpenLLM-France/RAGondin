@@ -1,6 +1,7 @@
 import asyncio
 import gc
 import inspect
+import traceback
 from typing import Dict, List, Optional
 
 import ray
@@ -177,7 +178,9 @@ class Indexer:
 
         except Exception as e:
             self.logger.error(f"Error in `add_file` for path {path}: {e}")
-            self.task_state_manager.set_state.remote(task_id, "FAILED")
+            tb = "".join(traceback.format_exception(type(e), e, e.__traceback__))
+            await self.task_state_manager.set_state.remote(task_id, "FAILED")
+            await self.task_state_manager.set_error.remote(task_id, tb)
             raise
         finally:
             task_count = await worker.get_task_count.remote()
@@ -319,16 +322,25 @@ class Indexer:
 class TaskStateManager:
     def __init__(self):
         self.states = {}
+        self.errors = {}
         self.lock = asyncio.Lock()
 
     async def set_state(self, task_id: str, state: str):
         async with self.lock:
             self.states[task_id] = state
 
+    async def set_error(self, task_id: str, tb_str: str):
+        async with self.lock:
+            self.errors[task_id] = tb_str
+
     async def get_state(self, task_id: str) -> Optional[str]:
         async with self.lock:
             state = self.states.get(task_id, None)
             return state
+
+    async def get_error(self, task_id: str) -> Optional[str]:
+        async with self.lock:
+            return self.errors.get(task_id)
 
     async def get_all_states(self):
         async with self.lock:
@@ -352,3 +364,9 @@ class IndexerQueue:
     def push(self, worker):
         """Push a worker back to the pool."""
         self.pool.push(worker)
+
+    def pool_info(self):
+        return {
+            "total": POOL_SIZE,
+            "idle": len(self.pool._idle_actors),
+        }
