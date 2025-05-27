@@ -22,7 +22,6 @@ config = load_config()
 NUM_GPUS = config.ray.get("num_gpus")
 NUM_CPUS = config.ray.get("num_cpus")
 POOL_SIZE = config.ray.get("pool_size")
-POOL_TIMEOUT = config.ray.get("pool_timeout")
 MAX_TASKS_PER_WORKER = config.ray.get("max_tasks_per_worker")
 
 if torch.cuda.is_available():
@@ -159,7 +158,7 @@ class Indexer:
             config, logger, embeddings=self.embedder
         )
         self.task_state_manager = ray.get_actor("TaskStateManager", namespace="ragondin")
-        self.worker_pool = ActorPool([IndexerWorker.remote() for _ in range(POOL_SIZE)])
+        self.queue = ray.get_actor("IndexerQueue", namespace="ragondin")
         logger.info("Indexer supervisor actor initialized.")
 
     async def add_file(self, path, metadata, partition):
@@ -167,18 +166,11 @@ class Indexer:
         task_id = ray.get_runtime_context().get_task_id()
         
         self.task_state_manager.set_state.remote(task_id, "QUEUED")
-
-        # Send the task
-        try:
-            # Wait for a free worker
-            for _ in range(POOL_TIMEOUT):
-                if self.worker_pool.has_free():
-                    worker = self.worker_pool.pop_idle()
-                    break
-                await asyncio.sleep(1)
-            else:
-                raise TimeoutError("No free worker available after X seconds")
-            
+        
+        # Get a free worker from the pool
+        worker = await self.queue.get_worker.remote()
+        
+        try:        
             # Send task to the worker
             await worker.add_file.remote(task_id, path, metadata, partition)
 
@@ -192,7 +184,7 @@ class Indexer:
                 logger.info("Worker reached max task count, restarting...")
                 ray.kill(worker)
                 worker = IndexerWorker.remote()
-            self.worker_pool.push(worker)
+            self.queue.push.remote(worker)
         self.task_state_manager.set_state.remote(task_id, "COMPLETED")
 
     def delete_file(self, file_id: str, partition: str):
@@ -340,3 +332,21 @@ class TaskStateManager:
     async def get_all_states(self):
         async with self.lock:
             return dict(self.states)
+
+@ray.remote(concurrency_groups={"worker_queue": 1})
+class IndexerQueue:
+    def __init__(self):
+        self.pool = ActorPool( [IndexerWorker.remote() for _ in range(POOL_SIZE)])
+
+    @ray.method(concurrency_group="worker_queue")
+    async def get_worker(self):
+        """Get a free worker from the pool."""
+        while True:
+            if self.pool.has_free():
+                worker = self.pool.pop_idle()
+                return worker
+            await asyncio.sleep(1)
+    
+    def push(self, worker):
+        """Push a worker back to the pool."""
+        self.pool.push(worker)

@@ -3,7 +3,7 @@ import ray.actor
 from components import ABCVectorDB
 from components.indexer.indexer import Indexer
 from components.indexer.indexer_deployment import Indexer as IndexerForDeployment
-from components.indexer.indexer_deployment import TaskStateManager
+from components.indexer.indexer_deployment import TaskStateManager, IndexerQueue
 from config import load_config
 from loguru import logger
 from ray.util.state import get_task
@@ -66,5 +66,10 @@ logger.info("Starting TaskStateManager actor")
 task_state_manager = TaskStateManager.options(
             name="TaskStateManager",
             lifetime="detached",
+            namespace="ragondin"
+        ).remote()
+
+indexer_queue = IndexerQueue.options(
+            name="IndexerQueue",
             namespace="ragondin"
         ).remote()
