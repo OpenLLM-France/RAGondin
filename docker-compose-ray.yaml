@@ -10,10 +10,8 @@ x-ragondin: &ragondin_template
     - ${MODEL_WEIGHTS_VOLUME:-./model_weights}:/app/model_weights # Model weights for RAG
     - ./ragondin:/app/ragondin # For dev mode
     - ${MILVUS_VOLUME_DIRECTORY:-./volumes}:/app/volumes
-  # network_mode: host
   ports:
     - "${APP_PORT:-8080}:${APP_iPORT:-8080}"
-    - ${RAY_DASHBOARD_PORT:-8265}:${RAY_DASHBOARD_PORT:-8265} # for ray dashboard
   env_file:
     - .env
   shm_size: 10.24gb
