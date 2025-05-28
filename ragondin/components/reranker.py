@@ -7,6 +7,7 @@ from ragatouille import RAGPretrainedModel
 from sentence_transformers import CrossEncoder
 from langchain_core.documents.base import Document
 from .utils import SingletonMeta
+from loguru import logger
 
 
 class RerankerType(Enum):
@@ -77,7 +78,22 @@ class Reranker(metaclass=SingletonMeta):
 
         gc.collect()
         torch.cuda.empty_cache()
-        return [documents[r["corpus_id"]] for r in results]
+
+        docs = []
+        for r in results:
+            doc = documents[r["corpus_id"]]
+            metadata = dict(doc.metadata)  # Copy metadata to avoid modifying original
+            metadata["score"] = round(float(r["score"]), 3)
+            docs.append(
+                Document(
+                    page_content=doc.page_content,
+                    metadata=metadata,
+                )
+            )
+            logger.debug(f"MetaData: {metadata}")
+            docs.append(doc)
+
+        return docs
 
     def ___colbert_rerank(
         self, query: str, documents: list[Document], top_k: int
@@ -90,7 +106,20 @@ class Reranker(metaclass=SingletonMeta):
 
         gc.collect()
         torch.cuda.empty_cache()
-        return [doc for doc in original_docs(results, documents)]
+
+        docs = []
+        for r, doc in zip(original_docs(results, documents)):
+            metadata = dict(doc.metadata)
+            metadata["score"] = round(float(r["score"]), 3)
+
+            docs.append(
+                Document(
+                    page_content=doc.page_content,
+                    metadata=metadata,
+                )
+            )
+
+        return docs
 
 
 def original_docs(ranked_txt: list[str], docs: list[Document]):
