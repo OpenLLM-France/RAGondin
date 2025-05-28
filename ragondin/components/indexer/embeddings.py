@@ -7,12 +7,6 @@ from ..utils import SingletonABCMeta
 
 
 class ABCEmbedder(ABC):
-    """Abstract base class defining the interface for embedder implementations.
-
-    This class serves as a template for creating embedder classes that convert text
-    into vector representations using various embedding models.
-    """
-
     @abstractmethod
     def get_embeddings(self):
         """Return the embeddings model instance.
@@ -24,20 +18,6 @@ class ABCEmbedder(ABC):
 
 
 class HFEmbedder(ABCEmbedder, metaclass=SingletonABCMeta):
-    """Factory class for loading and managing HuggingFace embedding models.
-
-    This class handles the initialization and configuration of various HuggingFace
-    embedding models, supporting both BGE and standard HuggingFace embeddings.
-
-    Args:
-        embedder_config (OmegaConf): Configuration object containing model parameters
-        device (str, optional): Device to run the model on ('cuda' or 'cpu').
-            Defaults to None, which auto-selects based on CUDA availability.
-
-    Raises:
-        ValueError: If the specified model type is not supported or if initialization fails.
-    """
-
     def __init__(self, embedder_config: OmegaConf, device=None) -> None:
         if device is None:
             device = "cuda" if torch.cuda.is_available() else "cpu"

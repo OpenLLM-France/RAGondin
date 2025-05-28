@@ -10,7 +10,8 @@ from langchain_openai import OpenAIEmbeddings
 from loguru import logger
 
 from .chunker import ABCChunker, ChunkerFactory
-from .loaders.loader import DocSerializer
+from .embeddings import HFEmbedder
+from .loaders.serializer import DocSerializer
 from .vectordb import ConnectorFactory
 import asyncio
 from ray.util.actor_pool import ActorPool
@@ -95,8 +96,8 @@ class IndexerWorker:
         task_id: str,
         path: str | list[str],
         metadata: Optional[Dict] = {},
-        partition: Optional[str] = None
-    ):  
+        partition: Optional[str] = None,
+    ):
         self.task_count += 1
 
         partition = self._check_partition_str(partition)
@@ -136,7 +137,7 @@ class IndexerWorker:
         elif not isinstance(partition, str):
             raise ValueError("Partition should be a string.")
         return partition
-    
+
     async def get_task_count(self):
         return self.task_count
 
@@ -156,20 +157,22 @@ class Indexer:
         self.vectordb = ConnectorFactory.create_vdb(
             config, logger, embeddings=self.embedder
         )
-        self.task_state_manager = ray.get_actor("TaskStateManager", namespace="ragondin")
+        self.task_state_manager = ray.get_actor(
+            "TaskStateManager", namespace="ragondin"
+        )
         self.queue = ray.get_actor("IndexerQueue", namespace="ragondin")
         logger.info("Indexer supervisor actor initialized.")
 
     async def add_file(self, path, metadata, partition):
         # Retrieve task_id from the Ray runtime context
         task_id = ray.get_runtime_context().get_task_id()
-        
+
         self.task_state_manager.set_state.remote(task_id, "QUEUED")
-        
+
         # Get a free worker from the pool
         worker = await self.queue.get_worker.remote()
-        
-        try:        
+
+        try:
             # Send task to the worker
             await worker.add_file.remote(task_id, path, metadata, partition)
 
@@ -332,10 +335,11 @@ class TaskStateManager:
         async with self.lock:
             return dict(self.states)
 
+
 @ray.remote(concurrency_groups={"worker_queue": 1})
 class IndexerQueue:
     def __init__(self):
-        self.pool = ActorPool( [IndexerWorker.remote() for _ in range(POOL_SIZE)])
+        self.pool = ActorPool([IndexerWorker.remote() for _ in range(POOL_SIZE)])
 
     @ray.method(concurrency_group="worker_queue")
     async def get_worker(self):
@@ -345,7 +349,7 @@ class IndexerQueue:
                 worker = self.pool.pop_idle()
                 return worker
             await asyncio.sleep(1)
-    
+
     def push(self, worker):
         """Push a worker back to the pool."""
         self.pool.push(worker)
