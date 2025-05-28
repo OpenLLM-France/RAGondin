@@ -17,7 +17,7 @@ The **`.hydra_config`** directory contains all the configuration files for the a
 ### Supported File Formats
 This branch currently supports the following file types:
 
-* **TextFiles**: `txt`, `md`, 
+* **TextFiles**: `txt`, `md`
 * **Document Files**: `pdf`, `docx`, `doc`, `pptx`
 * **Audio Files**: `wav`, `mp3`, `mp4`, `ogg`, `flv`, `wma`, `aac`
 
