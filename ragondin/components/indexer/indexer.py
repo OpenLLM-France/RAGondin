@@ -13,7 +13,6 @@ from loguru import logger
 from ray.util.actor_pool import ActorPool
 
 from .chunker import ABCChunker, ChunkerFactory
-from .loaders.serializer import DocSerializer
 from .vectordb import ConnectorFactory
 
 # Load the configuration
@@ -55,9 +54,7 @@ class IndexerWorker:
             base_url=self.config.embedder.get("base_url"),
             api_key=self.config.embedder.get("api_key"),
         )
-        self.serializer = DocSerializer(
-            data_dir=self.config.paths.data_dir, config=self.config
-        )
+        self.serializer = ray.get_actor("DocSerializer", namespace="ragondin")
         self.chunker: ABCChunker = ChunkerFactory.create_chunker(
             self.config, embedder=self.embedder
         )
@@ -75,7 +72,7 @@ class IndexerWorker:
 
     async def serialize(self, path: str, metadata: Optional[Dict] = {}):
         self.logger.info(f"Starting serialization of documents from {path}...")
-        doc: Document = await self.serializer.serialize_document(
+        doc: Document = await self.serializer.serialize_document.remote(
             path, metadata=metadata
         )
         self.logger.info("Serialization completed.")
