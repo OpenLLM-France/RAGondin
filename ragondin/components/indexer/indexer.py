@@ -13,7 +13,7 @@ from loguru import logger
 from ray.util.actor_pool import ActorPool
 
 from .chunker import ABCChunker, ChunkerFactory
-from .loaders.loader import DocSerializer
+from .loaders.serializer import DocSerializer
 from .vectordb import ConnectorFactory
 
 # Load the configuration

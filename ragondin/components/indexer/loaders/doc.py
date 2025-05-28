@@ -2,7 +2,7 @@ import os
 import tempfile
 from spire.doc import Document, FileFormat
 from .base import BaseLoader
-from .MarkItDownLoader import MarkItDownLoader
+from .markItdown import MarkItDownLoader
 
 
 class DocLoader(BaseLoader):
@@ -11,7 +11,7 @@ class DocLoader(BaseLoader):
         self.page_sep = page_sep
         self.MDLoader = MarkItDownLoader(page_sep=page_sep, **kwargs)
 
-    async def aload_document(self, file_path, metadata, save_md=False):
+    async def aload_document(self, file_path, metadata, save_markdown=False):
         """Here we convert the document to docx format, save it in local and then use the MarkItDownLoader
         to convert it to markdown."""
         document = Document()
@@ -20,7 +20,9 @@ class DocLoader(BaseLoader):
         with tempfile.NamedTemporaryFile(delete=False, suffix=".docx") as temp_file:
             file_path = temp_file.name
             document.SaveToFile(file_path, FileFormat.Docx2016)
-        result_string = await self.MDLoader.aload_document(file_path, metadata, save_md)
+        result_string = await self.MDLoader.aload_document(
+            file_path, metadata, save_markdown
+        )
         os.remove(file_path)
         document.Close()
         return result_string

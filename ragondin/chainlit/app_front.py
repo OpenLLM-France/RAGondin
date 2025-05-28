@@ -4,12 +4,12 @@ import httpx
 import chainlit as cl
 from loguru import logger
 from openai import AsyncOpenAI
-import os
 from urllib.parse import urlparse
 from chainlit.context import get_context
+import os
+
 
 AUTH_TOKEN = os.environ.get("AUTH_TOKEN", "")
-logger.debug(f"TOken: {AUTH_TOKEN}")
 headers = {
     "accept": "application/json",
     "Content-Type": "application/json",
@@ -106,11 +106,15 @@ async def __format_sources(metadata_sources, only_txt=False):
             chunk_content = await __fetch_page_content(chunk_url=s["chunk_url"])
             elem = cl.Text(content=chunk_content, name=doc_id, display="side")
         else:
-            match filename.suffix:
+            match filename.suffix.lower():
                 case ".pdf":
                     elem = cl.Pdf(
                         name=doc_id, url=file_url, page=int(s["page"]), display="side"
                     )
+
+                case suffix if suffix in [".png", ".jpg", ".jpeg"]:
+                    elem = cl.Image(name=doc_id, url=file_url, display="side")
+
                 case ".mp4":
                     elem = cl.Video(name=doc_id, url=file_url, display="side")
                 case ".mp3":
