@@ -6,14 +6,14 @@ import ray
 import torch
 from config import load_config
 from langchain_core.documents.base import Document
-from loguru import logger
+from ray.util.state import get_task
 
-from .chunker import ABCChunker, ChunkerFactory
 from ..reranker import Reranker
+from ..utils import SingletonMeta
+from .chunker import ABCChunker, ChunkerFactory
 from .embeddings import HFEmbedder
 from .loaders.serializer import DocSerializer
 from .vectordb import ConnectorFactory
-from ..utils import SingletonMeta
 
 # Load the configuration
 config = load_config()
@@ -194,6 +194,10 @@ class Indexer(metaclass=SingletonMeta):
 
     def delete_partition(self, partition: str):
         return self.vectordb.delete_partition(partition)
+
+    def get_task_status(self, task_id: str):
+        """Get the status of a task."""
+        return get_task(task_id)
 
     def _check_partition_list(self, partition: Optional[str]):
         if partition is None:

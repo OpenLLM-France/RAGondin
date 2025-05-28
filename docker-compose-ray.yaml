@@ -6,14 +6,14 @@ x-ragondin: &ragondin_template
     context: .
     dockerfile: Dockerfile
   volumes:
-    - /ray_mount:/ray_mount
-    - ./model_weights:/app/model_weights
-    - ./data:/app/data # PDF data for RAG
+    - ${DATA_VOLUME:-./data}:/app/data # PDF data for RAG
+    - ${MODEL_WEIGHTS_VOLUME:-./model_weights}:/app/model_weights # Model weights for RAG
     - ./ragondin:/app/ragondin # For dev mode
     - ${MILVUS_VOLUME_DIRECTORY:-./volumes}:/app/volumes
-  network_mode: host
+  ports:
+    - "${APP_PORT:-8080}:${APP_iPORT:-8080}"
   env_file:
-    - .env
+    - ${SHARED_ENV:-.env}
   shm_size: 10.24gb
 
   depends_on:
@@ -39,3 +39,25 @@ services:
     deploy: {}
     profiles:
       - 'cpu'
+  
+  vllm:
+    image: vllm/vllm-openai:latest
+    runtime: nvidia
+    restart: always
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all 
+              capabilities: [gpu]
+    environment:
+      - HUGGING_FACE_HUB_TOKEN
+    ipc: "host"
+    volumes:
+      - ./vllm_cache:/root/.cache/huggingface
+    command: >
+      --model ${EMBEDDER_MODEL_NAME:-jinaai/jina-embeddings-v3}
+      --trust-remote-code
+    ports:
+      - 8000:8000

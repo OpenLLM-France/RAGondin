@@ -6,27 +6,31 @@ import ray
 import torch
 from config import load_config
 from langchain_core.documents.base import Document
+from langchain_openai import OpenAIEmbeddings
 from loguru import logger
 
 from .chunker import ABCChunker, ChunkerFactory
 from .embeddings import HFEmbedder
 from .loaders.serializer import DocSerializer
 from .vectordb import ConnectorFactory
+import asyncio
+from ray.util.actor_pool import ActorPool
 
 # Load the configuration
 config = load_config()
 
 # Set ray resources
 NUM_GPUS = config.ray.get("num_gpus")
-NUM_CPUS = config.ray.get("num_cpus")
+POOL_SIZE = config.ray.get("pool_size")
+MAX_TASKS_PER_WORKER = config.ray.get("max_tasks_per_worker")
 
 if torch.cuda.is_available():
-    gpu, cpu = NUM_GPUS, NUM_CPUS
+    gpu = NUM_GPUS
 else:
-    gpu, cpu = 0, NUM_CPUS
+    gpu = 0
 
 
-@ray.remote(num_cpus=cpu, num_gpus=gpu, max_task_retries=2)
+@ray.remote(num_gpus=gpu, max_task_retries=2)
 class IndexerWorker:
     """This class bridges static files with the vector store database.*"""
 
@@ -40,25 +44,33 @@ class IndexerWorker:
             device (str, optional): Device to be used by the embedder. Defaults to None.
         """
         from config import load_config
+        from langchain_openai import OpenAIEmbeddings
         from loguru import logger
 
-        from .embeddings import HFEmbedder
         from .vectordb import ConnectorFactory
 
         self.config = load_config()
-        self.embedder = HFEmbedder(embedder_config=self.config.embedder, device=None)
+        self.embedder = OpenAIEmbeddings(
+            model=self.config.embedder.get("model_name"),
+            base_url=self.config.embedder.get("base_url"),
+            api_key=self.config.embedder.get("api_key"),
+        )
         self.serializer = DocSerializer(
             data_dir=self.config.paths.data_dir, config=self.config
         )
         self.chunker: ABCChunker = ChunkerFactory.create_chunker(
-            self.config, embedder=self.embedder.get_embeddings()
+            self.config, embedder=self.embedder
         )
         self.vectordb = ConnectorFactory.create_vdb(
-            self.config, logger=logger, embeddings=self.embedder.get_embeddings()
+            self.config, logger=logger, embeddings=self.embedder
         )
         self.logger = logger
         self.default_partition = "_default"
         self.enable_insertion = self.config.vectordb["enable"]
+        self.task_state_manager = ray.get_actor(
+            "TaskStateManager", namespace="ragondin"
+        )
+        self.task_count = 0
         self.logger.info("Indexer worker initialized.")
 
     async def serialize(self, path: str, metadata: Optional[Dict] = {}):
@@ -81,17 +93,28 @@ class IndexerWorker:
 
     async def add_file(
         self,
+        task_id: str,
         path: str | list[str],
         metadata: Optional[Dict] = {},
         partition: Optional[str] = None,
     ):
+        self.task_count += 1
+
         partition = self._check_partition_str(partition)
         metadata = {**metadata, "partition": partition}
+
+        # Serialize document
+        self.task_state_manager.set_state.remote(task_id, "SERIALIZING")
         doc = await self.serialize(path, metadata=metadata)
+
+        # Chunk docs
+        self.task_state_manager.set_state.remote(task_id, "CHUNKING")
         chunks = await self.chunk(doc, path)
 
+        # Add chunks to the vector database
         try:
             if self.enable_insertion:
+                self.task_state_manager.set_state.remote(task_id, "INSERTING")
                 await self.vectordb.async_add_documents(chunks)
                 self.logger.debug(f"Documents {path} added.")
             else:
@@ -115,28 +138,56 @@ class IndexerWorker:
             raise ValueError("Partition should be a string.")
         return partition
 
+    async def get_task_count(self):
+        return self.task_count
+
 
 @ray.remote(max_restarts=-1)
 class Indexer:
     def __init__(self):
         config = load_config()
         self.config = config
-        device = None
         self.logger = logger
         self.enable_insertion = self.config.vectordb["enable"]
-        self.embedder = HFEmbedder(embedder_config=config.embedder, device=device)
-        self.vectordb = ConnectorFactory.create_vdb(
-            config, logger, embeddings=self.embedder.get_embeddings()
+        self.embedder = OpenAIEmbeddings(
+            model=self.config.embedder.get("model_name"),
+            base_url=self.config.embedder.get("base_url"),
+            api_key=self.config.embedder.get("api_key"),
         )
+        self.vectordb = ConnectorFactory.create_vdb(
+            config, logger, embeddings=self.embedder
+        )
+        self.task_state_manager = ray.get_actor(
+            "TaskStateManager", namespace="ragondin"
+        )
+        self.queue = ray.get_actor("IndexerQueue", namespace="ragondin")
         logger.info("Indexer supervisor actor initialized.")
 
-    def get_worker(self):
-        return IndexerWorker.remote()
-
     async def add_file(self, path, metadata, partition):
-        worker = self.get_worker()
-        await worker.add_file.remote(path, metadata, partition)
-        ray.kill(worker)
+        # Retrieve task_id from the Ray runtime context
+        task_id = ray.get_runtime_context().get_task_id()
+
+        self.task_state_manager.set_state.remote(task_id, "QUEUED")
+
+        # Get a free worker from the pool
+        worker = await self.queue.get_worker.remote()
+
+        try:
+            # Send task to the worker
+            await worker.add_file.remote(task_id, path, metadata, partition)
+
+        except Exception as e:
+            self.logger.error(f"Error in `add_file` for path {path}: {e}")
+            self.task_state_manager.set_state.remote(task_id, "FAILED")
+            raise
+        finally:
+            task_count = await worker.get_task_count.remote()
+            if task_count >= MAX_TASKS_PER_WORKER:
+                logger.info("Worker reached max task count, restarting...")
+                ray.kill(worker)
+                worker = IndexerWorker.remote()
+            self.queue.push.remote(worker)
+        self.task_state_manager.set_state.remote(task_id, "COMPLETED")
 
     def delete_file(self, file_id: str, partition: str):
         """
@@ -232,6 +283,10 @@ class Indexer:
     def delete_partition(self, partition: str):
         return self.vectordb.delete_partition(partition)
 
+    async def get_task_status(self, task_id: str):
+        """Get the status of a task."""
+        return await self.task_state_manager.get_state.remote(task_id)
+
     def _check_partition_list(self, partition: Optional[str]):
         if partition is None:
             self.logger.warning("Partition not provided. Using default partition.")
@@ -259,3 +314,42 @@ class Indexer:
         """Helper method to check if a vectordb method is async."""
         method = getattr(self.vectordb, method_name, None)
         return inspect.iscoroutinefunction(method) if method else False
+
+
+@ray.remote
+class TaskStateManager:
+    def __init__(self):
+        self.states = {}
+        self.lock = asyncio.Lock()
+
+    async def set_state(self, task_id: str, state: str):
+        async with self.lock:
+            self.states[task_id] = state
+
+    async def get_state(self, task_id: str) -> Optional[str]:
+        async with self.lock:
+            state = self.states.get(task_id, None)
+            return state
+
+    async def get_all_states(self):
+        async with self.lock:
+            return dict(self.states)
+
+
+@ray.remote(concurrency_groups={"worker_queue": 1})
+class IndexerQueue:
+    def __init__(self):
+        self.pool = ActorPool([IndexerWorker.remote() for _ in range(POOL_SIZE)])
+
+    @ray.method(concurrency_group="worker_queue")
+    async def get_worker(self):
+        """Get a free worker from the pool."""
+        while True:
+            if self.pool.has_free():
+                worker = self.pool.pop_idle()
+                return worker
+            await asyncio.sleep(1)
+
+    def push(self, worker):
+        """Push a worker back to the pool."""
+        self.pool.push(worker)
