@@ -87,5 +87,4 @@ ray:
   num_gpus: ${oc.decode:${oc.env:RAY_NUM_GPUS, 0.1}}
   pool_size: ${oc.decode:${oc.env:RAY_POOL_SIZE, 1}}
   max_tasks_per_worker: ${oc.decode:${oc.env:RAY_MAX_TASKS_PER_WORKER, 5}}
-  local_deployment: ${oc.decode:${oc.env:LOCAL_DEPLOYMENT, true}} # set false for cluster deployment
   n_parallel_indexation: ${oc.decode:${oc.env:N_PARALLEL_INDEXATION, 2}}
