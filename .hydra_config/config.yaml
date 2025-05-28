@@ -78,6 +78,7 @@ loader:
     flv: VideoAudioLoader
     wma: VideoAudioLoader
     aac: VideoAudioLoader
+    md: MarkdownLoader
     # odt: CustomDocLoader
 
 ray:

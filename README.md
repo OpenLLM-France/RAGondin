@@ -17,7 +17,8 @@ The **`.hydra_config`** directory contains all the configuration files for the a
 ### Supported File Formats
 This branch currently supports the following file types:
 
-* **Text and Document Files**: `txt`, `pdf`, `docx`, `doc`, `pptx`
+* **TextFiles**: `txt`, `md`, 
+* **Document Files**: `pdf`, `docx`, `doc`, `pptx`
 * **Audio Files**: `wav`, `mp3`, `mp4`, `ogg`, `flv`, `wma`, `aac`
 
 For all supported formats, content is converted to **Markdown**. Images within documents are replaced with captions generated using a **Vision Language Model (VLM)**. (See the **Configuration** section for more details.) The resulting Markdown is then chunked and indexed using the [Milvus vector database](https://milvus.io/).
