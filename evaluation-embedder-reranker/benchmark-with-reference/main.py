@@ -14,18 +14,14 @@ from dotenv import load_dotenv
 load_dotenv()
 
 
-async def fetch_chunk_data(chunk_url) -> Document:
-    async with httpx.AsyncClient(timeout=httpx.Timeout(4 * 10)) as client:
-        response = await client.get(chunk_url)
-        response.raise_for_status()  # raises exception for 4xx/5xx responses
-        data = response.json()
-        metadata = data.get("metadata", {})
-        return {
-            "id": metadata.get("_id"),
-            "filename": metadata.get("filename"),
-            "corpus_id": metadata.get("filename").split(".")[0],
-            "content": data.get("page_content"),
-        }
+async def fetch_chunk_data(chunk) -> Document:
+    metadata = chunk.get("metadata")
+    return {
+
+        "filename": metadata.get("filename"),
+        "corpus_id": metadata.get("file_id"),
+        "content": chunk.get("content"),
+    }
 
 
 async def __get_relevant_chunks(
@@ -53,9 +49,9 @@ async def __get_relevant_chunks(
                     res.raise_for_status()
                     data: dict = res.json()
                 # Extract the documents
-                chunk_links = [doc["link"] for doc in data.get("documents", [])]
+                chunks = [doc for doc in data.get("documents", [])]
                 # Extract the content and metadata
-                chunks_tasks = [fetch_chunk_data(link) for link in chunk_links]
+                chunks_tasks = [fetch_chunk_data(chunk) for chunk in chunks]
                 chunks = await asyncio.gather(*chunks_tasks)
                 return chunks
             except Exception as e:
@@ -70,7 +66,7 @@ async def __get_relevant_chunks(
 async def main():
     query_file = "./data/queries.csv"
     qrel_file = "./data/qrels.csv"
-    output_file = "./data/retrieved_chunks_intfloat.json"
+    output_file = "./data/retrieved_chunks_KaLM_v2.json"
 
     partition = "scifact"
     top_k = 10

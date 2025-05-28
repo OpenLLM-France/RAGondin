@@ -7,16 +7,16 @@ import math
 import time
 
 # load the model
-evaluate_with_reranking = False
+evaluate_with_reranking = True
 
-model_name = "jinaai/jina-colbert-v2"
-reranker_type = "colbert"
+# model_name = "jinaai/jina-colbert-v2"
+# reranker_type = "colbert"
 
 # model_name = "cross-encoder/mmarco-mMiniLMv2-L12-H384-v1"
 # reranker_type = "crossencoder"
 
-# model_name = "jinaai/jina-reranker-v2-base-multilingual"
-# reranker_type = "crossencoder"
+model_name = "jinaai/jina-reranker-v2-base-multilingual"
+reranker_type = "crossencoder"
 
 # model_name = "Alibaba-NLP/gte-multilingual-reranker-base"
 # reranker_type = "crossencoder"
@@ -31,12 +31,12 @@ def compute_nDCG(true_chunk_ids: list[str], all_retrieved_chunks: list[dict]):
     for i, val in enumerate(all_retrieved_chunks):
         val_DCG += relevance(val["corpus_id"], true_chunk_ids) / math.log2(i + 2)
     iDCG = 0
-    for i in range(max(len(true_chunk_ids), len(all_retrieved_chunks))):
+    for i in range(min(len(true_chunk_ids), len(all_retrieved_chunks))):
         iDCG += 1 / math.log2(i + 2)
     return [val_DCG / iDCG]
 
 # load json file
-path = "./data/retrieved_chunks_paraphase_MiniLM_L12.json"
+path = "./data/retrieved_chunks_colbertv2.0.json"
 with open(path, "r", encoding="utf-8") as json_file:
     question_relevant_chunks = json.load(json_file)
 
