@@ -32,7 +32,6 @@ class MarkdownLoader(BaseLoader):
 
         # Remove all image references from the raw markdown
         clean_text = self._remove_images(raw_text)
-        logger.debug(f"Cleaned text: {clean_text}")
 
         doc = Document(
             page_content=f"{self.page_sep}".join([clean_text]),

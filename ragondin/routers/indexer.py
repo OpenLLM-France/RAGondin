@@ -193,7 +193,16 @@ async def put_file(
     # Save uploaded file
     save_dir = Path(DATA_DIR)
     save_dir.mkdir(parents=True, exist_ok=True)
+
+    # Save the uploaded file
     file_path = save_dir / Path(file.filename).name
+    metadata.update(
+        {
+            "source": str(file_path),
+            "filename": file.filename,
+        }
+    )
+
     logger.info(f"Processing file: {file.filename} and saving to {file_path}")
 
     try:
