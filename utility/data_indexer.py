@@ -1,22 +1,29 @@
+#!/usr/bin/env python3
+
 import httpx
+import argparse
+
 from loguru import logger
 from pathlib import Path
 
 
-base_url = "http://localhost:8080"  # the base url of your running app for instance: 'http://localhost:8080'
-AUTH_TOKEN = ...  # your AUTH_KEY see the .env.example
+parser = argparse.ArgumentParser(description='Index documents from local file system')
+parser.add_argument('-u', '--url', default='http://localhost:8080', type=str, help='The base url of your RAGondin instance')
+parser.add_argument('-a', '--auth', required=False, type=str, help='AUTH_KEY (see the .env.example')
+parser.add_argument('-d', '--dir', required=True, type=str, help='The location of the documents to index')
+parser.add_argument('-p', '--partition', required=True, type=str, help='Target partition')
+args = parser.parse_args()
 
 headers = {"accept": "application/json"}
-if AUTH_TOKEN:
-    headers["Authorization"] = f"Bearer {AUTH_TOKEN}"
+if args.auth is not None and len(args.auth) > 0:
+    headers["Authorization"] = f"Bearer {args.auth}"
 
-dir_name = "../data2/S2_RAG/Sources RAG/AI/"  # Replace with your directory path
-dir_path = Path(dir_name).resolve()
+dir_path = Path(args.dir).resolve()
 
 
 def __check_api(base_url):
     try:
-        response = httpx.get(f"{base_url}/health_check")
+        response = httpx.get(f"{args.url}/health_check")
         if response.status_code == 200:
             logger.info("API is up and running")
 
@@ -25,9 +32,7 @@ def __check_api(base_url):
         raise e
 
 
-__check_api(base_url)
-
-partition = input("Write the name of your partition: ")
+__check_api(args.url)
 
 print(dir_path.is_dir())
 
@@ -41,8 +46,8 @@ for file_path in dir_path.glob("**/*"):
 
         # file_id = str(uuid.uuid4())
 
-        url_template = f"{base_url}/indexer/partition/{partition}/file/{file_id}"
-        url = url_template.format(partition_name=partition, file_id=file_id)
+        url_template = f"{args.url}/indexer/partition/{args.partition}/file/{file_id}"
+        url = url_template.format(partition_name=args.partition, file_id=file_id)
 
         with open(file_path, "rb") as f:
             files = {
@@ -52,3 +57,4 @@ for file_path in dir_path.glob("**/*"):
 
             response = httpx.post(url, files=files, headers=headers)
             print(f"Uploaded {filename}: {response.status_code} - {response.text}")
+
