@@ -1,4 +1,4 @@
-Fournissez une description exhaustive, structurée et précise de cette image ou figure, rédigée intégralement en français.  
+Fournissez une description exhaustive, structurée et précise de cette image ou figure, rédigée intégralement en dans la langue de l'image.  
 * S'il y a un tableau:  
     - convertissez-le en un tableau formaté en Markdown, en respectant scrupuleusement les en-têtes, les lignes et les données et analysez-le succintement.  
 * Si l'élément est un graphique, un diagramme ou une illustration:  

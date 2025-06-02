@@ -4,15 +4,18 @@ from pathlib import Path
 import re
 from abc import ABC, abstractmethod
 from io import BytesIO
-from typing import Dict, Optional, Union
-
 from langchain_core.documents.base import Document
 from langchain_core.messages import HumanMessage
 from langchain_openai import ChatOpenAI
 from loguru import logger
-from ...utils import vlmSemaphore
+from ...utils import vlmSemaphore, load_sys_template, load_config
+from pathlib import Path
 
-IMAGE_DESCRIPTION_PROMPT = """Provide a complete, structured and precise description of this image or figure in the same language (french) as its content. If the image contains tables, render them in markdown."""
+
+config = load_config()
+prompts_dir = Path(config.paths.prompts_dir)
+img_desc_prompt_path = prompts_dir / config.prompt["contextualizer_pmpt"]
+IMAGE_DESCRIPTION_PROMPT = load_sys_template(img_desc_prompt_path)
 
 
 class BaseLoader(ABC):
