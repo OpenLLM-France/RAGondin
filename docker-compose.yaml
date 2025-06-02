@@ -45,3 +45,25 @@ services:
     deploy: {}
     profiles:
       - 'cpu'
+
+  vllm:
+    image: vllm/vllm-openai:latest
+    runtime: nvidia
+    restart: always
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all 
+              capabilities: [gpu]
+    environment:
+      - HUGGING_FACE_HUB_TOKEN
+    ipc: "host"
+    volumes:
+      - ./vllm_cache:/root/.cache/huggingface
+    command: >
+      --model ${EMBEDDER_MODEL_NAME:-jinaai/jina-embeddings-v3}
+      --trust-remote-code
+    ports:
+      - ${VLLM_PORT:-8000}:8000

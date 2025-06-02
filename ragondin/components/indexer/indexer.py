@@ -14,6 +14,8 @@ from .chunker import ABCChunker, ChunkerFactory
 from .embeddings import HFEmbedder
 from .loaders.serializer import DocSerializer
 from .vectordb import ConnectorFactory
+from langchain_openai import OpenAIEmbeddings
+
 
 # Load the configuration
 config = load_config()
@@ -40,13 +42,19 @@ class Indexer(metaclass=SingletonMeta):
     def __init__(self, config, logger, device=None):
         self.config = config
         self.enable_insertion = self.config.vectordb["enable"]
-        self.embedder = HFEmbedder(embedder_config=config.embedder, device=device)
+        logger.debug(f"Embedder config: {self.config.embedder}")
+        self.embedder = OpenAIEmbeddings(
+            model=self.config.embedder.get("model_name"),
+            base_url=self.config.embedder.get("base_url"),
+            api_key=self.config.embedder.get("api_key"),
+        )
+
         self.serializer = DocSerializer(data_dir=config.paths.data_dir, config=config)
         self.chunker: ABCChunker = ChunkerFactory.create_chunker(
-            config, embedder=self.embedder.get_embeddings()
+            config, embedder=self.embedder
         )
         self.vectordb = ConnectorFactory.create_vdb(
-            config, logger=logger, embeddings=self.embedder.get_embeddings()
+            config, logger=logger, embeddings=self.embedder
         )
         self.logger = logger
 
