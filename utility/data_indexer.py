@@ -32,6 +32,19 @@ def __check_api(base_url):
         raise e
 
 
+def __check_file_exists(base_url, partition, file_name, headers):
+    try:
+        url = f"{base_url}/partition/check-file/{partition}/file/{file_name}"
+        response = httpx.get(url, headers=headers)
+        if 200 == response.status_code:
+            return True
+    except Exception as e:
+        logger.debug(f"An error occurred: {e}")
+        raise e
+
+    return False
+
+
 __check_api(args.url)
 
 print(dir_path.is_dir())
@@ -43,6 +56,12 @@ for file_path in dir_path.glob("**/*"):
         filename = file_path.name  # Get the filename without the directory path
 
         file_id = filename  # or generate a unique ID if necessary
+
+        if __check_file_exists(args.url, args.partition, filename, headers):
+            logger.info(f'\"{filename}\" exists')
+            continue
+        else:
+            logger.info(f'\"{filename}\" doesn\'t exist')
 
         # file_id = str(uuid.uuid4())
 
