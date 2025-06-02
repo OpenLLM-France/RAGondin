@@ -4,6 +4,7 @@ from pathlib import Path
 import re
 from abc import ABC, abstractmethod
 from io import BytesIO
+from typing import Dict, Optional, Union
 from langchain_core.documents.base import Document
 from langchain_core.messages import HumanMessage
 from langchain_openai import ChatOpenAI
