@@ -12,11 +12,14 @@ from .llm import LLM
 from .reranker import Reranker
 from .retriever import ABCRetriever, RetrieverFactory
 from .utils import format_context, load_sys_template
-
+import os
 
 class RAGMODE(Enum):
     SIMPLERAG = "SimpleRag"
     CHATBOTRAG = "ChatBotRag"
+
+
+RAG_MAP_REDUCE = os.environ.get("RAG_MAP_REDUCE", "false").lower() == "true"
 
 
 class RetrieverPipeline:
@@ -143,6 +146,10 @@ class RagPipeline:
         docs = await self.retriever_pipeline.retrieve_docs(
             partition=partition, query=query
         )
+
+        # if RAG_MAP_REDUCE:
+        
+
         logger.info(f"{len(docs)} Documents retrieved")
 
         # 3. Format the retrieved docs

@@ -61,6 +61,7 @@ paths:
 prompt:
   rag_sys_pmpt: rag_sys_prompt_template.txt # rag_sys_pmpt_tmpl_ifa.txt
   contextualizer_pmpt: contextualizer_pmpt.txt
+  chunk_contextualizer_pmpt: chunk_contextualizer_tmpl.txt
 
 loader:
   image_captioning: true

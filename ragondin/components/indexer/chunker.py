@@ -13,7 +13,14 @@ from langchain_openai import ChatOpenAI
 from loguru import logger
 from omegaconf import OmegaConf
 from tqdm.asyncio import tqdm
-from ..utils import llmSemaphore
+from ..utils import llmSemaphore, load_config, load_sys_template
+
+
+config = load_config()
+prompt_paths = Path(config.paths.get("prompts_dir"))
+chunk_contextualizer_pmpt = config.prompt.get("chunk_contextualizer_pmpt")
+
+CHUNK_CONTEXTUALIZER = load_sys_template(prompt_paths / chunk_contextualizer_pmpt)
 
 
 class ABCChunker(ABC):
@@ -24,31 +31,6 @@ class ABCChunker(ABC):
     @abstractmethod
     async def split_document(self, doc: Document):
         pass
-
-
-template = """**Objectif** : Rédiger succinctement un texte de contextualisation pour le fragment suivant en intégrant les éléments fournis.
-
-**Consignes de rédaction** :
-1. Prendre en compte :
-   - **Source** : Métadonnées du document (CV, vidéos, propositions clients, etc.)
-   - **Première page** : Structure/En-tête du document original
-   - **Fragment précédent** : Contenu adjacent pour assurer la continuité
-
-2. Contraintes :
-   - Langue : Utiliser la langue du fragment actuel
-   - Format de réponse : Texte brut uniquement (pas de titres/markdown)
-   - Longueur : 1 phrase à 1 paragraphe selon la pertinence
-
-**Contexte** :
-- Source : {source}
-- Première page :
-{first_chunk}
-- Fragment précédent :
-{prev_chunk}
-
-**Fragment à contextualiser** :
-{chunk}
-"""
 
 
 class ChunkContextualizer:
@@ -72,7 +54,7 @@ class ChunkContextualizer:
             assert isinstance(llm, ChatOpenAI), (
                 "The `llm` should be of type `ChatOpenAI` if contextual_retrieval is `True`"
             )
-            prompt = ChatPromptTemplate.from_template(template=template)
+            prompt = ChatPromptTemplate.from_template(template=CHUNK_CONTEXTUALIZER)
             self.context_generator = (prompt | llm | StrOutputParser()).with_retry(
                 retry_if_exception_type=(Exception,),
                 wait_exponential_jitter=False,
@@ -107,21 +89,8 @@ class ChunkContextualizer:
     async def contextualize(
         self,
         chunks: list[Document],
-        pages: list[str],
         source: str,
     ) -> list[str]:
-        """
-        Contextualizes a list of document chunks by generating context for each chunk based on the previous chunk.
-        Args:
-            chunks (list[Document]): A list of Document objects representing the chunks to be contextualized.
-            pages (list[str]): A list of strings representing the pages of the document.
-            source (str): The source of the document.
-            n_concurrent_request (int, optional): The number of concurrent requests to be made. Defaults to 5.
-        Returns:
-            list[str]: A list of strings where each string is the contextualized content of a chunk.
-        Raises:
-            Exception: If an error occurs during the contextualization process, it logs a warning with the error message.
-        """
         if not self.contextual_retrieval or len(chunks) == 1:
             return [chunk.page_content for chunk in chunks]
 
@@ -215,7 +184,7 @@ class RecursiveSplitter(ABCChunker):
             ):
                 i += 1
 
-            if len(chunk.page_content.strip()) > 1:
+            if len(chunk.page_content.strip()) > 3:
                 chunk.page_content = chunk_w_context
                 metadata.update({"page": page_idx[i]["page"]})
                 chunk.metadata = dict(metadata)
