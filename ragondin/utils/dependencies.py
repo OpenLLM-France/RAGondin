@@ -10,6 +10,7 @@ from ray.util.state import get_task
 import asyncio
 from typing import Optional
 
+
 class VDBProxy:
     """Class that delegates method calls to the remote vectordb."""
 
@@ -62,14 +63,9 @@ def get_indexer():
     return indexer
 
 
-logger.info("Starting TaskStateManager actor")
-task_state_manager = TaskStateManager.options(
-            name="TaskStateManager",
-            lifetime="detached",
-            namespace="ragondin"
-        ).remote()
+# logger.info("Starting TaskStateManager actor")
+# task_state_manager = TaskStateManager.options(
+#     name="TaskStateManager", lifetime="detached", namespace="ragondin"
+# ).remote()
 
-indexer_queue = IndexerQueue.options(
-            name="IndexerQueue",
-            namespace="ragondin"
-        ).remote()
+# indexer_queue = IndexerQueue.options(name="IndexerQueue", namespace="ragondin").remote()

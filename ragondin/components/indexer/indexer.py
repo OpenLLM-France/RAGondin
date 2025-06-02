@@ -15,15 +15,18 @@ from .embeddings import HFEmbedder
 from .loaders.serializer import DocSerializer
 from .vectordb import ConnectorFactory
 from langchain_openai import OpenAIEmbeddings
-
+from loguru import logger
 
 # Load the configuration
 config = load_config()
 
 # Set ray resources
-NUM_GPUS = config.ray.get("num_gpus")
-NUM_CPUS = config.ray.get("num_cpus")
+NUM_GPUS = config.ray.get("num_gpus", 1)
+NUM_CPUS = config.ray.get("num_cpus", 24)
 N_PARALLEL_INDEXATION = config.ray.get("n_parallel_indexation")
+
+logger.debug(f"Ray configuration: {config.ray}")
+logger.debug(f"Number of GPUs: {NUM_GPUS}, Number of CPUs: {NUM_CPUS}")
 
 if torch.cuda.is_available():
     gpu, cpu = NUM_GPUS, NUM_CPUS

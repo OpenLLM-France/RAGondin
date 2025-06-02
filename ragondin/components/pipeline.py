@@ -39,6 +39,7 @@ class RetrieverPipeline:
         self.reranker = None
         self.reranker_enabled = config.reranker["enable"]
         self.reranker_top_k = int(config.reranker["top_k"])
+
         if self.reranker_enabled:
             self.logger.debug(f"Reranker enabled: {self.reranker_enabled}")
             self.reranker = Reranker(self.logger, config)

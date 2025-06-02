@@ -77,24 +77,24 @@ class Reranker(metaclass=SingletonMeta):
             docs_txt = [doc.page_content for doc in documents]
             results = self.model.rank(query=query, documents=docs_txt, top_k=top_k)
 
-        gc.collect()
-        torch.cuda.empty_cache()
+            gc.collect()
+            torch.cuda.empty_cache()
 
-        docs = []
-        for r in results:
-            doc = documents[r["corpus_id"]]
-            metadata = dict(doc.metadata)  # Copy metadata to avoid modifying original
-            metadata["score"] = round(float(r["score"]), 3)
-            docs.append(
-                Document(
-                    page_content=doc.page_content,
-                    metadata=metadata,
+            docs = []
+            for r in results:
+                doc = documents[r["corpus_id"]]
+                metadata = dict(
+                    doc.metadata
+                )  # Copy metadata to avoid modifying original
+                metadata["score"] = round(float(r["score"]), 3)
+                docs.append(
+                    Document(
+                        page_content=doc.page_content,
+                        metadata=metadata,
+                    )
                 )
-            )
-            logger.debug(f"MetaData: {metadata}")
-            docs.append(doc)
 
-        return docs
+            return docs
 
     def ___colbert_rerank(
         self, query: str, documents: list[Document], top_k: int

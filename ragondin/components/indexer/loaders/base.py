@@ -33,8 +33,8 @@ class BaseLoader(ABC):
         settings.update(model_settings)
 
         self.vlm_endpoint = ChatOpenAI(**settings).with_retry(stop_after_attempt=2)
-        self.min_width_pixels = 100  # minimum width in pixels
-        self.min_height_pixels = 100  # minimum height in pixels
+        self.min_width_pixels = 0  # minimum width in pixels
+        self.min_height_pixels = 0  # minimum height in pixels
 
     @abstractmethod
     async def aload_document(
