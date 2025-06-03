@@ -17,7 +17,6 @@ load_dotenv()
 async def fetch_chunk_data(chunk) -> Document:
     metadata = chunk.get("metadata")
     return {
-
         "filename": metadata.get("filename"),
         "corpus_id": metadata.get("file_id"),
         "content": chunk.get("content"),
@@ -66,7 +65,7 @@ async def __get_relevant_chunks(
 async def main():
     query_file = "./data/queries.csv"
     qrel_file = "./data/qrels.csv"
-    output_file = "./data/retrieved_chunks_KaLM_v2.json"
+    output_file = "./data/retrieved_chunks_snowflake.json"
 
     partition = "scifact"
     top_k = 10
