@@ -77,6 +77,10 @@ loader:
     flv: VideoAudioLoader
     wma: VideoAudioLoader
     aac: VideoAudioLoader
+    jpg: ImageLoader
+    jpeg: ImageLoader
+    png: ImageLoader
+    webp: ImageLoader
     # odt: CustomDocLoader
 
 ray:
