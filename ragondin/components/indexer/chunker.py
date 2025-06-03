@@ -171,7 +171,6 @@ class RecursiveSplitter(ABCChunker):
         chunks = self.splitter.create_documents([text])
         chunks_w_context = await self.contextualizer.contextualize(
             [Document(page_content="")] + chunks,
-            pages,
             source=source,
         )
 

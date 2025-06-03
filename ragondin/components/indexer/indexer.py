@@ -45,7 +45,6 @@ class Indexer(metaclass=SingletonMeta):
     def __init__(self, config, logger, device=None):
         self.config = config
         self.enable_insertion = self.config.vectordb["enable"]
-        logger.debug(f"Embedder config: {self.config.embedder}")
         self.embedder = OpenAIEmbeddings(
             model=self.config.embedder.get("model_name"),
             base_url=self.config.embedder.get("base_url"),

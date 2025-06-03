@@ -13,6 +13,8 @@ from .reranker import Reranker
 from .retriever import ABCRetriever, RetrieverFactory
 from .utils import format_context, load_sys_template
 import os
+from .map_reduce import RAGMapReduce
+
 
 class RAGMODE(Enum):
     SIMPLERAG = "SimpleRag"
@@ -103,6 +105,8 @@ class RagPipeline:
             base_url=config.vlm["base_url"], api_key=config.vlm["api_key"]
         )
 
+        self.map_reduce: RAGMapReduce = RAGMapReduce(config=config)
+
     async def generate_query(self, messages: list[dict]) -> str:
         match RAGMODE(self.rag_mode):
             case RAGMODE.SIMPLERAG:
@@ -148,13 +152,24 @@ class RagPipeline:
             partition=partition, query=query
         )
 
-        # if RAG_MAP_REDUCE:
-        
+        if RAG_MAP_REDUCE:
+            context = "Extracted documents:\n"
+            relevant_docs = []
 
-        logger.info(f"{len(docs)} Documents retrieved")
+            res = await self.map_reduce.map(query=query, chunks=docs)
+            for synthesis, doc in res:
+                context += synthesis + "\n"
+                context += "-" * 40 + "\n"
+                relevant_docs.append(doc)
 
-        # 3. Format the retrieved docs
-        context, sources = format_context(docs)
+            logger.debug(context)
+            docs = relevant_docs
+
+        else:
+            logger.info(f"{len(docs)} Documents retrieved")
+
+            # 3. Format the retrieved docs
+            context, _ = format_context(docs)
 
         # 4. prepare the output
         messages: list = copy.deepcopy(messages)

@@ -4,7 +4,8 @@ from openai import AsyncOpenAI
 from langchain_core.prompts import PromptTemplate
 from langchain_core.documents.base import Document
 from .utils import llmSemaphore
-
+from loguru import logger
+from tqdm.asyncio import tqdm
 
 system_prompt_map = """
 Vous êtes un modèle de langage spécialisé dans l’analyse et la synthèse d’informations. Ton rôle est d’examiner un texte fourni et d’en extraire les éléments nécessaires pour répondre à une question utilisateur.
@@ -54,21 +55,29 @@ class RAGMapReduce:
                     {"role": "user", "content": user_prompt_map},
                 ],
                 stream=False,
-                max_tokens=300,
+                max_tokens=512,
+                temperature=0.3,
             )
             resp = response.choices[0].message.content.strip()
             relevancy = "Not pertinent" not in resp
             return relevancy, resp
 
     async def map(self, query: str, chunks: list[Document]):
-        output = await asyncio.gather(
-            *[self.infer_llm_map(query, chunk) for chunk in chunks]
+        logger.debug(
+            f"Before MAP_REDUCE Processing {len(chunks)} chunks for query: {query}"
+        )
+        tasks = [self.infer_llm_map(query, chunk) for chunk in chunks]
+        output = await tqdm.gather(
+            *tasks, desc="MAP_REDUCE Processing chunks", total=len(chunks)
         )
         relevant_chunks_syntheses = [
             (synthesis, chunk)
             for chunk, (relevancy, synthesis) in zip(chunks, output)
             if relevancy
         ]
+        logger.debug(
+            f"After MAP_REDUCE Processing {len(relevant_chunks_syntheses)} relevant chunks for query: {query}"
+        )
         # final_response = await infer_llm_reduce("\n".join(syntheses))
         return relevant_chunks_syntheses
 

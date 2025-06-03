@@ -92,3 +92,7 @@ for file_path in dir_path.glob("**/*"):
 
             response = httpx.post(url, files=files, headers=headers)
             print(f"Uploaded {filename}: {response.status_code} - {response.text}")
+
+
+# How to run this code:
+# python utility/data_indexer.py -d /path/to/your/documents -p your_partition_name
