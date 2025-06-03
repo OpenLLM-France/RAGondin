@@ -64,7 +64,7 @@ prompt:
   chunk_contextualizer_pmpt: chunk_contextualizer_tmpl.txt
 
 loader:
-  image_captioning: false
+  image_captioning: true
   save_markdown: true
   audio_model: ${oc.env:WHISPER_MODEL, base}
   file_loaders:

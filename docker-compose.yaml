@@ -15,7 +15,7 @@ x-ragondin: &ragondin_template
 
   ports:
     - "${APP_PORT:-8080}:${APP_iPORT:-8080}"
-    - ${RAY_DASHBOARD_PORT:-8265}:${RAY_DASHBOARD_PORT:-8265 # for ray dashboard
+    - ${RAY_DASHBOARD_PORT:-8265}:8265 # for ray dashboard
 
   env_file:
     - .env
