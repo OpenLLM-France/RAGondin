@@ -15,7 +15,7 @@ from pathlib import Path
 
 config = load_config()
 prompts_dir = Path(config.paths.prompts_dir)
-img_desc_prompt_path = prompts_dir / config.prompt["contextualizer_pmpt"]
+img_desc_prompt_path = prompts_dir / config.prompt["image_describer"]
 IMAGE_DESCRIPTION_PROMPT = load_sys_template(img_desc_prompt_path)
 
 
