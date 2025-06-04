@@ -157,7 +157,7 @@ async def on_message(message: cl.Message):
     data = {
         "model": model,
         "messages": messages,
-        "temperature": 0.3,
+        "temperature": 0.2,
         "stream": True,
         "frequency_penalty": 0.4,
     }

@@ -62,6 +62,7 @@ services:
     ipc: "host"
     volumes:
       - ./vllm_cache:/root/.cache/huggingface
+      # - ${VLLM_CACHE_DIR:-~/.cache/huggingface}:/root/.cache/huggingface
     command: >
       --model ${EMBEDDER_MODEL_NAME:-jinaai/jina-embeddings-v3}
       --trust-remote-code
