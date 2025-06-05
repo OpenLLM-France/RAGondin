@@ -121,10 +121,10 @@ docker run --rm -d \
 
 ## 🐳 4. Launch the RAGondin App
 
-Use the Ray-compatible Docker Compose setup:
+Use the Docker Compose setup:
 
 ```bash
-docker compose -f docker-compose-ray.yaml up -d
+docker compose up -d
 ```
 
 Once running, **RAGondin will auto-connect** to the Ray cluster using `RAY_ADDRESS` from `.env`.
