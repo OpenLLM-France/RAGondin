@@ -80,7 +80,7 @@ class MarkerLoader(BaseLoader):
             processes=self._workers,
             initializer=self._worker_init,  # Note: Using class method directly
             initargs=(MarkerLoader._model_dict,),
-            maxtasksperchild=1,  # Restart workers periodically to prevent memory leaks
+            maxtasksperchild=10,  # Restart workers periodically to prevent memory leaks
         )
 
     @staticmethod
