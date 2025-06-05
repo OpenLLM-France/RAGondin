@@ -8,7 +8,7 @@ x-ragondin: &ragondin_template
   volumes:
     - ${CONFIG_VOLUME:-./.hydra_config}:/app/.hydra_config
     - ${DATA_VOLUME:-./data}:/app/data # PDF data for RAG
-    - ${MODEL_WEIGHTS_VOLUME:-./model_weights}:/app/model_weights # Model weights for RAG
+    - ${MODEL_WEIGHTS_VOLUME:-~/.cache/huggingface}:/app/model_weights # Model weights for RAG
     - ./ragondin:/app/ragondin # For dev mode
     - ${DB_VOLUME:-./db}:/app/db
   ports:
@@ -57,7 +57,7 @@ services:
       - HUGGING_FACE_HUB_TOKEN
     ipc: "host"
     volumes:
-      - ./vllm_cache:/root/.cache/huggingface
+      - ${VLLM_CACHE:-/root/.cache/huggingface}:/root/.cache/huggingface # put ./vllm_cache if you want to have the weights on the vllm_cache folder in your project
     command: >
       --model ${EMBEDDER_MODEL_NAME:-jinaai/jina-embeddings-v3}
       --trust-remote-code
