@@ -57,7 +57,7 @@ async def list_tasks(request: Request, task_status: str | None = None):
     """
     GET /tasks
       - ?status=active    → all tasks whose status ∈ {QUEUED, SERIALIZING, CHUNKING, INSERTING}
-      - ?status=<exact>   → all tasks whose status == <exact> (not case-sensitive)
+      - ?status=task_status   → all tasks whose status == task_status (not case-sensitive)
       - (no status param) → all tasks
     """
     # Retrieve every task_id → status
