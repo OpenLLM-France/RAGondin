@@ -208,6 +208,9 @@ class Indexer:
             raise ValueError("Partition must be a string.")
         return partition
 
+    def delete_partition(self, partition: str):
+        return self.vectordb.delete_partition(partition)
+
     def _check_partition_list(
         self, partition: Optional[Union[str, List[str]]]
     ) -> List[str]:
