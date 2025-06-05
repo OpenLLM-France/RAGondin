@@ -1,7 +1,8 @@
 import ray
 import ray.actor
 from components import ABCVectorDB
-from components.indexer.indexer import Indexer, IndexerQueue, TaskStateManager
+from components.indexer.indexer import Indexer, TaskStateManager
+from components.indexer.loaders.serializer import SerializerQueue
 from config import load_config
 
 
@@ -58,5 +59,7 @@ task_state_manager = TaskStateManager.options(
     name="TaskStateManager", lifetime="detached", namespace="ragondin"
 ).remote()
 
-# Create indexer queue actor
-indexer_queue = IndexerQueue.options(name="IndexerQueue", namespace="ragondin").remote()
+# Create document serializer actor
+serializer_queue = SerializerQueue.options(
+    name="SerializerQueue", namespace="ragondin"
+).remote()
