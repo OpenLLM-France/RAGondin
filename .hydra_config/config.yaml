@@ -82,6 +82,7 @@ loader:
     flv: VideoAudioLoader
     wma: VideoAudioLoader
     aac: VideoAudioLoader
+  marker_max_tasks_per_child: ${oc.decode:${oc.env:MARKER_MAX_TASKS_PER_CHILD, 10}}
 
 ray:
   num_gpus: ${oc.decode:${oc.env:RAY_NUM_GPUS, 0.1}}

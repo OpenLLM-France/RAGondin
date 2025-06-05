@@ -31,6 +31,7 @@ class MarkerLoader(BaseLoader):
     def __init__(self, page_sep: str = "[PAGE_SEP]", **kwargs):
         super().__init__(page_sep, **kwargs)
         self._workers = self.config.ray.get("max_tasks_per_worker", 2)
+        self.maxtasksperchild = self.config.loader.get("marker_max_tasks_per_child", 10)
         logger.info(f"Using {self._workers} workers for MarkerLoader")
         self._converter_config = {
             "output_format": "markdown",
@@ -80,7 +81,7 @@ class MarkerLoader(BaseLoader):
             processes=self._workers,
             initializer=self._worker_init,  # Note: Using class method directly
             initargs=(MarkerLoader._model_dict,),
-            maxtasksperchild=10,  # Restart workers periodically to prevent memory leaks
+            maxtasksperchild=self.maxtasksperchild,  # Restart workers periodically to prevent memory leaks
         )
 
     @staticmethod
