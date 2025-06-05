@@ -1,6 +1,7 @@
 import asyncio
 from abc import ABC, abstractmethod
 from typing import Dict, List, Optional, Union
+
 from langchain_community.embeddings import HuggingFaceBgeEmbeddings
 from langchain_core.documents.base import Document
 from langchain_huggingface import HuggingFaceEmbeddings
@@ -8,6 +9,7 @@ from langchain_milvus import BM25BuiltInFunction, Milvus
 from langchain_qdrant import FastEmbedSparse, QdrantVectorStore, RetrievalMode
 from pymilvus import MilvusClient
 from qdrant_client import QdrantClient, models
+
 from .utils import PartitionFileManager
 
 INDEX_PARAMS = [
@@ -146,7 +148,7 @@ class MilvusDB(ABCVectorDB):
         self.vector_store = None
         self.partition_file_manager: PartitionFileManager = None
         self.default_partition = "_default"
-        self.volumes_dir = kwargs.get("volumes_dir", None)
+        self.db_dir = kwargs.get("db_dir", None)
 
         # Set the initial collection name (if provided)
         if collection_name:
@@ -179,7 +181,7 @@ class MilvusDB(ABCVectorDB):
         )
 
         self.partition_file_manager = PartitionFileManager(
-            database_url=f"sqlite:///{self.volumes_dir}/partitions_for_collection_{name}.db",
+            database_url=f"sqlite:///{self.db_dir}/partitions_for_collection_{name}.db",
             logger=self.logger,
         )
 
@@ -328,7 +330,7 @@ class MilvusDB(ABCVectorDB):
                 file_id=file_id, partition=partition
             )
 
-        self.logger.info(f"CHUNKS INSERTED")
+        self.logger.info("CHUNKS INSERTED")
 
     def get_file_points(self, file_id: str, partition: str, limit: int = 100):
         """
@@ -891,6 +893,6 @@ class ConnectorFactory:
 
         dbconfig["embeddings"] = embeddings
         dbconfig["logger"] = logger
-        dbconfig["volumes_dir"] = config.paths.volumes_dir
+        dbconfig["db_dir"] = config.paths.db_dir
 
         return vdb_cls(**dbconfig)

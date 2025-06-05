@@ -3,9 +3,10 @@ import atexit
 import threading
 from abc import ABCMeta
 from pathlib import Path
+
+import ray
 from config.config import load_config
 from langchain_core.documents.base import Document
-import ray
 
 
 class SingletonMeta(type):
@@ -70,14 +71,21 @@ class DistributedSemaphoreActor:
 
 class DistributedSemaphore:
     # https://chat.deepseek.com/a/chat/s/890dbcc0-2d3f-4819-af9d-774b892905bc
-    def __init__(self, name: str = "llmSemaphore", max_concurrent_ops: int = 10):
+    def __init__(
+        self,
+        name: str = "llmSemaphore",
+        namespace="ragondin",
+        max_concurrent_ops: int = 10,
+    ):
         try:
-            actor = ray.get_actor(name)  # reuse existing actor if it exists
+            actor = ray.get_actor(
+                name, namespace=namespace
+            )  # reuse existing actor if it exists
         except ValueError:
             # create new actor if it doesn't exist
-            actor = DistributedSemaphoreActor.options(name=name).remote(
-                max_concurrent_ops
-            )
+            actor = DistributedSemaphoreActor.options(
+                name=name, namespace=namespace
+            ).remote(max_concurrent_ops)
 
         self._actor = actor
 
@@ -137,7 +145,7 @@ def format_context(docs: list[Document]) -> str:
                 "source": doc.metadata["source"],
                 "filename": doc.metadata["filename"],
                 "page": doc.metadata["page"],
-                'partition': doc.metadata['partition'],
+                "partition": doc.metadata["partition"],
                 "content": doc.page_content,
             }
         )

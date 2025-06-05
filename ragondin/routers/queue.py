@@ -13,34 +13,39 @@ router = APIRouter()
 task_state_manager = ray.get_actor("TaskStateManager", namespace="ragondin")
 
 
-indexer_queue = ray.get_actor("IndexerQueue", namespace="ragondin")
+serializer_queue = ray.get_actor("SerializerQueue", namespace="ragondin")
 task_state_manager = ray.get_actor("TaskStateManager", namespace="ragondin")
+
+
+def _format_pool_info(worker_info: dict[str, int]) -> dict[str, int]:
+    """
+    Convert SerializerQueue.pool_info() output into a concise dict for the API.
+    """
+    return {
+        "total_slots": worker_info["total_capacity"],
+        "free_slots": worker_info["free_slots"],
+        "busy_slots": worker_info["current_load"],
+        "pool_size": worker_info["pool_size"],
+        "max_per_actor": worker_info["max_tasks_per_worker"],
+    }
 
 
 @router.get("/info")
 async def get_queue_info():
-    # Get task states
     all_states: dict = await task_state_manager.get_all_states.remote()
     status_counts = Counter(all_states.values())
 
-    # Structure status counts
     active_statuses = ["QUEUED", "SERIALIZING", "CHUNKING", "INSERTING"]
-    active = {status: status_counts.get(status, 0) for status in active_statuses}
-    total_active = sum(active.values())
-    total_completed = status_counts.get("COMPLETED", 0)
-    total_failed = status_counts.get("FAILED", 0)
+    active = {s: status_counts.get(s, 0) for s in active_statuses}
 
-    # Get worker info
-    worker_info = await indexer_queue.pool_info.remote()
-    total_workers = worker_info["total"]
-    available_workers = worker_info["idle"]
-
-    return {
-        "workers": {"total": total_workers, "available": available_workers},
-        "tasks": {
-            "active": total_active,
-            "active_statuses": active,
-            "total_completed": total_completed,
-            "total_failed": total_failed,
-        },
+    task_summary = {
+        "active": sum(active.values()),
+        "active_statuses": active,
+        "total_completed": status_counts.get("COMPLETED", 0),
+        "total_failed": status_counts.get("FAILED", 0),
     }
+
+    worker_info = await serializer_queue.pool_info.remote()
+    workers_block = _format_pool_info(worker_info)
+
+    return {"workers": workers_block, "tasks": task_summary}

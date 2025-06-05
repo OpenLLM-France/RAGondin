@@ -9,11 +9,11 @@ import torch
 import torch.multiprocessing as mp
 from langchain_core.documents.base import Document
 from loguru import logger
+from marker.converters.pdf import PdfConverter
+from marker.models import create_model_dict
 from tqdm.asyncio import tqdm
 
 from ..base import BaseLoader
-from marker.converters.pdf import PdfConverter
-from marker.models import create_model_dict
 
 
 class MarkerLoader(BaseLoader):
@@ -30,7 +30,7 @@ class MarkerLoader(BaseLoader):
 
     def __init__(self, page_sep: str = "[PAGE_SEP]", **kwargs):
         super().__init__(page_sep, **kwargs)
-        self._workers = self.config.ray.get("n_parallel_indexation", 2)
+        self._workers = self.config.ray.get("max_tasks_per_worker", 2)
         logger.info(f"Using {self._workers} workers for MarkerLoader")
         self._converter_config = {
             "output_format": "markdown",
@@ -52,6 +52,10 @@ class MarkerLoader(BaseLoader):
                     MarkerLoader._initialized = True
 
     def _initialize_shared_resources(self):
+        import os
+
+        if "RAY_ADDRESS" not in os.environ:
+            os.environ["RAY_ADDRESS"] = "auto"
         """Initialize model dictionary and worker pool once for all instances"""
         # Initialize the model dictionary
         logger.info("Creating shared model dictionary for Marker")
@@ -76,7 +80,7 @@ class MarkerLoader(BaseLoader):
             processes=self._workers,
             initializer=self._worker_init,  # Note: Using class method directly
             initargs=(MarkerLoader._model_dict,),
-            maxtasksperchild=10,  # Restart workers periodically to prevent memory leaks
+            maxtasksperchild=1,  # Restart workers periodically to prevent memory leaks
         )
 
     @staticmethod

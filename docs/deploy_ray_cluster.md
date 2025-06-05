@@ -54,7 +54,7 @@ We recommend using **NFS** for this.
 - Shared access to:
   - `.env`
   - `.hydra_config`
-  - `/volumes` (SQLite)
+  - `/db` (SQLite)
   - `/data` (uploaded files)
   - `/model_weights` (embedding model cache)
 
@@ -79,7 +79,7 @@ docker:
     - --gpus all
     - -v /ray_mount/model_weights:/app/model_weights
     - -v /ray_mount/data:/app/data
-    - -v /ray_mount/volumes:/app/volumes
+    - -v /ray_mount/db:/app/db
     - -v /ray_mount/.hydra_config:/app/.hydra_config
     - --env-file /ray_mount/.env
 
@@ -110,7 +110,7 @@ docker run --rm -d \
   --env-file /ray_mount/.env \
   -v /ray_mount/model_weights:/app/model_weights \
   -v /ray_mount/data:/app/data \
-  -v /ray_mount/volumes:/app/volumes \
+  -v /ray_mount/db:/app/db \
   -v /ray_mount/.hydra_config:/app/.hydra_config \
   --name ray_node_worker \
   ghcr.io/openllm-france/ragondin-ray \
