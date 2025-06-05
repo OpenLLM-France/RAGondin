@@ -15,7 +15,7 @@ from .chunker import ABCChunker, ChunkerFactory
 from .vectordb import ConnectorFactory
 
 
-@ray.remote(max_restarts=-1)
+@ray.remote(max_restarts=-1, concurrency_groups={"insertion": 1})
 class Indexer:
     def __init__(self):
         # Load config, logger
@@ -49,6 +49,7 @@ class Indexer:
 
         self.default_partition = "_default"
         self.enable_insertion = self.config.vectordb["enable"]
+        self.handle = ray.get_actor("Indexer", namespace="ragondin")
         self.logger.info("Indexer actor initialized.")
 
     async def serialize(
@@ -97,7 +98,7 @@ class Indexer:
         if self.enable_insertion and chunks:
             try:
                 await self.task_state_manager.set_state.remote(task_id, "INSERTING")
-                await self.vectordb.async_add_documents(chunks)
+                await self.handle.insert_documents.remote(chunks)
                 self.logger.debug(f"Documents {path} added to vectordb.")
             except Exception as e:
                 self.logger.error(f"Error during insertion: {e}")
@@ -120,6 +121,10 @@ class Indexer:
         await self.task_state_manager.set_state.remote(task_id, "COMPLETED")
 
         return True
+
+    @ray.method(concurrency_group="insertion")
+    async def insert_documents(self, chunks):
+        await self.vectordb.async_add_documents(chunks)
 
     def delete_file(self, file_id: str, partition: str) -> bool:
         """
