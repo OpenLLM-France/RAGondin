@@ -2,7 +2,8 @@ from collections import Counter
 
 import ray
 from config.config import load_config
-from fastapi import APIRouter
+from fastapi import APIRouter, Request, status
+from fastapi.responses import JSONResponse
 
 # load config
 config = load_config()
@@ -49,3 +50,46 @@ async def get_queue_info():
     workers_block = _format_pool_info(worker_info)
 
     return {"workers": workers_block, "tasks": task_summary}
+
+
+@router.get("/tasks", name="list_tasks")
+async def list_tasks(request: Request, task_status: str | None = None):
+    """
+    GET /tasks
+      - ?status=active    → all tasks whose status ∈ {QUEUED, SERIALIZING, CHUNKING, INSERTING}
+      - ?status=<exact>   → all tasks whose status == <exact> (not case-sensitive)
+      - (no status param) → all tasks
+    """
+    # Retrieve every task_id → status
+    all_states: dict[str, str] = await task_state_manager.get_all_states.remote()
+
+    # Determine which IDs to include based on the `status` query param
+    if task_status is None:
+        # No filter: include all task IDs
+        filtered_ids = list(all_states.keys())
+
+    else:
+        # If status=active, treat as a special “umbrella” of multiple statuses
+        if task_status.lower() == "active":
+            active_statuses = {"QUEUED", "SERIALIZING", "CHUNKING", "INSERTING"}
+            filtered_ids = [
+                task_id for task_id, st in all_states.items() if st in active_statuses
+            ]
+        else:
+            # Filter by exact match of the status string (case‐sensitive)
+            filtered_ids = [
+                task_id
+                for task_id, st in all_states.items()
+                if st.lower() == task_status.lower()
+            ]
+
+    # Build a list of {"link": "<URL to GET /tasks/{task_id}>"}
+    tasks: list[dict[str, str]] = [
+        {"link": str(request.url_for("get_task_status", task_id=task_id))}
+        for task_id in filtered_ids
+    ]
+
+    return JSONResponse(
+        status_code=status.HTTP_200_OK,
+        content={"tasks": tasks},
+    )
