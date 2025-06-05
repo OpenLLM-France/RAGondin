@@ -46,8 +46,12 @@ services:
     profiles:
       - 'cpu'
 
-  vllm:
+  vllm-gpu:
     image: vllm/vllm-openai:latest
+    networks:
+      default:
+        aliases:
+          - vllm
     runtime: nvidia
     restart: always
     deploy:
@@ -68,3 +72,31 @@ services:
       --trust-remote-code
     ports:
       - ${VLLM_PORT:-8000}:8000
+    profiles:
+      - '' # Empty string gives default behavior (but does not run when cpu requested)
+
+  vllm-cpu:
+    build:
+      context: extern/vllm
+      dockerfile: Dockerfile.cpu
+      target: vllm-openai
+    image: ragondin-vllm-openai-cpu
+    networks:
+      default:
+        aliases:
+          - vllm
+    profiles:
+      - 'cpu'
+    restart: always
+    deploy: {}
+    environment:
+      - HUGGING_FACE_HUB_TOKEN
+    ipc: "host"
+    volumes:
+      - ./vllm_cache:/root/.cache/huggingface
+    command: >
+      --model ${EMBEDDER_MODEL_NAME:-jinaai/jina-embeddings-v3}
+      --trust-remote-code
+    ports:
+      - ${VLLM_PORT:-8000}:8000
+
