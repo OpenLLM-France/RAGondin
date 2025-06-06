@@ -7,7 +7,8 @@ x-ragondin: &ragondin_template
     dockerfile: Dockerfile
   volumes:
     - ./.hydra_config:/app/.hydra_config
-    - ${MODEL_WEIGTHS:-~/.cache/huggingface}:/app/model_weights
+    - ${HF_MODEL_DIR:-~/.cache}/huggingface:/app/model_weights
+    - ${DATALAB_MODEL_DIR:-~/.cache}/datalab:/root/.cache/datalab # marker model weights
     - ./data:/app/data
     - ./ragondin:/app/ragondin # For dev mode
     - ${MILVUS_VOLUME_DIRECTORY:-./volumes}:/app/volumes

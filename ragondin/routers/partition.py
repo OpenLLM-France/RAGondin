@@ -2,6 +2,8 @@ from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
 from fastapi.responses import JSONResponse
 from utils.dependencies import Indexer, get_indexer, vectordb
 import ray
+from loguru import logger
+
 
 # Create an APIRouter instance
 router = APIRouter()
@@ -20,6 +22,7 @@ async def list_existant_partitions(request: Request):
             status_code=status.HTTP_200_OK, content={"partitions": partitions}
         )
     except Exception as e:
+        logger.debug(str(e))
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e)
         )
@@ -34,9 +37,11 @@ async def delete_partition(partition: str, indexer: Indexer = Depends(get_indexe
         deleted = ray.get(indexer.delete_partition.remote(partition))
 
     except Exception as e:
+        err_str = f"Error while deleting partition '{partition}': {str(e)}"
+        logger.debug(err_str)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Error while deleting partition '{partition}': {str(e)}",
+            detail=err_str,
         )
 
     if not deleted:
@@ -66,6 +71,7 @@ async def list_files(
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
     except Exception as e:
+        logger.debug(str(e))
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e)
         )
@@ -147,6 +153,7 @@ async def get_file(
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
     except Exception as e:
+        logger.debug(str(e))
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e)
         )

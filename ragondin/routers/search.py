@@ -6,6 +6,7 @@ from components.reranker import Reranker
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from fastapi.responses import JSONResponse
 from utils.dependencies import Indexer, get_indexer
+from loguru import logger
 
 # Create an APIRouter instance
 router = APIRouter()
@@ -29,6 +30,7 @@ async def search_multiple_partitions(
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
     except Exception as e:
+        logger.debug(str(e))
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e)
         )
@@ -54,20 +56,18 @@ async def search_one_partition(
 ):
     try:
         results = await indexer.asearch.remote(
-            query=text,
-            top_k=top_k,
-            # similarity_threshold=similarity_threshold,
-            partition=partition,
+            query=text, top_k=top_k, partition=partition
         )
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
     except Exception as e:
+        logger.debug(str(e))
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e)
         )
 
     documents = [
-        {"link": str(request.url_for("get_extract", extract_id=doc.metadata["_id"])), "metadata": doc.metadata, "content": doc.page_content}
+        {"link": str(request.url_for("get_extract", extract_id=doc.metadata["_id"]))}
         for doc in results
     ]
 
@@ -92,6 +92,7 @@ async def search_file(
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
     except Exception as e:
+        logger.debug(str(e))
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e)
         )

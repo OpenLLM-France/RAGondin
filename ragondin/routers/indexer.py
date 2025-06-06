@@ -1,14 +1,12 @@
 import json
 from pathlib import Path
 from typing import Any, Optional
-import re
 
 import ray
 from config.config import load_config
 from fastapi import (
     APIRouter,
     Depends,
-    File,
     Form,
     HTTPException,
     Request,
@@ -18,7 +16,6 @@ from fastapi import (
 )
 from fastapi.responses import JSONResponse
 from loguru import logger
-from ray.util.state import get_task
 from utils.dependencies import Indexer, get_indexer, vectordb
 
 # load config
@@ -27,6 +24,8 @@ DATA_DIR = config.paths.data_dir
 ACCEPTED_FILE_FORMATS = dict(config.loader["file_loaders"]).keys()
 FORBIDDEN_CHARS_IN_FILE_ID = set("/")  # set('"<>#%{}|\\^`[]')
 
+# Get the TaskStateManager actor
+task_state_manager = ray.get_actor("TaskStateManager", namespace="ragondin")
 
 # Create an APIRouter instance
 router = APIRouter()
@@ -106,9 +105,11 @@ async def add_file(
         with open(file_path, "wb") as buffer:
             buffer.write(await file.read())
     except Exception as e:
+        err_str = f"Failed to save file: {str(e)}"
+        logger.debug(err_str)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to save file: {str(e)}",
+            detail=err_str,
         )
 
     # Queue the file for indexing
@@ -118,9 +119,11 @@ async def add_file(
         )
         # TODO: More specific errors with details and appropriate error codes
     except Exception as e:
+        err_str = f"Indexing error: {str(e)}"
+        logger.debug(err_str)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Indexing error: {str(e)}",
+            detail=err_str,
         )
 
     return JSONResponse(
@@ -143,9 +146,11 @@ async def delete_file(
     try:
         deleted = ray.get(indexer.delete_file.remote(file_id, partition))
     except Exception as e:
+        err_str = f"Error while deleting file '{file_id}': {str(e)}"
+        logger.debug(err_str)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Error while deleting file '{file_id}': {str(e)}",
+            detail=err_str,
         )
 
     if not deleted:
@@ -178,9 +183,11 @@ async def put_file(
         ray.get(indexer.delete_file.remote(file_id, partition))
         logger.info(f"File {file_id} deleted.")
     except Exception as e:
+        err_str = f"Failed to delete existing file: {str(e)}"
+        logger.debug(err_str)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to delete existing file: {str(e)}",
+            detail=err_str,
         )
 
     metadata["file_id"] = file_id
@@ -189,15 +196,19 @@ async def put_file(
     save_dir = Path(DATA_DIR)
     save_dir.mkdir(parents=True, exist_ok=True)
     file_path = save_dir / Path(file.filename).name
+
+    metadata.update({"source": str(file_path), "filename": file.filename})
     logger.info(f"Processing file: {file.filename} and saving to {file_path}")
 
     try:
         with open(file_path, "wb") as buffer:
             buffer.write(await file.read())
     except Exception as e:
+        err_str = f"Failed to save file: {str(e)}"
+        logger.debug(err_str)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to save file: {str(e)}",
+            detail=err_str,
         )
 
     # Queue indexing task
@@ -206,9 +217,11 @@ async def put_file(
             path=file_path, metadata=metadata, partition=partition
         )
     except Exception as e:
+        err_str = f"Indexing error: {str(e)}"
+        logger.debug(err_str)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Indexing error: {str(e)}",
+            detail=err_str,
         )
 
     return JSONResponse(
@@ -241,9 +254,11 @@ async def patch_file(
     try:
         ray.get(indexer.update_file_metadata.remote(file_id, metadata, partition))
     except Exception as e:
+        err_str = f"Failed to update metadata: {str(e)}"
+        logger.debug(err_str)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to update metadata: {str(e)}",
+            detail=err_str,
         )
 
     return JSONResponse(
@@ -253,18 +268,35 @@ async def patch_file(
 
 
 @router.get("/task/{task_id}")
-async def get_task_status(task_id: str, indexer: Indexer = Depends(get_indexer)):
+async def get_task_status(
+    request: Request, task_id: str, indexer: Indexer = Depends(get_indexer)
+):
     try:
-        task = get_task(task_id)
-    except Exception as e:
-        logger.debug(f"Error in `get_task_status`: {e}")
-        task = None
+        state = await indexer.get_task_status.remote(task_id)
+    except Exception:
+        logger.warning(f"Task {task_id} not found.")
+        state = None
 
-    if task is None:
+    if state is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail=f"Task '{task_id}' not found."
         )
+    content = {"task_id": task_id, "task_state": state}
+    if state == "FAILED":
+        content["error_url"] = str(request.url_for("get_task_error", task_id=task_id))
+
     return JSONResponse(
         status_code=status.HTTP_200_OK,
-        content={"task_id": task_id, "task_state": task.state},
+        content=content,
     )
+
+
+@router.get("/task/{task_id}/error")
+async def get_task_error(task_id: str):
+    error = await task_state_manager.get_error.remote(task_id)
+    if error is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"No error found for task '{task_id}'.",
+        )
+    return {"task_id": task_id, "traceback": error.splitlines()}
