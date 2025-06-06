@@ -124,7 +124,11 @@ class Indexer:
 
     @ray.method(concurrency_group="insertion")
     async def insert_documents(self, chunks):
-        await self.vectordb.async_add_documents(chunks)
+        try:
+            await self.vectordb.async_add_documents(chunks)
+        except Exception as e:
+            self.logger.error(f"Error inserting documents: {e}")
+            raise
 
     def delete_file(self, file_id: str, partition: str) -> bool:
         """

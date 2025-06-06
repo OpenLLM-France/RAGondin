@@ -135,8 +135,9 @@ class SerializerQueue:
             doc: Document = await chosen.serialize_document.remote(
                 task_id, path, metadata
             )
-            self.logger.debug(f"Document {path} serialization ended")
-
+        except Exception as e:
+            self.logger.error(f"Error serializing document {path}: {e}")
+            raise
         finally:
             # Free up the actor
             async with self._lock:
