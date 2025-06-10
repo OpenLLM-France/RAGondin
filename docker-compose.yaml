@@ -7,7 +7,7 @@ x-ragondin: &ragondin_template
     dockerfile: Dockerfile
   volumes:
     - ${CONFIG_VOLUME:-./.hydra_config}:/app/.hydra_config
-    - ${DATA_VOLUME:-./data}:/app/data # PDF data for RAG
+    - ${DATA_VOLUME:-./data}:/app/data
     - ${MODEL_WEIGHTS_VOLUME:-~/.cache/huggingface}:/app/model_weights # Model weights for RAG
     - ./ragondin:/app/ragondin # For dev mode
     - ${DB_VOLUME:-./db}:/app/db
@@ -17,7 +17,6 @@ x-ragondin: &ragondin_template
   env_file:
     - ${SHARED_ENV:-.env}
   shm_size: 10.24gb
-
   depends_on:
     - milvus
 
@@ -33,9 +32,9 @@ services:
               count: all
               capabilities: [ gpu ]
     profiles:
-      - '' # Empty string gives default behavior (but does not run when cpu requested)
+      - ''
 
-  # No GPU (docker compose --profile cpu up --build)
+  # No GPU
   ragondin-cpu:
     <<: *ragondin_template
     deploy: {}
@@ -57,9 +56,17 @@ services:
       - HUGGING_FACE_HUB_TOKEN
     ipc: "host"
     volumes:
-      - ${VLLM_CACHE:-/root/.cache/huggingface}:/root/.cache/huggingface # put ./vllm_cache if you want to have the weights on the vllm_cache folder in your project
+      - ${VLLM_CACHE:-/root/.cache/huggingface}:/root/.cache/huggingface
     command: >
       --model ${EMBEDDER_MODEL_NAME:-jinaai/jina-embeddings-v3}
       --trust-remote-code
     ports:
       - 8000:8000
+
+  # # Conditional persistence service from submodule
+  # chainlit-datalayer:
+  #   build:
+  #     context: ./services/chainlit-datalayer
+  #     dockerfile: Dockerfile
+  #   ports:
+  #     - 8001:8001

@@ -1,0 +1,3 @@
+[submodule "services/chainlit-datalayer"]
+	path = services/chainlit-datalayer
+	url = https://github.com/OpenLLM-France/chainlit-datalayer.git
