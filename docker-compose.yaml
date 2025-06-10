@@ -12,7 +12,6 @@ x-ragondin: &ragondin_template
     - ./data:/app/data
     - ./ragondin:/app/ragondin # For dev mode
     - ${MILVUS_VOLUME_DIRECTORY:-./volumes}:/app/volumes
-
   ports:
     - "${APP_PORT:-8080}:${APP_iPORT:-8080}"
     - ${RAY_DASHBOARD_PORT:-8265}:8265 # for ray dashboard
@@ -23,6 +22,23 @@ x-ragondin: &ragondin_template
 
   depends_on:
     - milvus
+
+x-vllm: &vllm_template
+  networks:
+    default:
+      aliases:
+        - vllm
+  restart: always
+  environment:
+    - HUGGING_FACE_HUB_TOKEN
+  ipc: "host"
+  volumes:
+    - ./vllm_cache:/root/.cache/huggingface
+  command: >
+    --model ${EMBEDDER_MODEL_NAME:-jinaai/jina-embeddings-v3}
+    --trust-remote-code
+  ports:
+    - ${VLLM_PORT:-8000}:8000
 
 services:
   # GPU - default 
@@ -47,13 +63,9 @@ services:
       - 'cpu'
 
   vllm-gpu:
+    <<: *vllm_template
     image: vllm/vllm-openai:latest
-    networks:
-      default:
-        aliases:
-          - vllm
     runtime: nvidia
-    restart: always
     deploy:
       resources:
         reservations:
@@ -61,42 +73,16 @@ services:
             - driver: nvidia
               count: all 
               capabilities: [gpu]
-    environment:
-      - HUGGING_FACE_HUB_TOKEN
-    ipc: "host"
-    volumes:
-      - ./vllm_cache:/root/.cache/huggingface
-      # - ${VLLM_CACHE_DIR:-~/.cache/huggingface}:/root/.cache/huggingface
-    command: >
-      --model ${EMBEDDER_MODEL_NAME:-jinaai/jina-embeddings-v3}
-      --trust-remote-code
-    ports:
-      - ${VLLM_PORT:-8000}:8000
     profiles:
       - '' # Empty string gives default behavior (but does not run when cpu requested)
 
   vllm-cpu:
+    <<: *vllm_template
     build:
       context: extern/vllm
       dockerfile: Dockerfile.cpu
       target: vllm-openai
     image: ragondin-vllm-openai-cpu
-    networks:
-      default:
-        aliases:
-          - vllm
+    deploy: {}
     profiles:
       - 'cpu'
-    restart: always
-    deploy: {}
-    environment:
-      - HUGGING_FACE_HUB_TOKEN
-    ipc: "host"
-    volumes:
-      - ./vllm_cache:/root/.cache/huggingface
-    command: >
-      --model ${EMBEDDER_MODEL_NAME:-jinaai/jina-embeddings-v3}
-      --trust-remote-code
-    ports:
-      - ${VLLM_PORT:-8000}:8000
-
