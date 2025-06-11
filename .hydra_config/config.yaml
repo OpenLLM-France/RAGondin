@@ -61,9 +61,11 @@ paths:
 prompt:
   rag_sys_pmpt: rag_sys_prompt_template.txt # rag_sys_pmpt_tmpl_ifa.txt
   contextualizer_pmpt: contextualizer_pmpt.txt
+  chunk_contextualizer_pmpt: chunk_contextualizer_tmpl.txt
+  image_describer: image_captioning.txt
 
 loader:
-  image_captioning: false
+  image_captioning: true
   save_markdown: true
   audio_model: ${oc.env:WHISPER_MODEL, base}
   file_loaders:
@@ -82,6 +84,7 @@ loader:
     flv: VideoAudioLoader
     wma: VideoAudioLoader
     aac: VideoAudioLoader
+    md: MarkdownLoader
   marker_max_tasks_per_child: ${oc.decode:${oc.env:MARKER_MAX_TASKS_PER_CHILD, 10}}
 
 ray:

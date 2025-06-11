@@ -36,7 +36,7 @@ def get_loader_classes(config: dict) -> Dict[str, Type[BaseLoader]]:
             ):
                 discovered[attr.__name__] = attr
 
-    logger.debug(f"Discovered loaders: {discovered}")
+    # logger.debug(f"Discovered loaders: {discovered}")
 
     # 2. Read your config map of extensions → class names
     loader_classes: Dict[str, Type[BaseLoader]] = {}

@@ -240,7 +240,12 @@ class MilvusDB(ABCVectorDB):
                     "range_filter": 1.0,
                 },
             },
-            {"metric_type": "BM25", "params": {"drop_ratio_build": 0.2}},
+            {
+                "metric_type": "BM25",
+                "params": {
+                    "drop_ratio_build": 0.2
+                }
+            },
         ]
 
         # "params": {"drop_ratio_build": 0.2, "bm25_k1": 1.2, "bm25_b": 0.75},
@@ -255,8 +260,6 @@ class MilvusDB(ABCVectorDB):
                 expr=expr,
                 param=SEARCH_PARAMS,
             )
-            # self.logger.info(f"Docs: {docs_scores}")
-
         else:
             docs_scores = (
                 await self.vector_store.asimilarity_search_with_relevance_scores(
@@ -267,7 +270,11 @@ class MilvusDB(ABCVectorDB):
                 )
             )
 
+        for doc, score in docs_scores:
+            doc.metadata['score'] = score
+
         docs = [doc for doc, score in docs_scores]
+
         return docs
 
     async def async_multy_query_search(
@@ -304,7 +311,11 @@ class MilvusDB(ABCVectorDB):
             if retrieved:
                 for document in retrieved:
                     retrieved_chunks[document.metadata["_id"]] = document
-        return list(retrieved_chunks.values())
+
+        retrieved_chunks = list(retrieved_chunks.values())
+        retrieved_chunks.sort(key=lambda v: v.metadata['score'], reverse=True)
+
+        return retrieved_chunks
 
     async def async_add_documents(self, chunks: list[Document]) -> None:
         """Asynchronously add documents to the vector store."""
