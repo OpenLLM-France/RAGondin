@@ -1,4 +1,7 @@
 from typing import List, Optional
+from loguru import logger
+from config import load_config
+from components.reranker import Reranker
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from fastapi.responses import JSONResponse
@@ -7,7 +10,8 @@ from loguru import logger
 
 # Create an APIRouter instance
 router = APIRouter()
-
+def get_app_state(request: Request):
+    return request.app.state.app_state
 
 @router.get("")
 async def search_multiple_partitions(
@@ -47,6 +51,7 @@ async def search_one_partition(
     partition: str,
     text: str = Query(..., description="Text to search semantically"),
     top_k: int = Query(5, description="Number of top results to return"),
+    # similarity_threshold: float = Query(0.2, description="Similarity threshold"),
     indexer: Indexer = Depends(get_indexer),
 ):
     try:

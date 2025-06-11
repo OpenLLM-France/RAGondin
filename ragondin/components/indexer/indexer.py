@@ -220,6 +220,13 @@ class Indexer:
     def delete_partition(self, partition: str):
         return self.vectordb.delete_partition(partition)
 
+    async def get_task_status(self, task_id: str):
+        """Get the status of a task."""
+        return await self.task_state_manager.get_state.remote(task_id)
+
+    def sample_chunk_ids(self, partition: str, n_ids: int = 100):
+        return self.vectordb.sample_chunk_ids(partition=partition, n_ids=n_ids)
+
     def _check_partition_list(
         self, partition: Optional[Union[str, List[str]]]
     ) -> List[str]:

@@ -13,6 +13,7 @@ from sqlalchemy import (
     ForeignKey,
     DateTime,
     UniqueConstraint,
+    func,
 )
 
 from datetime import datetime
@@ -262,3 +263,46 @@ class PartitionFileManager:
                 .count()
                 > 0
             )
+
+    def sample_file_ids(self, partition: str, n_file_id: int = 1000, seed: int = None):
+        """Sample file IDs from a partition"""
+        with self.Session() as session:
+            # Single query to directly get file_ids from the specified partition
+            random_func = self.get_random_func(session, seed)
+            sampled_files = (
+                session.query(File.file_id)
+                .filter(File.partition_name == partition)
+                .order_by(random_func)
+                .limit(n_file_id)
+                .all()
+            )
+
+            if not sampled_files:
+                self.logger.warning(f"No files found in partition: {partition}")
+                return []
+
+            # Extract file_ids from result tuples
+            return [file.file_id for file in sampled_files]
+
+    def get_random_func(self, session, seed: int = None):
+        if seed is not None:
+            db_type = self.engine.name
+            match db_type:
+                case "postgresql":
+                    # PostgreSQL: First set the seed, then use random()
+                    session.execute(f"SELECT setseed({seed / ((2**31) - 1)})")
+                    return func.random()
+                case "'mysql":
+                    # MySQL: Use RAND() with a seed
+                    return func.rand(seed)
+                case "sqlite":
+                    # SQLite: Use random() with a seed
+                    return func.random(seed)
+                case _:
+                    # Other databases: Use standard random with warning
+                    self.logger.warning(
+                        f"Database type '{db_type}' not supported for seeded random sampling."
+                    )
+                    return func.random()
+        else:
+            return func.random()
