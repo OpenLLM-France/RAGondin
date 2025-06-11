@@ -47,6 +47,7 @@ async def search_one_partition(
     partition: str,
     text: str = Query(..., description="Text to search semantically"),
     top_k: int = Query(5, description="Number of top results to return"),
+    # similarity_threshold: float = Query(0.2, description="Similarity threshold"),
     indexer: Indexer = Depends(get_indexer),
 ):
     try:

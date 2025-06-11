@@ -230,7 +230,7 @@ class MilvusDB(ABCVectorDB):
 
         # Join all parts with " and " only if there are multiple conditions
         expr = " and ".join(expr_parts) if expr_parts else ""
-
+        # self.logger.debug(f"Sim threshold: {similarity_threshold}")
         SEARCH_PARAMS = [
             {
                 "metric_type": "COSINE",
