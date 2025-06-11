@@ -5,11 +5,10 @@ Text file loader implementation.
 import asyncio
 from io import BytesIO
 from pathlib import Path
-from typing import Dict, List, Optional, Union
+from typing import Dict, Optional, Union
 from langchain_community.document_loaders import TextLoader as LangchainTextLoader
 from langchain_core.documents.base import Document
 import aiohttp
-import requests  # Add synchronous requests for fallback
 from components.indexer.loaders.base import BaseLoader
 import re
 from PIL import Image

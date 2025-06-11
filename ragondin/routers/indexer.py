@@ -24,6 +24,8 @@ DATA_DIR = config.paths.data_dir
 ACCEPTED_FILE_FORMATS = dict(config.loader["file_loaders"]).keys()
 FORBIDDEN_CHARS_IN_FILE_ID = set("/")  # set('"<>#%{}|\\^`[]')
 
+# Get the TaskStateManager actor
+task_state_manager = ray.get_actor("TaskStateManager", namespace="ragondin")
 
 # Create an APIRouter instance
 router = APIRouter()
@@ -273,7 +275,9 @@ async def patch_file(
 
 
 @router.get("/task/{task_id}")
-async def get_task_status(task_id: str, indexer: Indexer = Depends(get_indexer)):
+async def get_task_status(
+    request: Request, task_id: str, indexer: Indexer = Depends(get_indexer)
+):
     try:
         state = await indexer.get_task_status.remote(task_id)
     except Exception:
@@ -284,7 +288,22 @@ async def get_task_status(task_id: str, indexer: Indexer = Depends(get_indexer))
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail=f"Task '{task_id}' not found."
         )
+    content = {"task_id": task_id, "task_state": state}
+    if state == "FAILED":
+        content["error_url"] = str(request.url_for("get_task_error", task_id=task_id))
+
     return JSONResponse(
         status_code=status.HTTP_200_OK,
-        content={"task_id": task_id, "task_state": state},
+        content=content,
     )
+
+
+@router.get("/task/{task_id}/error")
+async def get_task_error(task_id: str):
+    error = await task_state_manager.get_error.remote(task_id)
+    if error is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"No error found for task '{task_id}'.",
+        )
+    return {"task_id": task_id, "traceback": error.splitlines()}

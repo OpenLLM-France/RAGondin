@@ -6,18 +6,16 @@ x-ragondin: &ragondin_template
     context: .
     dockerfile: Dockerfile
   volumes:
-    - ./.hydra_config:/app/.hydra_config
-    - ${HF_MODEL_DIR:-~/.cache}/huggingface:/app/model_weights
-    - ${DATALAB_MODEL_DIR:-~/.cache}/datalab:/root/.cache/datalab # marker model weights
-    - ./data:/app/data
+    - ${CONFIG_VOLUME:-./.hydra_config}:/app/.hydra_config
+    - ${DATA_VOLUME:-./data}:/app/data
+    - ${MODEL_WEIGHTS_VOLUME:-~/.cache/huggingface}:/app/model_weights # Model weights for RAG
     - ./ragondin:/app/ragondin # For dev mode
     - ${MILVUS_VOLUME_DIRECTORY:-./volumes}:/app/volumes
   ports:
     - "${APP_PORT:-8080}:${APP_iPORT:-8080}"
     - ${RAY_DASHBOARD_PORT:-8265}:8265 # for ray dashboard
-
   env_file:
-    - .env
+    - ${SHARED_ENV:-.env}
   shm_size: 10.24gb
 
   depends_on:
@@ -53,7 +51,6 @@ services:
               capabilities: [ gpu ]
     profiles:
       - '' # Empty string gives default behavior (but does not run when cpu requested)
-
 
   # No GPU (docker compose --profile cpu up --build)
   ragondin-cpu:

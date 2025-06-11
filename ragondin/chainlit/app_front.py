@@ -4,15 +4,12 @@ import httpx
 import chainlit as cl
 from loguru import logger
 from openai import AsyncOpenAI
-import os
 from urllib.parse import urlparse
 from chainlit.context import get_context
 import os
 
-AUTH_TOKEN = os.environ.get("AUTH_TOKEN", "")
 
 AUTH_TOKEN = os.environ.get("AUTH_TOKEN", "")
-logger.debug(f"TOken: {AUTH_TOKEN}")
 headers = {
     "accept": "application/json",
     "Content-Type": "application/json",

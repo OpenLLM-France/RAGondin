@@ -1,14 +1,9 @@
 import ray
 import ray.actor
 from components import ABCVectorDB
-from components.indexer.indexer import Indexer
-from components.indexer.indexer_deployment import Indexer as IndexerForDeployment
-from components.indexer.indexer_deployment import TaskStateManager, IndexerQueue
+from components.indexer.indexer import Indexer, TaskStateManager
+from components.indexer.loaders.serializer import SerializerQueue
 from config import load_config
-from loguru import logger
-from ray.util.state import get_task
-import asyncio
-from typing import Optional
 
 
 class VDBProxy:
@@ -46,14 +41,10 @@ class VDBProxy:
 # load config
 config = load_config()
 
-# Initialize components once
-local_deployment = config.ray["local_deployment"]
+# Create global indexer supervisor actor
+indexer = Indexer.options(name="Indexer", namespace="ragondin").remote()
 
-if local_deployment:
-    indexer = Indexer.remote(config, logger)
-else:
-    indexer = IndexerForDeployment.remote()
-
+# Create vectordb instance
 vectordb: ABCVectorDB = VDBProxy(
     indexer_actor=indexer
 )  # vectordb is not of type ABCVectorDB, but it mimics it
@@ -63,9 +54,12 @@ def get_indexer():
     return indexer
 
 
-# logger.info("Starting TaskStateManager actor")
-# task_state_manager = TaskStateManager.options(
-#     name="TaskStateManager", lifetime="detached", namespace="ragondin"
-# ).remote()
+# Create task state manager actor
+task_state_manager = TaskStateManager.options(
+    name="TaskStateManager", lifetime="detached", namespace="ragondin"
+).remote()
 
-# indexer_queue = IndexerQueue.options(name="IndexerQueue", namespace="ragondin").remote()
+# Create document serializer actor
+serializer_queue = SerializerQueue.options(
+    name="SerializerQueue", namespace="ragondin"
+).remote()

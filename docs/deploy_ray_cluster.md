@@ -17,7 +17,6 @@ RAY_RUNTIME_ENV_HOOK=ray._private.runtime_env.uv_runtime_env_hook.hook
 SHARED_ENV=/ray_mount/.env
 DATA_VOLUME = /ray_mount/data
 MODEL_WEIGHTS_VOLUME = /ray_mount/model_weights
-LOCAL_DEPLOYMENT=false
 RAY_ADDRESS=ray://<HEAD_NODE_IP>:10001
 
 # Worker pool settings
@@ -55,7 +54,7 @@ We recommend using **NFS** for this.
 - Shared access to:
   - `.env`
   - `.hydra_config`
-  - `/volumes` (SQLite)
+  - `/db` (SQLite)
   - `/data` (uploaded files)
   - `/model_weights` (embedding model cache)
 
@@ -80,7 +79,7 @@ docker:
     - --gpus all
     - -v /ray_mount/model_weights:/app/model_weights
     - -v /ray_mount/data:/app/data
-    - -v /ray_mount/volumes:/app/volumes
+    - -v /ray_mount/db:/app/db
     - -v /ray_mount/.hydra_config:/app/.hydra_config
     - --env-file /ray_mount/.env
 
@@ -111,7 +110,7 @@ docker run --rm -d \
   --env-file /ray_mount/.env \
   -v /ray_mount/model_weights:/app/model_weights \
   -v /ray_mount/data:/app/data \
-  -v /ray_mount/volumes:/app/volumes \
+  -v /ray_mount/db:/app/db \
   -v /ray_mount/.hydra_config:/app/.hydra_config \
   --name ray_node_worker \
   ghcr.io/openllm-france/ragondin-ray \
@@ -122,10 +121,10 @@ docker run --rm -d \
 
 ## 🐳 4. Launch the RAGondin App
 
-Use the Ray-compatible Docker Compose setup:
+Use the Docker Compose setup:
 
 ```bash
-docker compose -f docker-compose-ray.yaml up -d
+docker compose up -d
 ```
 
 Once running, **RAGondin will auto-connect** to the Ray cluster using `RAY_ADDRESS` from `.env`.
