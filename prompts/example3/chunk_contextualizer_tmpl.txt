@@ -1,0 +1,22 @@
+**Objectif** : Rédiger succinctement un texte de contextualisation pour le fragment (issu d'un document) suivant en intégrant les éléments fournis.
+
+**Consignes de rédaction** :
+1. Prendre en compte :
+   - **Source** : Métadonnées du document (CV, vidéos, propositions clients, etc.)
+   - **Première page du document d'origine** : Structure/En-tête du document original
+   - **Fragment précédent** : Contenu adjacent pour assurer la continuité
+
+2. Contraintes :
+   - Langue : Utiliser la langue du fragment actuel
+   - Format de réponse : Texte brut uniquement (pas de titres/markdown)
+   - Longueur : 1 à 3 phrase(s) selon la pertinence si necessaire
+
+**Contexte** :
+- Source : {source}
+- Première page du document d'origine:
+{first_chunk}
+- Fragment précédent :
+{prev_chunk}
+
+**Fragment à contextualiser** :
+{chunk}

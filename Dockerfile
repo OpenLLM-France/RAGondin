@@ -17,9 +17,9 @@ RUN apt update && \
     apt install -y ffmpeg 
 
 # Set environment variables for Hugging Face cache location
+ENV XDG_CACHE_HOME=${XDG_CACHE_HOME:-/app/model_weights}
 ENV HF_HOME=${HF_HOME:-/app/model_weights}
 ENV HF_HUB_CACHE=${HF_HUB_CACHE:-/app/model_weights/hub}
-
 
 # Set workdir for uv
 WORKDIR /app

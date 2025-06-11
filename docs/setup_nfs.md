@@ -5,7 +5,7 @@ This includes:
 
 - `.env` (environment variables for models and settings)
 - `.hydra_config` (application configuration)
-- SQLite DB (`/volumes`)
+- SQLite DB (`/db`)
 - Uploaded files (`/data`)
 - Model weights (e.g. `/model_weights` if using HF local cache)
 
@@ -87,7 +87,7 @@ From the main machine:
 ```bash
 sudo cp -r .hydra_config /ray_mount/
 sudo cp .env /ray_mount/
-sudo mkdir /ray_mount/volumes /ray_mount/data /ray_mount/model_weights
+sudo mkdir /ray_mount/db /ray_mount/data /ray_mount/model_weights
 sudo chown -R ubuntu:ubuntu /ray_mount
 ```
 > ✅ Ensure that the ownership is set to the user running Ray workers (e.g. `ubuntu`) so that all nodes can read/write.

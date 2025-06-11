@@ -34,7 +34,7 @@ embedder:
   
 vectordb:
   host: ${oc.env:VDB_HOST, milvus}
-  port: ${oc.env:VDB_iPORT, 19530}
+  port: ${oc.env:VDB_PORT, 19530}
   connector_name: ${oc.env:VDB_CONNECTOR_NAME, milvus}
   collection_name: vdb_test 
   hybrid_mode: true
@@ -56,14 +56,16 @@ verbose:
 paths:
   prompts_dir: ${oc.env:PROMPTS_DIR, ../prompts/example3}
   data_dir: ${oc.env:DATA_DIR, ../data}
-  volumes_dir: ${oc.env:DATA_VOLUME_DIRECTORY, /app/volumes}
+  db_dir: ${oc.env:DB_DIR, /app/db}
 
 prompt:
   rag_sys_pmpt: rag_sys_prompt_template.txt # rag_sys_pmpt_tmpl_ifa.txt
   contextualizer_pmpt: contextualizer_pmpt.txt
+  chunk_contextualizer_pmpt: chunk_contextualizer_tmpl.txt
+  image_describer: image_captioning.txt
 
 loader:
-  image_captioning: false
+  image_captioning: true
   save_markdown: true
   audio_model: ${oc.env:WHISPER_MODEL, base}
   file_loaders:
@@ -82,9 +84,10 @@ loader:
     flv: VideoAudioLoader
     wma: VideoAudioLoader
     aac: VideoAudioLoader
+    md: MarkdownLoader
+  marker_max_tasks_per_child: ${oc.decode:${oc.env:MARKER_MAX_TASKS_PER_CHILD, 10}}
 
 ray:
   num_gpus: ${oc.decode:${oc.env:RAY_NUM_GPUS, 0.1}}
   pool_size: ${oc.decode:${oc.env:RAY_POOL_SIZE, 1}}
   max_tasks_per_worker: ${oc.decode:${oc.env:RAY_MAX_TASKS_PER_WORKER, 5}}
-  n_parallel_indexation: ${oc.decode:${oc.env:N_PARALLEL_INDEXATION, 2}}

@@ -1,6 +1,7 @@
 import asyncio
 from abc import ABC, abstractmethod
 from typing import Dict, List, Optional, Union
+
 from langchain_community.embeddings import HuggingFaceBgeEmbeddings
 from langchain_core.documents.base import Document
 from langchain_huggingface import HuggingFaceEmbeddings
@@ -8,6 +9,7 @@ from langchain_milvus import BM25BuiltInFunction, Milvus
 from langchain_qdrant import FastEmbedSparse, QdrantVectorStore, RetrievalMode
 from pymilvus import MilvusClient
 from qdrant_client import QdrantClient, models
+
 from .utils import PartitionFileManager
 import random
 
@@ -153,7 +155,7 @@ class MilvusDB(ABCVectorDB):
         self.vector_store = None
         self.partition_file_manager: PartitionFileManager = None
         self.default_partition = "_default"
-        self.volumes_dir = kwargs.get("volumes_dir", None)
+        self.db_dir = kwargs.get("db_dir", None)
 
         # Set the initial collection name (if provided)
         if collection_name:
@@ -186,7 +188,7 @@ class MilvusDB(ABCVectorDB):
         )
 
         self.partition_file_manager = PartitionFileManager(
-            database_url=f"sqlite:///{self.volumes_dir}/partitions_for_collection_{name}.db",
+            database_url=f"sqlite:///{self.db_dir}/partitions_for_collection_{name}.db",
             logger=self.logger,
         )
 
@@ -245,7 +247,12 @@ class MilvusDB(ABCVectorDB):
                     "range_filter": 1.0,
                 },
             },
-            {"metric_type": "BM25", "params": {"drop_ratio_search": 0.2}},
+            {
+                "metric_type": "BM25",
+                "params": {
+                    "drop_ratio_build": 0.2
+                }
+            },
         ]
 
         # "params": {"drop_ratio_build": 0.2, "bm25_k1": 1.2, "bm25_b": 0.75},
@@ -260,8 +267,6 @@ class MilvusDB(ABCVectorDB):
                 expr=expr,
                 param=SEARCH_PARAMS,
             )
-            # self.logger.info(f"Docs: {docs_scores}")
-
         else:
             docs_scores = (
                 await self.vector_store.asimilarity_search_with_relevance_scores(
@@ -272,7 +277,11 @@ class MilvusDB(ABCVectorDB):
                 )
             )
 
+        for doc, score in docs_scores:
+            doc.metadata['score'] = score
+
         docs = [doc for doc, score in docs_scores]
+
         return docs
 
     async def async_multy_query_search(
@@ -309,7 +318,11 @@ class MilvusDB(ABCVectorDB):
             if retrieved:
                 for document in retrieved:
                     retrieved_chunks[document.metadata["_id"]] = document
-        return list(retrieved_chunks.values())
+
+        retrieved_chunks = list(retrieved_chunks.values())
+        retrieved_chunks.sort(key=lambda v: v.metadata['score'], reverse=True)
+
+        return retrieved_chunks
 
     async def async_add_documents(self, chunks: list[Document]) -> None:
         """Asynchronously add documents to the vector store."""
@@ -335,7 +348,7 @@ class MilvusDB(ABCVectorDB):
                 file_id=file_id, partition=partition
             )
 
-        self.logger.info(f"CHUNKS INSERTED")
+        self.logger.info("CHUNKS INSERTED")
 
     def get_file_points(self, file_id: str, partition: str, limit: int = 100):
         """
@@ -944,6 +957,6 @@ class ConnectorFactory:
 
         dbconfig["embeddings"] = embeddings
         dbconfig["logger"] = logger
-        dbconfig["volumes_dir"] = config.paths.volumes_dir
+        dbconfig["db_dir"] = config.paths.db_dir
 
         return vdb_cls(**dbconfig)
