@@ -42,11 +42,6 @@ class BaseLoader(ABC):
         metadata: Optional[Dict] = None,
         save_markdown: bool = False,
     ):
-    async def aload_document(
-        file_path: Union[str, Path],
-        metadata: Optional[Dict] = None,
-        save_markdown: bool = False,
-    ):
         pass
 
     def save_document(self, doc: Document, path: str):

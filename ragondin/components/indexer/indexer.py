@@ -13,8 +13,6 @@ from loguru import logger
 
 from .chunker import ABCChunker, ChunkerFactory
 from .vectordb import ConnectorFactory
-from langchain_openai import OpenAIEmbeddings
-from loguru import logger
 
 
 @ray.remote(max_restarts=-1, concurrency_groups={"insertion": 1})

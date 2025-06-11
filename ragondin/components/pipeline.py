@@ -56,8 +56,7 @@ class RetrieverPipeline:
         docs = await self.retriever.retrieve(
             partition=partition, query=query, db=self.vectordb
         )
-        self.logger.debug(f"{len(docs)} Documents retreived")
-
+        # self.logger.debug(f"{len(docs)} Documents retreived")
         if docs:
             # grade and filter out irrelevant docs
             if self.grader_enabled:
@@ -133,7 +132,6 @@ class RagPipeline:
                     ],
                     **params,
                 )
-
                 contextualized_query = response.choices[0].message.content
                 return contextualized_query
 
@@ -155,7 +153,6 @@ class RagPipeline:
         if RAG_MAP_REDUCE:
             context = "Extracted documents:\n"
             relevant_docs = []
-
             res = await self.map_reduce.map(query=query, chunks=docs)
             for synthesis, doc in res:
                 context += synthesis + "\n"
@@ -167,9 +164,8 @@ class RagPipeline:
 
         else:
             logger.info(f"{len(docs)} Documents retrieved")
-
             # 3. Format the retrieved docs
-            context, _ = format_context(docs)
+            context = format_context(docs)
 
         # 4. prepare the output
         messages: list = copy.deepcopy(messages)
@@ -202,7 +198,7 @@ class RagPipeline:
         )
 
         # 3. Format the retrieved docs
-        context, sources = format_context(docs)
+        context = format_context(docs)
 
         # 4. prepare the output
         prompt = (
@@ -224,7 +220,6 @@ class RagPipeline:
             payload, docs = await self._prepare_for_chat_completion(
                 partition=partition, payload=payload
             )
-
             llm_output = self.llm_client.chat_completion(request=payload)
             return llm_output, docs
         except Exception as e:
