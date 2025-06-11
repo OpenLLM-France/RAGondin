@@ -36,9 +36,12 @@ dependencies = [
     "robotframework>=7.2.2",
     "robotframework-requests>=0.9.7",
     "psutil>=7.0.0",
+<<<<<<< HEAD
     "jinaai>=0.2.10",
     "mcp>=1.9.0",
     "chainlit>=2.5.5",
+=======
+>>>>>>> 69fd249 (Reranker class to ease tests with crossencoder models or ragatouille)
 ]
 
 [dependency-groups]
