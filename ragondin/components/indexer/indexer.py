@@ -79,46 +79,47 @@ class Indexer:
         """
         Index a file into the vector database.
         """
-        task_id = ray.get_runtime_context().get_task_id()
-        self.task_state_manager.set_state.remote(task_id, "QUEUED")
-        # 1. Check/normalize partition
-        partition = self._check_partition_str(partition)
+        try:
+            task_id = ray.get_runtime_context().get_task_id()
+            await self.task_state_manager.set_state.remote(task_id, "QUEUED")
+            # 1. Check/normalize partition
+            partition = self._check_partition_str(partition)
 
-        # 2. Merge partition into metadata
-        metadata = {**metadata, "partition": partition}
+            # 2. Merge partition into metadata
+            metadata = {**metadata, "partition": partition}
 
-        # 3. Serialize
-        doc = await self.serialize(task_id, path, metadata=metadata)
-        self.logger.debug(f"Document serialized: {doc.metadata}")
-        # 4. Chunk
-        self.task_state_manager.set_state.remote(task_id, "CHUNKING")
-        chunks = await self.chunk(doc, str(path))
+            # 3. Serialize
+            doc = await self.serialize(task_id, path, metadata=metadata)
+            self.logger.debug(f"Document serialized: {doc.metadata}")
+            # 4. Chunk
+            await self.task_state_manager.set_state.remote(task_id, "CHUNKING")
+            chunks = await self.chunk(doc, str(path))
 
-        # 5. Insert into vectordb (if enabled)
-        if self.enable_insertion and chunks:
-            try:
+            # 5. Insert into vectordb (if enabled)
+            if self.enable_insertion and chunks:
                 await self.task_state_manager.set_state.remote(task_id, "INSERTING")
                 await self.handle.insert_documents.remote(chunks)
                 self.logger.debug(f"Documents {path} added to vectordb.")
-            except Exception as e:
-                self.logger.error(f"Error during insertion: {e}")
-                tb = "".join(traceback.format_exception(type(e), e, e.__traceback__))
-                await self.task_state_manager.set_state.remote(task_id, "FAILED")
-                await self.task_state_manager.set_error.remote(task_id, tb)
-                raise
-            finally:
-                # Clean up GPU memory if needed
-                if torch.cuda.is_available():
-                    gc.collect()
-                    torch.cuda.empty_cache()
-                    torch.cuda.ipc_collect()
-        else:
-            self.logger.debug(
-                f"Vectordb insertion skipped (enable_insertion={self.enable_insertion})."
-            )
-
-        # 6. Mark task as completed
-        await self.task_state_manager.set_state.remote(task_id, "COMPLETED")
+            else:
+                self.logger.debug(
+                    f"Vectordb insertion skipped (enable_insertion={self.enable_insertion})."
+                )
+            # 6. Mark task as completed
+            await self.task_state_manager.set_state.remote(task_id, "COMPLETED")
+        
+        except Exception as e:
+            self.logger.error(f"Task {task_id} failed in add_file: {e}")
+            tb = "".join(traceback.format_exception(type(e), e, e.__traceback__))
+            await self.task_state_manager.set_state.remote(task_id, "FAILED")
+            await self.task_state_manager.set_error.remote(task_id, tb)
+            raise
+        
+        finally:
+            # Clean up GPU memory if needed
+            if torch.cuda.is_available():
+                gc.collect()
+                torch.cuda.empty_cache()
+                torch.cuda.ipc_collect()
 
         return True
 
