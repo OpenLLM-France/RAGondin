@@ -10,16 +10,19 @@ RUN apt-get update && apt-get install -y \
     gcc \
     cmake \
     make \
+    ssh \ 
+    rsync \
     && rm -rf /var/lib/apt/lists/*
 
 # install ffmpeg
 RUN apt update && \
     apt install -y ffmpeg 
 
+    
 # Set environment variables for Hugging Face cache location
-ENV XDG_CACHE_HOME=${XDG_CACHE_HOME:-/app/model_weights}
-ENV HF_HOME=${HF_HOME:-/app/model_weights}
-ENV HF_HUB_CACHE=${HF_HUB_CACHE:-/app/model_weights/hub}
+ENV HF_HOME=/app/model_weights
+ENV HF_HUB_CACHE=/app/model_weights/hub
+
 
 # Set workdir for uv
 WORKDIR /app
@@ -32,6 +35,9 @@ RUN pip3 install uv && \
     uv sync --no-dev
 COPY entrypoint.sh /app/entrypoint.sh
 RUN chmod +x /app/entrypoint.sh
+
+COPY ray-cluster/ /app/ray-cluster/
+
 # Set workdir for source code
 WORKDIR /app/ragondin
 
@@ -42,6 +48,7 @@ COPY ragondin/ .
 COPY public/ /app/public/
 COPY prompts/ /app/prompts/
 COPY .hydra_config/ /app/.hydra_config/
+
+RUN apt install -y 
+
 ENV PYTHONPATH=/app/ragondin/
-ENV APP_iPORT=${APP_iPORT:-8080}
-ENTRYPOINT ../entrypoint.sh

@@ -1,0 +1,23 @@
+cluster_name: rag-cluster
+provider:
+  type: local
+  head_ip: 10.0.0.1
+  worker_ips: [10.0.0.2] # Mandatory but does not automatically start the worker nodes for a local cluster
+
+docker:
+  image: ghcr.io/openllm-france/ragondin-ray
+  pull_before_run: true
+  container_name: ray_node
+  run_options:
+    - --gpus all
+    - -v /ray_mount/model_weights:/app/model_weights
+    - -v /ray_mount/data:/app/data
+    - -v /ray_mount/db:/app/db
+    - -v /ray_mount/.hydra_config:/app/.hydra_config
+    - --env-file /ray_mount/.env
+auth:
+  ssh_user: ubuntu
+  ssh_private_key: path/to/private/key
+
+head_setup_commands:
+    - bash /app/ray-cluster/start_head.sh
