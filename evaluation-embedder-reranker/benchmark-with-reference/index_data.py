@@ -15,6 +15,7 @@ class WikiPage(TypedDict):
     id: str
     text: str
 
+
 data_path = "./"
 data_path = Path(data_path)
 AUTH_KEY = "sk-ragdondin-1234"
@@ -23,6 +24,7 @@ headers = {
     "accept": "application/json",
     "Authorization": f"Bearer {AUTH_KEY}",
 }
+
 
 def get_pages(
     wiki_dump_name: str, n: int = math.inf, filter_func=None
@@ -75,7 +77,7 @@ async def upload_file(client, semaphore, data, base_url, partition_name):
     temp_file_path = None
     try:
         content = data.pop("text")
-        article_no = data['id']
+        article_no = data["id"]
 
         if not content:
             print(f"No content for title: {article_no}")
@@ -85,7 +87,7 @@ async def upload_file(client, semaphore, data, base_url, partition_name):
         file_obj = BytesIO(content.encode())
 
         # Construct URL
-        file_id = data['id']
+        file_id = data["id"]
         url = f"{base_url}indexer/partition/{partition_name}/file/{file_id}"
 
         # # check if file exists already
@@ -105,9 +107,7 @@ async def upload_file(client, semaphore, data, base_url, partition_name):
                 "metadata": (None, metadata),
             }
 
-            response = await client.post(
-                url, files=files, headers=headers
-            )
+            response = await client.post(url, files=files, headers=headers)
 
             if not response.is_success:
                 print(f"Error uploading {article_no}: {response.status_code}")
@@ -142,13 +142,13 @@ async def main(pages, base_url, partition_name, n_semaphore=10):
                     for data in batch
                 ]
                 results = await asyncio.gather(*tasks)
-                progress_bar.update(len(batch))  # Update after batch completes 
+                progress_bar.update(len(batch))  # Update after batch completes
 
 
 # Usage example
 if __name__ == "__main__":
     num_port = os.environ.get("APP_PORT")
-    num_host = "localhost"
+    num_host = "163.114.159.68"  # "localhost"
     base_url = f"http://{num_host}:{num_port}/"
 
     # Get data
@@ -161,7 +161,7 @@ if __name__ == "__main__":
     print("Loading Data")
     wiki_pages = get_pages(
         wiki_dump_name,
-        n=1000,  
+        n=1000,
         filter_func=lambda x: nword_greater(x, nword=16),
     )
 

@@ -29,6 +29,8 @@ class Indexer:
             api_key=self.config.embedder.get("api_key"),
         )
 
+        logger.info(f"Embedding: {self.embedder.model}")
+
         # Get the global serializer queue actor by name
         self.serializer_queue = ray.get_actor("SerializerQueue", namespace="ragondin")
 

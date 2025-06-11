@@ -10,8 +10,11 @@ from loguru import logger
 
 # Create an APIRouter instance
 router = APIRouter()
+
+
 def get_app_state(request: Request):
     return request.app.state.app_state
+
 
 @router.get("")
 async def search_multiple_partitions(
@@ -67,7 +70,10 @@ async def search_one_partition(
         )
 
     documents = [
-        {"link": str(request.url_for("get_extract", extract_id=doc.metadata["_id"]))}
+        {
+            "link": str(request.url_for("get_extract", extract_id=doc.metadata["_id"])),
+            "metadata": doc.metadata,
+        }
         for doc in results
     ]
 

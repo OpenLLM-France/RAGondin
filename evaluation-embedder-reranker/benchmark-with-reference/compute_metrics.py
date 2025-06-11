@@ -1,5 +1,6 @@
 import json
 import numpy as np
+import os
 from loguru import logger
 from tqdm import tqdm
 from reranker import Reranker
@@ -7,7 +8,7 @@ import math
 import time
 
 # load the model
-evaluate_with_reranking = False
+evaluate_with_reranking = True
 
 # model_name = "jinaai/jina-colbert-v2"
 # reranker_type = "colbert"
@@ -36,7 +37,7 @@ def compute_nDCG(true_chunk_ids: list[str], all_retrieved_chunks: list[dict]):
     return [val_DCG / iDCG]
 
 # load json file
-embedder = os.environ.get('EMBEDDER_MODEL_NAME')
+embedder = os.environ.get('EMBEDDER_MODEL_NAME').split("/")[-1]
 path = f"./data/retrieved_chunks_{embedder}.json"
 with open(path, "r", encoding="utf-8") as json_file:
     question_relevant_chunks = json.load(json_file)

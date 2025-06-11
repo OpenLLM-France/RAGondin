@@ -66,7 +66,7 @@ async def __get_relevant_chunks(
 async def main():
     query_file = "./data/queries.csv"
     qrel_file = "./data/qrels.csv"
-    embedder = os.environ.get('EMBEDDER_MODEL_NAME')
+    embedder = os.environ.get('EMBEDDER_MODEL_NAME').split("/")[-1]
     output_file = f"./data/retrieved_chunks_{embedder}.json"
 
     partition = "benchmark"
@@ -76,8 +76,8 @@ async def main():
     semaphore = asyncio.Semaphore(10)
 
     num_port = os.environ.get("APP_PORT")
-    num_host = "localhost"
-    ragondin_api_base_url = f"http://{num_host}:{num_port}/"
+    num_host = "163.114.159.68"  # "localhost"
+    ragondin_api_base_url = f"http://{num_host}:{num_port}"
 
     # load files
     query_file = open(query_file, "r", encoding="utf-8")
