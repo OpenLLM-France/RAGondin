@@ -42,9 +42,10 @@ vectordb:
 
 reranker:
   enable: ${oc.decode:${oc.env:RERANKER_ENABLED, true}}
-  model_name: ${oc.env:RERANKER_MODEL, jinaai/jina-colbert-v2}
+  model_name: ${oc.env:RERANKER_MODEL, Alibaba-NLP/gte-multilingual-reranker-base}
   reranker_type: ${oc.decode:${oc.env:RERANKER_MODEL_TYPE, colbert}}
   top_k: ${oc.decode:${oc.env:RERANKER_TOP_K, 4}}
+  base_url: ${oc.env:RERANKER_BASE_URL, http://reranker:7997}
 
 grader:
   enable: false
