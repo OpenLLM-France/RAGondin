@@ -1,0 +1,88 @@
+[
+    {
+        "cluster_label": "0",
+        "question": "...",
+        "chunk_ids": [
+            458682089241051556,
+            458699890300290461,
+            458699890300290465,
+            458699890300290477,
+            458699890300290489,
+            458699890300290495,
+            458699890300290499,
+            458699890300290509,
+            458699890300290511,
+            458699890300290525,
+            458699890300290531,
+            458699890300290537,
+            458699890300290539
+        ],
+        "texts": [
+            "chunks' context: Dans ce texte, les auteurs décrivent comment les cellules myéloïdes dérivées des su",
+            "chunks' context: Ce fragment examine comment les modifications immunitaires de la grossesse réduisen",
+            "chunks' context: Ce fragment de texte décrit l'identification et l'analyse de FIP-2, un nouveau prot",
+            "chunks' context: Ce fragment décrit l'utilisation de la microscopie multiphoton séquentielle pour ét",
+            "chunks' context: Ce fragment souligne l'importance de la reconnaissance de l'influenza par le TLR7 c",
+            "chunks' context: Ce fragment de texte examine les rôles des polymérase dépendantes de l'ARN (RdRPs) ",
+            "chunks' context: Ce fragment de texte explore les interactions chromatiques complexes entre l'imprin",
+            "chunks' context: Ce fragment décrit une méthode pour induire la croissance de cellules dendritiques ",
+            "chunks' context: Dans ce fragment, les auteurs montrent que les cellules cancéreuses 4T1 peuvent ind",
+            "chunks' context: Ce fragment d'étude épidémiologique examine la transmission possible du virus aviai",
+            "chunks' context: Ce fragment souligne l'adoption de nouvelles courbes de référence pour la croissanc",
+            "chunks' context: Ce fragment de texte, issu d'un document scientifique, explore la relation entre le",
+            "chunks' context: Ce fragment explore le rôle des corps nucléaires associés à la leucémie promyélocyt"
+        ],
+        "file_ids": [
+            "5836",
+            "92308",
+            "207972",
+            "123859",
+            "72159",
+            "236204",
+            "140874",
+            "188911",
+            "164985",
+            "253672",
+            "103007",
+            "79447",
+            "213017"
+        ]
+    },
+    {
+        "cluster_label": "1",
+        "question": "...",
+        "chunk_ids": [
+            458699890300290453,
+            458699890300290469,
+            458699890300290479,
+            458699890300290481,
+            458699890300290497,
+            458699890300290513,
+            458699890300290521,
+            458699890300290523,
+            458699890300290541
+        ],
+        "texts": [
+            "chunks' context: Ce fragment de texte présente une étude sur la méthylation du génome dans les cellu",
+            "chunks' context: Ce fragment d'un essai scientifique explore l'efficacité d'une injection intraveine",
+            "chunks' context: Ce fragment décrit le développement des cellules souches hématopoïétiques (HSCs) au",
+            "chunks' context: Le fragment explique les principes de l'assay HTRF (Homogeneous Time Resolved Fluor",
+            "chunks' context: Ce fragment souligne l'importance de la formation de la médulloïde thymique pour la",
+            "chunks' context: Ce fragment examine l'impact d'un codon d'arrêt opal (UAG) sur l'infectivité de l'a",
+            "chunks' context: Ce fragment explore les mécanismes de l'apoptose rénale induite par la cyclosporine",
+            "chunks' context: Ce fragment souligne les défis de comprendre le lien entre l'excès nutritionnel, l'",
+            "chunks' context: Ce fragment de texte explore la formation des cellules souches hématopoïétiques (HS"
+        ],
+        "file_ids": [
+            "18670",
+            "118568",
+            "92499",
+            "159469",
+            "301838",
+            "152245",
+            "238409",
+            "195352",
+            "243694"
+        ]
+    }
+]
