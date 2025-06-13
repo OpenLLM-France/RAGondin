@@ -52,14 +52,14 @@ class BaseChunker(ABC):
             )
 
     async def _generate_context(
-        self, first_chunk: str, prev_chunk: str, chunk: str, source: str
+        self, first_chunks: str, prev_chunk: str, chunk: str, source: str
     ) -> str:
         """Generate context for a given chunk of text."""
         async with llmSemaphore:
             try:
                 return await self.context_generator.ainvoke(
                     {
-                        "first_chunk": first_chunk,
+                        "first_chunks": first_chunks,
                         "prev_chunk": prev_chunk,
                         "chunk": chunk,
                         "source": source,
@@ -74,16 +74,18 @@ class BaseChunker(ABC):
     async def _contextualize_chunks(self, chunks: list[str], source: str) -> list[str]:
         """Contextualize a list of document chunks."""
         if not self.contextual_retrieval or len(chunks) < 2:
-            return [chunk for chunk in chunks]
+            return chunks
 
         try:
             tasks = []
-            for i in range(1, len(chunks)):
-                prev_chunk = chunks[i - 1]
+            for i in range(len(chunks)):
+                prev_chunk = chunks[i - 1] if i > 0 else ""
                 curr_chunk = chunks[i]
+                first_chunks = "\n".join(chunks[:4])
+
                 tasks.append(
                     self._generate_context(
-                        first_chunk=chunks[0],
+                        first_chunks=first_chunks,
                         prev_chunk=prev_chunk,
                         chunk=curr_chunk,
                         source=source,
@@ -97,19 +99,17 @@ class BaseChunker(ABC):
             )
 
             # Format contextualized chunks
-            chunk_format = "Context: {chunk_context}\n=> Chunk: \n{chunk}"
-            contextualized = [chunks[0]]  # First chunk unchanged
-            contextualized.extend(
-                [
-                    chunk_format.format(chunk=chunk, chunk_context=context)
-                    for chunk, context in zip(chunks[1:], contexts)
-                ]
-            )
-            return contextualized
+            chunk_format = """Context: \n{chunk_context}\n==> Chunk: \n{chunk}"""
+            contexts = [
+                chunk_format.format(chunk=chunk, chunk_context=context)
+                for chunk, context in zip(chunks, contexts)
+            ]
+
+            return contexts
 
         except Exception as e:
             logger.warning(f"Error when contextualizing chunks from `{source}`: {e}")
-            return [chunk for chunk in chunks]
+            return chunks
 
     def _get_chunk_page_info(self, chunk_str: str, previous_page=1):
         """
