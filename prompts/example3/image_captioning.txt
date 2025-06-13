@@ -1,1 +1,1 @@
-Provide a complete, structured and precise description of this image or figure in the same language as its content. If the image contains tables, render them in markdown.
+Fournis une description complète, structurée et précise de cette image ou figure dans la même langue que son contenu. Si l’image contient des tableaux, rends-les en format markdown.

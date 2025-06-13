@@ -56,7 +56,7 @@ class RetrieverPipeline:
         docs = await self.retriever.retrieve(
             partition=partition, query=query, db=self.vectordb
         )
-        # self.logger.debug(f"{len(docs)} Documents retreived")
+        self.logger.debug(f"{len(docs)} Documents retreived")
         if docs:
             # grade and filter out irrelevant docs
             if self.grader_enabled:
@@ -163,7 +163,7 @@ class RagPipeline:
             docs = relevant_docs
 
         else:
-            logger.info(f"{len(docs)} Documents retrieved")
+            logger.info(f"{len(docs)} kept after retrieval")
             # 3. Format the retrieved docs
             context = format_context(docs)
 

@@ -10,9 +10,11 @@ import torch.multiprocessing as mp
 from langchain_core.documents.base import Document
 from loguru import logger
 from marker.converters.pdf import PdfConverter
+from marker.config.parser import ConfigParser
+
 from marker.models import create_model_dict
 from tqdm.asyncio import tqdm
-
+import re
 from ..base import BaseLoader
 
 
@@ -28,15 +30,15 @@ class MarkerLoader(BaseLoader):
     _initialized = False
     _pool_lock = threading.RLock()  # Thread-safe lock for pool operations
 
-    def __init__(self, page_sep: str = "[PAGE_SEP]", **kwargs):
-        super().__init__(page_sep, **kwargs)
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
         self._workers = self.config.ray.get("max_tasks_per_worker", 2)
         self.maxtasksperchild = self.config.loader.get("marker_max_tasks_per_child", 10)
         logger.info(f"Using {self._workers} workers for MarkerLoader")
         self._converter_config = {
             "output_format": "markdown",
             "paginate_output": True,
-            "page_separator": page_sep,
+            "page_separator": self.page_sep,
             "pdftext_workers": 1,  # force single-threaded processing in the underlying pdftext lib. This is because RAY actors are daemon processes and it doesn't allow child processes.
             "disable_multiprocessing": True,  # We manage our own multiprocessing
         }
@@ -157,7 +159,7 @@ class MarkerLoader(BaseLoader):
                 logger.error(f"PDF conversion returned None for {file_path_str}")
                 raise RuntimeError(f"Conversion failed for {file_path_str}")
 
-            text = result.markdown
+            text: str = result.markdown
 
             # Process images if needed
             if self.config["loader"]["image_captioning"]:
@@ -170,8 +172,10 @@ class MarkerLoader(BaseLoader):
             else:
                 logger.info("Image captioning disabled.")
 
-            # Process the text - safely handle if page_sep is not found
+            # skips any empty string before first page
             text = text.split(self.page_sep, 1)[1]
+            text = re.sub(r"\{(\d+)\}" + re.escape(self.page_sep), r"[PAGE_\1]", text)
+            text = text.replace("<br>", " <br> ")
             doc = Document(page_content=text, metadata=metadata)
 
             if save_markdown:

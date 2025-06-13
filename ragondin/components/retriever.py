@@ -1,7 +1,6 @@
 # Import necessary modules and classes
 from abc import ABC, abstractmethod
 from pathlib import Path
-
 from langchain_core.documents.base import Document
 from langchain_core.output_parsers import StrOutputParser
 from langchain_core.prompts import ChatPromptTemplate
@@ -56,7 +55,6 @@ class BaseRetriever(ABCRetriever):
             ValueError(f"Invalid type. Choose from {CRITERIAS}")
         self.criteria = criteria
         self.logger = logger
-        self.logger.info("Retriever initialized")
 
     async def retrieve(
         self, partition: list[str], query: str, db: ABCVectorDB

@@ -20,8 +20,8 @@ class TextLoader(BaseLoader):
     Loader for plain text files (.txt).
     """
 
-    def __init__(self, page_sep: str = "[PAGE_SEP]", **kwargs) -> None:
-        super().__init__(page_sep=page_sep, **kwargs)
+    def __init__(self, **kwargs) -> None:
+        super().__init__(**kwargs)
 
     async def aload_document(
         self,
@@ -39,10 +39,12 @@ class TextLoader(BaseLoader):
         doc_segments = await loader.aload()
 
         # Create final document
+        s = ""
+        for page_num, segment in enumerate(doc_segments, start=1):
+            s = segment.page_content.strip()
+
         doc = Document(
-            page_content=f"{self.page_sep}".join(
-                [s.page_content for s in doc_segments]
-            ),
+            page_content=s,
             metadata=metadata,
         )
 
@@ -54,8 +56,8 @@ class TextLoader(BaseLoader):
 
 
 class MarkdownLoader(BaseLoader):
-    def __init__(self, page_sep="[PAGE_SEP]", **kwargs):
-        super().__init__(page_sep, **kwargs)
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
         self._inline_img_pattern = re.compile(r"!\[(.*?)\]\((https?://.*?)\)")
 
     async def _fetch_image(self, url: str) -> Optional[Image.Image]:

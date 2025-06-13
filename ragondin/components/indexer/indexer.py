@@ -11,7 +11,7 @@ from config import load_config
 from langchain_core.documents.base import Document
 from langchain_openai import OpenAIEmbeddings
 
-from .chunker import ABCChunker, ChunkerFactory
+from .chunker import BaseChunker, ChunkerFactory
 from .vectordb import ConnectorFactory
 
 @ray.remote(max_restarts=-1, concurrency_groups={"insertion": 1})
@@ -30,7 +30,9 @@ class Indexer:
 
         self.serializer_queue = ray.get_actor("SerializerQueue", namespace="ragondin")
 
-        self.chunker: ABCChunker = ChunkerFactory.create_chunker(
+        # Initialize chunker
+        self.chunker: BaseChunker = ChunkerFactory.create_chunker(
+
             self.config, embedder=self.embedder
         )
 
@@ -64,7 +66,7 @@ class Indexer:
         log.info("Queued file for indexing.")
         try:
             await self.task_state_manager.set_state.remote(task_id, "QUEUED")
-        
+
             # Set task details
             user_metadata = {
                 k: v for k, v in metadata.items() 
@@ -78,14 +80,15 @@ class Indexer:
                 metadata=user_metadata,
             )
             
-            # 1. Check/normalize partition
+            # Check/normalize partition
             partition = self._check_partition_str(partition)
             metadata = {**metadata, "partition": partition}
-
+            
+            # Serialize
             doc = await self.serialize(task_id, path, metadata=metadata)
             log.info(f"Document serialized")
 
-            # 4. Chunk
+            # Chunk
             await self.task_state_manager.set_state.remote(task_id, "CHUNKING")
             chunks = await self.chunk(doc, str(path))
             log.info(f"Document chunked")
@@ -97,9 +100,7 @@ class Indexer:
             else:
                 log.info(f"Vectordb insertion skipped (enable_insertion={self.enable_insertion}).")
 
-
-            
-            # 6. Mark task as completed
+            # Mark task as completed
             await self.task_state_manager.set_state.remote(task_id, "COMPLETED")
 
         except Exception as e:
