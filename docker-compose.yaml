@@ -87,3 +87,21 @@ services:
     deploy: {}
     profiles:
       - 'cpu'
+  
+  reranker:
+    image: michaelf34/infinity
+    runtime: nvidia
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all 
+              capabilities: [gpu]
+    volumes:
+      - ${VLLM_CACHE:-/root/.cache/huggingface}:/app/.cache/huggingface # Model weights for RAG
+    ports:
+      - 7997:7997
+    command: >
+      --model-id ${RERANKER_MODEL:-Alibaba-NLP/gte-multilingual-reranker-base}
+      --port 7997
