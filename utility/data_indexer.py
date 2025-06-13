@@ -95,4 +95,4 @@ for file_path in dir_path.glob("**/*"):
 
 
 # How to run this code:
-# uv run python utility/data_indexer.py -d /path/to/your/documents -p your_partition_name
+# uv run python utility/data_indexer.py -d /path/to/your/documents -p your_partition_name -u http://localhost:8080 -a your_auth_key
