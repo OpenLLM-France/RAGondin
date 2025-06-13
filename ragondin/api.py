@@ -83,6 +83,17 @@ app.mount(
     "/static", StaticFiles(directory=DATA_DIR.resolve(), check_dir=True), name="static"
 )
 
+from fastapi.middleware.cors import CORSMiddleware
+
+# Add CORS middleware
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # Adjust as needed for production
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 
 @app.get(
     "/health_check", summary="Toy endpoint to check that the api is up", dependencies=[]
