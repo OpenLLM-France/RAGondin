@@ -1,5 +1,5 @@
-import asyncio
 import re
+import asyncio
 from abc import ABC, abstractmethod
 from pathlib import Path
 from typing import Optional
@@ -14,46 +14,36 @@ from loguru import logger
 from omegaconf import OmegaConf
 from tqdm.asyncio import tqdm
 from ..utils import llmSemaphore, load_config, load_sys_template
-
+from langchain_text_splitters import RecursiveCharacterTextSplitter
+from langchain.chains.combine_documents.reduce import split_list_of_docs, collapse_docs
+from langchain_text_splitters import MarkdownHeaderTextSplitter
+import functools
 
 config = load_config()
 prompt_paths = Path(config.paths.get("prompts_dir"))
 chunk_contextualizer_pmpt = config.prompt.get("chunk_contextualizer_pmpt")
-
 CHUNK_CONTEXTUALIZER = load_sys_template(prompt_paths / chunk_contextualizer_pmpt)
 
 
-class ABCChunker(ABC):
-    @abstractmethod
-    def __init__(self, *args, **kwargs) -> None:
-        pass
-
-    @abstractmethod
-    async def split_document(self, doc: Document):
-        pass
-
-
-class ChunkContextualizer:
-    """ChunkContextualizer is a class that provides functionality to generate context for chunks of text using a language model.
-    Attributes:
-        contextual_retrieval (bool): Indicates whether contextual retrieval is enabled.
-        context_generator (Optional[Callable]): A callable for generating context if contextual retrieval is enabled.
-    Methods:
-        __init__(contextual_retrieval: bool = False, llm: Optional[ChatOpenAI] = None):
-            Initializes the ChunkContextualizer with optional contextual retrieval and language model.
-        generate_context(first_page: str, prev_chunk: str, chunk: str, source: str, semaphore: asyncio.Semaphore = llmSemaphore) -> str:
-        contextualize(chunks: list[Document], pages: list[str], source: str, n_concurrent_request: int = 5) -> list[str]:
-    """
+class BaseChunker(ABC):
+    """Base class for document chunkers with built-in contextualization capability."""
 
     def __init__(
-        self, contextual_retrieval: bool = False, llm: Optional[ChatOpenAI] = None
+        self,
+        contextual_retrieval: bool = False,
+        llm: Optional[ChatOpenAI] = None,
+        **kwargs,
     ):
         self.contextual_retrieval = contextual_retrieval
+        self.llm = llm
         self.context_generator = None
+        self._page_pattern = re.compile(r"\[PAGE_(\d+)\]")
+
         if self.contextual_retrieval:
-            assert isinstance(llm, ChatOpenAI), (
-                "The `llm` should be of type `ChatOpenAI` if contextual_retrieval is `True`"
-            )
+            if not isinstance(llm, ChatOpenAI):
+                raise ValueError(
+                    "The `llm` should be of type `ChatOpenAI` if contextual_retrieval is `True`"
+                )
             prompt = ChatPromptTemplate.from_template(template=CHUNK_CONTEXTUALIZER)
             self.context_generator = (prompt | llm | StrOutputParser()).with_retry(
                 retry_if_exception_type=(Exception,),
@@ -61,16 +51,11 @@ class ChunkContextualizer:
                 stop_after_attempt=2,
             )
 
-    async def generate_context(
-        self,
-        first_chunk: str,
-        prev_chunk: str,
-        chunk: str,
-        source: str,
-        semaphore: asyncio.Semaphore = llmSemaphore,
-    ):
-        """generates context for a given chunk of text."""
-        async with semaphore:
+    async def _generate_context(
+        self, first_chunk: str, prev_chunk: str, chunk: str, source: str
+    ) -> str:
+        """Generate context for a given chunk of text."""
+        async with llmSemaphore:
             try:
                 return await self.context_generator.ainvoke(
                     {
@@ -82,17 +67,14 @@ class ChunkContextualizer:
                 )
             except Exception as e:
                 logger.warning(
-                    f"Error when contextualizing a chunk of this document `{source}`: {e}"
+                    f"Error when contextualizing a chunk of document `{source}`: {e}"
                 )
                 return ""
 
-    async def contextualize(
-        self,
-        chunks: list[Document],
-        source: str,
-    ) -> list[str]:
-        if not self.contextual_retrieval or len(chunks) == 1:
-            return [chunk.page_content for chunk in chunks]
+    async def _contextualize_chunks(self, chunks: list[str], source: str) -> list[str]:
+        """Contextualize a list of document chunks."""
+        if not self.contextual_retrieval or len(chunks) < 2:
+            return [chunk for chunk in chunks]
 
         try:
             tasks = []
@@ -100,109 +82,132 @@ class ChunkContextualizer:
                 prev_chunk = chunks[i - 1]
                 curr_chunk = chunks[i]
                 tasks.append(
-                    self.generate_context(
+                    self._generate_context(
                         first_chunk=chunks[0],
-                        prev_chunk=prev_chunk.page_content,
-                        chunk=curr_chunk.page_content,
+                        prev_chunk=prev_chunk,
+                        chunk=curr_chunk,
                         source=source,
                     )
                 )
+
             contexts = await tqdm.gather(
                 *tasks,
                 total=len(tasks),
                 desc=f"Contextualizing chunks of *{Path(source).name}*",
             )
-            chunk_format = "chunks' context: {chunk_context}\n\n=> chunk: \n{chunk}"
-            return [
-                chunk_format.format(chunk=chunk.page_content, chunk_context=task)
-                for chunk, task in zip(chunks[1:], contexts)
-            ]
+
+            # Format contextualized chunks
+            chunk_format = "Context: {chunk_context}\n=> Chunk: \n{chunk}"
+            contextualized = [chunks[0]]  # First chunk unchanged
+            contextualized.extend(
+                [
+                    chunk_format.format(chunk=chunk, chunk_context=context)
+                    for chunk, context in zip(chunks[1:], contexts)
+                ]
+            )
+            return contextualized
 
         except Exception as e:
             logger.warning(f"Error when contextualizing chunks from `{source}`: {e}")
+            return [chunk for chunk in chunks]
+
+    def _get_chunk_page_info(self, chunk_str: str, previous_page=1):
+        """
+        Determine the start and end pages for a text chunk containing [PAGE_N] separators.
+        PAGE_N marks the end of page N - text before separator is on page N.
+        """
+        # Find all page separator matches in the chunk
+        matches = list(self._page_pattern.finditer(chunk_str))
+
+        if not matches:
+            # No separators found - entire chunk is on previous page
+            return {"start_page": previous_page, "end_page": previous_page}
+
+        first_match = matches[0]
+        last_match = matches[-1]
+        last_char_idx = len(chunk_str) - 1
+
+        # Determine start page
+        if first_match.start() == 0:
+            # Chunk starts with a separator - begins on next page
+            start_page = int(first_match.group(1)) + 1
+        else:
+            # Text precedes first separator - starts on previous page
+            start_page = previous_page
+
+        # Determine end page
+        if last_match.end() - 1 == last_char_idx:
+            # Chunk ends exactly at a separator - ends on that page
+            end_page = int(last_match.group(1))
+        else:
+            # Chunk ends after separator - ends on next page
+            end_page = int(last_match.group(1)) + 1
+
+        return {"start_page": start_page, "end_page": end_page}
+
+    @abstractmethod
+    async def split_document(self, doc: Document):
+        pass
 
 
-class RecursiveSplitter(ABCChunker):
-    """RecursiveSplitter is a class that splits a document into chunks and contextualizes them."""
+class RecursiveSplitter(BaseChunker):
+    """RecursiveSplitter splits documents into chunks using recursive character splitting."""
 
-    def __init__(
-        self,
-        chunk_size: int = 200,
-        chunk_overlap: int = 20,
-        contextual_retrieval: bool = True,
-        llm: Optional[ChatOpenAI] = None,
-        **args,
-    ):
+    def __init__(self, chunk_size: int = 200, chunk_overlap: int = 20, **kwargs):
+        super().__init__(**kwargs)
+
         from langchain.text_splitter import RecursiveCharacterTextSplitter
 
         self.splitter = RecursiveCharacterTextSplitter(
             chunk_size=chunk_size,
             chunk_overlap=chunk_overlap,
-            length_function=lambda x: llm.get_num_tokens(x),
-            **args,
-        )
-        self.contextualizer = ChunkContextualizer(
-            contextual_retrieval=contextual_retrieval, llm=llm
+            length_function=lambda x: self.llm.get_num_tokens(x)
+            if self.llm
+            else len(x),
         )
 
     async def split_document(self, doc: Document):
-        text = ""
-        page_idx = []
         metadata = doc.metadata
         source = metadata["source"]
-        page_sep = doc.metadata["page_sep"]
-        pages: list[str] = doc.page_content.split(sep=page_sep)
-        start_index = 0
+        all_content = doc.page_content.strip()
+        chunks = self.splitter.split_text(all_content)
 
-        for page_num, p in enumerate(pages, start=1):
-            text += "\n" + p
-            c = " ".join(self.splitter.split_text(text))
-            end_index = len(c) - 1
-            page_idx.append(
-                {"start_idx": start_index, "end_idx": end_index, "page": page_num}
-            )
-            start_index = end_index
+        chunks_w_context = chunks  # Default to original chunks if no contextualization
+        if self.contextual_retrieval:
+            chunks_w_context = await self._contextualize_chunks(chunks, source=source)
 
-        # chunking the full text
-        full_text_preprocessed = " ".join(self.splitter.split_text(text))
-
-        # Split the full text into chunks
         filtered_chunks = []
-        chunks = self.splitter.create_documents([text])
-        chunks_w_context = await self.contextualizer.contextualize(
-            [Document(page_content="")] + chunks,
-            source=source,
-        )
-
-        i = 0
+        prev_page_num = 1
         for chunk, chunk_w_context in zip(chunks, chunks_w_context):
-            start_idx = full_text_preprocessed.find(chunk.page_content)
-            while (
-                not (page_idx[i]["start_idx"] <= start_idx <= page_idx[i]["end_idx"])
-                and i < len(page_idx) - 1
-            ):
-                i += 1
+            page_info = self._get_chunk_page_info(
+                chunk_str=chunk, previous_page=prev_page_num
+            )
+            start_page = page_info["start_page"]
+            end_page = page_info["end_page"]
+            prev_page_num = end_page
 
-            if len(chunk.page_content.strip()) > 3:
-                chunk.page_content = chunk_w_context
-                metadata.update({"page": page_idx[i]["page"]})
-                chunk.metadata = dict(metadata)
-                filtered_chunks.append(chunk)
+            if len(chunk.strip()) > 3:
+                filtered_chunks.append(
+                    Document(
+                        page_content=chunk_w_context,
+                        metadata={**metadata, "page": start_page},
+                    )
+                )
         return filtered_chunks
 
 
-class SemanticSplitter(ABCChunker):
-    """SemanticSplitter is a class that splits a document into semantically meaningful chunks and contextualizes them."""
+class SemanticSplitter(BaseChunker):
+    """SemanticSplitter splits documents into semantically meaningful chunks."""
 
     def __init__(
         self,
         min_chunk_size: int = 1000,
         embeddings=None,
         breakpoint_threshold_amount=85,
-        contextual_retrieval: bool = False,
-        llm: Optional[ChatOpenAI] = None,
-        **args,
-    ) -> None:
+        **kwargs,
+    ):
+        super().__init__(**kwargs)
+
         from langchain_experimental.text_splitter import SemanticChunker
 
         self.splitter = SemanticChunker(
@@ -211,58 +216,122 @@ class SemanticSplitter(ABCChunker):
             breakpoint_threshold_type="percentile",
             breakpoint_threshold_amount=breakpoint_threshold_amount,
             min_chunk_size=min_chunk_size,
-            add_start_index=True,
-            **args,
-        )
-        self.contextualizer = ChunkContextualizer(
-            contextual_retrieval=contextual_retrieval, llm=llm
         )
 
     async def split_document(self, doc: Document):
-        """Splits a document into chunks and contextualizes them."""
-        text = ""
-        page_idx = []
         metadata = doc.metadata
         source = metadata["source"]
-        page_sep = metadata.pop("page_sep")
-        pages = doc.page_content.split(sep=page_sep)
+        all_content = doc.page_content.strip()
+        chunks = self.splitter.split_text([all_content])
 
-        start_index = 0
-        for page_num, page_txt in enumerate(pages, start=1):
-            text += "\n" + page_txt
-            c = " ".join(re.split(self.splitter.sentence_split_regex, text))
-            end_index = len(c) - 1
-            page_idx.append(
-                {"start_idx": start_index, "end_idx": end_index, "page": page_num}
-            )
-            start_index = end_index
-
-        chunks = self.splitter.create_documents(
-            [" ".join(re.split(self.splitter.sentence_split_regex, text))]
-        )
+        chunks_w_context = chunks  # Default to original chunks if no contextualization
+        if self.contextual_retrieval:
+            chunks_w_context = await self._contextualize_chunks(chunks, source=source)
 
         filtered_chunks = []
-        chunks = [Document(page_content="")] + chunks
-        chunks_w_context = await self.contextualizer.contextualize(
-            [Document(page_content="")] + chunks,
-            pages,
-            source=source,
-            n_concurrent_request=5,
+        prev_page_num = 1
+        for chunk, chunk_w_context in zip(chunks, chunks_w_context):
+            page_info = self._get_chunk_page_info(
+                chunk_str=chunk, previous_page=prev_page_num
+            )
+            start_page = page_info["start_page"]
+            end_page = page_info["end_page"]
+            prev_page_num = end_page
+
+            if len(chunk.strip()) > 3:
+                filtered_chunks.append(
+                    Document(
+                        page_content=chunk_w_context,
+                        metadata={**metadata, "page": start_page},
+                    )
+                )
+        return filtered_chunks
+
+
+def _get_token_length(llm: ChatOpenAI, documents: list[Document]) -> int:
+    """Calculate the total number of tokens in a list of documents."""
+    return sum(llm.get_num_tokens(doc.page_content) for doc in documents)
+
+
+class MarkDownSplitter(BaseChunker):
+    # TODO: Change chunk_overlap to a fraction of chunk_size
+
+    def __init__(self, chunk_size: int = 200, chunk_overlap: int = 20, **kwargs):
+        super().__init__(**kwargs)
+
+        self.chunk_size = chunk_size
+        self.overlap = chunk_overlap
+
+        headers_to_split_on = [
+            ("#", "Header 1"),
+            ("##", "Header 2"),
+            ("###", "Header 3"),
+            ("####", "Header 4"),
+        ]
+        self.md_header_splitter = MarkdownHeaderTextSplitter(
+            headers_to_split_on=headers_to_split_on,
+            strip_headers=False,
         )
 
-        i = 0
+        self.recurive_splitter = RecursiveCharacterTextSplitter(
+            chunk_size=chunk_size,
+            chunk_overlap=chunk_overlap,
+            length_function=lambda x: self.llm.get_num_tokens(x),
+        )
+
+    def split_text(self, text: str) -> list[str]:
+        # split the text into chunks based on headers
+        splits: list[Document] = self.md_header_splitter.split_text(text)
+
+        # split large chunks
+        splits = self.recurive_splitter.split_documents(splits)
+
+        # regrouping chunks based on token length
+        s = split_list_of_docs(
+            docs=splits,
+            length_func=lambda x: _get_token_length(llm=self.llm, documents=x),
+            token_max=self.chunk_size,
+        )
+
+        results = []
+        for doc_list in s:
+            collapsed_content = collapse_docs(
+                doc_list,
+                combine_document_func=lambda x: "\n".join(
+                    [d.page_content for d in x]
+                ),  # TODO '\n' or ''
+            )
+            results.append(collapsed_content.page_content)
+
+        return results
+
+    async def split_document(self, doc: Document):
+        metadata = doc.metadata
+        source = metadata["source"]
+        all_content = doc.page_content.strip()
+        chunks = self.split_text(all_content)
+
+        chunks_w_context = chunks  # Default to original chunks if no contextualization
+        if self.contextual_retrieval:
+            chunks_w_context = await self._contextualize_chunks(chunks, source=source)
+
+        filtered_chunks = []
+        prev_page_num = 1
         for chunk, chunk_w_context in zip(chunks, chunks_w_context):
-            start_idx = chunk.metadata["start_index"]
-            while not (page_idx[i]["start_idx"] <= start_idx <= page_idx[i]["end_idx"]):
-                i += 1
+            page_info = self._get_chunk_page_info(
+                chunk_str=chunk, previous_page=prev_page_num
+            )
+            start_page = page_info["start_page"]
+            end_page = page_info["end_page"]
+            prev_page_num = end_page
 
-            if len(chunk.page_content.strip()) > 1:
-                chunk.page_content = chunk_w_context
-                metadata.update({"page": page_idx[i]["page"]})
-                chunk.metadata = dict(metadata)
-
-                filtered_chunks.append(chunk)
-
+            if len(chunk.strip()) > 3:
+                filtered_chunks.append(
+                    Document(
+                        page_content=chunk_w_context,
+                        metadata={**metadata, "page": start_page},
+                    )
+                )
         return filtered_chunks
 
 
@@ -270,17 +339,18 @@ class ChunkerFactory:
     CHUNKERS = {
         "recursive_splitter": RecursiveSplitter,
         "semantic_splitter": SemanticSplitter,
+        "markdown_splitter": MarkDownSplitter,
     }
 
     @staticmethod
     def create_chunker(
         config: OmegaConf,
         embedder: Optional[HuggingFaceBgeEmbeddings | HuggingFaceEmbeddings] = None,
-    ) -> ABCChunker:
+    ) -> BaseChunker:
         def create_chunker(
             config: OmegaConf,
             embedder: Optional[HuggingFaceBgeEmbeddings | HuggingFaceEmbeddings] = None,
-        ) -> ABCChunker:
+        ) -> BaseChunker:
             """
             Create and initialize a chunker based on the provided configuration.
             Args:
@@ -293,7 +363,7 @@ class ChunkerFactory:
         name = chunker_params.pop("name")
 
         # Initialize and return the chunker
-        chunker_class: ABCChunker = ChunkerFactory.CHUNKERS.get(name)
+        chunker_class: BaseChunker = ChunkerFactory.CHUNKERS.get(name)
         if not chunker_class:
             raise ValueError(f"Chunker '{name}' is not recognized.")
 
