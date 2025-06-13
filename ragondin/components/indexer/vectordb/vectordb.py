@@ -185,7 +185,8 @@ class MilvusDB(ABCVectorDB):
             logger=self.logger,
         )
 
-        self.logger.info(f"The Collection named `{name}` loaded.")
+        self.logger = self.logger.bind(collection=name)
+        self.logger.info(f"Milvus collection loaded.")
 
         if self.default_collection_name is None:
             self.default_collection_name = name
@@ -341,8 +342,6 @@ class MilvusDB(ABCVectorDB):
                 file_id=file_id, partition=partition
             )
 
-        self.logger.info("CHUNKS INSERTED")
-
     def get_file_points(self, file_id: str, partition: str, limit: int = 100):
         """
         Retrieve file points from the vector database based on a filter.
@@ -356,7 +355,7 @@ class MilvusDB(ABCVectorDB):
             ValueError: If the filter value type is unsupported.
             Exception: If there is an error during the query process.
         """
-
+        log = self.logger.bind(file_id=file_id, partition=partition)
         try:
             if not self.partition_file_manager.file_exists_in_partition(
                 file_id=file_id, partition=partition
@@ -387,16 +386,17 @@ class MilvusDB(ABCVectorDB):
 
                 if limit == 1:
                     return [response[0]["_id"]] if response else []
+            log.info("Fetched file points.", count=len(results))
+            return results
 
-            return results  # Return list of result IDs
-
-        except Exception as e:
-            self.logger.error(f"Couldn't get file points for file_id {file_id}: {e}")
+        except Exception:
+            log.exception(f"Couldn't fetch file points for file_id {file_id}")
             raise
 
     def get_file_chunks(
         self, file_id: str, partition: str, include_id: bool = False, limit: int = 100
     ):
+        log = self.logger.bind(file_id=file_id, partition=partition)
         try:
             if not self.partition_file_manager.file_exists_in_partition(
                 file_id=file_id, partition=partition
@@ -438,10 +438,11 @@ class MilvusDB(ABCVectorDB):
                 )
                 for res in results
             ]
-            return docs  # Return list of result IDs
+            log.info("Fetched file chunks.", count=len(results))
+            return docs
 
-        except Exception as e:
-            self.logger.error(f"Couldn't get file points for file_id {file_id}: {e}")
+        except Exception:
+            log.exception(f"Couldn't get file chunks for file_id {file_id}")
             raise
 
     def get_chunk_by_id(self, chunk_id: str):
@@ -468,13 +469,14 @@ class MilvusDB(ABCVectorDB):
                     },
                 )
             return None
-        except Exception as e:
-            self.logger.error(f"Couldn't get chunk by ID {chunk_id}: {e}")
+        except Exception:
+            self.logger.exception(f"Couldn't get chunk by ID", chunk_id=chunk_id)
 
     def delete_file_points(self, points: list, file_id: str, partition: str):
         """
         Delete points from Milvus
         """
+        log = self.logger.bind(file_id=file_id, partition=partition)
         try:
             if not self.partition_file_manager.file_exists_in_partition(
                 file_id=file_id, partition=partition
@@ -487,10 +489,9 @@ class MilvusDB(ABCVectorDB):
             self.partition_file_manager.remove_file_from_partition(
                 file_id=file_id, partition=partition
             )
-
-        except Exception as e:
-            self.logger.error(f"Error in `delete_points`: {e}")
-        pass
+            log.info("File points deleted.")
+        except Exception:
+            log.exception(f"Error while deleting file points.")
 
     def file_exists(self, file_id: str, partition: str):
         """
@@ -500,8 +501,8 @@ class MilvusDB(ABCVectorDB):
             return self.partition_file_manager.file_exists_in_partition(
                 file_id=file_id, partition=partition
             )
-        except Exception as e:
-            self.logger.error(f"Error in `file_exists` for file_id {file_id}: {e}")
+        except Exception:
+            self.logger.exception("File existence check failed.", file_id=file_id, partition=partition)
             return False
 
     def list_files(self, partition: str):
@@ -518,14 +519,14 @@ class MilvusDB(ABCVectorDB):
                 return results
 
         except Exception as e:
-            self.logger.error(f"Failed to get file_ids in partition '{partition}': {e}")
+            self.logger.exception("Failed to list files in partition.", partition=partition)
             raise
 
     def list_partitions(self):
         try:
             return self.partition_file_manager.list_partitions()
-        except Exception as e:
-            self.logger.error(f"Failed to list partitions : {e}")
+        except Exception:
+            self.logger.exception("Failed to list partitions.")
             raise
 
     def collection_exists(self, collection_name: str):
@@ -535,27 +536,24 @@ class MilvusDB(ABCVectorDB):
         return self.vector_store.client.has_collection(collection_name)
 
     def delete_partition(self, partition: str):
+        log = self.logger.bind(partition=partition)
         if not self.partition_file_manager.partition_exists(partition):
-            self.logger.debug(f"Partition {partition} does not exist.")
+            log.debug(f"Partition {partition} does not exist.")
             return False
 
         try:
-            deleted_count = self.client.delete(
+            count = self.client.delete(
                 collection_name=self.collection_name,
                 filter=f"partition == '{partition}'",
             )
 
             self.partition_file_manager.delete_partition(partition)
 
-            self.logger.info(
-                f"Deleted {deleted_count} points from partition '{partition}'."
-            )
+            log.info(f"Deleted points from partition.", count=count)
 
             return True
-        except Exception as e:
-            self.logger.error(
-                f"Error in `delete_partition` for partition {partition}: {e}"
-            )
+        except Exception:
+            log.exception("Failed to delete partition.")
             return False
 
     def partition_exists(self, partition: str):
@@ -566,9 +564,7 @@ class MilvusDB(ABCVectorDB):
             return self.partition_file_manager.partition_exists(partition=partition)
 
         except Exception as e:
-            self.logger.error(
-                f"Error in `partition_exists` for partition {partition}: {e}"
-            )
+            self.logger.exception("Partition existence check failed.", partition=partition)
             return False
 
 
