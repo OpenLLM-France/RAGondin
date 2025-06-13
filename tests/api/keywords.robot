@@ -58,7 +58,7 @@ Index File
     Sleep    1
     FOR    ${i}    IN RANGE    0    60    # 60 seconds
         ${response}=    Get Task Status    ${task_id}
-        IF    '${response}[task_state]' == 'FINISHED'    BREAK
+        IF    '${response}[task_state]' == 'COMPLETED'    BREAK
         Sleep    1
         IF    ${i} == 59
             Log    Task '${task_id}' is still running after 60 seconds.
