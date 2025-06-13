@@ -89,9 +89,5 @@ class BaseLoader(ABC):
                 logger.error(f"Error while generating image description: {e}")
 
             # Convert image path to markdown format and combine with description
-            if image_description:
-                markdown_content = f"Description de l'image: {image_description}"
-            else:
-                markdown_content = ""
-
-            return markdown_content
+            desc = f"""\n<image_description>\n{image_description}\n</image_description>\n"""
+            return desc
