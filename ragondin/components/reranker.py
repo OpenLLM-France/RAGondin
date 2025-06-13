@@ -10,6 +10,7 @@ from infinity_client import Client
 from infinity_client.api.default import rerank
 from infinity_client.models import RerankInput, ReRankResult
 
+
 class RerankerType(Enum):
     CROSSENCODER = "crossencoder"
     COLBERT = "colbert"
@@ -103,19 +104,22 @@ class Reranker(metaclass=SingletonMeta):
         gc.collect()
         torch.cuda.empty_cache()
         return [doc for doc in original_docs(results, documents)]
-    
+
     def ___infinity_rerank(
         self, query: str, documents: list[Document], top_k: int
     ) -> list[Document]:
-        rerank_input = RerankInput.from_dict({
-            "model": self.model_name,
-            "query": query,
-            "documents": [doc.page_content for doc in documents] ,
-            "top_n": top_k,
-            "return_documents": True
-        })
+        rerank_input = RerankInput.from_dict(
+            {
+                "model": self.model_name,
+                "query": query,
+                "documents": [doc.page_content for doc in documents],
+                "top_n": top_k,
+                "return_documents": True,
+            }
+        )
         rerank_result: ReRankResult = rerank.sync(client=self.client, body=rerank_input)
-        results = [{"content" : item.document} for item in rerank_result.results]
+        # self.logger.debug(f"Infinity Rerank result: {rerank_result.results}")
+        results = [{"content": item.document} for item in rerank_result.results]
         return [doc for doc in original_docs(results, documents)]
 
 
