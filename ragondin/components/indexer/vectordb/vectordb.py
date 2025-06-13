@@ -753,7 +753,7 @@ class MilvusDB(ABCVectorDB):
                 clusters.setdefault(label, []).append(
                     {
                         "id": ids[idx],
-                        "text": texts[idx],
+                        "text": texts[idx][:100],
                         "file_id": file_ids[idx],
                     }
                 )

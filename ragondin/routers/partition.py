@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
 from fastapi.responses import JSONResponse
 from utils.dependencies import Indexer, get_indexer, vectordb
 import ray
+import json
 from loguru import logger
 
 
@@ -148,9 +149,28 @@ async def list_clusters(
     request: Request,
     partition: str,
 ):
-    clusters_list = vectordb.clusterizer(partition)
+    result = vectordb.clusterizer(partition)
+
+    list_clusters = result.items()
+    list_questions = []
+    for cluster_label, chunks in list_clusters:
+        list_ids, list_texts, list_file_ids = map(list, zip(*[(chunk["id"], chunk["text"], chunk["file_id"]) for chunk in chunks]))
+        question = "..."
+        list_questions.append(
+            {
+                "cluster_label": cluster_label,
+                "question": question,
+                "chunk_ids": list_ids,
+                "texts": list_texts,
+                "file_ids": list_file_ids,
+            }
+        )
+    
+    with open("list_questions.json", "w", encoding="utf-8") as f:
+        json.dump(list_questions, f, indent=4, ensure_ascii=False)
+
     return JSONResponse(
-        status_code=status.HTTP_200_OK, content={"clusters": clusters_list}
+        status_code=status.HTTP_200_OK, content={"clusters": result}
     )
 
 @router.get("/check-file/{partition}/file/{file_id}")
