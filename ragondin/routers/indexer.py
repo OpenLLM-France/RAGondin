@@ -243,26 +243,34 @@ async def get_task_status(
     request: Request, task_id: str, indexer: Indexer = Depends(get_indexer)
 ):
     try:
+        # fetch task state
         state = await indexer.get_task_status.remote(task_id)
         if state is None:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail=f"Task '{task_id}' not found.",
             )
+
+        # fetch task details
+        details = await task_state_manager.get_details.remote(task_id)
+
+        # format the response
+        content: dict[str, Any] = {
+            "task_id": task_id,
+            "task_state": state,
+            "details": details,
+        }
+
+        if state == "FAILED":
+            content["error_url"] = str(request.url_for("get_task_error", task_id=task_id))
+
+        return JSONResponse(status_code=status.HTTP_200_OK, content=content)
+
     except Exception:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to fetch task status.",
         )
-
-    content = {"task_id": task_id, "task_state": state}
-    if state == "FAILED":
-        content["error_url"] = str(request.url_for("get_task_error", task_id=task_id))
-
-    return JSONResponse(
-        status_code=status.HTTP_200_OK,
-        content=content,
-    )
 
 
 @router.get("/task/{task_id}/error")

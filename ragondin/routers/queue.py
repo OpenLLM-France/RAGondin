@@ -55,41 +55,45 @@ async def get_queue_info():
 @router.get("/tasks", name="list_tasks")
 async def list_tasks(request: Request, task_status: str | None = None):
     """
-    GET /tasks
-      - ?status=active    → all tasks whose status ∈ {QUEUED, SERIALIZING, CHUNKING, INSERTING}
-      - ?status=task_status   → all tasks whose status == task_status (not case-sensitive)
-      - (no status param) → all tasks
+    - ?task_status=active  → QUEUED | SERIALIZING | CHUNKING | INSERTING
+    - ?task_status=<exact> → exact match (case-insensitive)
+    - (none)               → all tasks
     """
-    # Retrieve every task_id → status
-    all_states: dict[str, str] = await task_state_manager.get_all_states.remote()
+    # fetck task info
+    all_info: dict[str, dict] = await task_state_manager.get_all_info.remote()
 
-    # Determine which IDs to include based on the `status` query param
     if task_status is None:
-        # No filter: include all task IDs
-        filtered_ids = list(all_states.keys())
-
+        filtered = all_info.items()
     else:
-        # If status=active, treat as a special “umbrella” of multiple statuses
         if task_status.lower() == "active":
-            active_statuses = {"QUEUED", "SERIALIZING", "CHUNKING", "INSERTING"}
-            filtered_ids = [
-                task_id for task_id, st in all_states.items() if st in active_statuses
+            active_states = {"QUEUED", "SERIALIZING", "CHUNKING", "INSERTING"}
+            filtered = [
+                (tid, info)
+                for tid, info in all_info.items()
+                if info["state"] in active_states
             ]
         else:
-            # Filter by exact match of the status string (case‐sensitive)
-            filtered_ids = [
-                task_id
-                for task_id, st in all_states.items()
-                if st.lower() == task_status.lower()
+            filtered = [
+                (tid, info)
+                for tid, info in all_info.items()
+                if info["state"].lower() == task_status.lower()
             ]
 
-    # Build a list of {"link": "<URL to GET /tasks/{task_id}>"}
-    tasks: list[dict[str, str]] = [
-        {"link": str(request.url_for("get_task_status", task_id=task_id))}
-        for task_id in filtered_ids
-    ]
+    # format the response
+    tasks = []
+    for task_id, info in filtered:
+        item = {
+            "task_id":   task_id,
+            "state":     info["state"],
+            "details":   info["details"],
+            # include an error URL if applicable
+            **(
+                {"error_url": str(request.url_for("get_task_error", task_id=task_id))}
+                if info["state"] == "FAILED"
+                else {}
+            ),
+            "url":       str(request.url_for("get_task_status", task_id=task_id)),
+        }
+        tasks.append(item)
 
-    return JSONResponse(
-        status_code=status.HTTP_200_OK,
-        content={"tasks": tasks},
-    )
+    return JSONResponse(status_code=status.HTTP_200_OK, content={"tasks": tasks})
