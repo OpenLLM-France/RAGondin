@@ -173,9 +173,6 @@ async def on_message(message: cl.Message):
                 if sources is None:
                     extra = json.loads(chunk.extra)
                     sources = extra["sources"]
-                    elements, source_names = await __format_sources(sources)
-                    msg.elements = elements if elements else []
-                    await msg.update()
 
                 if chunk.choices and chunk.choices[0].delta.content:
                     token = chunk.choices[0].delta.content
@@ -187,6 +184,8 @@ async def on_message(message: cl.Message):
             cl.user_session.set("messages", messages)
 
             # Show sources
+            elements, source_names = await __format_sources(sources)
+            msg.elements = elements if elements else []
             if source_names:
                 s = "\n\n" + "-" * 50 + "\n\nSources: \n" + "\n".join(source_names)
                 await msg.stream_token(s)
