@@ -16,11 +16,11 @@ evaluate_with_reranking = True
 # model_name = "cross-encoder/mmarco-mMiniLMv2-L12-H384-v1"
 # reranker_type = "crossencoder"
 
-model_name = "jinaai/jina-reranker-v2-base-multilingual"
-reranker_type = "crossencoder"
-
-# model_name = "Alibaba-NLP/gte-multilingual-reranker-base"
+# model_name = "jinaai/jina-reranker-v2-base-multilingual"
 # reranker_type = "crossencoder"
+
+model_name = "Alibaba-NLP/gte-multilingual-reranker-base"
+reranker_type = "crossencoder"
 
 reranker = Reranker(reranker_type=reranker_type, model_name=model_name)
 

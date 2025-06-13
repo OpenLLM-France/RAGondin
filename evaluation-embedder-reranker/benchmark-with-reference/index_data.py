@@ -161,7 +161,7 @@ if __name__ == "__main__":
     print("Loading Data")
     wiki_pages = get_pages(
         wiki_dump_name,
-        n=1000,
+        n=5200, 
         filter_func=lambda x: nword_greater(x, nword=16),
     )
 
