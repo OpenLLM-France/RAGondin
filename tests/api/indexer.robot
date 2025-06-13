@@ -57,15 +57,26 @@ Test Indexer Overload
     FOR    ${i}    IN RANGE    0    1200
         FOR    ${task_id}    IN    @{task_ids}
             ${response}=    Get Task Status    ${task_id}
-            ${task_state}=    ${response}[task_state]
+            ${task_state}=    Set Variable    ${response}[task_state]
             IF    '${task_state}' == 'FAILED'
                 Fail    Task '${task_id}' failed.
-            ELSE IF    '${task_state}' == 'FINISHED'
-                Remove From List    ${task_ids}    ${task_id}
+            ELSE IF    '${task_state}' == 'COMPLETED'
+                Remove Values From List    ${task_ids}    ${task_id}
             END
         END
         Sleep    1
-        IF    ${task_ids}
+        ${list_length}=    Get Length    ${task_ids}
+        IF    ${list_length} > 0
             Log    ${task_ids}
         END
+        # Exit early if all tasks completed
+        ${list_length}=    Get Length    ${task_ids}
+        IF    ${list_length} == 0
+            BREAK
+        END
     END
+    IF   ${list_length} > 0
+        Log    Some tasks are still running after 1200 seconds: ${task_ids}
+        Fail    Some tasks are still running after 1200 seconds.
+    END
+    [Teardown]    Clean Up Test    test
