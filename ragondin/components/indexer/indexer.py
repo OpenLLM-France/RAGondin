@@ -2,7 +2,8 @@ import asyncio
 import gc
 import inspect
 import traceback
-from typing import Dict, List, Optional, Union
+from dataclasses import dataclass, field
+from typing import Any, Dict, List, Optional, Union
 
 import ray
 import torch
@@ -82,6 +83,20 @@ class Indexer:
         try:
             task_id = ray.get_runtime_context().get_task_id()
             await self.task_state_manager.set_state.remote(task_id, "QUEUED")
+        
+            # Set task details
+            user_metadata = {
+                k: v for k, v in metadata.items() 
+                if k not in {"file_id", "source", "filename"}
+            }
+
+            await self.task_state_manager.set_details.remote(
+                task_id,
+                file_id=metadata.get("file_id"),
+                partition=partition,
+                metadata=user_metadata,
+            )
+            
             # 1. Check/normalize partition
             partition = self._check_partition_str(partition)
 
@@ -91,6 +106,7 @@ class Indexer:
             # 3. Serialize
             doc = await self.serialize(task_id, path, metadata=metadata)
             self.logger.debug(f"Document serialized: {doc.metadata}")
+            
             # 4. Chunk
             await self.task_state_manager.set_state.remote(task_id, "CHUNKING")
             chunks = await self.chunk(doc, str(path))
@@ -104,6 +120,7 @@ class Indexer:
                 self.logger.debug(
                     f"Vectordb insertion skipped (enable_insertion={self.enable_insertion})."
                 )
+            
             # 6. Mark task as completed
             await self.task_state_manager.set_state.remote(task_id, "COMPLETED")
         
@@ -253,34 +270,73 @@ class Indexer:
         return inspect.iscoroutinefunction(method) if method else False
 
 
+@dataclass
+class TaskInfo:
+    state: Optional[str] = None
+    error: Optional[str] = None
+    details: Dict[str, Any] = field(default_factory=dict)
+
+
 @ray.remote
 class TaskStateManager:
     """
-    Actor to manage task states and errors.
+    Actor to manage task states, errors, and arbitrary user-provided details.
     """
 
     def __init__(self):
-        self.states = {}
-        self.errors = {}
+        self.tasks: Dict[str, TaskInfo] = {}
         self.lock = asyncio.Lock()
+
+    async def _ensure_task(self, task_id: str) -> TaskInfo:
+        """Helper to get-or-create the TaskInfo object under lock."""
+        if task_id not in self.tasks:
+            self.tasks[task_id] = TaskInfo()
+        return self.tasks[task_id]
 
     async def set_state(self, task_id: str, state: str):
         async with self.lock:
-            self.states[task_id] = state
+            info = await self._ensure_task(task_id)
+            info.state = state
 
     async def set_error(self, task_id: str, tb_str: str):
         async with self.lock:
-            self.errors[task_id] = tb_str
+            info = await self._ensure_task(task_id)
+            info.error = tb_str
+
+    async def set_details(
+        self, task_id: str, *, file_id: str, partition: int, metadata: dict
+    ):
+        async with self.lock:
+            info = await self._ensure_task(task_id)
+            info.details = {
+                "file_id": file_id,
+                "partition": partition,
+                "metadata": metadata,
+            }
 
     async def get_state(self, task_id: str) -> Optional[str]:
         async with self.lock:
-            state = self.states.get(task_id, None)
-            return state
+            return self.tasks.get(task_id, None) and self.tasks[task_id].state
 
     async def get_error(self, task_id: str) -> Optional[str]:
         async with self.lock:
-            return self.errors.get(task_id)
+            return self.tasks.get(task_id, None) and self.tasks[task_id].error
 
-    async def get_all_states(self):
+    async def get_details(self, task_id: str) -> Optional[dict]:
         async with self.lock:
-            return dict(self.states)
+            return self.tasks.get(task_id, None) and self.tasks[task_id].details
+
+    async def get_all_states(self) -> Dict[str, str]:
+        async with self.lock:
+            return {tid: info.state for tid, info in self.tasks.items()}
+
+    async def get_all_info(self) -> dict[str, dict]:
+        async with self.lock:
+            return {
+                task_id: {
+                    "state":  info.state,
+                    "error":  info.error,
+                    "details": info.details,
+                }
+                for task_id, info in self.tasks.items()
+            }
