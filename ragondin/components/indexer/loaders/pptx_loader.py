@@ -24,8 +24,6 @@ class PPTXConverter:
         for slide in presentation.slides:
             slide_num += 1
 
-            md_content += self.page_separator
-
             title = slide.shapes.title
             for shape in slide.shapes:
                 if self._is_picture(shape):
@@ -70,6 +68,8 @@ class PPTXConverter:
                     md_content += notes_frame.text
                 md_content = md_content.strip()
 
+            md_content += f"\n[PAGE_{slide_num}]\n"
+
         return md_content, images_list
 
     def _is_picture(self, shape):
@@ -110,11 +110,11 @@ class PPTXConverter:
 
 
 class PPTXLoader(BaseLoader):
-    def __init__(self, page_sep: str = "[PAGE_SEP]", **kwargs) -> None:
-        super().__init__(page_sep, **kwargs)
+    def __init__(self, **kwargs) -> None:
+        super().__init__(**kwargs)
         self.image_placeholder = r"<image>"
         self.converter = PPTXConverter(
-            image_placeholder=self.image_placeholder, page_separator=page_sep
+            image_placeholder=self.image_placeholder, page_separator=self.page_sep
         )
 
     async def get_captions(self, images):
@@ -123,6 +123,7 @@ class PPTXLoader(BaseLoader):
 
     async def aload_document(self, file_path, metadata=None, save_markdown=False):
         md_content, imgs = self.converter.convert(local_path=file_path)
+
         images_captions = await self.get_captions(imgs)
 
         for caption in images_captions:

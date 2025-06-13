@@ -12,7 +12,7 @@ from langchain_core.documents.base import Document
 from langchain_openai import OpenAIEmbeddings
 from loguru import logger
 
-from .chunker import ABCChunker, ChunkerFactory
+from .chunker import BaseChunker, ChunkerFactory
 from .vectordb import ConnectorFactory
 
 
@@ -34,7 +34,7 @@ class Indexer:
         self.serializer_queue = ray.get_actor("SerializerQueue", namespace="ragondin")
 
         # Initialize chunker
-        self.chunker: ABCChunker = ChunkerFactory.create_chunker(
+        self.chunker: BaseChunker = ChunkerFactory.create_chunker(
             self.config, embedder=self.embedder
         )
 
@@ -83,10 +83,11 @@ class Indexer:
         try:
             task_id = ray.get_runtime_context().get_task_id()
             await self.task_state_manager.set_state.remote(task_id, "QUEUED")
-        
+
             # Set task details
             user_metadata = {
-                k: v for k, v in metadata.items() 
+                k: v
+                for k, v in metadata.items()
                 if k not in {"file_id", "source", "filename"}
             }
 
@@ -96,7 +97,7 @@ class Indexer:
                 partition=partition,
                 metadata=user_metadata,
             )
-            
+
             # 1. Check/normalize partition
             partition = self._check_partition_str(partition)
 
@@ -105,8 +106,7 @@ class Indexer:
 
             # 3. Serialize
             doc = await self.serialize(task_id, path, metadata=metadata)
-            self.logger.debug(f"Document serialized: {doc.metadata}")
-            
+
             # 4. Chunk
             await self.task_state_manager.set_state.remote(task_id, "CHUNKING")
             chunks = await self.chunk(doc, str(path))
@@ -120,17 +120,16 @@ class Indexer:
                 self.logger.debug(
                     f"Vectordb insertion skipped (enable_insertion={self.enable_insertion})."
                 )
-            
             # 6. Mark task as completed
             await self.task_state_manager.set_state.remote(task_id, "COMPLETED")
-        
+
         except Exception as e:
             self.logger.error(f"Task {task_id} failed in add_file: {e}")
             tb = "".join(traceback.format_exception(type(e), e, e.__traceback__))
             await self.task_state_manager.set_state.remote(task_id, "FAILED")
             await self.task_state_manager.set_error.remote(task_id, tb)
             raise
-        
+
         finally:
             # Clean up GPU memory if needed
             if torch.cuda.is_available():
@@ -334,8 +333,8 @@ class TaskStateManager:
         async with self.lock:
             return {
                 task_id: {
-                    "state":  info.state,
-                    "error":  info.error,
+                    "state": info.state,
+                    "error": info.error,
                     "details": info.details,
                 }
                 for task_id, info in self.tasks.items()

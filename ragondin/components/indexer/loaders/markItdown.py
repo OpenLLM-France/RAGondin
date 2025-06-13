@@ -11,8 +11,8 @@ from .base import BaseLoader
 
 
 class MarkItDownLoader(BaseLoader):
-    def __init__(self, page_sep="[PAGE_SEP]", **kwargs):
-        super().__init__(page_sep, **kwargs)
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
         self.converter = MarkItDown()
 
     async def aload_document(self, file_path, metadata, save_markdown=False):
@@ -67,8 +67,8 @@ class MarkItDownLoader(BaseLoader):
                 images[int(order[i]) - 1] = images_not_in_order[i]
             return images
 
-    async def parse(self, file_path, page_seperator="[PAGE_SEP]"):
-        result = await self.converter.convert_to_md(file_path)
+    async def parse(self, file_path):
+        result = await self.converter.convert(file_path)
 
         images = self.get_images_from_zip(file_path)
         captions = await self.get_captions(images)

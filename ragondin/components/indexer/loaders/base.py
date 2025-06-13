@@ -20,8 +20,8 @@ IMAGE_DESCRIPTION_PROMPT = load_sys_template(img_desc_prompt_path)
 
 
 class BaseLoader(ABC):
-    def __init__(self, page_sep: str = "[PAGE_SEP]", **kwargs) -> None:
-        self.page_sep = page_sep
+    def __init__(self, **kwargs) -> None:
+        self.page_sep = "[PAGE_SEP]"
         self.config = kwargs.get("config")
         vlm_config = self.config.vlm
         model_settings = {
@@ -90,7 +90,7 @@ class BaseLoader(ABC):
 
             # Convert image path to markdown format and combine with description
             if image_description:
-                markdown_content = f"\nDescription de l'image:\n{image_description}\n"
+                markdown_content = f"Description de l'image: {image_description}"
             else:
                 markdown_content = ""
 

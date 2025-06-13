@@ -15,7 +15,7 @@ config = load_config()
 # Set ray resources
 if torch.cuda.is_available():
     NUM_GPUS = config.ray.get("num_gpus")
-else: # On CPU
+else:  # On CPU
     NUM_GPUS = 0
 
 POOL_SIZE = config.ray.get("pool_size")
@@ -60,8 +60,6 @@ class DocSerializer:
 
         self.logger.debug(f"Loading document: {p.name}")
         loader = loader_cls(**self.kwargs)  # Propagate kwargs here!
-
-        metadata = {"page_sep": loader.page_sep, **metadata}
 
         try:
             # Load the doc
