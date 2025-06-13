@@ -1,7 +1,6 @@
 import json
 from pathlib import Path
 from typing import Any, Optional
-
 import ray
 from config.config import load_config
 from fastapi import (
@@ -15,8 +14,11 @@ from fastapi import (
     status,
 )
 from fastapi.responses import JSONResponse
-from loguru import logger
+from utils.logger import get_logger
 from utils.dependencies import Indexer, get_indexer, vectordb
+
+# load logger
+logger = get_logger()
 
 # load config
 config = load_config()
@@ -30,7 +32,6 @@ task_state_manager = ray.get_actor("TaskStateManager", namespace="ragondin")
 # Create an APIRouter instance
 router = APIRouter()
 
-
 def is_file_id_valid(file_id: str) -> bool:
     return not any(c in file_id for c in FORBIDDEN_CHARS_IN_FILE_ID)
 
@@ -41,7 +42,6 @@ async def validate_file_id(file_id: str):
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=f"File ID contains forbidden characters: {', '.join(FORBIDDEN_CHARS_IN_FILE_ID)}",
         )
-
     if not file_id.strip():
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST, detail="File ID cannot be empty."
@@ -58,7 +58,6 @@ async def validate_file_format(file: UploadFile):
             status_code=status.HTTP_415_UNSUPPORTED_MEDIA_TYPE,
             detail=f"Unsupported file format: {file_extension}. Supported formats are: {', '.join(ACCEPTED_FILE_FORMATS)}",
         )
-
     return file
 
 
@@ -82,48 +81,40 @@ async def add_file(
     metadata: dict = Depends(validate_metadata),
     indexer: Indexer = Depends(get_indexer),
 ):
-    # Check if file exists
+    log = logger.bind(file_id=file_id, partition=partition, filename=file.filename)
+
     if vectordb.file_exists(file_id, partition):
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
             detail=f"File '{file_id}' already exists in partition {partition}",
         )
 
-    # Add file_id to metadata
     metadata["file_id"] = file_id
 
-    # Create a temporary directory to store files
     save_dir = Path(DATA_DIR)
     save_dir.mkdir(parents=True, exist_ok=True)
-
-    # Save the uploaded file
     file_path = save_dir / Path(file.filename).name
-
     metadata.update({"source": str(file_path), "filename": file.filename})
-    logger.info(f"Processing file: {file.filename} and saving to {file_path}")
+
     try:
         with open(file_path, "wb") as buffer:
             buffer.write(await file.read())
-    except Exception as e:
-        err_str = f"Failed to save file: {str(e)}"
-        logger.debug(err_str)
+        log.debug("File saved to disk.")
+    except Exception:
+        log.exception("Failed to save file to disk.")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=err_str,
+            detail="Failed to save uploaded file.",
         )
 
-    # Queue the file for indexing
     try:
         task = indexer.add_file.remote(
             path=file_path, metadata=metadata, partition=partition
         )
-        # TODO: More specific errors with details and appropriate error codes
-    except Exception as e:
-        err_str = f"Indexing error: {str(e)}"
-        logger.debug(err_str)
+    except Exception:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=err_str,
+            detail="Failed to queue file for indexing.",
         )
 
     return JSONResponse(
@@ -140,23 +131,17 @@ async def add_file(
 async def delete_file(
     partition: str, file_id: str, indexer: Indexer = Depends(get_indexer)
 ):
-    """
-    Delete a file in a specific partition.
-    """
     try:
         deleted = ray.get(indexer.delete_file.remote(file_id, partition))
-    except Exception as e:
-        err_str = f"Error while deleting file '{file_id}': {str(e)}"
-        logger.debug(err_str)
+        if not deleted:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"File '{file_id}' not found in partition '{partition}'.",
+            )
+    except Exception:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=err_str,
-        )
-
-    if not deleted:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"File '{file_id}' not found in partition '{partition}'.",
+            detail=f"Failed to delete file.",
         )
 
     return Response(status_code=status.HTTP_204_NO_CONTENT)
@@ -171,64 +156,47 @@ async def put_file(
     metadata: dict = Depends(validate_metadata),
     indexer: Indexer = Depends(get_indexer),
 ):
-    # Validate file existence
+    log = logger.bind(file_id=file_id, partition=partition, filename=file.filename)
+
     if not vectordb.file_exists(file_id, partition):
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"File '{file_id}' not found in partition '{partition}'.",
         )
 
-    # Delete old file
     try:
         ray.get(indexer.delete_file.remote(file_id, partition))
-        logger.info(f"File {file_id} deleted.")
-    except Exception as e:
-        err_str = f"Failed to delete existing file: {str(e)}"
-        logger.debug(err_str)
+    except Exception:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=err_str,
+            detail="Failed to delete existing file.",
         )
 
     metadata["file_id"] = file_id
-
-    # Save uploaded file
     save_dir = Path(DATA_DIR)
     save_dir.mkdir(parents=True, exist_ok=True)
-
-    # Save the uploaded file
     file_path = save_dir / Path(file.filename).name
-    metadata.update(
-        {
-            "source": str(file_path),
-            "filename": file.filename,
-        }
-    )
-
-    logger.info(f"Processing file: {file.filename} and saving to {file_path}")
+    metadata.update({"source": str(file_path), "filename": file.filename})
 
     try:
         with open(file_path, "wb") as buffer:
             buffer.write(await file.read())
-    except Exception as e:
-        err_str = f"Failed to save file: {str(e)}"
-        logger.debug(err_str)
+        log.info("File saved to disk.")
+    except Exception:
+        log.exception("Failed to save file to disk.")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=err_str,
+            detail="Failed to save uploaded file.",
         )
 
-    # Queue indexing task
     try:
         task = indexer.add_file.remote(
             path=file_path, metadata=metadata, partition=partition
         )
-    except Exception as e:
-        err_str = f"Indexing error: {str(e)}"
-        logger.debug(err_str)
+    except Exception:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=err_str,
+            detail="Failed to queue file for indexing.",
         )
 
     return JSONResponse(
@@ -248,7 +216,6 @@ async def patch_file(
     metadata: Optional[Any] = Depends(validate_metadata),
     indexer: Indexer = Depends(get_indexer),
 ):
-    # Check if file exists
     if not vectordb.file_exists(file_id, partition):
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -257,15 +224,12 @@ async def patch_file(
 
     metadata["file_id"] = file_id
 
-    # Update metadata in indexer
     try:
         ray.get(indexer.update_file_metadata.remote(file_id, metadata, partition))
-    except Exception as e:
-        err_str = f"Failed to update metadata: {str(e)}"
-        logger.debug(err_str)
+    except Exception:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=err_str,
+            detail="Failed to update metadata.",
         )
 
     return JSONResponse(
@@ -280,14 +244,17 @@ async def get_task_status(
 ):
     try:
         state = await indexer.get_task_status.remote(task_id)
+        if state is None:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Task '{task_id}' not found.",
+            )
     except Exception:
-        logger.warning(f"Task {task_id} not found.")
-        state = None
-
-    if state is None:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail=f"Task '{task_id}' not found."
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to fetch task status.",
         )
+
     content = {"task_id": task_id, "task_state": state}
     if state == "FAILED":
         content["error_url"] = str(request.url_for("get_task_error", task_id=task_id))
@@ -300,10 +267,16 @@ async def get_task_status(
 
 @router.get("/task/{task_id}/error")
 async def get_task_error(task_id: str):
-    error = await task_state_manager.get_error.remote(task_id)
-    if error is None:
+    try:
+        error = await task_state_manager.get_error.remote(task_id)
+        if error is None:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"No error found for task '{task_id}'.",
+            )
+        return {"task_id": task_id, "traceback": error.splitlines()}
+    except Exception:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"No error found for task '{task_id}'.",
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to retrieve task error.",
         )
-    return {"task_id": task_id, "traceback": error.splitlines()}
