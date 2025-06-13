@@ -20,8 +20,8 @@ class AudioTranscriber(metaclass=SingletonMeta):
 
 
 class VideoAudioLoader(BaseLoader):
-    def __init__(self, page_sep: str = "[PAGE_SEP]", **kwargs):
-        super().__init__(page_sep, **kwargs)
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
         device = "cuda" if torch.cuda.is_available() else "cpu"
         model = kwargs.get("config").loader["audio_model"]
         self.transcriber = AudioTranscriber(device=device, model_name=model)

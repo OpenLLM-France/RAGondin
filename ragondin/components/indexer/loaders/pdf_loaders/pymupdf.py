@@ -8,8 +8,8 @@ from ..base import BaseLoader
 
 
 class PyMuPDFLoader(BaseLoader):
-    def __init__(self, page_sep="[PAGE_SEP]", **kwargs):
-        super().__init__(page_sep, **kwargs)
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
 
     async def aload_document(
         self, file_path, metadata: dict = None, save_markdown=False
@@ -18,8 +18,13 @@ class PyMuPDFLoader(BaseLoader):
             file_path=Path(file_path),
         )
         pages = await loader.aload()
+
+        s = ""
+        for page_num, segment in enumerate(pages, start=1):
+            s = segment.page_content.strip() + f"\n[PAGE_{page_num}]\n"
+
         doc = Document(
-            page_content=f"{self.page_sep}".join([p.page_content for p in pages]),
+            page_content=s,
             metadata=metadata,
         )
         if save_markdown:
@@ -28,8 +33,8 @@ class PyMuPDFLoader(BaseLoader):
 
 
 class PyMuPDF4LLMLoader(BaseLoader):
-    def __init__(self, page_sep: str = "[PAGE_SEP]", config=None, **kwargs) -> None:
-        super().__init__(page_sep=page_sep, **kwargs)
+    def __init__(self, **kwargs) -> None:
+        super().__init__(**kwargs)
 
     async def aload_document(
         self, file_path, metadata: dict = None, save_markdown=False
@@ -41,8 +46,11 @@ class PyMuPDF4LLMLoader(BaseLoader):
             page_chunks=True,
         )
 
-        page_content = f"{self.page_sep}".join([p["text"] for p in pages])
-        doc = Document(page_content=page_content, metadata=metadata)
+        s = ""
+        for page_num, segment in enumerate(pages, start=1):
+            s = segment.page_content.strip() + f"\n[PAGE_{page_num}]\n"
+
+        doc = Document(page_content=s, metadata=metadata)
         if save_markdown:
             self.save_document(doc, str(file_path))
         return doc

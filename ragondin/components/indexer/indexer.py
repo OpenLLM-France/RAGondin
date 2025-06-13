@@ -11,7 +11,7 @@ from langchain_core.documents.base import Document
 from langchain_openai import OpenAIEmbeddings
 from loguru import logger
 
-from .chunker import ABCChunker, ChunkerFactory
+from .chunker import BaseChunker, ChunkerFactory
 from .vectordb import ConnectorFactory
 
 
@@ -33,7 +33,7 @@ class Indexer:
         self.serializer_queue = ray.get_actor("SerializerQueue", namespace="ragondin")
 
         # Initialize chunker
-        self.chunker: ABCChunker = ChunkerFactory.create_chunker(
+        self.chunker: BaseChunker = ChunkerFactory.create_chunker(
             self.config, embedder=self.embedder
         )
 
@@ -89,7 +89,6 @@ class Indexer:
 
         # 3. Serialize
         doc = await self.serialize(task_id, path, metadata=metadata)
-        self.logger.debug(f"Document serialized: {doc.metadata}")
         # 4. Chunk
         self.task_state_manager.set_state.remote(task_id, "CHUNKING")
         chunks = await self.chunk(doc, str(path))
