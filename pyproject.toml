@@ -39,6 +39,10 @@ dependencies = [
     "jinaai>=0.2.10",
     "mcp>=1.9.0",
     "chainlit>=2.5.5",
+    "hdbscan>=0.8.40",
+    "umap-learn>=0.5.7",
+    "plotly>=6.1.2",
+    "umap>=0.1.1",
 ]
 
 [dependency-groups]

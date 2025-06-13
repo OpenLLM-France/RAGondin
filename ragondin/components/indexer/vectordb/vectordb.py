@@ -7,11 +7,15 @@ from langchain_core.documents.base import Document
 from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_milvus import BM25BuiltInFunction, Milvus
 from langchain_qdrant import FastEmbedSparse, QdrantVectorStore, RetrievalMode
+from loguru import logger
 from pymilvus import MilvusClient
 from qdrant_client import QdrantClient, models
 
 from .utils import PartitionFileManager
 import random
+import numpy as np
+import hdbscan
+
 
 INDEX_PARAMS = [
     {
@@ -19,7 +23,7 @@ INDEX_PARAMS = [
         "index_type": "SPARSE_INVERTED_INDEX",
     },  # For sparse vector
     {
-        "metric_type": "IP",
+        "metric_type": "COSINE",
         "index_type": "HNSW",
         "params": {"M": 32, "efConstruction": 100},
     },  # For dense vector
@@ -79,6 +83,14 @@ class ABCVectorDB(ABC):
     def sample_chunk_ids(
         self, partition: str, n_ids: int = 100, seed: int | None = None
     ):
+        pass
+
+    @abstractmethod
+    def list_chunk_ids(self, partition: str):
+        pass
+
+    @abstractmethod
+    def clusterizer(self, partition: str, n_clusters: int = 10):
         pass
 
 
@@ -240,19 +252,14 @@ class MilvusDB(ABCVectorDB):
         # self.logger.debug(f"Sim threshold: {similarity_threshold}")
         SEARCH_PARAMS = [
             {
-                "metric_type": "IP",
+                "metric_type": "COSINE",
                 "params": {
                     "ef": 20,
                     "radius": similarity_threshold,
                     "range_filter": 1.0,
                 },
             },
-            {
-                "metric_type": "BM25",
-                "params": {
-                    "drop_ratio_build": 0.2
-                }
-            },
+            {"metric_type": "BM25", "params": {"drop_ratio_build": 0.2}},
         ]
 
         # "params": {"drop_ratio_build": 0.2, "bm25_k1": 1.2, "bm25_b": 0.75},
@@ -278,7 +285,7 @@ class MilvusDB(ABCVectorDB):
             )
 
         for doc, score in docs_scores:
-            doc.metadata['score'] = score
+            doc.metadata["score"] = score
 
         docs = [doc for doc, score in docs_scores]
 
@@ -320,7 +327,7 @@ class MilvusDB(ABCVectorDB):
                     retrieved_chunks[document.metadata["_id"]] = document
 
         retrieved_chunks = list(retrieved_chunks.values())
-        retrieved_chunks.sort(key=lambda v: v.metadata['score'], reverse=True)
+        retrieved_chunks.sort(key=lambda v: v.metadata["score"], reverse=True)
 
         return retrieved_chunks
 
@@ -624,6 +631,141 @@ class MilvusDB(ABCVectorDB):
             )
             raise e
 
+    def list_chunk_ids(self, partition: str):
+        """
+        List all chunk IDs from a given partition.
+        """
+        try:
+            if not self.partition_file_manager.partition_exists(partition):
+                return []
+
+            # Get all file IDs in the partition
+            file_ids = self.partition_file_manager.list_files_in_partition(partition=partition)
+            if not file_ids:
+                return []
+
+            # Create a filter expression for the query
+            filter_expression = f"partition == '{partition}' and file_id in {file_ids}"
+
+            ids = []
+            iterator = self.client.query_iterator(
+                collection_name=self.collection_name,
+                filter=filter_expression,
+                batch_size=16000,
+                output_fields=["_id"],
+            )
+
+            while True:
+                result = iterator.next()
+                if not result:
+                    iterator.close()
+                    break
+                ids.extend([res["_id"] for res in result])
+            logger.info(f"Chunks: {ids}")
+            return ids
+
+        except Exception as e:
+            self.logger.error(
+                f"Error in `list_chunk_ids` for partition {partition}: {e}"
+            )
+            raise
+    
+    def clusterizer(self, partition: str, n_cluster: int = 10):
+        """
+        Clusterize the chunks in a given partition using HDBSCAN
+        Returns a dictionary where keys are cluster labels (int) and values are lists of chunk with its infos
+        """
+        try: 
+            if not self.partition_file_manager.partition_exists(partition):
+                raise ValueError(f"Partition {partition} does not exist.")
+            
+            search_params = {
+                "metric-type": "COSINE",
+                "params": {
+                    "ef": 20,
+                    "radius": 0.8,
+                    "range_filter": 1.0,
+                },
+            }
+
+            iterator = self.client.query_iterator(
+                collection_name=self.collection_name,
+                filter=f"partition == '{partition}'",
+                batch_size=10,
+                output_fields=["_id", "text", "vector", "file_id"],
+            )
+
+            ids = []
+            dist = {}
+            embeddings = []
+            texts, file_ids = [],[]
+
+            while True:
+                batch = iterator.next()
+                if len(batch) == 0:
+                    break
+
+                batch_ids, query_vectors, text, file_id = map(list, zip(*[(data["_id"], data["vector"], data["text"], data["file_id"]) for data in batch]))
+                # Informations of all the chunks to be printed at the output
+                ids.extend(batch_ids)
+                embeddings.extend(query_vectors)
+                texts.extend(text)
+                file_ids.extend(file_id)
+
+                results = self.client.search(
+                    collection_name=self.collection_name,
+                    data=query_vectors,
+                    limit=10,
+                    anns_field="vector",
+                    params=search_params,
+                    output_fields=["_id", "text", "file_id"],
+                )
+
+                for i, batch_id in enumerate (batch_ids):
+                    dist[batch_id] = []
+                    for result in results[i]:
+                        dist[batch_id].append((result.get('_id'), result.get('distance')))
+                
+                if len(batch) == 0:
+                    break
+            
+            ids2index = {}
+
+            for id in dist:
+                ids2index[id] = len(ids2index)
+            
+            dist_metric = np.full((len(ids), len(ids)), np.inf, dtype=np.float64)
+
+            for id in dist:
+                for result in dist[id]:
+                    dist_metric[ids2index[id]][ids2index[result[0]]] = result[1]
+            
+            h = hdbscan.HDBSCAN(min_samples=3, min_cluster_size=3, metric="precomputed")
+            hdb = h.fit(dist_metric)
+            
+            labels = hdb.labels_
+            clusters = {}
+
+            for idx, label in enumerate(labels):
+                if label == -1:
+                    continue  # -1 means noise/outlier, not assigned to any cluster
+                label = int(label)  # Convert numpy.int64 to Python int
+                clusters.setdefault(label, []).append(
+                    {
+                        "id": ids[idx],
+                        "text": texts[idx],
+                        "file_id": file_ids[idx],
+                    }
+                )
+
+            for cluster_label, chunks in clusters.items():
+                self.logger.info(f"Cluster {cluster_label}: {[i["id"] for i in chunks]}")
+
+            return clusters
+        except Exception as e:
+            self.logger.error(f"Error in 'clusterizer': {e}")
+            raise e
+                
 
 class QdrantDB(ABCVectorDB):
     """

@@ -34,6 +34,7 @@ COPY entrypoint.sh /app/entrypoint.sh
 RUN chmod +x /app/entrypoint.sh
 # Set workdir for source code
 WORKDIR /app/ragondin
+RUN chmod 777 /app/model_weights
 
 # Copy source code
 COPY ragondin/ .

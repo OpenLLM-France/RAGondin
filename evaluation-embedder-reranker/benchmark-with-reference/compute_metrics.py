@@ -8,7 +8,7 @@ import math
 import time
 
 # load the model
-evaluate_with_reranking = True
+evaluate_with_reranking = False
 
 # model_name = "jinaai/jina-colbert-v2"
 # reranker_type = "colbert"
