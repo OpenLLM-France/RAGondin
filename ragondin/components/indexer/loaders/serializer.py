@@ -13,7 +13,11 @@ from . import get_loader_classes
 config = load_config()
 
 # Set ray resources
-NUM_GPUS = config.ray.get("num_gpus")
+if torch.cuda.is_available():
+    NUM_GPUS = config.ray.get("num_gpus")
+else:  # On CPU
+    NUM_GPUS = 0
+
 POOL_SIZE = config.ray.get("pool_size")
 MAX_TASKS_PER_WORKER = config.ray.get("max_tasks_per_worker")
 
@@ -56,8 +60,6 @@ class DocSerializer:
 
         self.logger.debug(f"Loading document: {p.name}")
         loader = loader_cls(**self.kwargs)  # Propagate kwargs here!
-
-        metadata = {"page_sep": loader.page_sep, **metadata}
 
         try:
             # Load the doc

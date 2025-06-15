@@ -107,49 +107,20 @@ def load_sys_template(file_path: Path) -> tuple[str, str]:
 
 
 def format_context(docs: list[Document]) -> str:
-    """
-    Build a context string from a list of documents.
-    Args:
-        docs (list[Document]): A list of Document objects to be formatted.
-    Returns:
-        tuple: A tuple containing:
-            - str: A formatted string representing the context built from the documents.
-            - list: A list of dictionaries, each containing metadata and content of the documents.
-                Each dictionary contains the following keys:
-                - "doc_id" (str): The identifier of the document.
-                - "source" (str): The source of the document.
-                - "sub_url_path" (str): The sub URL path of the document.
-                - "page" (int): The page number of the document.
-                - "content" (str): The content of the document.'
-    """
     if not docs:
-        return "No document found from the database", []
+        return "No document found from the database"
 
-    sources = []
     context = "Extracted documents:\n"
-
     for i, doc in enumerate(docs, start=1):
         doc_id = f"[doc_{i}]"
         document = f"""
         *source*: {doc_id}
         content: \n{doc.page_content.strip()}\n
         """
-
         context += document
         context += "-" * 40 + "\n\n"
 
-        sources.append(
-            {
-                "doc_id": doc_id,
-                "_id": doc.metadata["_id"],
-                "source": doc.metadata["source"],
-                "filename": doc.metadata["filename"],
-                "page": doc.metadata["page"],
-                "partition": doc.metadata["partition"],
-                "content": doc.page_content,
-            }
-        )
-    return context, sources
+    return context
 
 
 # Global variables

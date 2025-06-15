@@ -12,11 +12,16 @@ from .llm import LLM
 from .reranker import Reranker
 from .retriever import ABCRetriever, RetrieverFactory
 from .utils import format_context, load_sys_template
+import os
+from .map_reduce import RAGMapReduce
 
 
 class RAGMODE(Enum):
     SIMPLERAG = "SimpleRag"
     CHATBOTRAG = "ChatBotRag"
+
+
+RAG_MAP_REDUCE = os.environ.get("RAG_MAP_REDUCE", "false").lower() == "true"
 
 
 class RetrieverPipeline:
@@ -36,6 +41,7 @@ class RetrieverPipeline:
         self.reranker = None
         self.reranker_enabled = config.reranker["enable"]
         self.reranker_top_k = int(config.reranker["top_k"])
+
         if self.reranker_enabled:
             self.logger.debug(f"Reranker enabled: {self.reranker_enabled}")
             self.reranker = Reranker(self.logger, config)
@@ -51,7 +57,6 @@ class RetrieverPipeline:
             partition=partition, query=query, db=self.vectordb
         )
         self.logger.debug(f"{len(docs)} Documents retreived")
-
         if docs:
             # grade and filter out irrelevant docs
             if self.grader_enabled:
@@ -99,6 +104,8 @@ class RagPipeline:
             base_url=config.vlm["base_url"], api_key=config.vlm["api_key"]
         )
 
+        self.map_reduce: RAGMapReduce = RAGMapReduce(config=config)
+
     async def generate_query(self, messages: list[dict]) -> str:
         match RAGMODE(self.rag_mode):
             case RAGMODE.SIMPLERAG:
@@ -125,7 +132,6 @@ class RagPipeline:
                     ],
                     **params,
                 )
-
                 contextualized_query = response.choices[0].message.content
                 return contextualized_query
 
@@ -143,10 +149,23 @@ class RagPipeline:
         docs = await self.retriever_pipeline.retrieve_docs(
             partition=partition, query=query
         )
-        logger.info(f"{len(docs)} Documents retrieved")
 
-        # 3. Format the retrieved docs
-        context, sources = format_context(docs)
+        if RAG_MAP_REDUCE:
+            context = "Extracted documents:\n"
+            relevant_docs = []
+            res = await self.map_reduce.map(query=query, chunks=docs)
+            for synthesis, doc in res:
+                context += synthesis + "\n"
+                context += "-" * 40 + "\n"
+                relevant_docs.append(doc)
+
+            logger.debug(context)
+            docs = relevant_docs
+
+        else:
+            logger.info(f"{len(docs)} kept after retrieval")
+            # 3. Format the retrieved docs
+            context = format_context(docs)
 
         # 4. prepare the output
         messages: list = copy.deepcopy(messages)
@@ -162,7 +181,7 @@ class RagPipeline:
         # messages.append({"role": "tool", "name": "retriever", "content": f"Here are the retrieved documents: {context}"})
 
         payload["messages"] = messages
-        return payload, context, sources
+        return payload, docs
 
     async def _prepare_for_completions(self, partition: list[str], payload: dict):
         prompt = payload["prompt"]
@@ -179,7 +198,7 @@ class RagPipeline:
         )
 
         # 3. Format the retrieved docs
-        context, sources = format_context(docs)
+        context = format_context(docs)
 
         # 4. prepare the output
         prompt = (
@@ -187,23 +206,22 @@ class RagPipeline:
         ) + f"Complete the following prompt: {prompt}"
         payload["prompt"] = prompt
 
-        return payload, context, sources
+        return payload, docs
 
     async def completions(self, partition: list[str], payload: dict):
-        payload, context, sources = await self._prepare_for_completions(
+        payload, docs = await self._prepare_for_completions(
             partition=partition, payload=payload
         )
         llm_output = self.llm_client.completions(request=payload)
-        return llm_output, context, sources
+        return llm_output, docs
 
     async def chat_completion(self, partition: list[str], payload: dict):
         try:
-            payload, context, sources = await self._prepare_for_chat_completion(
+            payload, docs = await self._prepare_for_chat_completion(
                 partition=partition, payload=payload
             )
-
             llm_output = self.llm_client.chat_completion(request=payload)
-            return llm_output, context, sources
+            return llm_output, docs
         except Exception as e:
             raise e
 

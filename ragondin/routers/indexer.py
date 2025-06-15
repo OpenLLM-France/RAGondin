@@ -195,9 +195,16 @@ async def put_file(
     # Save uploaded file
     save_dir = Path(DATA_DIR)
     save_dir.mkdir(parents=True, exist_ok=True)
-    file_path = save_dir / Path(file.filename).name
 
-    metadata.update({"source": str(file_path), "filename": file.filename})
+    # Save the uploaded file
+    file_path = save_dir / Path(file.filename).name
+    metadata.update(
+        {
+            "source": str(file_path),
+            "filename": file.filename,
+        }
+    )
+
     logger.info(f"Processing file: {file.filename} and saving to {file_path}")
 
     try:
@@ -268,27 +275,32 @@ async def patch_file(
 
 
 @router.get("/task/{task_id}")
+@router.get(
+    "/task/{task_id}",
+    summary="Get task status",
+    description="Retrieves the status of a specific task by its ID. Task states progress through several stages: QUEUED (waiting to be processed), CHUNKING (document being split), SERIALIZING (preparing data structures), INSERTING (adding to index), COMPLETED (finished successfully), or FAILED (encountered an error).",
+)
 async def get_task_status(
     request: Request, task_id: str, indexer: Indexer = Depends(get_indexer)
 ):
-    try:
-        state = await indexer.get_task_status.remote(task_id)
-    except Exception:
-        logger.warning(f"Task {task_id} not found.")
-        state = None
-
+    # fetch task state
+    state = await indexer.get_task_status.remote(task_id)
     if state is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail=f"Task '{task_id}' not found."
-        )
-    content = {"task_id": task_id, "task_state": state}
+        raise HTTPException(404, f"Task '{task_id}' not found.")
+
+    # fetch task details
+    details = await task_state_manager.get_details.remote(task_id)
+
+    # format the response
+    content: dict[str, Any] = {
+        "task_id": task_id,
+        "task_state": state,
+        "details": details,
+    }
     if state == "FAILED":
         content["error_url"] = str(request.url_for("get_task_error", task_id=task_id))
 
-    return JSONResponse(
-        status_code=status.HTTP_200_OK,
-        content=content,
-    )
+    return JSONResponse(status_code=200, content=content)
 
 
 @router.get("/task/{task_id}/error")

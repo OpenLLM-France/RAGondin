@@ -5,19 +5,23 @@ import re
 from abc import ABC, abstractmethod
 from io import BytesIO
 from typing import Dict, Optional, Union
-
 from langchain_core.documents.base import Document
 from langchain_core.messages import HumanMessage
 from langchain_openai import ChatOpenAI
 from loguru import logger
-from ...utils import vlmSemaphore
+from ...utils import vlmSemaphore, load_sys_template, load_config
+from pathlib import Path
 
-IMAGE_DESCRIPTION_PROMPT = """Provide a complete, structured and precise description of this image or figure in the same language (french) as its content. If the image contains tables, render them in markdown."""
+
+config = load_config()
+prompts_dir = Path(config.paths.prompts_dir)
+img_desc_prompt_path = prompts_dir / config.prompt["image_describer"]
+IMAGE_DESCRIPTION_PROMPT = load_sys_template(img_desc_prompt_path)
 
 
 class BaseLoader(ABC):
-    def __init__(self, page_sep: str = "[PAGE_SEP]", **kwargs) -> None:
-        self.page_sep = page_sep
+    def __init__(self, **kwargs) -> None:
+        self.page_sep = "[PAGE_SEP]"
         self.config = kwargs.get("config")
         vlm_config = self.config.vlm
         model_settings = {
@@ -29,8 +33,8 @@ class BaseLoader(ABC):
         settings.update(model_settings)
 
         self.vlm_endpoint = ChatOpenAI(**settings).with_retry(stop_after_attempt=2)
-        self.min_width_pixels = 100  # minimum width in pixels
-        self.min_height_pixels = 100  # minimum height in pixels
+        self.min_width_pixels = 0  # minimum width in pixels
+        self.min_height_pixels = 0  # minimum height in pixels
 
     @abstractmethod
     async def aload_document(
@@ -85,9 +89,5 @@ class BaseLoader(ABC):
                 logger.error(f"Error while generating image description: {e}")
 
             # Convert image path to markdown format and combine with description
-            if image_description:
-                markdown_content = f"\nDescription de l'image:\n{image_description}\n"
-            else:
-                markdown_content = ""
-
-            return markdown_content
+            desc = f"""\n<image_description>\n{image_description}\n</image_description>\n"""
+            return desc

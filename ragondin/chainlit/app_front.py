@@ -114,36 +114,47 @@ async def __format_sources(metadata_sources, only_txt=False):
     if not metadata_sources:
         return None, None
 
-    elements = []
-    source_names = []
-    for s in metadata_sources:
+    d = {}
+    for i, s in enumerate(metadata_sources):
         filename = Path(s["filename"])
         file_url = s["file_url"]
         logger.info(f"URL: {file_url}")
-        doc_id = s["doc_id"]
         page = s["page"]
+
+        source_name = f"{filename}" + (
+            f" (page: {page})"
+            if filename.suffix in [".pdf", ".pptx", ".docx", ".doc"]
+            else ""
+        )
+
         if only_txt:
             chunk_content = await __fetch_page_content(chunk_url=s["chunk_url"])
-            elem = cl.Text(content=chunk_content, name=doc_id, display="side")
+            elem = cl.Text(content=chunk_content, name=source_name, display="side")
         else:
             match filename.suffix.lower():
                 case ".pdf":
                     elem = cl.Pdf(
-                        name=doc_id, url=file_url, page=int(s["page"]), display="side"
+                        name=source_name,
+                        url=file_url,
+                        page=int(s["page"]),
+                        display="side",
                     )
-
                 case suffix if suffix in [".png", ".jpg", ".jpeg"]:
-                    elem = cl.Image(name=doc_id, url=file_url, display="side")
-
+                    elem = cl.Image(name=source_name, url=file_url, display="side")
                 case ".mp4":
-                    elem = cl.Video(name=doc_id, url=file_url, display="side")
+                    elem = cl.Video(name=source_name, url=file_url, display="side")
                 case ".mp3":
-                    elem = cl.Audio(name=doc_id, url=file_url, display="side")
+                    elem = cl.Audio(name=source_name, url=file_url, display="side")
                 case _:
                     chunk_content = await __fetch_page_content(chunk_url=s["chunk_url"])
-                    elem = cl.Text(content=chunk_content, name=doc_id, display="side")
-        elements.append(elem)
-        source_names.append(f"{doc_id}: {filename} (page: {page})")
+                    elem = cl.Text(
+                        content=chunk_content, name=source_name, display="side"
+                    )
+
+            d[source_name] = elem
+
+    source_names = list(d.keys())
+    elements = list(d.values())
 
     return elements, source_names
 
@@ -163,7 +174,7 @@ async def on_message(message: cl.Message):
     data = {
         "model": model,
         "messages": messages,
-        "temperature": 0.3,
+        "temperature": 0.2,
         "stream": True,
         "frequency_penalty": 0.4,
     }
@@ -182,9 +193,6 @@ async def on_message(message: cl.Message):
                 if sources is None:
                     extra = json.loads(chunk.extra)
                     sources = extra["sources"]
-                    elements, source_names = await __format_sources(sources)
-                    msg.elements = elements if elements else []
-                    await msg.update()
 
                 if chunk.choices and chunk.choices[0].delta.content:
                     token = chunk.choices[0].delta.content
@@ -196,6 +204,8 @@ async def on_message(message: cl.Message):
             cl.user_session.set("messages", messages)
 
             # Show sources
+            elements, source_names = await __format_sources(sources)
+            msg.elements = elements if elements else []
             if source_names:
                 s = "\n\n" + "-" * 50 + "\n\nSources: \n" + "\n".join(source_names)
                 await msg.stream_token(s)

@@ -1,8 +1,8 @@
-# RAGondin 
+# 🦫 RAGondin — The Open RAG Experimentation Playground
 
-RAGondin is a project dedicated to experimenting with advanced RAG (Retrieval-Augmented Generation) techniques to improve the quality of such systems. We start with a vanilla implementation and build up to more advanced techniques to address challenges and edge cases in RAG applications.  
+RAGondin is a lightweight, modular and extensible Retrieval-Augmented Generation (RAG) framework designed to explore and test advanced RAG techniques — 100% open source and focused on experimentation, not lock-in.
 
-![](RAG_architecture.png)
+> Built by the OpenLLM France community, RAGondin offers a sovereign-by-design alternative to mainstream RAG stacks like LangChain or Haystack.
 
 ## Goals
 - Experiment with advanced RAG techniques
@@ -17,7 +17,8 @@ The **`.hydra_config`** directory contains all the configuration files for the a
 ### Supported File Formats
 This branch currently supports the following file types:
 
-* **Text and Document Files**: `txt`, `pdf`, `docx`, `doc`, `pptx`
+* **TextFiles**: `txt`, `md`
+* **Document Files**: `pdf`, `docx`, `doc`, `pptx`
 * **Audio Files**: `wav`, `mp3`, `mp4`, `ogg`, `flv`, `wma`, `aac`
 
 For all supported formats, content is converted to **Markdown**. Images within documents are replaced with captions generated using a **Vision Language Model (VLM)**. (See the **Configuration** section for more details.) The resulting Markdown is then chunked and indexed using the [Milvus vector database](https://milvus.io/).
@@ -77,7 +78,7 @@ Finally, retrieved documents are re-ordered by relevance using a multilingual re
 * **SimpleRAG**: Basic implementation without chat history taken into account.
 * **ChatBotRAG**: Version that maintains conversation context. 
 
-## Usage
+## 🚀 Getting Started
 
 ### 1. Clone the repository:
 ```bash
@@ -186,7 +187,6 @@ RERANKER_TOP_K=5 # number of documents to return after reranking
 > [!WARNING]
 > These adjustments may affect performance and result quality but are appropriate for lightweight testing.
 
-
 * **Running on GPU**:
 The default values are well-suited for GPU usage. However, you can adjust them as needed to experiment with different configurations based on your machine’s capabilities.
 
@@ -239,8 +239,6 @@ Uploads a file (with optional metadata) to a specific partition.
   - `201 Created` with a JSON containing the task status URL
   - `409 Conflit` if a file with the same id in the same partition already exists
 
----
-
 **`PUT /indexer/partition/{partition}/file/{file_id}`**  
 Replaces an existing file in the partition. Deletes existing entry and creates a new indexation task.
 
@@ -250,8 +248,6 @@ Replaces an existing file in the partition. Deletes existing entry and creates a
 
 - **Returns:**
   - `202 Accepted` with a JSON containing the task status URL
-
----
 
 **`PATCH /indexer/partition/{partition}/file/{file_id}`**  
 Updates the metadata of an existing file without reindexing.
@@ -283,9 +279,7 @@ Deletes a file from a specific partition.
 Retrieves the status of an asynchronous indexing task (see the **`POST /indexer/partition/{partition}/file/{file_id}`** endpoint).
 
 
----
-
-#### 🔎 Semantic Search
+### 🔎 Semantic Search
 
 **`GET /search/`**  
 Searches across multiple partitions using a semantic query.
@@ -299,8 +293,6 @@ Searches across multiple partitions using a semantic query.
   - `200 OK` with a JSON list of document links (HATEOAS style)
   - `400 bad request` if the field `partitions` isn't correctly set
 
----
-
 **`GET /search/partition/{partition}`**  
 Searches within a specific partition.
 
@@ -311,8 +303,6 @@ Searches within a specific partition.
 - **Returns:**
   - `200 OK` with a JSON list of document links (HATEOAS style)
   - `400 bad request` if the field `partitions` isn't correctly set
-
----
 
 **`GET /search/partition/{partition}/file/{file_id}`**  
 Searches within a specific file in a partition.
@@ -334,9 +324,7 @@ Fetches a specific extract by its ID.
 - **Returns:**
   - `content` and `metadata` of the extract (an extract is a chunk) inn JSON format
 
----
-
-#### 💬 OpenAI-Compatible Chat
+### 💬 OpenAI-Compatible Chat
 
 OpenAI API compatibility enables seamless integration with existing tools and workflows that follow the OpenAI interface. It makes it easy to use popular UIs like **`OpenWebUI`** without the need for custom adapters.
 
@@ -366,38 +354,36 @@ To test these endpoint with openai client, you can refer to the the [openai_comp
 
 Simple endpoint to ensure the server is running.
 
+---
 
-## Contribute
-Contributions are welcome! Please follow standard GitHub workflow:
-1. Fork the repository
-2. Create a feature branch
-3. Submit a pull request
+## 🏗️ Architecture
 
-## Disclaimer
-This repository is for research and educational purposes only. While we strive for correctness, we cannot guarantee fitness for any particular purpose. Use at your own risk.
+```mermaid
+graph TD
+    A[User Query] --> B[RAGondin Backend]
+    B --> C[Retriever (Milvus)]
+    B --> D[Chunker & Preprocessing]
+    C --> E[Relevant Chunks]
+    E --> F[LLM Completion]
+    F --> G[Final Answer]
+```
 
-## License
-MIT License - See [LICENSE](LICENSE) file for details.
+🧩 Designed for plug & play: each component can be swapped independently.
 
-## Troubleshooting
+---
 
-### Error on dependencies installation
+## 🔧 Contributing
 
-After running `uv sync`, if you have this error:
+We ❤️ contributions!
 
 ```bash
 error: Distribution `ray==2.43.0 @ registry+https://pypi.org/simple` can't be installed because it doesn't have a source distribution or wheel for the current platform
 
-hint: You're using CPython 3.13 (`cp313`), but `ray` (v2.43.0) only has wheels with the following Python ABI tag: `cp312`
-```
+Read our [CONTRIBUTING.md](CONTRIBUTING.md) for coding standards, test setup, and more.
 
-This means your uv installation relies on cpython 3.13 while you are using python 3.12.
+---
 
-To solve it, please run:
-```bash
-uv venv --python=3.12
-uv sync
-```
+## 📄 License
 
 ## TODO
 [] Better manage logs

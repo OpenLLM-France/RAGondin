@@ -6,17 +6,21 @@ from enum import Enum
 from sentence_transformers import CrossEncoder
 from langchain_core.documents.base import Document
 from .utils import SingletonMeta
+from infinity_client import Client
+from infinity_client.api.default import rerank
+from infinity_client.models import RerankInput, ReRankResult
 
 
 class RerankerType(Enum):
     CROSSENCODER = "crossencoder"
     COLBERT = "colbert"
+    INFINITY = "infinity"
 
 
 class Reranker(metaclass=SingletonMeta):
     def __init__(self, logger, config):
         reranker_type = config.reranker["reranker_type"]
-        model_name = config.reranker["model_name"]
+        self.model_name = config.reranker["model_name"]
 
         self.logger = logger
         self.semaphore = asyncio.Semaphore(
@@ -25,13 +29,13 @@ class Reranker(metaclass=SingletonMeta):
 
         self.reranker_type = RerankerType(reranker_type)
         self.logger.debug(
-            f"Reranker type: {self.reranker_type}, Model name: {model_name}"
+            f"Reranker type: {self.reranker_type}, Model name: {self.model_name}"
         )
 
         match self.reranker_type:
             case RerankerType.CROSSENCODER:
                 self.model = CrossEncoder(
-                    model_name=model_name,
+                    model_name=self.model_name,
                     device="cuda" if torch.cuda.is_available() else "cpu",
                     trust_remote_code=True,
                 )
@@ -40,11 +44,13 @@ class Reranker(metaclass=SingletonMeta):
                 from ragatouille import RAGPretrainedModel
 
                 self.model = RAGPretrainedModel.from_pretrained(
-                    pretrained_model_name_or_path=model_name
+                    pretrained_model_name_or_path=self.model_name
                 )
+            case RerankerType.INFINITY:
+                self.client = Client(base_url=config.reranker["base_url"])
             case _:
                 raise ValueError(
-                    "reranker_type must be either 'crossencoder' or 'colbert'"
+                    "reranker_type must be either 'crossencoder', 'colbert' or 'infinity'."
                 )
 
         self.logger.debug(f"{self.reranker_type} Reranker initialized...")
@@ -66,6 +72,12 @@ class Reranker(metaclass=SingletonMeta):
                 case RerankerType.COLBERT:
                     reranked_docs = await asyncio.to_thread(
                         lambda: self.___colbert_rerank(query, documents, top_k)
+                    )
+                    return reranked_docs
+
+                case RerankerType.INFINITY:
+                    reranked_docs = await asyncio.to_thread(
+                        lambda: self.___infinity_rerank(query, documents, top_k)
                     )
                     return reranked_docs
 
@@ -91,6 +103,23 @@ class Reranker(metaclass=SingletonMeta):
 
         gc.collect()
         torch.cuda.empty_cache()
+        return [doc for doc in original_docs(results, documents)]
+
+    def ___infinity_rerank(
+        self, query: str, documents: list[Document], top_k: int
+    ) -> list[Document]:
+        rerank_input = RerankInput.from_dict(
+            {
+                "model": self.model_name,
+                "query": query,
+                "documents": [doc.page_content for doc in documents],
+                "top_n": top_k,
+                "return_documents": True,
+            }
+        )
+        rerank_result: ReRankResult = rerank.sync(client=self.client, body=rerank_input)
+        # self.logger.debug(f"Infinity Rerank result: {rerank_result.results}")
+        results = [{"content": item.document} for item in rerank_result.results]
         return [doc for doc in original_docs(results, documents)]
 
 
