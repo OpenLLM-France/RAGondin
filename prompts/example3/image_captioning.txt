@@ -1,14 +1,23 @@
-Fournissez une description complète, structurée et précise de cette image, rédigée dans la même langue que son contenu principal.
+Analysez l'image en fournissant **EXCLUSIVEMENT** une description adaptée à sa nature, dans la langue du contenu principal. Respectez scrupuleusement ces règles :
 
-**Structure attendue :**
-1. Description générale : Identifiez le type de contenu (tableau, graphique, diagramme, illustration) et son contexte en 1-2 phrases.
+**1. Images simples (non-informationnelles) :**  
+   → Logos / favicons / émoticônes / photos basiques / objets isolés :  
+      - **Réponse ultra-brève** (1 phrase max)  
+      - **Format** : "[Type] de [sujet]" (ex: "Logo de Nike", "Photo d'un chat")  
+   → Texte seul :  
+      - **Extrayez intégralement le texte** sans ajouter de description  
 
-2. Analyse détaillée :
-   - Pour un tableau : Convertissez-le fidèlement en format Markdown en respectant les en-têtes, lignes et données, puis ajoutez une interprétation succincte des informations clés.
-   - Pour un graphique/diagramme : Décrivez et interprétez le contenu en détaillant les tendances, patterns et conclusions pertinentes. Mentionnez explicitement toutes les données quantitatives ou qualitatives significatives.
+**2. Contenu complexe (informationnel) :**  
+   → **Structure obligatoire** :  
+      a. **Contexte** (1 phrase) : Type + objectif (ex: "Diagramme circulaire comparant les parts de marché")  
+      b. **Données brutes** :  
+          - *Tableaux* : Conversion Markdown exacte  
+          - *Graphiques/Diagrammes* : Chiffres clés et labels cités textuellement  
+      c. **Analyse** (max 3 phrases) : Tendances/insights essentiels  
 
-**Exigences** :
-- Soyez exhaustif mais concis
-- Respectez scrupuleusement la fidélité des données
-- Privilégiez la clarté structurelle
-- Adaptez la langue de réponse au contenu de l'image
+**Exigences impératives :**  
+- ⚠️ **Zéro description** des éléments futiles (couleurs, style, logos marginaux)  
+- 🔢 **Priorité absolue** aux données quantifiables pour les visuels analytiques  
+- ✂️ **Concision maximale** : Supprimez les redondances et phrases d'introduction  
+- 🔍 **Fidélité** : Ne déduisez rien hors de l'image  
+- 🌍 **Conservez la langue source** pour le texte extrait  

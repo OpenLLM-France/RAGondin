@@ -11,8 +11,9 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-
+PERSISTENCY = os.environ.get("CHAINLIT_DATALAYER_COMPOSE", "") != ""
 AUTH_TOKEN = os.environ.get("AUTH_TOKEN", "")
+
 headers = {
     "accept": "application/json",
     "Content-Type": "application/json",
@@ -21,21 +22,23 @@ if AUTH_TOKEN:
     headers["Authorization"] = f"Bearer {AUTH_TOKEN}"
 
 
-@cl.password_auth_callback
-def auth_callback(username: str, password: str):
-    # Fetch the user matching username from your database
-    # and compare the hashed password with the value stored in the database
-    if (username, password) == ("admin", "admin"):
-        return cl.User(
-            identifier="admin", metadata={"role": "admin", "provider": "credentials"}
-        )
-    else:
-        return None
+if PERSISTENCY:
 
+    @cl.password_auth_callback
+    def auth_callback(username: str, password: str):
+        # Fetch the user matching username from your database
+        # and compare the hashed password with the value stored in the database
+        if (username, password) == ("admin", "admin"):
+            return cl.User(
+                identifier="admin",
+                metadata={"role": "admin", "provider": "credentials"},
+            )
+        else:
+            return None
 
-@cl.on_chat_resume
-async def on_chat_resume(thread):
-    pass
+    @cl.on_chat_resume
+    async def on_chat_resume(thread):
+        pass
 
 
 def get_base_url():
