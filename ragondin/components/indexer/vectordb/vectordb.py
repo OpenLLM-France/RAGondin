@@ -644,20 +644,15 @@ class MilvusDB(ABCVectorDB):
             if not self.partition_file_manager.partition_exists(partition):
                 return []
 
-            # Get all file IDs in the partition
-            file_ids = self.partition_file_manager.list_files_in_partition(partition=partition)
-            if not file_ids:
-                return []
-
             # Create a filter expression for the query
-            filter_expression = f"partition == '{partition}' and file_id in {file_ids}"
+            filter_expression = f"partition == '{partition}'"
 
-            ids = []
+            chunks = []
             iterator = self.client.query_iterator(
                 collection_name=self.collection_name,
                 filter=filter_expression,
                 batch_size=16000,
-                output_fields=["_id"],
+                output_fields=["_id", "text", "vector", "file_id"],
             )
 
             while True:
@@ -665,9 +660,13 @@ class MilvusDB(ABCVectorDB):
                 if not result:
                     iterator.close()
                     break
-                ids.extend([res["_id"] for res in result])
-            logger.info(f"Chunks: {ids}")
-            return ids
+                chunks.extend([{
+                    "Chunk ID": res["_id"],
+                    "Chunk's content": res["text"],
+                    "Embedding vector": [float(x) for x in res["vector"]],
+                    "Original file's ID": res["file_id"]
+                } for res in result])
+            return chunks
 
         except Exception as e:
             self.logger.error(

@@ -63,19 +63,19 @@ services:
     profiles:
       - 'cpu'
 
-  vllm-gpu:
-    <<: *vllm_template
-    image: vllm/vllm-openai:latest
-    runtime: nvidia
-    deploy:
-      resources:
-        reservations:
-          devices:
-            - driver: nvidia
-              count: all 
-              capabilities: [gpu]
-    profiles:
-      - '' # Empty string gives default behavior (but does not run when cpu requested)
+  # vllm-gpu:
+  #   <<: *vllm_template
+  #   image: vllm/vllm-openai:latest
+  #   runtime: nvidia
+  #   deploy:
+  #     resources:
+  #       reservations:
+  #         devices:
+  #           - driver: nvidia
+  #             count: all 
+  #             capabilities: [gpu]
+  #   profiles:
+  #     - '' # Empty string gives default behavior (but does not run when cpu requested)
 
   vllm-cpu:
     <<: *vllm_template
@@ -101,7 +101,7 @@ services:
     volumes:
       - ${VLLM_CACHE:-/root/.cache/huggingface}:/app/.cache/huggingface # Model weights for RAG
     ports:
-      - 7997:7997
+      - 7998:7997
     command: >
       --model-id ${RERANKER_MODEL:-Alibaba-NLP/gte-multilingual-reranker-base}
       --port 7997

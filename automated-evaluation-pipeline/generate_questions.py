@@ -36,6 +36,22 @@ async def call_llm(prompt: str, semaphore=asyncio.Semaphore(10)) -> str:
         resp = await llm.ainvoke([message])
         resp = resp.content
         return resp
+async def question_answer_task(chunks: str, semaphore=asyncio.Semaphore(10)):
+    async with semaphore:
+        question_prompt = (
+            "Générez une question qui concerne ces chunks:\n"
+            f"{chunks}"
+        )
+        question = await call_llm(question_prompt)
+        
+        answer_prompt = (
+            "À propos de ces chunks:\n"
+            f"{chunks}"
+            "--------------------------------\n"
+            f"Répondez à cette question: {question}"
+        )
+        response_llm = await call_llm(answer_prompt)
+        return question, response_llm
 
 async def get_clusters(url: str, semaphore=asyncio.Semaphore(10)) -> dict:
     async with semaphore:
@@ -60,7 +76,7 @@ async def get_clusters(url: str, semaphore=asyncio.Semaphore(10)) -> dict:
 
 async def generate_questions_from_clusters(clusters, n_min=1, n_max=3):
     list_questions = []
-    question_tasks, response_tasks = [], []
+    tasks = []
     for cluster_label, chunks in clusters.items():  # cluster loop
         question_count = 10
         while question_count > 0:
@@ -68,8 +84,7 @@ async def generate_questions_from_clusters(clusters, n_min=1, n_max=3):
             sampled_chunks = random.sample(chunks, n)
             chunks_text = [c["text"] for c in sampled_chunks]
 
-            question_prompt = (
-                "Générez une question qui concerne ces chunks:\n"
+            prompt = (
                 "--------------------------------\n"
                 f"{chunks_text[0]}\n"
                 "--------------------------------\n"
@@ -77,33 +92,17 @@ async def generate_questions_from_clusters(clusters, n_min=1, n_max=3):
                 "--------------------------------\n"
                 f"{chunks_text[2]}"
             )
-            question_task = asyncio.create_task(
-                call_llm(question_prompt)
+            task = asyncio.create_task(
+                question_answer_task(prompt)
             )
-            question_tasks.append(question_task)
-
-            answer_prompt = (
-                "À propos de ces chunks:\n"
-                "--------------------------------\n"
-                f"{chunks_text[0]}\n"
-                "--------------------------------\n"
-                f"{chunks_text[1]}\n"
-                "--------------------------------\n"
-                f"{chunks_text[2]}\n"
-                "--------------------------------\n"
-                f"Répondez à cette question: {questions[-1]}"
-            )
-            response_task = asyncio.create_task(
-                call_llm(answer_prompt)
-            )
-            response_tasks.append(response_task)
+            tasks.append(task)
 
             question_count-= 1
 
-    questions = await tqdm.gather(*question_tasks, desc="Question generation progress")
-    llm_answers = await tqdm.gather(*response_tasks, desc="Question generation progress")
+    questions_and_answers = await tqdm.gather(*tasks, desc="Generation progress")
     
-    for question, llm_answer in zip(questions, llm_answers):
+    
+    for (question, llm_answer) in questions_and_answers:
         list_questions.append({
             "question": question,
             "chunk ids": [c["id"] for c in sampled_chunks],
@@ -128,8 +127,8 @@ async def main():
     limited_clusters = {k: clusters[k] for k in list(clusters.keys())[:3]}
     questions = await generate_questions_from_clusters(limited_clusters)
     logger.info(f"Questions generated time: ({time.time() - pause}) seconds")
-    with open("generated_questions.json", "w", encoding="utf-8") as f:
-        json.dump(questions, f, ensure_ascii=False, indent=2)
+    with open("./dataset.json", "w", encoding="utf-8") as f:
+        json.dump(questions, f, ensure_ascii=False, indent=4)
 
 if __name__ == "__main__":
     asyncio.run(main())

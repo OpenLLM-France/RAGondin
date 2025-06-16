@@ -184,7 +184,7 @@ async def list_all_chunks(
         )
 
     try:
-        chunk_ids = vectordb.list_chunk_ids(partition=partition)
+        chunks = vectordb.list_chunk_ids(partition=partition)
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
     except Exception as e:
@@ -194,13 +194,15 @@ async def list_all_chunks(
 
     chunks = [
         {
-            "link": str(request.url_for("get_extract", extract_id=chunk_id)),
-            # "content": vectordb.get_chunk_content(chunk_id, partition)
+            "link": str(request.url_for("get_extract", extract_id=chunk["Chunk ID"])),
+            "Chunk's content": chunk["Chunk's content"],
+            "Embedding vector": chunk["Embedding vector"],
+            "Original file's ID": chunk["Original file's ID"]
         }
-        for chunk_id in chunk_ids
+        for chunk in chunks
     ]
 
-    return JSONResponse(status_code=status.HTTP_200_OK, content={"chunk_urls": chunks})
+    return JSONResponse(status_code=status.HTTP_200_OK, content={"All chunks' details": chunks})
 
 @router.get("/{partition}/clusters")
 async def list_clusters(
