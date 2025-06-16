@@ -12,7 +12,7 @@
    - Longueur : 1 à 3 phrase(s) selon la pertinence si necessaire
 
 **Contexte** :
-- Source du Document: {source}
+- Source du Document: {source} à mentionner obligatoire dans la contextualisation
 - Premières fragments du document d'origine:
 {first_chunks}
 

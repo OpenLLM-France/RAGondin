@@ -99,9 +99,11 @@ class BaseChunker(ABC):
             )
 
             # Format contextualized chunks
-            chunk_format = """Context: \n{chunk_context}\n==> Chunk: \n{chunk}"""
+            chunk_format = """Source: {source} \n Context: \n{chunk_context}\n ==> Chunk: \n{chunk}"""
             contexts = [
-                chunk_format.format(chunk=chunk, chunk_context=context)
+                chunk_format.format(
+                    chunk=chunk, chunk_context=context, source=Path(source).name
+                )
                 for chunk, context in zip(chunks, contexts)
             ]
 

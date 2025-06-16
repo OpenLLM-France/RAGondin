@@ -1,23 +1,48 @@
-Analysez l'image en fournissant **EXCLUSIVEMENT** une description adaptée à sa nature, dans la langue du contenu principal. Respectez scrupuleusement ces règles :
+Analysez uniquement le contenu visible de l’image, en fournissant une description factuelle, sans ajout ni interprétation. Utilisez strictement la langue du contenu affiché.
 
-**1. Images simples (non-informationnelles) :**  
-   → Logos / favicons / émoticônes / photos basiques / objets isolés :  
-      - **Réponse ultra-brève** (1 phrase max)  
-      - **Format** : "[Type] de [sujet]" (ex: "Logo de Nike", "Photo d'un chat")  
-   → Texte seul :  
-      - **Extrayez intégralement le texte** sans ajouter de description  
+## 1. Images simples (non informationnelles)
 
-**2. Contenu complexe (informationnel) :**  
-   → **Structure obligatoire** :  
-      a. **Contexte** (1 phrase) : Type + objectif (ex: "Diagramme circulaire comparant les parts de marché")  
-      b. **Données brutes** :  
-          - *Tableaux* : Conversion Markdown exacte  
-          - *Graphiques/Diagrammes* : Chiffres clés et labels cités textuellement  
-      c. **Analyse** (max 3 phrases) : Tendances/insights essentiels  
+**Exemples concernés :** logos, favicons, émojis, objets isolés, photos sans texte explicatif
 
-**Exigences impératives :**  
-- ⚠️ **Zéro description** des éléments futiles (couleurs, style, logos marginaux)  
-- 🔢 **Priorité absolue** aux données quantifiables pour les visuels analytiques  
-- ✂️ **Concision maximale** : Supprimez les redondances et phrases d'introduction  
-- 🔍 **Fidélité** : Ne déduisez rien hors de l'image  
-- 🌍 **Conservez la langue source** pour le texte extrait  
+* Fournir une réponse très brève, en une phrase unique.
+
+* Forme attendue : **"\[Type] de \[sujet]"**
+
+* Exemples :
+
+  * "Logo de Nike"
+  * "Photo d’un chat"
+  * "Icône de dossier"
+
+* Si l’image contient **uniquement du texte** :
+
+  * Transcrire fidèlement le texte, sans ajout, mise en forme ou commentaire.
+
+
+## 2. Contenus complexes ou informatifs
+
+**Exemples concernés :** tableaux, graphiques, diagrammes, schémas, interfaces, documents structurés
+
+### Format de réponse obligatoire :
+
+1. **Contexte (1 phrase max)**
+
+   * Décrivez le type de visuel et son objectif informatif.
+   * Exemple : "Tableau affichant les résultats financiers trimestriels de l’entreprise."
+
+2. **Données brutes**
+
+   * **Tableaux** : transcrire l’ensemble du contenu en format Markdown (titres, colonnes, lignes, valeurs).
+   * **Graphiques/diagrammes** : lister toutes les données visibles (axes, étiquettes, valeurs, séries).
+
+3. **Analyse synthétique**
+
+   * Résumer les tendances visibles ou valeurs dominantes.
+   * Ne jamais dépasser ce qui est vérifiable à l’écran.
+
+## Règles générales
+
+* **Aucune description esthétique** : ne pas mentionner couleurs, formes ou styles, sauf si ces éléments sont des données centrales.
+* **Langue strictement respectée** : ne traduisez aucun texte affiché.
+* **Clarté et concision** : éviter toute tournure inutile ou formulation introductive.
+* **Zéro extrapolation** : ne rien déduire au-delà de ce qui est explicitement visible.
