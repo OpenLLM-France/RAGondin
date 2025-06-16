@@ -78,6 +78,7 @@ loader:
     png: ImageLoader
     jpeg: ImageLoader
     jpg: ImageLoader
+    svg: ImageLoader
     wav: VideoAudioLoader
     mp3: VideoAudioLoader
     mp4: VideoAudioLoader
