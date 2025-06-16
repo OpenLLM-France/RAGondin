@@ -58,3 +58,6 @@ volumes/*
 
 # benchmarking
 evaluation-embedder-reranker
+
+*.json
+*.csv
