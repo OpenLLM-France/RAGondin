@@ -195,6 +195,7 @@ async def list_all_chunks(
     chunks = [
         {
             "link": str(request.url_for("get_extract", extract_id=chunk["Chunk ID"])),
+            "Chunk ID": chunk["Chunk ID"],
             "Chunk's content": chunk["Chunk's content"],
             "Embedding vector": chunk["Embedding vector"],
             "Original file's ID": chunk["Original file's ID"]
@@ -203,14 +204,3 @@ async def list_all_chunks(
     ]
 
     return JSONResponse(status_code=status.HTTP_200_OK, content={"All chunks' details": chunks})
-
-@router.get("/{partition}/clusters")
-async def list_clusters(
-    request: Request,
-    partition: str,
-):
-    result = vectordb.clusterizer(partition)
-
-    return JSONResponse(
-        status_code=status.HTTP_200_OK, content={"clusters": result}
-    )

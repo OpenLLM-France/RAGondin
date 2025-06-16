@@ -4,6 +4,10 @@ import os
 import httpx
 import json
 import time
+import numpy as np
+import hdbscan
+import umap
+import umap.umap_ as umap
 from dotenv import load_dotenv
 from loguru import logger
 from langchain_core.messages import HumanMessage
@@ -53,7 +57,7 @@ async def question_answer_task(chunks: str, semaphore=asyncio.Semaphore(10)):
         response_llm = await call_llm(answer_prompt)
         return question, response_llm
 
-async def get_clusters(url: str, semaphore=asyncio.Semaphore(10)) -> dict:
+async def get_all_chunks(url: str, semaphore=asyncio.Semaphore(10)) -> dict:
     async with semaphore:
         retries = 3
         for attempt in range(retries):
@@ -61,10 +65,10 @@ async def get_clusters(url: str, semaphore=asyncio.Semaphore(10)) -> dict:
                 async with httpx.AsyncClient(timeout=400) as client:
                     resp = await client.get(url)
                     resp.raise_for_status()
-                    clusters = resp.json()["clusters"]
-                if not clusters:
+                    all_chunks_list = resp.json()["All chunks' details"]
+                if not all_chunks_list:
                     raise ValueError("No clusters found.")
-                return clusters
+                return all_chunks_list
             except Exception as e:
                 logger.debug(f"Attempt {attempt + 1} failed: {e}")
                 if attempt < retries - 1:
@@ -115,18 +119,49 @@ async def main():
     num_host = "163.114.159.68"  # "localhost"
     ragondin_api_base_url = f"http://{num_host}:{num_port}"
     partition = "benchmark"
-    url = f"{ragondin_api_base_url}/partition/{partition}/clusters"
+    url = f"{ragondin_api_base_url}/partition/{partition}/chunks"
 
     start = time.time()
-    clusters = await get_clusters(url)
+    all_chunks_list = await get_all_chunks(url)
     pause = time.time()
     logger.info(f"Clusters retrieval time: {pause - start} seconds")
+
+    ids, chunk_contents, chunk_embeddings, file_ids = map(list, zip(*[(chunk["Chunk ID"], chunk["Chunk's content"], chunk["Embedding vector"], chunk["Original file's ID"]) for chunk in all_chunks_list]))
+
+    embeddings = np.array(chunk_embeddings)
+
+    reducer = umap.UMAP(
+        n_neighbors=15,
+        n_components=5,
+        min_dist=0.1,
+        metric='cosine'
+    )
+    embeddings_reduced = reducer.fit_transform(embeddings)
+
+    hdb = hdbscan.HDBSCAN(min_cluster_size=5, metric='euclidean')
+    labels = hdb.fit_predict(embeddings_reduced)
+
+    clusters = {}
+    for idx, label in enumerate(labels):
+        if label == -1:
+            continue  # -1 == bruit
+        clusters.setdefault(int(label), []).append(
+            {
+                "id": ids[idx],
+                "text": chunk_contents[idx][:100],
+                "file_id": file_ids[idx],
+            }
+        )
+
+    for label, items in clusters.items():
+        logger.info(f"Cluster {label}: {[item['id'] for item in items]}")
 
     #questions = await generate_questions_from_clusters(clusters)
 
     limited_clusters = {k: clusters[k] for k in list(clusters.keys())[:3]}
     questions = await generate_questions_from_clusters(limited_clusters)
     logger.info(f"Questions generated time: ({time.time() - pause}) seconds")
+    
     with open("./dataset.json", "w", encoding="utf-8") as f:
         json.dump(questions, f, ensure_ascii=False, indent=4)
 
