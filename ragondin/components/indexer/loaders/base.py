@@ -10,7 +10,6 @@ from langchain_core.messages import HumanMessage
 from langchain_openai import ChatOpenAI
 from loguru import logger
 from ...utils import vlmSemaphore, load_sys_template, load_config
-from pathlib import Path
 
 
 config = load_config()
