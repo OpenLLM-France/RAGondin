@@ -99,7 +99,7 @@ class BaseChunker(ABC):
             )
 
             # Format contextualized chunks
-            chunk_format = """Source: {source} \n Context: \n{chunk_context}\n ==> Chunk: \n{chunk}"""
+            chunk_format = """Context: \n{chunk_context}\n ==> Chunk: \n{chunk}"""
             contexts = [
                 chunk_format.format(
                     chunk=chunk, chunk_context=context, source=Path(source).name
@@ -284,6 +284,23 @@ class MarkDownSplitter(BaseChunker):
     def split_text(self, text: str) -> list[str]:
         # split the text into chunks based on headers
         splits: list[Document] = self.md_header_splitter.split_text(text)
+
+        # add overlap to each chunk
+        if self.overlap > 0 and len(splits) > 1:
+            for i in range(len(splits) - 1):
+                current_chunk = splits[i]  # current chunk
+                next_chunk = splits[i + 1]  # next chunk
+
+                # 1 token = 0.75 words on average
+                overlap_in_words = int(self.overlap * 0.75)
+
+                overlap = next_chunk.page_content.split()[:overlap_in_words]
+                overlap = " ".join(overlap)  # convert to string
+
+                current_chunk.page_content = (
+                    f"{current_chunk.page_content} \n {overlap}"
+                )
+                splits[i] = current_chunk
 
         # split large chunks
         splits = self.recurive_splitter.split_documents(splits)
