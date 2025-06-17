@@ -37,6 +37,7 @@ dependencies = [
     "robotframework-requests>=0.9.7",
     "infinity-client>=0.0.76",
     "hdbscan>=0.8.40",
+    "umap-learn>=0.5.7",
 ]
 
 [dependency-groups]
