@@ -143,6 +143,7 @@ async def get_file(
         content={"metadata": metadata, "documents": documents},
     )
 
+
 @router.get("/{partition}/sample")
 async def sample_chunks(
     request: Request, partition: str, n_ids: int = 200, seed: int | None = None
@@ -171,10 +172,10 @@ async def sample_chunks(
 
     return JSONResponse(status_code=status.HTTP_200_OK, content={"chunk_urls": chunks})
 
+
 @router.get("/{partition}/chunks")
 async def list_all_chunks(
-    request: Request,
-    partition: str,
+    request: Request, partition: str, include_embedding: bool = True
 ):
     # Check if partition exists
     if not vectordb.partition_exists(partition):
@@ -184,7 +185,9 @@ async def list_all_chunks(
         )
 
     try:
-        chunks = vectordb.list_chunk_ids(partition=partition)
+        chunks = vectordb.list_all_chunk(
+            partition=partition, include_embedding=include_embedding
+        )
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
     except Exception as e:
@@ -194,13 +197,12 @@ async def list_all_chunks(
 
     chunks = [
         {
-            "link": str(request.url_for("get_extract", extract_id=chunk["Chunk ID"])),
-            "Chunk ID": chunk["Chunk ID"],
-            "Chunk's content": chunk["Chunk's content"],
-            "Embedding vector": chunk["Embedding vector"],
-            "Original file's ID": chunk["Original file's ID"]
+            "link": str(
+                request.url_for("get_extract", extract_id=chunk.metadata["_id"])
+            ),
+            "content": chunk.page_content,
+            "metadata": chunk.metadata,
         }
         for chunk in chunks
     ]
-
-    return JSONResponse(status_code=status.HTTP_200_OK, content={"All chunks' details": chunks})
+    return JSONResponse(status_code=status.HTTP_200_OK, content={"chunks": chunks})
