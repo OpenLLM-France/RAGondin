@@ -2,12 +2,14 @@ import re
 from io import BytesIO
 
 from langchain_core.documents.base import Document
-from loguru import logger
 from markitdown import MarkItDown
 from PIL import Image
 from tqdm.asyncio import tqdm
+from utils.logger import get_logger
 
 from .base import BaseLoader
+
+logger = get_logger()
 
 
 class MarkItDownLoader(BaseLoader):

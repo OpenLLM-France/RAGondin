@@ -1,19 +1,21 @@
 import copy
+import os
 from enum import Enum
-import sys
 from pathlib import Path
+
 from langchain_core.documents.base import Document
 from openai import AsyncOpenAI
-from loguru import logger
+from utils.logger import get_logger
 
 from .grader import Grader
 from .indexer import ABCVectorDB
 from .llm import LLM
+from .map_reduce import RAGMapReduce
 from .reranker import Reranker
 from .retriever import ABCRetriever, RetrieverFactory
 from .utils import format_context, load_sys_template
-import os
-from .map_reduce import RAGMapReduce
+
+logger = get_logger()
 
 
 class RAGMODE(Enum):
@@ -43,7 +45,7 @@ class RetrieverPipeline:
         self.reranker_top_k = int(config.reranker["top_k"])
 
         if self.reranker_enabled:
-            self.logger.debug(f"Reranker enabled: {self.reranker_enabled}")
+            self.logger.debug("Reranker enabled", reranker=self.reranker_enabled)
             self.reranker = Reranker(self.logger, config)
 
         # grader
@@ -56,7 +58,7 @@ class RetrieverPipeline:
         docs = await self.retriever.retrieve(
             partition=partition, query=query, db=self.vectordb
         )
-        self.logger.debug(f"{len(docs)} Documents retreived")
+        self.logger.debug("Documents retreived", document_count=len(docs))
         if docs:
             # grade and filter out irrelevant docs
             if self.grader_enabled:
@@ -77,7 +79,7 @@ class RetrieverPipeline:
 class RagPipeline:
     def __init__(self, config, vectordb: ABCVectorDB, logger=None) -> None:
         self.config = config
-        self.logger = self.set_logger(config) if logger is None else logger
+        self.logger = logger
 
         # retriever pipeline
         self.retriever_pipeline = RetrieverPipeline(
@@ -137,13 +139,11 @@ class RagPipeline:
 
     async def _prepare_for_chat_completion(self, partition: list[str], payload: dict):
         messages = payload["messages"]
-        self.logger.info(f"Chat Length before {len(messages)}")
         messages = messages[-self.chat_history_depth :]  # limit history depth
-        self.logger.info(f"Chat Length After {len(messages)}")
 
         # 1. get the query
         query = await self.generate_query(messages)
-        self.logger.debug(f"Query: {query}")
+        self.logger.debug("Prepared query for chat completion", query=query)
 
         # 2. get docs
         docs = await self.retriever_pipeline.retrieve_docs(
@@ -163,7 +163,7 @@ class RagPipeline:
             docs = relevant_docs
 
         else:
-            logger.info(f"{len(docs)} kept after retrieval")
+            logger.info("Retrieved documents", document_count=len(docs))
             # 3. Format the retrieved docs
             context = format_context(docs)
 
@@ -190,8 +190,6 @@ class RagPipeline:
         query = await self.generate_query(
             messages=[{"role": "user", "content": prompt}]
         )
-        self.logger.debug(f"Query: {query}")
-
         # 2. get docs
         docs = await self.retriever_pipeline.retrieve_docs(
             partition=partition, query=query
@@ -224,14 +222,3 @@ class RagPipeline:
             return llm_output, docs
         except Exception as e:
             raise e
-
-    @staticmethod
-    def set_logger(config):
-        verbose = config.verbose
-        if bool(verbose["verbose"]):
-            level = verbose["level"]
-        else:
-            level = "ERROR"
-        logger.remove()
-        logger.add(sys.stderr, level=level)
-        return logger

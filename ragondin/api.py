@@ -22,9 +22,9 @@ from chainlit.utils import mount_chainlit
 from components import RagPipeline
 from config import load_config
 from fastapi import Depends, FastAPI, HTTPException, Request, status
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from fastapi.staticfiles import StaticFiles
-from loguru import logger
 from routers.extract import router as extract_router
 from routers.indexer import router as indexer_router
 from routers.openai import router as openai_router
@@ -32,7 +32,9 @@ from routers.partition import router as partition_router
 from routers.queue import router as queue_router
 from routers.search import router as search_router
 from utils.dependencies import vectordb
+from utils.logger import get_logger
 
+logger = get_logger()
 config = load_config()
 DATA_DIR = Path(config.paths.data_dir)
 
@@ -77,6 +79,14 @@ def verify_token(credentials: HTTPAuthorizationCredentials = Depends(security)):
 dependencies = [Depends(verify_token)] if AUTH_TOKEN else []
 app = FastAPI(dependencies=dependencies)
 
+# Add CORS middleware
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # Adjust as needed for production
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 app.state.app_state = AppState(config)
 app.mount(

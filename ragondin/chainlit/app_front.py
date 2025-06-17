@@ -1,15 +1,17 @@
 import json
-from pathlib import Path
-import httpx
-import chainlit as cl
-from loguru import logger
-from openai import AsyncOpenAI
-from urllib.parse import urlparse
-from chainlit.context import get_context
 import os
-from dotenv import load_dotenv
+from pathlib import Path
+from urllib.parse import urlparse
 
+import chainlit as cl
+import httpx
+from chainlit.context import get_context
+from openai import AsyncOpenAI
+from utils.logger import get_logger
+
+from dotenv import load_dotenv
 load_dotenv()
+logger = get_logger()
 
 PERSISTENCY = os.environ.get("CHAINLIT_DATALAYER_COMPOSE", "") != ""
 AUTH_TOKEN = os.environ.get("AUTH_TOKEN", "")
@@ -48,10 +50,9 @@ def get_base_url():
         parsed_url = urlparse(referer)  # Parse the referer URL
         base_url = f"{parsed_url.scheme}://{parsed_url.netloc}"
         return base_url
-    except Exception as e:
-        logger.error(f"Error retrieving Chainlit context: {e}")
+    except Exception:
+        logger.exception("Error retrieving Chainlit context")
         port = os.environ.get("APP_iPORT", "8080")
-        logger.info(f"PORT: {port}")
         return f"http://localhost:{port}"  # Default fallback URL
 
 
@@ -90,17 +91,16 @@ async def chat_profile():
 @cl.on_chat_start
 async def on_chat_start():
     base_url = get_base_url()
-    logger.debug(f"BASE URL: {base_url}")
     cl.user_session.set("messages", [])
-    logger.debug("New Chat Started")
+    logger.debug("New Chat Started", base_url=base_url)
     try:
         async with httpx.AsyncClient(
             timeout=httpx.Timeout(timeout=httpx.Timeout(4 * 60.0)), headers=headers
         ) as client:
             response = await client.get(url=f"{base_url}/health_check", headers=headers)
             print(response.text)
-    except Exception as e:
-        logger.error(f"An error happened: {e}")
+    except Exception:
+        logger.exception("An error occured while checking the API health")
         logger.warning("Make sur the fastapi is up!!")
     cl.user_session.set("BASE URL", base_url)
 
@@ -121,7 +121,6 @@ async def __format_sources(metadata_sources, only_txt=False):
     for i, s in enumerate(metadata_sources):
         filename = Path(s["filename"])
         file_url = s["file_url"]
-        logger.info(f"URL: {file_url}")
         page = s["page"]
 
         source_name = f"{filename}" + (
@@ -214,7 +213,7 @@ async def on_message(message: cl.Message):
                 await msg.stream_token(s)
                 await msg.update()
         except Exception as e:
-            logger.error(f"Error during chat completion: {e}")
+            logger.exception("Error during chat completion")
             await cl.Message(content=f"An error occurred: {str(e)}").send()
 
 

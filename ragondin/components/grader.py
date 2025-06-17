@@ -1,11 +1,12 @@
 import asyncio
 from typing import Literal
+
 from langchain_core.documents.base import Document
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_openai import ChatOpenAI
 from pydantic import BaseModel, Field
-from .utils import llmSemaphore
 
+from .utils import llmSemaphore
 
 sys_prompt = """You are a seasoned expert in assessing document relevance. Your task is to evaluate documents carefully against a user's query by considering their semantics, context, and keyword significance. Your expert judgment ensures that only truly pertinent documents are flagged as relevant."""
 
@@ -73,7 +74,7 @@ class Grader:
             list[Document]: A list of relevant Document objects.
         """
         batch_size = min(batch_size, len(docs))
-        self.logger.debug(f"{len(docs)} documents to assess relevancy.")
+        self.logger.debug("Documents to assess relevancy", document_count=len(docs))
 
         tasks = [self._grade_doc(user_input=user_input, doc=d) for d in docs]
         grades: list[DocumentGrade] = await asyncio.gather(*tasks)
@@ -83,5 +84,5 @@ class Grader:
             filter(lambda doc_grade: doc_grade[1] != "irrelevant", zip(docs, grades))
         )
         relevant_docs = [doc for doc, _ in relevant_docs]
-        self.logger.debug(f"{len(relevant_docs)} relevant documents.")
+        self.logger.debug("Relevant documents found", document_count=len(relevant_docs))
         return relevant_docs
