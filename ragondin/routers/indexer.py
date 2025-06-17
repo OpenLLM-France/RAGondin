@@ -1,6 +1,7 @@
 import json
 from pathlib import Path
 from typing import Any, Optional
+
 import ray
 from config.config import load_config
 from fastapi import (
@@ -14,8 +15,8 @@ from fastapi import (
     status,
 )
 from fastapi.responses import JSONResponse
-from utils.logger import get_logger
 from utils.dependencies import Indexer, get_indexer, vectordb
+from utils.logger import get_logger
 
 # load logger
 logger = get_logger()
@@ -31,6 +32,7 @@ task_state_manager = ray.get_actor("TaskStateManager", namespace="ragondin")
 
 # Create an APIRouter instance
 router = APIRouter()
+
 
 def is_file_id_valid(file_id: str) -> bool:
     return not any(c in file_id for c in FORBIDDEN_CHARS_IN_FILE_ID)
@@ -141,7 +143,7 @@ async def delete_file(
     except Exception:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to delete file.",
+            detail="Failed to delete file.",
         )
 
     return Response(status_code=status.HTTP_204_NO_CONTENT)
@@ -247,35 +249,28 @@ async def patch_file(
 async def get_task_status(
     request: Request, task_id: str, indexer: Indexer = Depends(get_indexer)
 ):
-    try:
-        # fetch task state
-        state = await indexer.get_task_status.remote(task_id)
-        if state is None:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail=f"Task '{task_id}' not found.",
-            )
-
-        # fetch task details
-        details = await task_state_manager.get_details.remote(task_id)
-
-        # format the response
-        content: dict[str, Any] = {
-            "task_id": task_id,
-            "task_state": state,
-            "details": details,
-        }
-
-        if state == "FAILED":
-            content["error_url"] = str(request.url_for("get_task_error", task_id=task_id))
-
-        return JSONResponse(status_code=status.HTTP_200_OK, content=content)
-
-    except Exception:
+    # fetch task state
+    state = await indexer.get_task_status.remote(task_id)
+    if state is None:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to fetch task status.",
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Task '{task_id}' not found.",
         )
+
+    # fetch task details
+    details = await task_state_manager.get_details.remote(task_id)
+
+    # format the response
+    content: dict[str, Any] = {
+        "task_id": task_id,
+        "task_state": state,
+        "details": details,
+    }
+
+    if state == "FAILED":
+        content["error_url"] = str(request.url_for("get_task_error", task_id=task_id))
+
+    return JSONResponse(status_code=status.HTTP_200_OK, content=content)
 
 
 @router.get("/task/{task_id}/error")

@@ -1,14 +1,16 @@
-import gc
-import copy
-import torch
 import asyncio
+import copy
+import gc
 from enum import Enum
-from sentence_transformers import CrossEncoder
-from langchain_core.documents.base import Document
-from .utils import SingletonMeta
+
+import torch
 from infinity_client import Client
 from infinity_client.api.default import rerank
 from infinity_client.models import RerankInput, ReRankResult
+from langchain_core.documents.base import Document
+from sentence_transformers import CrossEncoder
+
+from .utils import SingletonMeta
 
 
 class RerankerType(Enum):
@@ -28,9 +30,6 @@ class Reranker(metaclass=SingletonMeta):
         )  # Only allow 5 reranking operation at a time
 
         self.reranker_type = RerankerType(reranker_type)
-        self.logger.debug(
-            f"Reranker type: {self.reranker_type}, Model name: {self.model_name}"
-        )
 
         match self.reranker_type:
             case RerankerType.CROSSENCODER:
@@ -53,12 +52,16 @@ class Reranker(metaclass=SingletonMeta):
                     "reranker_type must be either 'crossencoder', 'colbert' or 'infinity'."
                 )
 
-        self.logger.debug(f"{self.reranker_type} Reranker initialized...")
+        self.logger.debug(
+            "Reranker initialized", type=self.reranker_type, model_name=self.model_name
+        )
 
     async def rerank(
         self, query: str, documents: list[Document], top_k: int = 6
     ) -> list[Document]:
-        self.logger.debug("Reranking documents")
+        self.logger.debug(
+            "Reranking documents", documents_count=len(documents), top_k=top_k
+        )
         top_k = min(top_k, len(documents))
 
         async with self.semaphore:
@@ -118,7 +121,6 @@ class Reranker(metaclass=SingletonMeta):
             }
         )
         rerank_result: ReRankResult = rerank.sync(client=self.client, body=rerank_input)
-        # self.logger.debug(f"Infinity Rerank result: {rerank_result.results}")
         results = [{"content": item.document} for item in rerank_result.results]
         return [doc for doc in original_docs(results, documents)]
 

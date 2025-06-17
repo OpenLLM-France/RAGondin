@@ -1,7 +1,7 @@
+import ray
 from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
 from fastapi.responses import JSONResponse
 from utils.dependencies import Indexer, get_indexer, vectordb
-import ray
 from utils.logger import get_logger
 
 logger = get_logger()
@@ -11,18 +11,19 @@ router = APIRouter()
 
 @router.get("/")
 async def list_existant_partitions(request: Request):
-    log = logger.bind(endpoint="/partitions")
     try:
         partitions = [
             {"partition": p.partition, "created_at": int(p.created_at.timestamp())}
             for p in vectordb.list_partitions()
         ]
-        log.info("Returned list of existing partitions.", count=len(partitions))
+        logger.debug(
+            "Returned list of existing partitions.", partition_count=len(partitions)
+        )
         return JSONResponse(
             status_code=status.HTTP_200_OK, content={"partitions": partitions}
         )
     except Exception:
-        log.exception("Failed to list partitions.")
+        logger.exception("Failed to list partitions.")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to list partitions.",
@@ -31,24 +32,23 @@ async def list_existant_partitions(request: Request):
 
 @router.delete("/{partition}/")
 async def delete_partition(partition: str, indexer: Indexer = Depends(get_indexer)):
-    log = logger.bind(partition=partition)
     try:
         deleted = ray.get(indexer.delete_partition.remote(partition))
     except Exception:
-        log.exception("Failed to delete partition.")
+        logger.exception("Failed to delete partition", partition=partition)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to delete partition.",
+            detail="Failed to delete partition",
         )
 
     if not deleted:
-        log.warning("Partition not found for deletion.")
+        logger.warning("Partition not found for deletion", partition=partition)
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Partition '{partition}' not found.",
+            detail="Partition not found",
         )
 
-    log.info("Partition successfully deleted.")
+    logger.debug("Partition successfully deleted.")
     return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
@@ -61,22 +61,23 @@ async def list_files(
     log = logger.bind(partition=partition)
 
     if not vectordb.partition_exists(partition):
-        log.warning("Partition not found.")
+        log.warning("Partition not found")
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Partition '{partition}' not found.",
+            detail=f"Partition '{partition}' not found",
         )
 
     try:
         results = vectordb.list_files(partition=partition)
-        log.info("Listed files in partition.", file_count=len(results))
+        log.debug("Listed files in partition", file_count=len(results))
     except ValueError as e:
         log.warning(f"Invalid partition value: {str(e)}")
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
     except Exception:
-        log.exception("Failed to list files in partition.")
+        log.exception("Failed to list files in partition")
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Failed to list files."
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to list files",
         )
 
     files = [
@@ -102,7 +103,7 @@ async def check_file_exists_in_partition(
             detail=f"File '{file_id}' not found in partition '{partition}'.",
         )
 
-    log.info("File exists in partition.")
+    log.debug("File exists in partition.")
     return JSONResponse(
         status_code=status.HTTP_200_OK,
         content=f"File '{file_id}' exists in partition '{partition}'.",
@@ -130,7 +131,7 @@ async def get_file(
     except Exception:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to fetch file chunks."
+            detail="Failed to fetch file chunks.",
         )
 
     documents = [

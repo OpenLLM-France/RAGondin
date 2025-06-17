@@ -1,24 +1,26 @@
 import re
-import asyncio
 from abc import ABC, abstractmethod
 from pathlib import Path
 from typing import Optional
 
+from langchain.chains.combine_documents.reduce import collapse_docs, split_list_of_docs
 from langchain_community.embeddings import HuggingFaceBgeEmbeddings
 from langchain_core.documents.base import Document
 from langchain_core.output_parsers import StrOutputParser
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_openai import ChatOpenAI
-from loguru import logger
+from langchain_text_splitters import (
+    MarkdownHeaderTextSplitter,
+    RecursiveCharacterTextSplitter,
+)
 from omegaconf import OmegaConf
 from tqdm.asyncio import tqdm
-from ..utils import llmSemaphore, load_config, load_sys_template
-from langchain_text_splitters import RecursiveCharacterTextSplitter
-from langchain.chains.combine_documents.reduce import split_list_of_docs, collapse_docs
-from langchain_text_splitters import MarkdownHeaderTextSplitter
-import functools
+from utils.logger import get_logger
 
+from ..utils import llmSemaphore, load_config, load_sys_template
+
+logger = get_logger()
 config = load_config()
 prompt_paths = Path(config.paths.get("prompts_dir"))
 chunk_contextualizer_pmpt = config.prompt.get("chunk_contextualizer_pmpt")
@@ -146,7 +148,7 @@ class BaseChunker(ABC):
         return {"start_page": start_page, "end_page": end_page}
 
     @abstractmethod
-    async def split_document(self, doc: Document):
+    async def split_document(self, doc: Document, task_id: str = None):
         pass
 
 
@@ -166,14 +168,21 @@ class RecursiveSplitter(BaseChunker):
             else len(x),
         )
 
-    async def split_document(self, doc: Document):
+    async def split_document(self, doc: Document, task_id: str = None):
         metadata = doc.metadata
+        log = logger.bind(
+            file_id=metadata.get("file_id"),
+            partition=metadata.get("partition"),
+            task_id=task_id,
+        )
+        log.info("Starting document chunking")
         source = metadata["source"]
         all_content = doc.page_content.strip()
         chunks = self.splitter.split_text(all_content)
 
         chunks_w_context = chunks  # Default to original chunks if no contextualization
         if self.contextual_retrieval:
+            log.info("Contextualizing chunks")
             chunks_w_context = await self._contextualize_chunks(chunks, source=source)
 
         filtered_chunks = []
@@ -193,6 +202,7 @@ class RecursiveSplitter(BaseChunker):
                         metadata={**metadata, "page": start_page},
                     )
                 )
+        log.info("Document chunking completed")
         return filtered_chunks
 
 
@@ -218,14 +228,21 @@ class SemanticSplitter(BaseChunker):
             min_chunk_size=min_chunk_size,
         )
 
-    async def split_document(self, doc: Document):
+    async def split_document(self, doc: Document, task_id: str = None):
         metadata = doc.metadata
+        log = logger.bind(
+            file_id=metadata.get("file_id"),
+            partition=metadata.get("partition"),
+            task_id=task_id,
+        )
+        log.info("Starting document chunking")
         source = metadata["source"]
         all_content = doc.page_content.strip()
         chunks = self.splitter.split_text([all_content])
 
         chunks_w_context = chunks  # Default to original chunks if no contextualization
         if self.contextual_retrieval:
+            log.info("Contextualizing chunks")
             chunks_w_context = await self._contextualize_chunks(chunks, source=source)
 
         filtered_chunks = []
@@ -245,6 +262,7 @@ class SemanticSplitter(BaseChunker):
                         metadata={**metadata, "page": start_page},
                     )
                 )
+        log.info("Document chunking completed")
         return filtered_chunks
 
 
@@ -305,14 +323,21 @@ class MarkDownSplitter(BaseChunker):
 
         return results
 
-    async def split_document(self, doc: Document):
+    async def split_document(self, doc: Document, task_id: str = None):
         metadata = doc.metadata
+        log = logger.bind(
+            file_id=metadata.get("file_id"),
+            partition=metadata.get("partition"),
+            task_id=task_id,
+        )
+        log.info("Starting document chunking")
         source = metadata["source"]
         all_content = doc.page_content.strip()
         chunks = self.split_text(all_content)
 
         chunks_w_context = chunks  # Default to original chunks if no contextualization
         if self.contextual_retrieval:
+            log.info("Contextualizing chunks")
             chunks_w_context = await self._contextualize_chunks(chunks, source=source)
 
         filtered_chunks = []
@@ -332,6 +357,7 @@ class MarkDownSplitter(BaseChunker):
                         metadata={**metadata, "page": start_page},
                     )
                 )
+        log.info("Document chunking completed")
         return filtered_chunks
 
 

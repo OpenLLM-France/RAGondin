@@ -1,12 +1,16 @@
 import os
 from pathlib import Path
-import whisper
-from langchain_core.documents.base import Document
-from loguru import logger
-from pydub import AudioSegment
-from .base import BaseLoader
-from components.utils import SingletonMeta
+
 import torch
+import whisper
+from components.utils import SingletonMeta
+from langchain_core.documents.base import Document
+from pydub import AudioSegment
+from utils.logger import get_logger
+
+from .base import BaseLoader
+
+logger = get_logger()
 
 torch.backends.cuda.matmul.allow_tf32 = True
 torch.backends.cudnn.allow_tf32 = True

@@ -1,5 +1,6 @@
 import asyncio
 import gc
+import re
 import threading
 import time
 from pathlib import Path
@@ -8,14 +9,14 @@ from typing import Dict, Optional, Union
 import torch
 import torch.multiprocessing as mp
 from langchain_core.documents.base import Document
-from loguru import logger
 from marker.converters.pdf import PdfConverter
-from marker.config.parser import ConfigParser
-
 from marker.models import create_model_dict
 from tqdm.asyncio import tqdm
-import re
+from utils.logger import get_logger
+
 from ..base import BaseLoader
+
+logger = get_logger()
 
 
 class MarkerLoader(BaseLoader):
@@ -34,7 +35,7 @@ class MarkerLoader(BaseLoader):
         super().__init__(**kwargs)
         self._workers = self.config.ray.get("max_tasks_per_worker", 2)
         self.maxtasksperchild = self.config.loader.get("marker_max_tasks_per_child", 10)
-        logger.info(f"Using {self._workers} workers for MarkerLoader")
+        logger.info("Initializing MarkerLoader", workers=self._workers)
         self._converter_config = {
             "output_format": "markdown",
             "paginate_output": True,
@@ -61,7 +62,6 @@ class MarkerLoader(BaseLoader):
             os.environ["RAY_ADDRESS"] = "auto"
         """Initialize model dictionary and worker pool once for all instances"""
         # Initialize the model dictionary
-        logger.info("Creating shared model dictionary for Marker")
         MarkerLoader._model_dict = create_model_dict()
 
         # Share memory for models supporting it
@@ -78,7 +78,7 @@ class MarkerLoader(BaseLoader):
             logger.warning("Process start method already set, using existing method")
 
         # Initialize the worker pool
-        logger.info(f"Creating worker pool with {self._workers} processes")
+        logger.info("Creating marker worker pool", workers=self._workers)
         MarkerLoader._pool = mp.Pool(
             processes=self._workers,
             initializer=self._worker_init,  # Note: Using class method directly
@@ -99,23 +99,20 @@ class MarkerLoader(BaseLoader):
         global worker_model_dict
 
         try:
-            logger.info(f"Processing PDF: {file_path}")
+            logger.debug("Processing PDF", path=file_path)
             converter = PdfConverter(
                 artifact_dict=worker_model_dict,
                 config=config,
             )
             render = converter(file_path)
-            logger.info(f"PDF processing complete: {file_path}")
+            logger.debug("PDF processing completed", path=file_path)
 
             # Explicit cleanup
             del converter
             return render
-        except Exception as e:
-            logger.error(f"Error processing {file_path}: {str(e)}")
-            import traceback
-
-            logger.error(traceback.format_exc())
-            raise e
+        except Exception:
+            logger.exception("Error processing PDF", path=file_path)
+            raise
         finally:
             # Force garbage collection
             gc.collect()
@@ -138,7 +135,6 @@ class MarkerLoader(BaseLoader):
             metadata = {}
 
         file_path_str = str(file_path)
-        logger.info(f"Loading {file_path_str}")
         start_time = time.time()
 
         # Configure for this specific document
@@ -156,7 +152,7 @@ class MarkerLoader(BaseLoader):
             )
 
             if result is None:
-                logger.error(f"PDF conversion returned None for {file_path_str}")
+                logger.error("PDF conversion returned None", path=file_path_str)
                 raise RuntimeError(f"Conversion failed for {file_path_str}")
 
             text: str = result.markdown
@@ -164,7 +160,7 @@ class MarkerLoader(BaseLoader):
             # Process images if needed
             if self.config["loader"]["image_captioning"]:
                 img_dict = result.images
-                logger.info(f"Found {len(img_dict)} images in the document.")
+                logger.info("Captioning images", image_count=len(img_dict))
                 captions_dict = await self._get_captions(img_dict)
                 for key, desc in captions_dict.items():
                     tag = f"![]({key})"
@@ -193,17 +189,14 @@ class MarkerLoader(BaseLoader):
 
             return doc
 
-        except Exception as e:
-            logger.error(f"Error in aload_document for {file_path_str}: {str(e)}")
-            import traceback
-
-            logger.error(traceback.format_exc())
+        except Exception:
+            logger.exception("Error in aload_document", path=file_path_str)
             raise
 
     async def _get_captions(self, img_dict: dict):
         """Get captions for images"""
         if not img_dict:
-            logger.info("No images to caption")
+            logger.debug("No images to caption")
             return {}
 
         tasks = []
@@ -220,11 +213,8 @@ class MarkerLoader(BaseLoader):
             for task in tasks:
                 task.cancel()
             raise
-        except Exception as e:
-            logger.error(f"Error in _get_captions: {str(e)}")
-            import traceback
-
-            logger.error(traceback.format_exc())
+        except Exception:
+            logger.exception("Error in _get_captions")
             raise
 
         result_dict = dict(zip(keys, results))
@@ -235,14 +225,14 @@ class MarkerLoader(BaseLoader):
         """Manually clean up shared resources - can be called when needed"""
         with cls._pool_lock:
             if cls._pool:
-                logger.info("Cleaning up worker pool")
+                logger.debug("Cleaning up worker pool")
                 cls._pool.close()
                 cls._pool.join()
                 cls._pool = None
                 cls._model_dict.clear()
                 cls._model_dict = None
                 cls._initialized = False
-                logger.info("Worker pool cleanup complete")
+                logger.debug("Worker pool cleanup complete")
 
                 # Force garbage collection and CUDA cleanup
                 gc.collect()

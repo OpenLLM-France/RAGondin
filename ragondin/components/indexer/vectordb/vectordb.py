@@ -186,7 +186,7 @@ class MilvusDB(ABCVectorDB):
         )
 
         self.logger = self.logger.bind(collection=name)
-        self.logger.info(f"Milvus collection loaded.")
+        self.logger.info("Milvus collection loaded.")
 
         if self.default_collection_name is None:
             self.default_collection_name = name
@@ -241,12 +241,7 @@ class MilvusDB(ABCVectorDB):
                     "range_filter": 1.0,
                 },
             },
-            {
-                "metric_type": "BM25",
-                "params": {
-                    "drop_ratio_build": 0.2
-                }
-            },
+            {"metric_type": "BM25", "params": {"drop_ratio_build": 0.2}},
         ]
 
         # "params": {"drop_ratio_build": 0.2, "bm25_k1": 1.2, "bm25_b": 0.75},
@@ -272,7 +267,7 @@ class MilvusDB(ABCVectorDB):
             )
 
         for doc, score in docs_scores:
-            doc.metadata['score'] = score
+            doc.metadata["score"] = score
 
         docs = [doc for doc, score in docs_scores]
 
@@ -314,7 +309,7 @@ class MilvusDB(ABCVectorDB):
                     retrieved_chunks[document.metadata["_id"]] = document
 
         retrieved_chunks = list(retrieved_chunks.values())
-        retrieved_chunks.sort(key=lambda v: v.metadata['score'], reverse=True)
+        retrieved_chunks.sort(key=lambda v: v.metadata["score"], reverse=True)
 
         return retrieved_chunks
 
@@ -470,7 +465,7 @@ class MilvusDB(ABCVectorDB):
                 )
             return None
         except Exception:
-            self.logger.exception(f"Couldn't get chunk by ID", chunk_id=chunk_id)
+            self.logger.exception("Couldn't get chunk by ID", chunk_id=chunk_id)
 
     def delete_file_points(self, points: list, file_id: str, partition: str):
         """
@@ -491,7 +486,7 @@ class MilvusDB(ABCVectorDB):
             )
             log.info("File points deleted.")
         except Exception:
-            log.exception(f"Error while deleting file points.")
+            log.exception("Error while deleting file points.")
 
     def file_exists(self, file_id: str, partition: str):
         """
@@ -502,7 +497,9 @@ class MilvusDB(ABCVectorDB):
                 file_id=file_id, partition=partition
             )
         except Exception:
-            self.logger.exception("File existence check failed.", file_id=file_id, partition=partition)
+            self.logger.exception(
+                "File existence check failed.", file_id=file_id, partition=partition
+            )
             return False
 
     def list_files(self, partition: str):
@@ -518,8 +515,10 @@ class MilvusDB(ABCVectorDB):
                 )
                 return results
 
-        except Exception as e:
-            self.logger.exception("Failed to list files in partition.", partition=partition)
+        except Exception:
+            self.logger.exception(
+                "Failed to list files in partition.", partition=partition
+            )
             raise
 
     def list_partitions(self):
@@ -549,7 +548,7 @@ class MilvusDB(ABCVectorDB):
 
             self.partition_file_manager.delete_partition(partition)
 
-            log.info(f"Deleted points from partition.", count=count)
+            log.info("Deleted points from partition.", count=count)
 
             return True
         except Exception:
@@ -563,8 +562,10 @@ class MilvusDB(ABCVectorDB):
         try:
             return self.partition_file_manager.partition_exists(partition=partition)
 
-        except Exception as e:
-            self.logger.exception("Partition existence check failed.", partition=partition)
+        except Exception:
+            self.logger.exception(
+                "Partition existence check failed.", partition=partition
+            )
             return False
 
 

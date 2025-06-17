@@ -1,14 +1,10 @@
 import asyncio
+
 import torch
 from components.utils import SingletonMeta
-from docling.datamodel.document import ConversionResult
-from docling_core.types.doc.document import PictureItem
-from langchain_core.documents.base import Document
-from loguru import logger
-from tqdm.asyncio import tqdm
-from ..base import BaseLoader
 from docling.backend.pypdfium2_backend import PyPdfiumDocumentBackend
 from docling.datamodel.base_models import InputFormat
+from docling.datamodel.document import ConversionResult
 from docling.datamodel.pipeline_options import (
     AcceleratorDevice,
     AcceleratorOptions,
@@ -17,6 +13,14 @@ from docling.datamodel.pipeline_options import (
     TableStructureOptions,
 )
 from docling.document_converter import DocumentConverter, PdfFormatOption
+from docling_core.types.doc.document import PictureItem
+from langchain_core.documents.base import Document
+from tqdm.asyncio import tqdm
+from utils.logger import get_logger
+
+from ..base import BaseLoader
+
+logger = get_logger()
 
 
 class DoclingConverter(metaclass=SingletonMeta):
@@ -78,7 +82,7 @@ class DoclingLoader(BaseLoader):
                     "<!-- image -->", description, 1
                 )
         else:
-            logger.info("Image captioning disabled. Ignoring images.")
+            logger.debug("Image captioning disabled. Ignoring images.")
 
         doc = Document(page_content=enriched_content, metadata=metadata)
         if save_markdown:

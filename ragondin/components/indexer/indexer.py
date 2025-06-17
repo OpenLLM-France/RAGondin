@@ -2,8 +2,8 @@ import asyncio
 import gc
 import inspect
 import traceback
-from typing import Any, Dict, List, Optional, Union
 from dataclasses import dataclass, field
+from typing import Any, Dict, List, Optional, Union
 
 import ray
 import torch
@@ -13,6 +13,7 @@ from langchain_openai import OpenAIEmbeddings
 
 from .chunker import BaseChunker, ChunkerFactory
 from .vectordb import ConnectorFactory
+
 
 @ray.remote(max_restarts=-1, concurrency_groups={"insertion": 1})
 class Indexer:
@@ -32,7 +33,6 @@ class Indexer:
 
         # Initialize chunker
         self.chunker: BaseChunker = ChunkerFactory.create_chunker(
-
             self.config, embedder=self.embedder
         )
 
@@ -49,17 +49,26 @@ class Indexer:
         self.handle = ray.get_actor("Indexer", namespace="ragondin")
         self.logger.info("Indexer actor initialized.")
 
-    async def serialize(self, task_id: str, path: str, metadata: Optional[Dict] = {}) -> Document:
+    async def serialize(
+        self, task_id: str, path: str, metadata: Optional[Dict] = {}
+    ) -> Document:
         doc: Document = await self.serializer_queue.submit_document.remote(
             task_id, path, metadata=metadata
         )
         return doc
 
-    async def chunk(self, doc: Document, file_path: str) -> List[Document]:
-        chunks = await self.chunker.split_document(doc)
+    async def chunk(
+        self, doc: Document, file_path: str, task_id: str = None
+    ) -> List[Document]:
+        chunks = await self.chunker.split_document(doc, task_id)
         return chunks
 
-    async def add_file(self, path: Union[str, List[str]], metadata: Optional[Dict] = {}, partition: Optional[str] = None):
+    async def add_file(
+        self,
+        path: Union[str, List[str]],
+        metadata: Optional[Dict] = {},
+        partition: Optional[str] = None,
+    ):
         task_id = ray.get_runtime_context().get_task_id()
         file_id = metadata.get("file_id", None)
         log = self.logger.bind(file_id=file_id, partition=partition, task_id=task_id)
@@ -69,7 +78,8 @@ class Indexer:
 
             # Set task details
             user_metadata = {
-                k: v for k, v in metadata.items() 
+                k: v
+                for k, v in metadata.items()
                 if k not in {"file_id", "source", "filename"}
             }
 
@@ -79,26 +89,26 @@ class Indexer:
                 partition=partition,
                 metadata=user_metadata,
             )
-            
+
             # Check/normalize partition
             partition = self._check_partition_str(partition)
             metadata = {**metadata, "partition": partition}
-            
+
             # Serialize
             doc = await self.serialize(task_id, path, metadata=metadata)
-            log.info(f"Document serialized")
 
             # Chunk
             await self.task_state_manager.set_state.remote(task_id, "CHUNKING")
-            chunks = await self.chunk(doc, str(path))
-            log.info(f"Document chunked")
+            chunks = await self.chunk(doc, str(path), task_id)
 
             if self.enable_insertion and chunks:
                 await self.task_state_manager.set_state.remote(task_id, "INSERTING")
                 await self.handle.insert_documents.remote(chunks)
-                log.info(f"Document {path} added to vectordb.")
+                log.info(f"Document {path} indexed successfully")
             else:
-                log.info(f"Vectordb insertion skipped (enable_insertion={self.enable_insertion}).")
+                log.info(
+                    f"Vectordb insertion skipped (enable_insertion={self.enable_insertion})."
+                )
 
             # Mark task as completed
             await self.task_state_manager.set_state.remote(task_id, "COMPLETED")
@@ -139,14 +149,16 @@ class Indexer:
             log.info("Deleted file from partition.")
             return True
         except Exception:
-            log.exception(f"Error in delete_file")
+            log.exception("Error in delete_file")
             raise
 
     async def update_file_metadata(self, file_id: str, metadata: Dict, partition: str):
         log = self.logger.bind(file_id=file_id, partition=partition)
 
         if not self.enable_insertion:
-            log.error("Vector database is not enabled, but update_file_metadata was called.")
+            log.error(
+                "Vector database is not enabled, but update_file_metadata was called."
+            )
             return
 
         try:
@@ -158,11 +170,17 @@ class Indexer:
             await self.vectordb.async_add_documents(docs)
             log.info("Metadata updated for file.")
         except Exception:
-            log.exception(f"Error in update_file_metadata")
+            log.exception("Error in update_file_metadata")
             raise
 
-    async def asearch(self, query: str, top_k: int = 5, similarity_threshold: float = 0.80,
-                      partition: Optional[Union[str, List[str]]] = None, filter: Optional[Dict] = {}) -> List[Document]:
+    async def asearch(
+        self,
+        query: str,
+        top_k: int = 5,
+        similarity_threshold: float = 0.80,
+        partition: Optional[Union[str, List[str]]] = None,
+        filter: Optional[Dict] = {},
+    ) -> List[Document]:
         partition_list = self._check_partition_list(partition)
         return await self.vectordb.async_search(
             query=query,
@@ -186,7 +204,9 @@ class Indexer:
     def delete_partition(self, partition: str):
         return self.vectordb.delete_partition(partition)
 
-    def _check_partition_list(self, partition: Optional[Union[str, List[str]]]) -> List[str]:
+    def _check_partition_list(
+        self, partition: Optional[Union[str, List[str]]]
+    ) -> List[str]:
         if partition is None:
             self.logger.warning("partition not provided; using default.")
             return [self.default_partition]

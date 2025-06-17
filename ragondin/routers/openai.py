@@ -1,19 +1,21 @@
 import json
+from urllib.parse import quote
+
+from config.config import load_config
 from fastapi import APIRouter, Body, Depends, HTTPException, Request, status
-from fastapi.responses import StreamingResponse, JSONResponse
-from openai import AsyncOpenAI
+from fastapi.responses import JSONResponse, StreamingResponse
+from langchain_core.documents.base import Document
 from models.openai import (
     OpenAIChatCompletionRequest,
     OpenAICompletionRequest,
 )
-from urllib.parse import quote
-from langchain_core.documents.base import Document
+from openai import AsyncOpenAI
 from utils.logger import get_logger
-from config.config import load_config
 
 logger = get_logger()
 config = load_config()
 router = APIRouter()
+
 
 def get_app_state(request: Request):
     return request.app.state.app_state
@@ -44,7 +46,7 @@ async def list_models(
     app_state=Depends(get_app_state), _: None = Depends(check_llm_model_availability)
 ):
     partitions = app_state.vectordb.list_partitions()
-    logger.debug(f"Listing models for {len(partitions)} partitions.")
+    logger.debug("Listing models", partition_count=len(partitions))
     models = [
         {
             "id": f"ragondin-{partition.partition}",
@@ -54,7 +56,9 @@ async def list_models(
         }
         for partition in partitions
     ]
-    models.append({"id": "ragondin-all", "object": "model", "created": 0, "owned_by": "RAGondin"})
+    models.append(
+        {"id": "ragondin-all", "object": "model", "created": 0, "owned_by": "RAGondin"}
+    )
     return JSONResponse(content={"object": "list", "data": models})
 
 
@@ -79,11 +83,15 @@ def __prepare_sources(request: Request, docs: list[Document]):
         doc_metadata = dict(doc.metadata)
         file_url = str(request.url_for("static", path=doc_metadata["filename"]))
         encoded_url = quote(file_url, safe=":/")
-        links.append({
-            "file_url": encoded_url,
-            "chunk_url": str(request.url_for("get_extract", extract_id=doc_metadata["_id"])),
-            **doc_metadata,
-        })
+        links.append(
+            {
+                "file_url": encoded_url,
+                "chunk_url": str(
+                    request.url_for("get_extract", extract_id=doc_metadata["_id"])
+                ),
+                **doc_metadata,
+            }
+        )
     return links
 
 
@@ -97,7 +105,11 @@ async def openai_chat_completion(
     model_name = request.model
     log = logger.bind(model=model_name, endpoint="/chat/completions")
 
-    if not request.messages or request.messages[-1].role != "user" or not request.messages[-1].content:
+    if (
+        not request.messages
+        or request.messages[-1].role != "user"
+        or not request.messages[-1].content
+    ):
         log.warning("Invalid request: missing or malformed user message.")
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -114,7 +126,7 @@ async def openai_chat_completion(
         llm_output, docs = await app_state.ragpipe.chat_completion(
             partition=[partition], payload=request.model_dump()
         )
-        log.info("RAG chat completion pipeline executed.")
+        log.debug("RAG chat completion pipeline executed.")
     except Exception:
         log.exception("Chat completion failed.")
         raise HTTPException(
@@ -126,6 +138,7 @@ async def openai_chat_completion(
     metadata_json = json.dumps({"sources": metadata})
 
     if request.stream:
+
         async def stream_response():
             async for line in llm_output:
                 if line.startswith("data:"):
@@ -141,6 +154,7 @@ async def openai_chat_completion(
                         except json.JSONDecodeError:
                             log.exception("Failed to decode streamed chunk.")
                             raise
+
         return StreamingResponse(stream_response(), media_type="text/event-stream")
     else:
         try:
@@ -191,7 +205,7 @@ async def openai_completion(
         llm_output, docs = await app_state.ragpipe.completions(
             partition=[partition], payload=request.model_dump()
         )
-        log.info("RAG completion pipeline executed.")
+        log.debug("RAG completion pipeline executed.")
     except Exception:
         log.exception("Completion request failed.")
         raise HTTPException(
