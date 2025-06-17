@@ -14,8 +14,6 @@ from qdrant_client import QdrantClient, models
 from .utils import PartitionFileManager
 import random
 import numpy as np
-import hdbscan
-
 
 INDEX_PARAMS = [
     {
@@ -86,7 +84,9 @@ class ABCVectorDB(ABC):
         pass
 
     @abstractmethod
-    def list_chunk_ids(self, partition: str):
+    def list_all_chunk(
+        self, partition: str, include_embedding: bool = True
+    ) -> List[Document]:
         pass
 
 
@@ -255,12 +255,7 @@ class MilvusDB(ABCVectorDB):
                     "range_filter": 1.0,
                 },
             },
-            {
-                "metric_type": "BM25",
-                "params": {
-                    "drop_ratio_build": 0.2
-                }
-            },
+            {"metric_type": "BM25", "params": {"drop_ratio_build": 0.2}},
         ]
 
         # "params": {"drop_ratio_build": 0.2, "bm25_k1": 1.2, "bm25_b": 0.75},
@@ -286,7 +281,7 @@ class MilvusDB(ABCVectorDB):
             )
 
         for doc, score in docs_scores:
-            doc.metadata['score'] = score
+            doc.metadata["score"] = score
 
         docs = [doc for doc, score in docs_scores]
 
@@ -328,7 +323,7 @@ class MilvusDB(ABCVectorDB):
                     retrieved_chunks[document.metadata["_id"]] = document
 
         retrieved_chunks = list(retrieved_chunks.values())
-        retrieved_chunks.sort(key=lambda v: v.metadata['score'], reverse=True)
+        retrieved_chunks.sort(key=lambda v: v.metadata["score"], reverse=True)
 
         return retrieved_chunks
 
@@ -585,7 +580,7 @@ class MilvusDB(ABCVectorDB):
                 f"Error in `partition_exists` for partition {partition}: {e}"
             )
             return False
-    
+
     def sample_chunk_ids(
         self, partition: str, n_ids: int = 100, seed: int | None = None
     ):
@@ -632,9 +627,9 @@ class MilvusDB(ABCVectorDB):
             )
             raise e
 
-    def list_chunk_ids(self, partition: str):
+    def list_all_chunk(self, partition: str, include_embedding: bool = True):
         """
-        List all chunk IDs from a given partition.
+        List all chunk from a given partition.
         """
         try:
             if not self.partition_file_manager.partition_exists(partition):
@@ -643,12 +638,25 @@ class MilvusDB(ABCVectorDB):
             # Create a filter expression for the query
             filter_expression = f"partition == '{partition}'"
 
+            excluded_keys = ["text"]
+            if not include_embedding:
+                excluded_keys.append("vector")
+
+            def prepare_metadata(res: dict):
+                metadata = {}
+                for k, v in res.items():
+                    if not k in excluded_keys:
+                        if k == "vector":
+                            v = str(np.array(v).flatten().tolist())
+                        metadata[k] = v
+                return metadata
+
             chunks = []
             iterator = self.client.query_iterator(
                 collection_name=self.collection_name,
                 filter=filter_expression,
                 batch_size=16000,
-                output_fields=["_id", "text", "vector", "file_id"],
+                output_fields=["*"],
             )
 
             while True:
@@ -656,12 +664,16 @@ class MilvusDB(ABCVectorDB):
                 if not result:
                     iterator.close()
                     break
-                chunks.extend([{
-                    "Chunk ID": res["_id"],
-                    "Chunk's content": res["text"],
-                    "Embedding vector": [float(x) for x in res["vector"]],
-                    "Original file's ID": res["file_id"]
-                } for res in result])
+                chunks.extend(
+                    [
+                        Document(
+                            page_content=res["text"],
+                            metadata=prepare_metadata(res),
+                        )
+                        for res in result
+                    ]
+                )
+
             return chunks
 
         except Exception as e:
@@ -669,6 +681,7 @@ class MilvusDB(ABCVectorDB):
                 f"Error in `list_chunk_ids` for partition {partition}: {e}"
             )
             raise
+
 
 class QdrantDB(ABCVectorDB):
     """
