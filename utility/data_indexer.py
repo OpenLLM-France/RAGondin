@@ -91,7 +91,7 @@ for file_path in dir_path.glob("**/*"):
                 "metadata": (None, ""),
             }
 
-            response = httpx.post(url, files=files, headers=headers)
+            response = httpx.post(url, files=files, headers=headers, timeout=60)
             print(f"Uploaded {filename}: {response.status_code} - {response.text}")
 
 
