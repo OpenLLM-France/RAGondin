@@ -176,6 +176,7 @@ class MarkerLoader(BaseLoader):
             text = text.split(self.page_sep, 1)[1]
             text = re.sub(r"\{(\d+)\}" + re.escape(self.page_sep), r"[PAGE_\1]", text)
             text = text.replace("<br>", " <br> ")
+            text = text.strip()
             # text = text.replace("<br>", " ")
 
             doc = Document(page_content=text, metadata=metadata)
