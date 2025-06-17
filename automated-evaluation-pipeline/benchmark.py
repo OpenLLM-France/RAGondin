@@ -1,24 +1,30 @@
 import os
 import asyncio
-import httpx
 import json
+import math
 import numpy as np
 from loguru import logger
 from openai import AsyncOpenAI
 
 from tqdm.asyncio import tqdm
 
-def evaluate(list_ids: list[int], list_reference: list[int]) -> float:
-    ...
+
+def relevance(val, true_chunk_ids):
+    return 1 if val in true_chunk_ids else 0
 
 async def source_score_per_question(
     chunk_id_reference: list[int],
     chunk_id_llm: list[int],
-    sempahore: asyncio.Semaphore = None,
+    sempahore: asyncio.Semaphore = asyncio.Semaphore(10),
 ):
     async with sempahore:
-        source_evaluation_score = evaluate(retrieved_chunks_ids, chunk_id)
-        return source_evaluation_score
+        val_DCG = 0
+        for i, val in enumerate(chunk_id_llm):
+            val_DCG += relevance(val, chunk_id_reference) / math.log2(i + 2)
+        iDCG = 0
+        for i in range(min(len(chunk_id_reference), len(chunk_id_llm))):
+            iDCG += 1 / math.log2(i + 2)
+        return val_DCG / iDCG
 
 
 # async def response_score_per_question(
@@ -93,7 +99,9 @@ async def main():
     ragondin_retrieval = await tqdm.gather(*tasks, desc="Fetching")
     responses_llm, metadata_llm = map(list, zip(*ragondin_retrieval))
 
-    # print(f"Source evaluation - nDCG: {np.array(score).mean()}")
+    score_nDCG = source_score_per_question(input["chunk ids"], metadata_llm, )
+
+    print(f"Source evaluation - nDCG: {np.array(score_nDCG).mean()}")
 
 if __name__ == '__main__':
     asyncio.run(main())

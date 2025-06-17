@@ -6,7 +6,6 @@ import json
 import time
 import numpy as np
 import hdbscan
-import umap
 import umap.umap_ as umap
 from dotenv import load_dotenv
 from loguru import logger
