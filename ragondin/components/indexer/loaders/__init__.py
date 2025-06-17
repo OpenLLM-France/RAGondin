@@ -5,12 +5,15 @@ This module handles the dynamic loading and registration of all document loaders
 """
 
 import importlib
-from pathlib import Path
 import pkgutil
+from pathlib import Path
 from typing import Dict, Set, Type
-from loguru import logger
+
+from utils.logger import get_logger
+
 from .base import BaseLoader
 
+logger = get_logger()
 
 def get_loader_classes(config: dict) -> Dict[str, Type[BaseLoader]]:
     # 1. Discover all subclasses

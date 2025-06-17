@@ -26,6 +26,7 @@ config = load_config()
 DATA_DIR = config.paths.data_dir
 ACCEPTED_FILE_FORMATS = dict(config.loader["file_loaders"]).keys()
 FORBIDDEN_CHARS_IN_FILE_ID = set("/")  # set('"<>#%{}|\\^`[]')
+LOG_FILE = Path(config.paths.log_dir or "logs") / "app.json"
 
 # Get the TaskStateManager actor
 task_state_manager = ray.get_actor("TaskStateManager", namespace="ragondin")
@@ -288,3 +289,33 @@ async def get_task_error(task_id: str):
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to retrieve task error.",
         )
+
+
+@router.get("/task/{task_id}/logs")
+async def get_task_logs(task_id: str, max_lines: int = 100):
+    try:
+        if not LOG_FILE.exists():
+            raise HTTPException(status_code=500, detail="Log file not found.")
+
+        logs = []
+        with open(LOG_FILE, "r") as f:
+            for line in reversed(list(f)):
+                try:
+                    record = json.loads(line)
+                    if record.get("extra", {}).get("task_id") == task_id:
+                        logs.append(record)
+                        if len(logs) >= max_lines:
+                            break
+                except json.JSONDecodeError:
+                    continue
+
+        if not logs:
+            raise HTTPException(
+                status_code=404, detail=f"No logs found for task '{task_id}'"
+            )
+
+        return JSONResponse(
+            content={"task_id": task_id, "logs": logs[::-1]}
+        )  # restore order
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to fetch logs: {str(e)}")

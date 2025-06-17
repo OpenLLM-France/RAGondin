@@ -537,7 +537,7 @@ class MilvusDB(ABCVectorDB):
     def delete_partition(self, partition: str):
         log = self.logger.bind(partition=partition)
         if not self.partition_file_manager.partition_exists(partition):
-            log.debug(f"Partition {partition} does not exist.")
+            log.debug(f"Partition {partition} does not exist")
             return False
 
         try:
@@ -548,11 +548,11 @@ class MilvusDB(ABCVectorDB):
 
             self.partition_file_manager.delete_partition(partition)
 
-            log.info("Deleted points from partition.", count=count)
+            log.info("Deleted points from partition", count=count.get("delete_count"))
 
             return True
         except Exception:
-            log.exception("Failed to delete partition.")
+            log.exception("Failed to delete partition")
             return False
 
     def partition_exists(self, partition: str):
