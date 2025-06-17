@@ -89,10 +89,6 @@ class ABCVectorDB(ABC):
     def list_chunk_ids(self, partition: str):
         pass
 
-    @abstractmethod
-    def clusterizer(self, partition: str, n_clusters: int = 10):
-        pass
-
 
 class MilvusDB(ABCVectorDB):
     """

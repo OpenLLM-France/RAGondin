@@ -65,9 +65,9 @@ async def get_all_chunks(url: str, semaphore=asyncio.Semaphore(10)) -> dict:
                 async with httpx.AsyncClient(timeout=400) as client:
                     resp = await client.get(url)
                     resp.raise_for_status()
-                    all_chunks_list = resp.json()["All chunks' details"]
+                    all_chunks_list = resp.json()["chunks"]
                 if not all_chunks_list:
-                    raise ValueError("No clusters found.")
+                    raise ValueError("No chunks found.")
                 return all_chunks_list
             except Exception as e:
                 logger.debug(f"Attempt {attempt + 1} failed: {e}")
@@ -126,7 +126,7 @@ async def main():
     pause = time.time()
     logger.info(f"Clusters retrieval time: {pause - start} seconds")
 
-    ids, chunk_contents, chunk_embeddings, file_ids = map(list, zip(*[(chunk["Chunk ID"], chunk["Chunk's content"], chunk["Embedding vector"], chunk["Original file's ID"]) for chunk in all_chunks_list]))
+    ids, chunk_contents, chunk_embeddings, file_ids = map(list, zip(*[(chunk["metadata"]["_id"], chunk["content"], chunk["metadata"]["vector"], chunk["metadata"]["file_id"]) for chunk in all_chunks_list]))
 
     embeddings = np.array(chunk_embeddings)
 

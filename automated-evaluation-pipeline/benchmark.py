@@ -2,46 +2,74 @@ import os
 import asyncio
 import httpx
 import json
+import numpy as np
 from loguru import logger
+from openai import AsyncOpenAI
 
 from tqdm.asyncio import tqdm
 
-async def __get_relevant_chunks(
-    query: str,
-    chunk_source: list(int),
-    partition: str = "all",
-    top_k: int = 8,
-    ragondin_api_base_url: str = None,
+def evaluate(list_ids: list[int], list_reference: list[int]) -> float:
+    ...
+
+async def source_score_per_question(
+    chunk_id_reference: list[int],
+    chunk_id_llm: list[int],
     sempahore: asyncio.Semaphore = None,
 ):
     async with sempahore:
-        retries = 3  # Number of retries
-        delay = 1  # Delay in seconds between retries
-        for attempt in range(retries):
-            try:
-                async with httpx.AsyncClient(timeout=httpx.Timeout(4 * 60)) as client:
-                    res = await client.get(
-                        url=f"{ragondin_api_base_url}/search/partition/{partition}",
-                        params={
-                            "text": query,
-                            "top_k": top_k,
-                        },
-                    )
-                    res.raise_for_status()
-                    data: dict = res.json()
-                # Extract the documents
-                retrieved_chunks = [doc for doc in data.get("documents", [])]
-                # Extract the content and metadata
-                chunks_tasks = [fetch_chunk_data(chunk) for chunk in retrieved_chunks]
-                chunks = await asyncio.gather(*chunks_tasks)
-                return chunks
-            except Exception as e:
-                logger.debug(f"Attempt {attempt + 1} failed: {e}")
-                if attempt < retries - 1:
-                    await asyncio.sleep(delay)  # Wait before retrying
-                else:
-                    logger.debug(f"Error fetching chunks after {retries} attempts: {e}")
-                    return None
+        source_evaluation_score = evaluate(retrieved_chunks_ids, chunk_id)
+        return source_evaluation_score
+
+
+# async def response_score_per_question(
+#     query: str,
+#     llm_answer: str,
+#     partition: str,
+#     ragondin_api_base_url: str = None,
+#     sempahore: asyncio.Semaphore = None,
+# ):
+#     async with semaphore:
+#         retries = 3
+#         for attempt in range(retries):
+#             try:
+#                 async with httpx.AsyncClient(timeout=httpx.Timeout(400)) as client:
+#                     response = await client.get(
+#                         url=f"{ragondin_api_base_url}/v1/chat/completions",
+
+#                     )
+
+async def retrieve_response_and_docs(
+    query: str,
+    partition: str,
+    ragondin_base_url: str,
+    semaphore=asyncio.Semaphore(10)
+):
+    async with semaphore:
+        base_url = f"{ragondin_base_url}/v1"
+        auth_key = 'sk-1234'
+        client = AsyncOpenAI(api_key=auth_key, base_url=base_url)
+
+        settings = {
+            "model": f"ragondin-{partition}",
+            "messages": [{
+                "role": "user",
+                "content": query,
+            }],
+            "temperature": 0.7,
+            "stream": False,
+            "frequency_penalty": 0.4,
+        }
+
+        try:
+            res = await client.chat.completions.create(
+                **settings
+            )
+            response_llm = res.choices[0].message.content
+            list_source_chunk_ids = [item['id'] for item in json.loads(res.extra)['sources']]
+
+            return response_llm, list_source_chunk_ids
+        except Exception as e:
+            logger.debug(f"Error fetching chunks and response: {e}")
 
 async def main():
     data_file = open("./dataset.json", "r", encoding="utf-8")
@@ -53,15 +81,19 @@ async def main():
     partition = "benchmark"
 
     tasks = [
-        __get_relevant_chunks(
+        retrieve_response_and_docs(
             query=input["question"],
-            chunk_source=input["chunk ids"],
             partition=partition,
-            top_k=5,
-            ragondin_api_base_url=ragondin_api_base_url,
-            sempahore=asyncio.Semaphore(10),
+            ragondin_base_url=ragondin_api_base_url,
+            semaphore=asyncio.Semaphore(10),
         )
         for input in list_input
     ]
 
+    ragondin_retrieval = await tqdm.gather(*tasks, desc="Fetching")
+    responses_llm, metadata_llm = map(list, zip(*ragondin_retrieval))
 
+    # print(f"Source evaluation - nDCG: {np.array(score).mean()}")
+
+if __name__ == '__main__':
+    asyncio.run(main())
