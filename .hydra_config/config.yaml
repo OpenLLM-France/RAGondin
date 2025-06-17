@@ -1,6 +1,6 @@
 defaults:
   - _self_  # TODO: Silences the hydra version migration warning (PLEASE REVIEW FOR BREAKING CHANGES)
-  - chunker: markdown_splitter #semantic_splitter
+  - chunker: markdown_splitter # recursive_splitter, semantic_splitter
   - retriever: single
   - rag: ChatBotRag
 
@@ -78,6 +78,7 @@ loader:
     png: ImageLoader
     jpeg: ImageLoader
     jpg: ImageLoader
+    svg: ImageLoader
     wav: VideoAudioLoader
     mp3: VideoAudioLoader
     mp4: VideoAudioLoader
