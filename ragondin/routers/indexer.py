@@ -301,9 +301,11 @@ async def get_task_logs(task_id: str, max_lines: int = 100):
         with open(LOG_FILE, "r") as f:
             for line in reversed(list(f)):
                 try:
-                    record = json.loads(line)
+                    record = json.loads(line).get("record", {})
                     if record.get("extra", {}).get("task_id") == task_id:
-                        logs.append(record)
+                        logs.append(
+                            f"{record['time']['repr']} - {record['level']['name']} - {record['message']} - {(record['extra'])}"
+                        )
                         if len(logs) >= max_lines:
                             break
                 except json.JSONDecodeError:
