@@ -1,5 +1,7 @@
 include:
   - vdb/milvus.yaml
+  - ${CHAINLIT_DATALAYER_COMPOSE:-extern/dummy.yaml}
+  - extern/infinity.yaml
 
 x-ragondin: &ragondin_template
   build:
@@ -7,7 +9,7 @@ x-ragondin: &ragondin_template
     dockerfile: Dockerfile
   volumes:
     - ${CONFIG_VOLUME:-./.hydra_config}:/app/.hydra_config
-    - ${DATA_VOLUME:-./data}:/app/data # PDF data for RAG
+    - ${DATA_VOLUME:-./data}:/app/data
     - ${MODEL_WEIGHTS_VOLUME:-~/.cache/huggingface}:/app/model_weights # Model weights for RAG
     - ./ragondin:/app/ragondin # For dev mode
     - ${DB_VOLUME:-./db}:/app/db
@@ -21,7 +23,6 @@ x-ragondin: &ragondin_template
   env_file:
     - ${SHARED_ENV:-.env}
   shm_size: 10.24gb
-
   depends_on:
     - milvus
 
@@ -54,9 +55,9 @@ services:
               count: all
               capabilities: [ gpu ]
     profiles:
-      - '' # Empty string gives default behavior (but does not run when cpu requested)
+      - ''
 
-  # No GPU (docker compose --profile cpu up --build)
+  # No GPU
   ragondin-cpu:
     <<: *ragondin_template
     deploy: {}
@@ -87,21 +88,3 @@ services:
     deploy: {}
     profiles:
       - 'cpu'
-  
-  reranker:
-    image: michaelf34/infinity
-    runtime: nvidia
-    deploy:
-      resources:
-        reservations:
-          devices:
-            - driver: nvidia
-              count: all 
-              capabilities: [gpu]
-    volumes:
-      - ${VLLM_CACHE:-/root/.cache/huggingface}:/app/.cache/huggingface # Model weights for RAG
-    ports:
-      - 7998:7997
-    command: >
-      --model-id ${RERANKER_MODEL:-Alibaba-NLP/gte-multilingual-reranker-base}
-      --port 7997

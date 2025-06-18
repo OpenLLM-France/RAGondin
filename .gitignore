@@ -59,6 +59,11 @@ volumes/*
 # benchmarking
 evaluation-embedder-reranker
 
+# services
+services/
+services/*
+!services/.gitkeep # Keep the placeholder
+
 *.json
 *.csv
 *.pkl

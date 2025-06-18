@@ -1,6 +1,6 @@
 defaults:
   - _self_  # TODO: Silences the hydra version migration warning (PLEASE REVIEW FOR BREAKING CHANGES)
-  - chunker: markdown_splitter #semantic_splitter
+  - chunker: markdown_splitter # recursive_splitter, semantic_splitter
   - retriever: single
   - rag: ChatBotRag
 
@@ -58,6 +58,7 @@ paths:
   prompts_dir: ${oc.env:PROMPTS_DIR, ../prompts/example3}
   data_dir: ${oc.env:DATA_DIR, ../data}
   db_dir: ${oc.env:DB_DIR, /app/db}
+  log_dir: ${oc.env:LOG_DIR, /app/logs}
 
 prompt:
   rag_sys_pmpt: rag_sys_prompt_template.txt # rag_sys_pmpt_tmpl_ifa.txt
@@ -78,6 +79,7 @@ loader:
     png: ImageLoader
     jpeg: ImageLoader
     jpg: ImageLoader
+    svg: ImageLoader
     wav: VideoAudioLoader
     mp3: VideoAudioLoader
     mp4: VideoAudioLoader

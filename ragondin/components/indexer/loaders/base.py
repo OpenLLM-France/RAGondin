@@ -1,16 +1,19 @@
 import asyncio
 import base64
-from pathlib import Path
 import re
 from abc import ABC, abstractmethod
 from io import BytesIO
+from pathlib import Path
 from typing import Dict, Optional, Union
+
 from langchain_core.documents.base import Document
 from langchain_core.messages import HumanMessage
 from langchain_openai import ChatOpenAI
-from loguru import logger
-from ...utils import vlmSemaphore, load_sys_template, load_config
+from utils.logger import get_logger
 
+from ...utils import load_config, load_sys_template, vlmSemaphore
+
+logger = get_logger()
 
 config = load_config()
 prompts_dir = Path(config.paths.prompts_dir)
@@ -47,7 +50,7 @@ class BaseLoader(ABC):
         path = re.sub(r"\..*", ".md", path)
         with open(path, "w", encoding="utf-8") as f:
             f.write(doc.page_content)
-        logger.info(f"Document saved to {path}")
+        logger.debug(f"Document saved to {path}")
 
     async def get_image_description(
         self, image, semaphore: asyncio.Semaphore = vlmSemaphore
@@ -84,8 +87,8 @@ class BaseLoader(ABC):
                     response = await self.vlm_endpoint.ainvoke([message])
                     image_description = response.content
 
-            except Exception as e:
-                logger.error(f"Error while generating image description: {e}")
+            except Exception:
+                logger.exception("Error while generating image description")
 
             # Convert image path to markdown format and combine with description
             desc = f"""\n<image_description>\n{image_description}\n</image_description>\n"""

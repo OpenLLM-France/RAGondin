@@ -1,11 +1,11 @@
-import time
-import asyncio
-from openai import AsyncOpenAI
-from langchain_core.prompts import PromptTemplate
 from langchain_core.documents.base import Document
-from .utils import llmSemaphore
-from loguru import logger
+from openai import AsyncOpenAI
 from tqdm.asyncio import tqdm
+from utils.logger import get_logger
+
+from .utils import llmSemaphore
+
+logger = get_logger()
 
 system_prompt_map = """
 Vous êtes un modèle de langage spécialisé dans l’analyse et la synthèse d’informations. Ton rôle est d’examiner un texte fourni et d’en extraire les éléments nécessaires pour répondre à une question utilisateur.
@@ -63,9 +63,7 @@ class RAGMapReduce:
             return relevancy, resp
 
     async def map(self, query: str, chunks: list[Document]):
-        logger.debug(
-            f"Before MAP_REDUCE Processing {len(chunks)} chunks for query: {query}"
-        )
+        logger.debug("Running map reduce", chunk_count=len(chunks), query=query)
         tasks = [self.infer_llm_map(query, chunk) for chunk in chunks]
         output = await tqdm.gather(
             *tasks, desc="MAP_REDUCE Processing chunks", total=len(chunks)
@@ -76,7 +74,9 @@ class RAGMapReduce:
             if relevancy
         ]
         logger.debug(
-            f"After MAP_REDUCE Processing {len(relevant_chunks_syntheses)} relevant chunks for query: {query}"
+            "Map reduce completed",
+            relevant_chunk_count=len(relevant_chunks_syntheses),
+            query=query,
         )
         # final_response = await infer_llm_reduce("\n".join(syntheses))
         return relevant_chunks_syntheses
