@@ -7,7 +7,6 @@ from langchain_core.documents.base import Document
 from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_milvus import BM25BuiltInFunction, Milvus
 from langchain_qdrant import FastEmbedSparse, QdrantVectorStore, RetrievalMode
-from loguru import logger
 from pymilvus import MilvusClient
 from qdrant_client import QdrantClient, models
 
@@ -624,7 +623,7 @@ class MilvusDB(ABCVectorDB):
             return sampled_ids
 
         except Exception as e:
-            self.logger.error(
+            self.logger.exception(
                 f"Error in `sample_chunks` for partition {partition}: {e}"
             )
             raise e
@@ -679,7 +678,7 @@ class MilvusDB(ABCVectorDB):
             return chunks
 
         except Exception as e:
-            self.logger.error(
+            self.logger.exception(
                 f"Error in `list_chunk_ids` for partition {partition}: {e}"
             )
             raise
