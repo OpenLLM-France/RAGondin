@@ -75,21 +75,51 @@ llm_judge_settings = {
     "presence_penalty": 0.0,
 }
 
-class JudgeResponse(BaseModel):
-    output: Literal["complete", "incomplete", "somewhat_complete", "irrelevant"] = (
+class CompletionEvaluationResponse(BaseModel):
+    output: Literal["complete", "mostly_complete", "partially_complete", "incomplete"] = (
         Field(
             ...,
             description="The output of the LLM judge. It can be one of the following: "
-            "'complete', 'incomplete', 'somewhat_complete', 'irrelevant'. "
+            "'complete', 'mostly_complete', 'partially_complete', 'incomplete'. "
             "This indicates how well the generated answer matches the true answer.",
         )
     )
 
-judge_prompt = """You are an expert judge evaluating the quality of a response to a question.
-Given a query (`query`) and the true answer (`true_answer`), you will evaluate the response of a language model (LLM) `generated_answer` to the query with respect to the `true` factual answer.
+class PrecisionEvaluationResponse(BaseModel):
+    output: Literal["Highly_precise", "mostly_precise", "low_precision", "imprecise"] = (
+        Field(
+            ...,
+            description="The output of the LLM judge. It can be one of the following: "
+            "'Highly_precise', 'mostly_precise', 'low_precision', 'imprecise'. "
+            "This indicates how well the generated answer matches the true answer.",
+        )
+    )
+complettion_judge_prompt = """You are an expert judge evaluating the completeness of a language model's response to a question.
+Given:
+    A query (query)
+    The correct or reference answer (true_answer)
+    A generated response (generated_answer)
+Your task is to assess how complete the generated_answer is in relation to the true_answer. Focus on whether the generated response fully covers, partially covers, or omits important elements found in the true_answer.
+Consider:
+    Does the response address all key points in the true_answer?
+    Are there any significant omissions or gaps?
+    Is the response thorough or only partial?"""
+
+precision_judge_prompt = """You are an expert judge evaluating the precision of a language model's response to a question.
+Given:
+    A query (query)
+    The correct or reference answer (true_answer)
+    A generated response (generated_answer)
+Your task is to assess how precisely the generated_answer aligns with the true_answer. Focus on whether the generated response contains only accurate, relevant, and specific information, without unnecessary or incorrect additions.
+Consider:
+    Does the response stay focused on what was asked?
+    Does it avoid unrelated, vague, or incorrect information?
+    Is the content specific and factually aligned with the true_answer?
 """
 
-llm_judge = ChatOpenAI(**llm_judge_settings).with_structured_output(JudgeResponse)
+llm_completion_judge = ChatOpenAI(**llm_judge_settings).with_structured_output(CompletionEvaluationResponse)
+llm_precision_judge = ChatOpenAI(**llm_judge_settings).with_structured_output(PrecisionEvaluationResponse)
+
 
 async def response_score_per_question(
     query: str,
@@ -104,13 +134,20 @@ async def response_score_per_question(
     """
     async with sempahore:
         try:
-            response = await llm_judge.ainvoke(
+            response_for_completion = await llm_completion_judge.ainvoke(
                 [
-                    {"role": "system", "content": judge_prompt},
+                    {"role": "system", "content": complettion_judge_prompt},
                     {"role": "user", "content": s},
                 ]
             )
-            return response.output
+
+            response_for_precision = await llm_precision_judge.ainvoke(
+                [
+                    {"role": "system", "content": precision_judge_prompt},
+                    {"role": "user", "content": s},
+                ]
+            )
+            return response_for_completion.output, response_for_precision.output
         except Exception as e:
             logger.debug(f"Error evaluating response: {e}")
             return "error"
