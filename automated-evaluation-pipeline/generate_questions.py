@@ -87,7 +87,7 @@ async def get_all_chunks(url: str, semaphore=asyncio.Semaphore(10)) -> dict:
         retries = 3
         for attempt in range(retries):
             try:
-                async with httpx.AsyncClient(timeout=400) as client:
+                async with httpx.AsyncClient(timeout=60) as client:
                     resp = await client.get(url)
                     resp.raise_for_status()
                     all_chunks_list = resp.json()["chunks"]
@@ -121,7 +121,7 @@ async def generate_questions_from_clusters(
 
 
 async def main():
-    num_port = "8087"  # os.environ.get("APP_PORT")
+    num_port = os.environ.get("APP_PORT")
     num_host = "163.114.159.68"  # "localhost"
     ragondin_api_base_url = f"http://{num_host}:{num_port}"
     partition = "benchmark"

@@ -13,27 +13,8 @@ from tqdm.asyncio import tqdm
 
 load_dotenv()
 
-
-
-
-def relevance(val, true_chunk_ids):
-    return 1 if val in true_chunk_ids else 0
-
-
-def source_score_per_question(
-    chunk_id_reference: list[int],
-    chunk_id_llm: list[int],
-):
-    val_DCG = 0
-    for i, val in enumerate(chunk_id_llm):
-        val_DCG += relevance(val, chunk_id_reference) / math.log2(i + 2)
-    iDCG = 0
-    for i in range(min(len(chunk_id_reference), len(chunk_id_llm))):
-        iDCG += 1 / math.log2(i + 2)
-    return val_DCG / iDCG
-
-
-async def retrieve_response_and_docs(
+# Retrieving responses and document sources fom RAGondin
+async def retrieve_response_and_docs_ragondin(
     query: str, partition: str, ragondin_base_url: str, semaphore=asyncio.Semaphore(10)
 ):
     async with semaphore:
@@ -65,6 +46,24 @@ async def retrieve_response_and_docs(
             logger.debug(f"Error fetching chunks and response: {e}")
 
 
+# Sources retrieval evaluation
+def relevance(val, true_chunk_ids):
+    return 1 if val in true_chunk_ids else 0
+
+def source_score_per_question(
+    chunk_id_reference: list[int],
+    chunk_id_llm: list[int],
+):
+    val_DCG = 0
+    for i, val in enumerate(chunk_id_llm):
+        val_DCG += relevance(val, chunk_id_reference) / math.log2(i + 2)
+    iDCG = 0
+    for i in range(min(len(chunk_id_reference), len(chunk_id_llm))):
+        iDCG += 1 / math.log2(i + 2)
+    return val_DCG / iDCG
+
+
+# Response retrieval evaluation
 llm_judge_settings = {
     "model": os.environ.get("MODEL"),
     "base_url": os.environ.get("BASE_URL"),
@@ -76,9 +75,8 @@ llm_judge_settings = {
     "presence_penalty": 0.0,
 }
 
-
 class JudgeResponse(BaseModel):
-    output: Literal["compelte", "incomplete", "somewhat_complete", "irrelevant"] = (
+    output: Literal["complete", "incomplete", "somewhat_complete", "irrelevant"] = (
         Field(
             ...,
             description="The output of the LLM judge. It can be one of the following: "
@@ -87,13 +85,11 @@ class JudgeResponse(BaseModel):
         )
     )
 
-
 judge_prompt = """You are an expert judge evaluating the quality of a response to a question.
 Given a query (`query`) and the true answer (`true_answer`), you will evaluate the response of a language model (LLM) `generated_answer` to the query with respect to the `true` factual answer.
 """
 
 llm_judge = ChatOpenAI(**llm_judge_settings).with_structured_output(JudgeResponse)
-
 
 async def response_score_per_question(
     query: str,
@@ -122,7 +118,7 @@ async def response_score_per_question(
 
 async def main():
     data_file = open("./dataset.json", "r", encoding="utf-8")
-    list_input = json.load(data_file)
+    list_response_answer_reference = json.load(data_file)
 
     num_port = os.environ.get("APP_PORT")
     num_host = "163.114.159.68"  # "localhost"
@@ -130,39 +126,40 @@ async def main():
     partition = "benchmark"
 
     tasks = [
-        retrieve_response_and_docs(
-            query=input["question"],
+        retrieve_response_and_docs_ragondin(
+            query=resp_ans_reference["question"],
             partition=partition,
             ragondin_base_url=ragondin_api_base_url,
             semaphore=asyncio.Semaphore(10),
         )
-        for input in list_input
+        for resp_ans_reference in list_response_answer_reference
     ]
 
-    llm_answer_chunk_ids_l = await tqdm.gather(*tasks, desc="Fetching")
+    ragondin_answer_chunk_ids_l = await tqdm.gather(*tasks, desc="Fetching")
 
-    responses = []
     scores = []
 
-    llm_judge_tasks = []
+    response_judge_tasks = []
 
-    for (llm_response, ids_l), input_ in zip(llm_answer_chunk_ids_l, list_input):
-        true_ids = [c["id"] for c in input_["chunks"]]
-        responses.append(llm_response)
+    for (ragondin_response, ragondin_chunk_ids), input_reference in zip(ragondin_answer_chunk_ids_l, list_response_answer_reference):
+        chunk_id_reference = [c["id"] for c in input_reference["chunks"]]
         score = source_score_per_question(
-            chunk_id_reference=true_ids, chunk_id_llm=ids_l
+            chunk_id_reference=chunk_id_reference, chunk_id_llm=ragondin_chunk_ids
         )
         scores.append(score)
 
-        llm_judge_tasks.append(
+        resp_eval_task = asyncio.create_task(
             response_score_per_question(
-                query=input_["question"],
-                llm_answer=input_["llm_answer"],
-                ragondin_answer=llm_response,
+                query=input_reference["question"],
+                llm_answer=input_reference["llm_answer"],
+                ragondin_answer=ragondin_response,
             )
         )
+        response_judge_tasks.append(
+            resp_eval_task
+        )
 
-    llm_judge_scores = await tqdm.gather(*llm_judge_tasks, desc="Evaluating responses")
+    llm_judge_scores = await tqdm.gather(*response_judge_tasks, desc="Evaluating responses")
 
     print(f"LLM Judge Scores: {llm_judge_scores}")
     print(f"Source evaluation - nDCG: {np.array(scores).mean()}")
