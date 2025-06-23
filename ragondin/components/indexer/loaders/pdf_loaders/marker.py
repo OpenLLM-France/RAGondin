@@ -69,17 +69,10 @@ class MarkerLoader(BaseLoader):
             if hasattr(v.model, "share_memory"):
                 v.model.share_memory()
 
-        # Set up multiprocessing
-        try:
-            # Make sure we're using spawn method which is required for CUDA
-            if mp.get_start_method(allow_none=True) != "spawn":
-                mp.set_start_method("spawn", force=True)
-        except RuntimeError:
-            logger.warning("Process start method already set, using existing method")
-
         # Initialize the worker pool
         logger.info("Creating marker worker pool", workers=self._workers)
-        MarkerLoader._pool = mp.Pool(
+        ctx = mp.get_context("spawn")
+        MarkerLoader._pool = ctx.Pool(
             processes=self._workers,
             initializer=self._worker_init,  # Note: Using class method directly
             initargs=(MarkerLoader._model_dict,),
