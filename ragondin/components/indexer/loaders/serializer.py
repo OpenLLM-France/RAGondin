@@ -96,13 +96,14 @@ class SerializerQueue:
         self.logger = get_logger()
         # Spawn pool of serializer workers
         self.actors = [DocSerializer.remote() for _ in range(POOL_SIZE)]
-
         # Build a slot-queue: each actor appears MAX_TASKS_PER_WORKER times
         self._queue: asyncio.Queue[ray.actor.ActorHandle] = asyncio.Queue()
-        for actor in self.actors:
-            for _ in range(MAX_TASKS_PER_WORKER):
+
+        for _ in range(MAX_TASKS_PER_WORKER):
+            for actor in self.actors:
                 self._queue.put_nowait(actor)
 
+        self.total_slots = POOL_SIZE * MAX_TASKS_PER_WORKER
         self.logger.info(
             f"SerializerQueue: {POOL_SIZE} actors × {MAX_TASKS_PER_WORKER} slots = "
             f"{POOL_SIZE * MAX_TASKS_PER_WORKER} total concurrency"
@@ -134,13 +135,12 @@ class SerializerQueue:
             await self._queue.put(actor)
 
     async def pool_info(self) -> Dict[str, int]:
-        total = POOL_SIZE * MAX_TASKS_PER_WORKER
         free = self._queue.qsize()
-        used = total - free
+        used = self.total_slots - free
         return {
             "pool_size": POOL_SIZE,
             "max_tasks_per_worker": MAX_TASKS_PER_WORKER,
-            "total_capacity": total,
+            "total_capacity": self.total_slots,
             "current_load": used,
             "free_slots": free,
         }
