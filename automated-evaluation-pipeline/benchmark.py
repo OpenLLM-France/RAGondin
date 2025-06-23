@@ -158,7 +158,7 @@ async def main():
     list_response_answer_reference = json.load(data_file)
 
     num_port = os.environ.get("APP_PORT")
-    num_host = "163.114.159.68"  # "localhost"
+    num_host = "localhost"
     ragondin_api_base_url = f"http://{num_host}:{num_port}"
     partition = "benchmark"
 
@@ -198,7 +198,17 @@ async def main():
 
     llm_judge_scores = await tqdm.gather(*response_judge_tasks, desc="Evaluating responses")
 
-    print(f"LLM Judge Scores: {llm_judge_scores}")
+    response_completion_evaluation_result, response_precision_evaluation_result = {}, {}
+    for completion_evaluation, precision_evaluation in llm_judge_scores:
+        response_completion_evaluation_result[completion_evaluation] = (
+            response_completion_evaluation_result.get(completion_evaluation, 0) + 1
+        )
+        response_precision_evaluation_result[precision_evaluation] = (
+            response_precision_evaluation_result.get(precision_evaluation, 0) + 1
+        )
+    
+    print(f"LLM completion Scores: {response_completion_evaluation_result}\n")
+    print(f"LLM precision Scores: {response_precision_evaluation_result}\n")
     print(f"Source evaluation - nDCG: {np.array(scores).mean()}")
 
 

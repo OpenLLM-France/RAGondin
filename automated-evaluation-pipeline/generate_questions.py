@@ -27,7 +27,7 @@ settings = {
     "base_url": BASE_URL,
     "model": MODEL,
     "api_key": API_KEY,
-    "max_tokens": 4096,
+    "max_tokens": 4000,
 }
 
 llm = ChatOpenAI(**settings).with_retry(stop_after_attempt=2)
@@ -122,7 +122,7 @@ async def generate_questions_from_clusters(
 
 async def main():
     num_port = os.environ.get("APP_PORT")
-    num_host = "163.114.159.68"  # "localhost"
+    num_host = "localhost"
     ragondin_api_base_url = f"http://{num_host}:{num_port}"
     partition = "benchmark"
 

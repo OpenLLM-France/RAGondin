@@ -64,19 +64,19 @@ services:
     profiles:
       - 'cpu'
 
-  # vllm-gpu:
-  #   <<: *vllm_template
-  #   image: vllm/vllm-openai:latest
-  #   runtime: nvidia
-  #   deploy:
-  #     resources:
-  #       reservations:
-  #         devices:
-  #           - driver: nvidia
-  #             count: all 
-  #             capabilities: [gpu]
-  #   profiles:
-  #     - '' # Empty string gives default behavior (but does not run when cpu requested)
+  vllm-gpu:
+    <<: *vllm_template
+    image: vllm/vllm-openai:latest
+    runtime: nvidia
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all 
+              capabilities: [gpu]
+    profiles:
+      - '' # Empty string gives default behavior (but does not run when cpu requested)
 
   vllm-cpu:
     <<: *vllm_template
