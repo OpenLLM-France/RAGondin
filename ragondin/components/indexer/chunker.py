@@ -305,18 +305,19 @@ class MarkDownSplitter(BaseChunker):
 
         # add overlap to each chunk
         if self.overlap > 0 and len(splits) > 1:
-            for i in range(len(splits) - 1):
-                current_chunk = splits[i]  # current chunk
-                next_chunk = splits[i + 1]  # next chunk
+            for i in range(1, len(splits)):
+                previous_chunk = splits[i - 1]  # current chunk
+                current_chunk = splits[i]  # next chunk
 
                 # 1 token = 0.75 words on average
                 overlap_in_words = int(self.overlap * 0.75)
 
-                overlap = next_chunk.page_content.split()[:overlap_in_words]
+                previous_chunk_content = previous_chunk.page_content
+                overlap = previous_chunk_content.split()[(len(previous_chunk_content.split()) - overlap_in_words):]
                 overlap = " ".join(overlap)  # convert to string
 
                 current_chunk.page_content = (
-                    f"{current_chunk.page_content} \n {overlap}"
+                    f"{overlap} \n {current_chunk.page_content}"
                 )
                 splits[i] = current_chunk
 
