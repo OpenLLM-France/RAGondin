@@ -242,11 +242,6 @@ async def patch_file(
 
 
 @router.get("/task/{task_id}")
-@router.get(
-    "/task/{task_id}",
-    summary="Get task status",
-    description="Retrieves the status of a specific task by its ID. Task states progress through several stages: QUEUED (waiting to be processed), CHUNKING (document being split), SERIALIZING (preparing data structures), INSERTING (adding to index), COMPLETED (finished successfully), or FAILED (encountered an error).",
-)
 async def get_task_status(
     request: Request, task_id: str, indexer: Indexer = Depends(get_indexer)
 ):
