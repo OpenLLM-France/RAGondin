@@ -73,6 +73,7 @@ loader:
   file_loaders:
     txt: TextLoader
     pdf: ${oc.env:PDFLoader, DoclingLoader}  # DoclingLoader # MarkerLoader # PyMuPDFLoader # Custompymupdf4llm
+    eml: EmlLoader
     docx: MarkItDownLoader
     pptx: PPTXLoader
     doc: DocLoader

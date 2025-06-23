@@ -40,6 +40,7 @@ dependencies = [
     "boto3>=1.38.33",
     "hdbscan>=0.8.40",
     "umap-learn>=0.5.7",
+    "eml-parser>=2.0.0",
 ]
 
 [dependency-groups]

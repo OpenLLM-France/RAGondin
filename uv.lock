@@ -920,6 +920,20 @@ wheels = [
 ]
 
 [[package]]
+name = "eml-parser"
+version = "2.0.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "charset-normalizer" },
+    { name = "publicsuffixlist" },
+    { name = "python-dateutil" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/8f/52/98b93d7352e79f981fafebca347d7d8d9d6c686f9d9f005814ec7d8d52cb/eml_parser-2.0.0.tar.gz", hash = "sha256:be88a77c4b79fc1f5e17091c3a587b12c18203347144d5c0977b925707c491e3", size = 1005039 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/6a/f0/ed7f0b1a002df79bf09270382f2a22392b70f53959a5b0a34284a82e84bf/eml_parser-2.0.0-py3-none-any.whl", hash = "sha256:1885ca8cb2db645dc4f29dfd6947ed84d2debbb1c0531bc542f0091089d48ab2", size = 35089 },
+]
+
+[[package]]
 name = "et-xmlfile"
 version = "2.0.0"
 source = { registry = "https://pypi.org/simple" }
@@ -3517,6 +3531,15 @@ wheels = [
 ]
 
 [[package]]
+name = "publicsuffixlist"
+version = "1.0.2.20250617"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/68/99/b5da90350576ccdd09f7399448675ca17c1482692f4b3e8986e01a0ef098/publicsuffixlist-1.0.2.20250617.tar.gz", hash = "sha256:5042d7fc63f572f92632936efb3ce6432c1a2a464f24fd43f25af742618790e6", size = 105467 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/0f/57/4aae0317c4a058feb9089144bf93cc4738722ebaa635fc24c49f884d8b3e/publicsuffixlist-1.0.2.20250617-py2.py3-none-any.whl", hash = "sha256:73aa80e777428e9120801cda2845f4a89c9a1e38e039791633d9f48ee516b337", size = 105227 },
+]
+
+[[package]]
 name = "puremagic"
 version = "1.28"
 source = { registry = "https://pypi.org/simple" }
@@ -4090,6 +4113,7 @@ dependencies = [
     { name = "chardet" },
     { name = "docling" },
     { name = "einops" },
+    { name = "eml-parser" },
     { name = "fastembed-gpu", version = "0.4.2", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.13' and platform_machine == 'x86_64' and sys_platform == 'darwin'" },
     { name = "fastembed-gpu", version = "0.5.1", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.13' or platform_machine != 'x86_64' or sys_platform != 'darwin'" },
     { name = "hdbscan" },
@@ -4136,6 +4160,7 @@ requires-dist = [
     { name = "chardet", specifier = ">=5.2.0" },
     { name = "docling", specifier = ">=2.24.0" },
     { name = "einops", specifier = ">=0.8.1" },
+    { name = "eml-parser", specifier = ">=2.0.0" },
     { name = "fastembed-gpu", specifier = ">=0.4.2" },
     { name = "hdbscan", specifier = ">=0.8.40" },
     { name = "hydra-core", specifier = ">=1.3.2" },
