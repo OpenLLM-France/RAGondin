@@ -36,7 +36,7 @@ x-vllm: &vllm_template
     - HUGGING_FACE_HUB_TOKEN
   ipc: "host"
   volumes:
-      - ${VLLM_CACHE:-/root/.cache/huggingface}:/root/.cache/huggingface # put ./vllm_cache if you want to have the weights on the vllm_cache folder in your project
+    - ${VLLM_CACHE:-/root/.cache/huggingface}:/root/.cache/huggingface # put ./vllm_cache if you want to have the weights on the vllm_cache folder in your project
   command: >
     --model ${EMBEDDER_MODEL_NAME:-jinaai/jina-embeddings-v3}
     --trust-remote-code
@@ -64,19 +64,19 @@ services:
     profiles:
       - 'cpu'
 
-  # vllm-gpu:
-  #   <<: *vllm_template
-  #   image: vllm/vllm-openai:latest
-  #   runtime: nvidia
-  #   deploy:
-  #     resources:
-  #       reservations:
-  #         devices:
-  #           - driver: nvidia
-  #             count: all 
-  #             capabilities: [gpu]
-  #   profiles:
-  #     - '' # Empty string gives default behavior (but does not run when cpu requested)
+  vllm-gpu:
+    <<: *vllm_template
+    image: vllm/vllm-openai:latest
+    runtime: nvidia
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all 
+              capabilities: [gpu]
+    profiles:
+      - '' # Empty string gives default behavior (but does not run when cpu requested)
 
   vllm-cpu:
     <<: *vllm_template
