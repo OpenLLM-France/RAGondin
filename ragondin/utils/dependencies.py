@@ -4,6 +4,7 @@ from config import load_config
 
 from components import ABCVectorDB
 from components.indexer.indexer import Indexer, TaskStateManager
+from components.indexer.loaders.pdf_loaders.marker import MarkerPool
 from components.indexer.loaders.serializer import SerializerQueue
 
 
@@ -41,6 +42,10 @@ class VDBProxy:
 
 # load config
 config = load_config()
+
+# Initialize marker if needed
+if config.loader.file_loaders.get("pdf") == "MarkerLoader":
+    marker = MarkerPool.options(name="MarkerPool", namespace="ragondin").remote()
 
 # Create task state manager actor
 task_state_manager = TaskStateManager.options(
