@@ -22,7 +22,7 @@ def get_app_state(request: Request):
 
 
 async def check_llm_model_availability(request: Request):
-    models = {"VLM": config.llm, "LLM": config.vlm}
+    models = {"VLM": config.vlm, "LLM": config.llm}
     for model_type, param in models.items():
         try:
             client = AsyncOpenAI(api_key=param["api_key"], base_url=param["base_url"])
