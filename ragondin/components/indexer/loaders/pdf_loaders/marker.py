@@ -30,7 +30,7 @@ class MarkerWorker:
         self.config = load_config()
         self.page_sep = "[PAGE_SEP]"
 
-        self._workers = self.config.ray.get("max_tasks_per_worker", 2)
+        self._workers = self.config.loader.get("marker_max_processes")
         self.maxtasksperchild = self.config.loader.get("marker_max_tasks_per_child", 10)
 
         self.converter_config = {
@@ -46,8 +46,17 @@ class MarkerWorker:
         self.init_resources()
 
     def init_resources(self):
-        import torch.multiprocessing as mp
         from marker.models import create_model_dict
+
+        self.model_dict = create_model_dict()
+        for v in self.model_dict.values():
+            if hasattr(v.model, "share_memory"):
+                v.model.share_memory()
+
+        self.setup_mp()
+
+    def setup_mp(self):
+        import torch.multiprocessing as mp
 
         if self.pool:
             self.logger.warning("Resetting multiprocessing pool")
@@ -55,11 +64,6 @@ class MarkerWorker:
             self.pool.join()
             self.pool.terminate()
             self.pool = None
-        self.model_dict = create_model_dict()
-        for v in self.model_dict.values():
-            if hasattr(v.model, "share_memory"):
-                v.model.share_memory()
-
         try:
             if mp.get_start_method(allow_none=True) != "spawn":
                 mp.set_start_method("spawn", force=True)
@@ -126,7 +130,9 @@ class MarkerPool:
 
         self.logger = get_logger()
         self.config = load_config()
-        self.pool_size = config.loader.get("marker_pool_size", 2)
+        self.min_processes = self.config.loader.get("marker_min_processes")
+        self.max_processes = self.config.loader.get("marker_max_processes")
+        self.pool_size = config.loader.get("marker_pool_size")
         self.actors = [MarkerWorker.remote() for _ in range(self.pool_size)]
         self._queue: asyncio.Queue[ray.actor.ActorHandle] = asyncio.Queue()
 
@@ -135,19 +141,27 @@ class MarkerPool:
                 self._queue.put_nowait(actor)
 
         self.logger.info(
-            f"Marker pool: {self.pool_size} actors × {self.config.loader.get('marker_child_processes', 2)} slots = "
-            f"{self.pool_size * self.config.loader.get('marker_child_processes', 2)} total concurrency"
+            f"Marker pool: {self.pool_size} actors × {self.max_processes} slots = "
+            f"{self.pool_size * self.max_processes} PDF concurrency"
         )
 
-    async def process_pdf(self, file_path: str):
-        self.logger.info("Processing PDF with MarkerWorker")
+    async def ensure_worker_pool_healthy(self, worker):
+        current_alive = await worker.get_current_pool_size.remote()
+        if current_alive < self.min_processes:
+            self.logger.warning(
+                f"Only {current_alive}/{self.min_processes} worker processes alive. Reinitializing pool..."
+            )
+            await worker.setup_mp.remote()
 
+    async def process_pdf(self, file_path: str):
         # Wait until any slot is free
-        actor = await self._queue.get()
-        if actor:
+        worker = await self._queue.get()
+        if worker:
             self.logger.info("MarkerWorker allocated")
+            # Ensure the worker pool is healthy
+            await self.ensure_worker_pool_healthy(worker)
         try:
-            markdown, images = await actor.process_pdf.remote(file_path)
+            markdown, images = await worker.process_pdf.remote(file_path)
             return markdown, images
         except Exception as e:
             self.logger.exception(
@@ -155,7 +169,7 @@ class MarkerPool:
             )
             raise
         finally:
-            await self._queue.put(actor)
+            await self._queue.put(worker)
             self.logger.debug("MarkerWorker returned to pool")
 
 

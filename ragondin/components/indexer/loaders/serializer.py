@@ -106,7 +106,7 @@ class SerializerQueue:
         self.total_slots = POOL_SIZE * MAX_TASKS_PER_WORKER
         self.logger.info(
             f"SerializerQueue: {POOL_SIZE} actors × {MAX_TASKS_PER_WORKER} slots = "
-            f"{POOL_SIZE * MAX_TASKS_PER_WORKER} total concurrency"
+            f"{POOL_SIZE * MAX_TASKS_PER_WORKER} all file concurrency"
         )
 
     async def submit_document(
