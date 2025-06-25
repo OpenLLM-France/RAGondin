@@ -64,7 +64,7 @@ class DocSerializer:
         loader_cls = self.loader_classes.get(file_ext)
         if loader_cls is None:
             log.warning(f"No loader available for {p.name}")
-            return None
+            raise ValueError(f"No loader available for file type {file_ext}.")
 
         log.debug(f"Loading document: {p.name} with loader {loader_cls.__name__}")
         loader = loader_cls(**self.kwargs)
