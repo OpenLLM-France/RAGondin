@@ -112,8 +112,10 @@ async def health_check(request: Request):
     return "RAG API is up."
 
 
-WITH_CHAINLIT_UI: Optional[bool] = os.getenv("WITH_CHAINLIT_UI", "").lower() == "true"
-WITH_OPENAI_API: Optional[bool] = os.getenv("WITH_OPENAI_API", "").lower() == "true"
+WITH_CHAINLIT_UI: Optional[bool] = (
+    os.getenv("WITH_CHAINLIT_UI", "true").lower() == "true"
+)
+WITH_OPENAI_API: Optional[bool] = os.getenv("WITH_OPENAI_API", "true").lower() == "true"
 
 
 # Mount the indexer router
