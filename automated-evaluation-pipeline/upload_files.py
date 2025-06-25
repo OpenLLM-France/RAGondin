@@ -4,9 +4,9 @@ from loguru import logger
 from pathlib import Path
 
 num_port = os.environ.get("APP_PORT")
-base_url = f"http://163.114.159.68:{num_port}" # the base url of your running app for instance: 'http://localhost:8080'
+base_url = f"http://localhost:{num_port}"  # the base url of your running app for instance: 'http://localhost:8080'
 
-dir_name = "./pdf_files/terresunivia_pdfs"  # Replace with your directory path
+dir_name = "./pdf_files"  # Replace with your directory path
 dir_path = Path(dir_name).resolve()
 
 
