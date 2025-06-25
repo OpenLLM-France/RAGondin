@@ -122,7 +122,7 @@ async def generate_questions_from_clusters(
 
 async def main():
     num_port = os.environ.get("APP_PORT")
-    num_host = "localhost"
+    num_host = os.environ["APP_URL"]
     ragondin_api_base_url = f"http://{num_host}:{num_port}"
     partition = "terresunivia"
 
