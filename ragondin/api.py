@@ -113,13 +113,8 @@ async def health_check(request: Request):
     return "RAG API is up."
 
 
-ONLY_SEARCH_AND_INDEXER_API: Optional[bool] = os.getenv(
-    "ONLY_SEARCH_AND_INDEXER_API", False
-)
-
-if not ONLY_SEARCH_AND_INDEXER_API:
-    # Mount the default front
-    mount_chainlit(app, "./chainlit/app_front.py", path="/chainlit")
+WITH_CHAINLIT_UI: Optional[bool] = os.getenv("WITH_CHAINLIT_UI", True)
+WITH_OPENAI_API: Optional[bool] = os.getenv("WITH_OPENAI_API", True)
 
 # Mount the indexer router
 app.include_router(indexer_router, prefix="/indexer", tags=[Tags.INDEXER])
@@ -132,10 +127,16 @@ app.include_router(partition_router, prefix="/partition", tags=[Tags.PARTITION])
 # Mount the queue router
 app.include_router(queue_router, prefix="/queue", tags=[Tags.QUEUE])
 
-if not ONLY_SEARCH_AND_INDEXER_API:
+if WITH_OPENAI_API:
     # Mount the openai router
     app.include_router(openai_router, prefix="/v1", tags=[Tags.OPENAI])
 
+if WITH_CHAINLIT_UI:
+    # Mount the default front
+    mount_chainlit(app, "./chainlit/app_front.py", path="/chainlit")
+    app.include_router(
+        openai_router, prefix="/v1", tags=[Tags.OPENAI]
+    )  # cause chainlit uses openai api endpoints
 
 if __name__ == "__main__":
     uvicorn.run("api:app", host="0.0.0.0", port=8080, reload=True, proxy_headers=True)
