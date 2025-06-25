@@ -18,7 +18,6 @@ from pathlib import Path
 from typing import Optional
 
 import uvicorn
-from chainlit.utils import mount_chainlit
 from components import RagPipeline
 from config import load_config
 from fastapi import Depends, FastAPI, HTTPException, Request, status
@@ -113,8 +112,9 @@ async def health_check(request: Request):
     return "RAG API is up."
 
 
-WITH_CHAINLIT_UI: Optional[bool] = os.getenv("WITH_CHAINLIT_UI", True)
-WITH_OPENAI_API: Optional[bool] = os.getenv("WITH_OPENAI_API", True)
+WITH_CHAINLIT_UI: Optional[bool] = os.getenv("WITH_CHAINLIT_UI", "").lower() == "true"
+WITH_OPENAI_API: Optional[bool] = os.getenv("WITH_OPENAI_API", "").lower() == "true"
+
 
 # Mount the indexer router
 app.include_router(indexer_router, prefix="/indexer", tags=[Tags.INDEXER])
@@ -133,6 +133,10 @@ if WITH_OPENAI_API:
 
 if WITH_CHAINLIT_UI:
     # Mount the default front
+    from chainlit.utils import mount_chainlit
+
+    logger.debug("Mounting Chainlit UI")
+
     mount_chainlit(app, "./chainlit/app_front.py", path="/chainlit")
     app.include_router(
         openai_router, prefix="/v1", tags=[Tags.OPENAI]
