@@ -15,7 +15,7 @@ load_dotenv()
 
 # Retrieving responses and document sources fom RAGondin
 async def retrieve_response_and_docs_ragondin(
-    query: str, partition: str, ragondin_base_url: str, semaphore=asyncio.Semaphore(10)
+    query: str, partition: str, ragondin_base_url: str, semaphore=asyncio.Semaphore(4)
 ):
     async with semaphore:
         base_url = f"{ragondin_base_url}/v1"
@@ -32,7 +32,7 @@ async def retrieve_response_and_docs_ragondin(
             ],
             "temperature": 0.2,
             "stream": False,
-            "timeout": 3
+            "timeout": 60
         }
 
         try:
@@ -67,9 +67,9 @@ def source_score_per_question(
 
 # Response retrieval evaluation
 llm_judge_settings = {
-    "model": os.environ.get("MODEL"),
-    "base_url": os.environ.get("BASE_URL"),
-    "api_key": os.environ.get("API_KEY"),
+    "model": os.environ.get("JUDGE_MODEL"),
+    "base_url": os.environ.get("JUDGE_BASE_URL"),
+    "api_key": os.environ.get("JUDGE_API_KEY"),
     "temperature": 0.2,
     "max_tokens": 1000,
     "top_p": 1.0,
@@ -157,7 +157,7 @@ async def response_score_per_question(
 
 async def main():
     data_file = open("./dataset.json", "r", encoding="utf-8")
-    list_response_answer_reference = json.load(data_file)[:50]
+    list_response_answer_reference = json.load(data_file)
 
     num_port = os.environ.get("APP_PORT")
     num_host = os.environ["APP_URL"]
@@ -169,7 +169,7 @@ async def main():
             query=resp_ans_reference["question"],
             partition=partition,
             ragondin_base_url=ragondin_api_base_url,
-            semaphore=asyncio.Semaphore(10),
+            semaphore=asyncio.Semaphore(4),
         )
         for resp_ans_reference in list_response_answer_reference
     ]
