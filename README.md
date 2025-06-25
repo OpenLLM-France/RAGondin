@@ -227,6 +227,16 @@ curl http://localhost:8080/health_check # APP_PORT=8080
 > The initial launch is longer due to the installation of required dependencies. Once the application is up and running, you can access the fastapi documentation at `http://localhost:8080/docs` (8080 is the APP_PORT variable determined in your **`.env`**) to manage documents, execute searches, or interact with the RAG pipeline (see the **next section** about the api for more details). A default chat ui is also deployed using [chainlit](!https://docs.chainlit.io/get-started/overview). You can access to it at `http://localhost:8080/chainlit` chat with your documents with our RAG engine behind it.
 
 >[!NOTE]
+> By default, the chainlit chat ui doesn't restrict access. In order to allow chat ui authentification these variables should be added
+
+```bash
+# Chainlit UI authentication
+CHAINLIT_AUTH_SECRET=... # has to be generated with with this command: 'uv run chainlit create-secret' but a random value works too.
+CHAINLIT_USERNAME=Ragondin
+CHAINLIT_PASSWORD=Ragondin2025
+```
+
+>[!IMPORTANT]
 > Chat history is disabled by default. Chainlit includes built-in data persistence capabilities with an [out-of-the-box data layer schema](https://docs.chainlit.io/data-layers/official) to store all chat interactions: conversations, elements, user feedback, and more. To enable this functionality, follow the dedicated setup guide:
 
 ➡ [Enable Chainlit Data Persistence](./docs/chainlit_data_persistency.md)
