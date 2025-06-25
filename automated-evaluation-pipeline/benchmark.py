@@ -32,6 +32,7 @@ async def retrieve_response_and_docs_ragondin(
             ],
             "temperature": 0.2,
             "stream": False,
+            "timeout": 3
         }
 
         try:
@@ -44,6 +45,7 @@ async def retrieve_response_and_docs_ragondin(
             return response_llm, list_source_chunk_ids
         except Exception as e:
             logger.debug(f"Error fetching chunks and response: {e}")
+            return None, []
 
 
 # Sources retrieval evaluation
@@ -57,7 +59,7 @@ def source_score_per_question(
     val_DCG = 0
     for i, val in enumerate(chunk_id_llm):
         val_DCG += relevance(val, chunk_id_reference) / math.log2(i + 2)
-    iDCG = 0
+    iDCG = 0.0000001
     for i in range(min(len(chunk_id_reference), len(chunk_id_llm))):
         iDCG += 1 / math.log2(i + 2)
     return val_DCG / iDCG
@@ -155,7 +157,7 @@ async def response_score_per_question(
 
 async def main():
     data_file = open("./dataset.json", "r", encoding="utf-8")
-    list_response_answer_reference = json.load(data_file)
+    list_response_answer_reference = json.load(data_file)[:50]
 
     num_port = os.environ.get("APP_PORT")
     num_host = "163.114.159.68"  # "localhost"
@@ -179,6 +181,8 @@ async def main():
     response_judge_tasks = []
 
     for (ragondin_response, ragondin_chunk_ids), input_reference in zip(ragondin_answer_chunk_ids_l, list_response_answer_reference):
+        if ragondin_response is None:
+            continue
         chunk_id_reference = [c["id"] for c in input_reference["chunks"]]
         score = source_score_per_question(
             chunk_id_reference=chunk_id_reference, chunk_id_llm=ragondin_chunk_ids
