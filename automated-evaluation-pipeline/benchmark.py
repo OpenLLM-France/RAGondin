@@ -13,6 +13,7 @@ from tqdm.asyncio import tqdm
 
 load_dotenv()
 
+
 # Retrieving responses and document sources fom RAGondin
 async def retrieve_response_and_docs_ragondin(
     query: str, partition: str, ragondin_base_url: str, semaphore=asyncio.Semaphore(4)
@@ -32,7 +33,7 @@ async def retrieve_response_and_docs_ragondin(
             ],
             "temperature": 0.2,
             "stream": False,
-            "timeout": 60
+            "timeout": 120,
         }
 
         try:
@@ -51,6 +52,7 @@ async def retrieve_response_and_docs_ragondin(
 # Sources retrieval evaluation
 def relevance(val, true_chunk_ids):
     return 1 if val in true_chunk_ids else 0
+
 
 def source_score_per_question(
     chunk_id_reference: list[int],
@@ -77,25 +79,29 @@ llm_judge_settings = {
     "presence_penalty": 0.0,
 }
 
+
 class CompletionEvaluationResponse(BaseModel):
-    output: Literal["complete", "mostly_complete", "partially_complete", "incomplete"] = (
-        Field(
-            ...,
-            description="The output of the LLM judge. It can be one of the following: "
-            "'complete', 'mostly_complete', 'partially_complete', 'incomplete'. "
-            "This indicates how well the generated answer matches the true answer.",
-        )
+    output: Literal[
+        "complete", "mostly_complete", "partially_complete", "incomplete"
+    ] = Field(
+        ...,
+        description="The output of the LLM judge. It can be one of the following: "
+        "'complete', 'mostly_complete', 'partially_complete', 'incomplete'. "
+        "This indicates how well the generated answer matches the true answer.",
     )
 
+
 class PrecisionEvaluationResponse(BaseModel):
-    output: Literal["Highly_precise", "mostly_precise", "low_precision", "imprecise"] = (
-        Field(
-            ...,
-            description="The output of the LLM judge. It can be one of the following: "
-            "'Highly_precise', 'mostly_precise', 'low_precision', 'imprecise'. "
-            "This indicates how well the generated answer matches the true answer.",
-        )
+    output: Literal[
+        "Highly_precise", "mostly_precise", "low_precision", "imprecise"
+    ] = Field(
+        ...,
+        description="The output of the LLM judge. It can be one of the following: "
+        "'Highly_precise', 'mostly_precise', 'low_precision', 'imprecise'. "
+        "This indicates how well the generated answer matches the true answer.",
     )
+
+
 complettion_judge_prompt = """You are an expert judge evaluating the completeness of a language model's response to a question.
 Given:
     A query (query)
@@ -119,8 +125,12 @@ Consider:
     Is the content specific and factually aligned with the true_answer?
 """
 
-llm_completion_judge = ChatOpenAI(**llm_judge_settings).with_structured_output(CompletionEvaluationResponse)
-llm_precision_judge = ChatOpenAI(**llm_judge_settings).with_structured_output(PrecisionEvaluationResponse)
+llm_completion_judge = ChatOpenAI(**llm_judge_settings).with_structured_output(
+    CompletionEvaluationResponse
+)
+llm_precision_judge = ChatOpenAI(**llm_judge_settings).with_structured_output(
+    PrecisionEvaluationResponse
+)
 
 
 async def response_score_per_question(
@@ -157,7 +167,7 @@ async def response_score_per_question(
 
 async def main():
     data_file = open("./dataset.json", "r", encoding="utf-8")
-    list_response_answer_reference = json.load(data_file)
+    list_response_answer_reference = json.load(data_file)[:100]
 
     num_port = os.environ.get("APP_PORT")
     num_host = os.environ["APP_URL"]
@@ -169,7 +179,7 @@ async def main():
             query=resp_ans_reference["question"],
             partition=partition,
             ragondin_base_url=ragondin_api_base_url,
-            semaphore=asyncio.Semaphore(4),
+            semaphore=asyncio.Semaphore(10),
         )
         for resp_ans_reference in list_response_answer_reference
     ]
@@ -180,7 +190,9 @@ async def main():
 
     response_judge_tasks = []
 
-    for (ragondin_response, ragondin_chunk_ids), input_reference in zip(ragondin_answer_chunk_ids_l, list_response_answer_reference):
+    for (ragondin_response, ragondin_chunk_ids), input_reference in zip(
+        ragondin_answer_chunk_ids_l, list_response_answer_reference
+    ):
         if ragondin_response is None:
             continue
         chunk_id_reference = [c["id"] for c in input_reference["chunks"]]
@@ -196,11 +208,11 @@ async def main():
                 ragondin_answer=ragondin_response,
             )
         )
-        response_judge_tasks.append(
-            resp_eval_task
-        )
+        response_judge_tasks.append(resp_eval_task)
 
-    llm_judge_scores = await tqdm.gather(*response_judge_tasks, desc="Evaluating responses")
+    llm_judge_scores = await tqdm.gather(
+        *response_judge_tasks, desc="Evaluating responses"
+    )
 
     response_completion_evaluation_result, response_precision_evaluation_result = {}, {}
     for completion_evaluation, precision_evaluation in llm_judge_scores:
@@ -210,7 +222,7 @@ async def main():
         response_precision_evaluation_result[precision_evaluation] = (
             response_precision_evaluation_result.get(precision_evaluation, 0) + 1
         )
-    
+
     print(f"LLM completion Scores: {response_completion_evaluation_result}\n")
     print(f"LLM precision Scores: {response_precision_evaluation_result}\n")
     print(f"Source evaluation - nDCG: {np.array(scores).mean()}")
