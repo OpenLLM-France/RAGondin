@@ -15,7 +15,7 @@ from .chunker import BaseChunker, ChunkerFactory
 from .vectordb import ConnectorFactory
 
 
-@ray.remote(max_restarts=-1, concurrency_groups={"insertion": 1, "chunking": 30})
+@ray.remote(max_restarts=-1, max_concurrency=1000, concurrency_groups={"insertion": 1})
 class Indexer:
     def __init__(self):
         from utils.logger import get_logger
@@ -57,7 +57,6 @@ class Indexer:
         )
         return doc
 
-    @ray.method(concurrency_group="chunking")
     async def chunk(
         self, doc: Document, file_path: str, task_id: str = None
     ) -> List[Document]:
@@ -79,9 +78,7 @@ class Indexer:
 
             # Set task details
             user_metadata = {
-                k: v
-                for k, v in metadata.items()
-                if k not in {"file_id", "source", "filename"}
+                k: v for k, v in metadata.items() if k not in {"file_id", "source"}
             }
 
             await self.task_state_manager.set_details.remote(
@@ -100,7 +97,7 @@ class Indexer:
 
             # Chunk
             await self.task_state_manager.set_state.remote(task_id, "CHUNKING")
-            chunks = await self.handle.chunk.remote(doc, str(path), task_id)
+            chunks = await self.chunk(doc, str(path), task_id)
 
             if self.enable_insertion and chunks:
                 await self.task_state_manager.set_state.remote(task_id, "INSERTING")
