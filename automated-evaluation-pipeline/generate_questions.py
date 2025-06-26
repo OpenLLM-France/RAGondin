@@ -33,17 +33,28 @@ settings = {
 llm = ChatOpenAI(**settings).with_retry(stop_after_attempt=2)
 
 
-question_tmpl = """You are an expert in generating questions based on Documents.
-Given a set of text documents, your task is to generate a relevant question that requires all of the provided documents to be answered.
+# question_tmpl = """You are an expert in generating questions based on Documents.
+# Given a set of text documents, your task is to generate a relevant question that requires all of the provided documents to be answered.
 
-You should generate a question that is clear, concise, and directly related to the content of the documents.
-The output only that question, without any additional text or explanation.
-"""
+# You should generate a question that is clear, concise, and directly related to the content of the documents.
+# The output only that question, without any additional text or explanation.
+# """
 
-answer_tmpl = """You are an expert in answering questions based on given documents.
-Given a question and a set of text documents, your task is to provide a comprehensive answer that utilizes all of the provided documents.
-The answer should be clear, and directly address the question using the information from the documents.
-The output should only be the answer, without any additional text or explanation."""
+# answer_tmpl = """You are an expert in answering questions based on given documents.
+# Given a question and a set of text documents, your task is to provide a comprehensive answer that utilizes all of the provided documents.
+# The answer should be clear, and directly address the question using the information from the documents.
+# The output should only be the answer, without any additional text or explanation."""
+
+question_tmpl = """Vous êtes expert en génération de questions basées sur des documents.
+À partir d'un ensemble de documents texte, votre tâche consiste à générer une question pertinente nécessitant une réponse à tous les documents fournis.
+
+Vous devez générer une question claire, concise et directement liée au contenu des documents.
+Ne générez que cette question, sans texte ni explication supplémentaire."""
+
+answer_tmpl = """Vous êtes expert dans la réponse aux questions basées sur des documents.
+À partir d'une question et d'un ensemble de documents, votre tâche consiste à fournir une réponse complète en utilisant tous les documents fournis.
+La réponse doit être claire et répondre directement à la question en utilisant les informations des documents.
+Le résultat doit être la réponse seule, sans texte ni explication supplémentaire."""
 
 
 def format_chunks(chunks: list[str]):
@@ -82,25 +93,24 @@ async def question_answer(chunks: list[dict], semaphore=asyncio.Semaphore(10)):
         return {"question": llm_question, "chunks": chunks, "llm_answer": llm_answer}
 
 
-async def get_all_chunks(url: str, semaphore=asyncio.Semaphore(10)) -> dict:
-    async with semaphore:
-        retries = 3
-        for attempt in range(retries):
-            try:
-                async with httpx.AsyncClient(timeout=60) as client:
-                    resp = await client.get(url)
-                    resp.raise_for_status()
-                    all_chunks_list = resp.json()["chunks"]
-                if not all_chunks_list:
-                    raise ValueError("No chunks found.")
-                return all_chunks_list
-            except Exception as e:
-                logger.debug(f"Attempt {attempt + 1} failed: {e}")
-                if attempt < retries - 1:
-                    await asyncio.sleep(1)  # Wait before retrying
-                else:
-                    logger.debug(f"Error fetching chunks after {retries} attempts: {e}")
-                    return None
+async def get_all_chunks(url: str) -> dict:
+    retries = 3
+    for attempt in range(retries):
+        try:
+            async with httpx.AsyncClient(timeout=60) as client:
+                resp = await client.get(url)
+                resp.raise_for_status()
+                all_chunks_list = resp.json()["chunks"]
+            if not all_chunks_list:
+                raise ValueError("No chunks found.")
+            return all_chunks_list
+        except Exception as e:
+            logger.debug(f"Attempt {attempt + 1} failed: {e}")
+            if attempt < retries - 1:
+                await asyncio.sleep(1)  # Wait before retrying
+            else:
+                logger.debug(f"Error fetching chunks after {retries} attempts: {e}")
+                return None
 
 
 async def generate_questions_from_clusters(
@@ -125,7 +135,6 @@ async def main():
     num_host = os.environ["APP_URL"]
     ragondin_api_base_url = f"http://{num_host}:{num_port}"
     partition = "terresunivia"
-
     url = f"{ragondin_api_base_url}/partition/{partition}/chunks"
 
     start = time.time()

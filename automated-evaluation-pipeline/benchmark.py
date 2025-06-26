@@ -2,21 +2,22 @@ import os
 import asyncio
 import json
 import math
-from typing import Literal
-import numpy as np
+from typing import Literal, TypedDict
 from loguru import logger
 from openai import AsyncOpenAI
 from langchain_openai import ChatOpenAI
 from pydantic import BaseModel, Field
 from dotenv import load_dotenv
 from tqdm.asyncio import tqdm
+from itertools import groupby
+import pandas as pd
 
 load_dotenv()
 
 
 # Retrieving responses and document sources fom RAGondin
 async def retrieve_response_and_docs_ragondin(
-    query: str, partition: str, ragondin_base_url: str, semaphore=asyncio.Semaphore(4)
+    query: str, partition: str, ragondin_base_url: str, semaphore: asyncio.Semaphore
 ):
     async with semaphore:
         base_url = f"{ragondin_base_url}/v1"
@@ -133,18 +134,18 @@ llm_precision_judge = ChatOpenAI(**llm_judge_settings).with_structured_output(
 )
 
 
-async def response_score_per_question(
+async def response_judgment_per_question(
     query: str,
     llm_answer: str,
     ragondin_answer: str,
-    sempahore: asyncio.Semaphore = asyncio.Semaphore(10),
+    semaphore: asyncio.Semaphore,
 ):
     s = f"""Here are the needed details to evaluate the response of a language model (LLM) to a question:
     query: {query}
     true_answer: {ragondin_answer}
     generated_answer: {llm_answer}
     """
-    async with sempahore:
+    async with semaphore:
         try:
             response_for_completion = await llm_completion_judge.ainvoke(
                 [
@@ -162,32 +163,43 @@ async def response_score_per_question(
             return response_for_completion.output, response_for_precision.output
         except Exception as e:
             logger.debug(f"Error evaluating response: {e}")
-            return "error"
+            return "error", "error"
+
+
+class Element(TypedDict):
+    question: str
+    llm_answer: str
+    chunks: list[dict]
 
 
 async def main():
-    data_file = open("./dataset.json", "r", encoding="utf-8")
-    list_response_answer_reference = json.load(data_file)[:100]
+    with open("./dataset.json", "r", encoding="utf-8") as f:
+        eval_dataset: list[Element] = json.load(f)
+
+    list_response_answer_reference = eval_dataset  # [:10]
 
     num_port = os.environ.get("APP_PORT")
     num_host = os.environ["APP_URL"]
     ragondin_api_base_url = f"http://{num_host}:{num_port}"
     partition = "terresunivia"
 
+    # Create shared semaphores for rate limiting
+    ragondin_semaphore = asyncio.Semaphore(4)  # Limit concurrent RAGondin requests
+    judge_semaphore = asyncio.Semaphore(10)  # Limit concurrent judge requests
+
+    # Create tasks for RAGondin API calls
     tasks = [
         retrieve_response_and_docs_ragondin(
             query=resp_ans_reference["question"],
             partition=partition,
             ragondin_base_url=ragondin_api_base_url,
-            semaphore=asyncio.Semaphore(10),
+            semaphore=ragondin_semaphore,
         )
         for resp_ans_reference in list_response_answer_reference
     ]
 
     ragondin_answer_chunk_ids_l = await tqdm.gather(*tasks, desc="Fetching")
-
     scores = []
-
     response_judge_tasks = []
 
     for (ragondin_response, ragondin_chunk_ids), input_reference in zip(
@@ -201,12 +213,12 @@ async def main():
         )
         scores.append(score)
 
-        resp_eval_task = asyncio.create_task(
-            response_score_per_question(
-                query=input_reference["question"],
-                llm_answer=input_reference["llm_answer"],
-                ragondin_answer=ragondin_response,
-            )
+        # Create task with proper semaphore passing
+        resp_eval_task = response_judgment_per_question(
+            query=input_reference["question"],
+            llm_answer=input_reference["llm_answer"],
+            ragondin_answer=ragondin_response,
+            semaphore=judge_semaphore,
         )
         response_judge_tasks.append(resp_eval_task)
 
@@ -214,18 +226,37 @@ async def main():
         *response_judge_tasks, desc="Evaluating responses"
     )
 
-    response_completion_evaluation_result, response_precision_evaluation_result = {}, {}
-    for completion_evaluation, precision_evaluation in llm_judge_scores:
-        response_completion_evaluation_result[completion_evaluation] = (
-            response_completion_evaluation_result.get(completion_evaluation, 0) + 1
-        )
-        response_precision_evaluation_result[precision_evaluation] = (
-            response_precision_evaluation_result.get(precision_evaluation, 0) + 1
-        )
+    # Filter out error responses
+    valid_scores = [(comp, prec) for comp, prec in llm_judge_scores if comp != "error"]
+    valid_ndcg_scores = scores[: len(valid_scores)]  # Match the filtered scores
 
-    print(f"LLM completion Scores: {response_completion_evaluation_result}\n")
-    print(f"LLM precision Scores: {response_precision_evaluation_result}\n")
-    print(f"Source evaluation - nDCG: {np.array(scores).mean()}")
+    eval_results = pd.DataFrame(
+        valid_scores,
+        columns=["completion_evaluation", "precision_evaluation"],
+    )
+    eval_results["nDCG"] = valid_ndcg_scores
+    chunks_count = [
+        len(input_reference["chunks"])
+        for input_reference in list_response_answer_reference[: len(valid_scores)]
+    ]
+    eval_results["n_chunks"] = chunks_count
+
+    # Calculate average nDCG for each n_chunks and round values to 3 decimal places
+    avg_ndcg_per_chunk = (
+        eval_results.groupby("n_chunks")["nDCG"].mean().round(3).to_dict()
+    )
+    print(f"Average nDCG per chunk count: {avg_ndcg_per_chunk}\n")
+    print(
+        f"Average nDCG: {round(eval_results['nDCG'].mean(), 3)} +/- {eval_results['nDCG'].std():.3f}"
+    )
+
+    # Print evaluation distributions
+    print("\n", "-" * 50, "\n")
+    print("\nCompletion evaluation distribution:")
+    print(eval_results["completion_evaluation"].value_counts())
+    print("\n", "-" * 50, "\n")
+    print("\nPrecision evaluation distribution:")
+    print(eval_results["precision_evaluation"].value_counts())
 
 
 if __name__ == "__main__":
