@@ -10,6 +10,7 @@ import torch
 from config import load_config
 from langchain_core.documents.base import Document
 from marker.converters.pdf import PdfConverter
+from tqdm.asyncio import tqdm
 from utils.logger import get_logger
 
 from ..base import BaseLoader
@@ -198,11 +199,13 @@ class MarkerLoader(BaseLoader):
                 raise RuntimeError(f"Conversion failed for {file_path_str}")
 
             if self.config["loader"]["image_captioning"]:
-                captions = await self._get_captions(images)
-                for key, desc in captions.items():
-                    markdown = markdown.replace(f"![]({key})", desc)
+                captions_dict = await self._get_captions(images)
+                for key, desc in captions_dict.items():
+                    tag = f"![]({key})"
+                    markdown = markdown.replace(tag, desc)
+
             else:
-                logger.info("Image captioning disabled.")
+                logger.debug("Image captioning disabled.")
 
             markdown = markdown.split(self.page_sep, 1)[1]
             markdown = re.sub(
@@ -227,12 +230,22 @@ class MarkerLoader(BaseLoader):
         if not img_dict:
             return {}
 
-        tasks = [self.get_image_description(img) for img in img_dict.values()]
-        keys = list(img_dict.keys())
+        tasks = []
+        keys = []
+        for key, picture in img_dict.items():
+            tasks.append(self.get_image_description(image=picture))
+            keys.append(key)
 
         try:
-            results = await asyncio.gather(*tasks)
-            return dict(zip(keys, results))
+            results = await tqdm.gather(*tasks, desc="Captioning images")
+            assert len(keys) == len(results), "Mismatch between keys and results count"
+        except asyncio.CancelledError:
+            logger.warning("Image captioning tasks cancelled")
+            for task in tasks:
+                task.cancel()
+            raise
         except Exception:
             logger.exception("Error during image captioning")
             raise
+        result_dict = dict(zip(keys, results))
+        return result_dict
