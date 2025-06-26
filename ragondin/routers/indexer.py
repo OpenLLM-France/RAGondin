@@ -293,7 +293,7 @@ async def get_task_logs(task_id: str, max_lines: int = 100):
             raise HTTPException(status_code=500, detail="Log file not found.")
 
         logs = []
-        with open(LOG_FILE, "r") as f:
+        with open(LOG_FILE, "r", errors="replace") as f:
             for line in reversed(list(f)):
                 try:
                     record = json.loads(line).get("record", {})
@@ -314,5 +314,7 @@ async def get_task_logs(task_id: str, max_lines: int = 100):
         return JSONResponse(
             content={"task_id": task_id, "logs": logs[::-1]}
         )  # restore order
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to fetch logs: {str(e)}")
