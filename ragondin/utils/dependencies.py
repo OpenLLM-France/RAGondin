@@ -1,9 +1,11 @@
 import ray
 import ray.actor
+from config import load_config
+
 from components import ABCVectorDB
 from components.indexer.indexer import Indexer, TaskStateManager
+from components.indexer.loaders.pdf_loaders.marker import MarkerPool
 from components.indexer.loaders.serializer import SerializerQueue
-from config import load_config
 
 
 class VDBProxy:
@@ -41,6 +43,20 @@ class VDBProxy:
 # load config
 config = load_config()
 
+# Initialize marker if needed
+if config.loader.file_loaders.get("pdf") == "MarkerLoader":
+    marker = MarkerPool.options(name="MarkerPool", namespace="ragondin").remote()
+
+# Create task state manager actor
+task_state_manager = TaskStateManager.options(
+    name="TaskStateManager", lifetime="detached", namespace="ragondin"
+).remote()
+
+# Create document serializer actor
+serializer_queue = SerializerQueue.options(
+    name="SerializerQueue", namespace="ragondin"
+).remote()
+
 # Create global indexer supervisor actor
 indexer = Indexer.options(name="Indexer", namespace="ragondin").remote()
 
@@ -52,14 +68,3 @@ vectordb: ABCVectorDB = VDBProxy(
 
 def get_indexer():
     return indexer
-
-
-# Create task state manager actor
-task_state_manager = TaskStateManager.options(
-    name="TaskStateManager", lifetime="detached", namespace="ragondin"
-).remote()
-
-# Create document serializer actor
-serializer_queue = SerializerQueue.options(
-    name="SerializerQueue", namespace="ragondin"
-).remote()

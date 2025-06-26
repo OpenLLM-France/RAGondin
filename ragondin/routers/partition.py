@@ -30,7 +30,7 @@ async def list_existant_partitions(request: Request):
         )
 
 
-@router.delete("/{partition}/")
+@router.delete("/{partition}")
 async def delete_partition(partition: str, indexer: Indexer = Depends(get_indexer)):
     try:
         deleted = ray.get(indexer.delete_partition.remote(partition))
@@ -52,7 +52,7 @@ async def delete_partition(partition: str, indexer: Indexer = Depends(get_indexe
     return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
-@router.get("/{partition}/")
+@router.get("/{partition}")
 async def list_files(
     request: Request,
     partition: str,

@@ -53,7 +53,7 @@ class LLMSemaphore(metaclass=SingletonMeta):
             self._semaphore.release()
 
 
-@ray.remote
+@ray.remote(max_concurrency=100000)
 class DistributedSemaphoreActor:
     def __init__(self, max_concurrent_ops: int):
         self.semaphore = asyncio.Semaphore(max_concurrent_ops)

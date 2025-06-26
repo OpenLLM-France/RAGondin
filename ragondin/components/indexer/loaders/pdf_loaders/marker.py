@@ -1,101 +1,97 @@
 import asyncio
 import gc
 import re
-import threading
 import time
 from pathlib import Path
 from typing import Dict, Optional, Union
 
+import ray
 import torch
-import torch.multiprocessing as mp
+from config import load_config
 from langchain_core.documents.base import Document
 from marker.converters.pdf import PdfConverter
-from marker.models import create_model_dict
 from tqdm.asyncio import tqdm
 from utils.logger import get_logger
 
 from ..base import BaseLoader
 
 logger = get_logger()
+config = load_config()
 
 
-class MarkerLoader(BaseLoader):
-    """
-    Loader for PDF files using the Marker library.
-    Implements shared resource management for parallel processing.
-    """
+@ray.remote(num_gpus=config.loader.get("marker_num_gpus", 0))
+class MarkerWorker:
+    def __init__(self):
+        import os
 
-    # Class variables for resource sharing
-    _model_dict = None
-    _pool = None
-    _initialized = False
-    _pool_lock = threading.RLock()  # Thread-safe lock for pool operations
+        from config import load_config
+        from utils.logger import get_logger
 
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
-        self._workers = self.config.ray.get("max_tasks_per_worker", 2)
+        self.logger = get_logger()
+        self.config = load_config()
+        self.page_sep = "[PAGE_SEP]"
+
+        self._workers = self.config.loader.get("marker_max_processes")
         self.maxtasksperchild = self.config.loader.get("marker_max_tasks_per_child", 10)
-        logger.info("Initializing MarkerLoader", workers=self._workers)
-        self._converter_config = {
+
+        self.converter_config = {
             "output_format": "markdown",
             "paginate_output": True,
             "page_separator": self.page_sep,
-            "pdftext_workers": 1,  # force single-threaded processing in the underlying pdftext lib. This is because RAY actors are daemon processes and it doesn't allow child processes.
-            "disable_multiprocessing": True,  # We manage our own multiprocessing
+            "pdftext_workers": 1,
+            "disable_multiprocessing": True,
         }
-
-        # Initialize shared resources on first instance
-        self._ensure_resources_initialized()
-
-    def _ensure_resources_initialized(self):
-        """Initialize shared resources if not already done"""
-        if not MarkerLoader._initialized:
-            with MarkerLoader._pool_lock:
-                if not MarkerLoader._initialized:  # Double-check under lock
-                    self._initialize_shared_resources()
-                    MarkerLoader._initialized = True
-
-    def _initialize_shared_resources(self):
-        import os
-
         if "RAY_ADDRESS" not in os.environ:
             os.environ["RAY_ADDRESS"] = "auto"
-        """Initialize model dictionary and worker pool once for all instances"""
-        # Initialize the model dictionary
-        MarkerLoader._model_dict = create_model_dict()
+        self.pool = None
+        self.init_resources()
 
-        # Share memory for models supporting it
-        for k, v in MarkerLoader._model_dict.items():
+    def init_resources(self):
+        from marker.models import create_model_dict
+
+        self.model_dict = create_model_dict()
+        for v in self.model_dict.values():
             if hasattr(v.model, "share_memory"):
                 v.model.share_memory()
 
-        # Set up multiprocessing
+        self.setup_mp()
+
+    def setup_mp(self):
+        import torch.multiprocessing as mp
+
+        if self.pool:
+            self.logger.warning("Resetting multiprocessing pool")
+            self.pool.close()
+            self.pool.join()
+            self.pool.terminate()
+            self.pool = None
         try:
-            # Make sure we're using spawn method which is required for CUDA
             if mp.get_start_method(allow_none=True) != "spawn":
                 mp.set_start_method("spawn", force=True)
         except RuntimeError:
-            logger.warning("Process start method already set, using existing method")
+            self.logger.warning(
+                "Process start method already set, using existing method"
+            )
 
-        # Initialize the worker pool
-        logger.info("Creating marker worker pool", workers=self._workers)
-        MarkerLoader._pool = mp.Pool(
+        self.logger.info(f"Initializing MarkerWorker with {self._workers} workers")
+        ctx = mp.get_context("spawn")
+        self.pool = ctx.Pool(
             processes=self._workers,
-            initializer=self._worker_init,  # Note: Using class method directly
-            initargs=(MarkerLoader._model_dict,),
-            maxtasksperchild=self.maxtasksperchild,  # Restart workers periodically to prevent memory leaks
+            initializer=self._worker_init,
+            initargs=(self.model_dict,),
+            maxtasksperchild=self.maxtasksperchild,
         )
+
+        self.logger.info("MarkerWorker initialized with multiprocessing pool")
 
     @staticmethod
     def _worker_init(model_dict):
-        """Initialize each worker with model references"""
         global worker_model_dict
         worker_model_dict = model_dict
         logger.debug("Worker initialized with model dictionary")
 
     @staticmethod
     def _process_pdf(file_path, config):
-        """Worker function to process a single PDF"""
         global worker_model_dict
 
         try:
@@ -105,21 +101,84 @@ class MarkerLoader(BaseLoader):
                 config=config,
             )
             render = converter(file_path)
-            logger.debug("PDF processing completed", path=file_path)
-
-            # Explicit cleanup
-            del converter
             return render
         except Exception:
             logger.exception("Error processing PDF", path=file_path)
             raise
         finally:
-            # Force garbage collection
             gc.collect()
-            # Ensure CUDA memory is cleaned up
             if torch.cuda.is_available():
                 torch.cuda.empty_cache()
                 torch.cuda.ipc_collect()
+
+    async def process_pdf(self, file_path: str):
+        config = self.converter_config.copy()
+        loop = asyncio.get_event_loop()
+        result = await loop.run_in_executor(
+            None, lambda: self.pool.apply(self._process_pdf, (file_path, config))
+        )
+        return result.markdown, result.images
+
+    def get_current_pool_size(self):
+        return len([p for p in self.pool._pool if p.is_alive()])
+
+
+@ray.remote
+class MarkerPool:
+    def __init__(self):
+        from config import load_config
+        from utils.logger import get_logger
+
+        self.logger = get_logger()
+        self.config = load_config()
+        self.min_processes = self.config.loader.get("marker_min_processes")
+        self.max_processes = self.config.loader.get("marker_max_processes")
+        self.pool_size = config.loader.get("marker_pool_size")
+        self.actors = [MarkerWorker.remote() for _ in range(self.pool_size)]
+        self._queue: asyncio.Queue[ray.actor.ActorHandle] = asyncio.Queue()
+
+        for _ in range(self.pool_size):
+            for actor in self.actors:
+                self._queue.put_nowait(actor)
+
+        self.logger.info(
+            f"Marker pool: {self.pool_size} actors × {self.max_processes} slots = "
+            f"{self.pool_size * self.max_processes} PDF concurrency"
+        )
+
+    async def ensure_worker_pool_healthy(self, worker):
+        current_alive = await worker.get_current_pool_size.remote()
+        if current_alive < self.min_processes:
+            self.logger.warning(
+                f"Only {current_alive}/{self.min_processes} worker processes alive. Reinitializing pool..."
+            )
+            await worker.setup_mp.remote()
+
+    async def process_pdf(self, file_path: str):
+        # Wait until any slot is free
+        worker = await self._queue.get()
+        if worker:
+            self.logger.info("MarkerWorker allocated")
+            # Ensure the worker pool is healthy
+            await self.ensure_worker_pool_healthy(worker)
+        try:
+            markdown, images = await worker.process_pdf.remote(file_path)
+            return markdown, images
+        except Exception as e:
+            self.logger.exception(
+                "Error processing PDF with MarkerWorker", error=str(e)
+            )
+            raise
+        finally:
+            await self._queue.put(worker)
+            self.logger.debug("MarkerWorker returned to pool")
+
+
+class MarkerLoader(BaseLoader):
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.page_sep = "[PAGE_SEP]"
+        self.worker = ray.get_actor("MarkerPool", namespace="ragondin")
 
     async def aload_document(
         self,
@@ -127,85 +186,54 @@ class MarkerLoader(BaseLoader):
         metadata: Optional[Dict] = None,
         save_markdown: bool = False,
     ) -> Document:
-        """
-        Load a single document asynchronously.
-        Multiple concurrent calls will be processed in parallel using the shared worker pool.
-        """
         if metadata is None:
             metadata = {}
 
         file_path_str = str(file_path)
-        start_time = time.time()
-
-        # Configure for this specific document
-        config = self._converter_config.copy()
+        start = time.time()
 
         try:
-            # Run the processing in the pool
-            # Note: apply_async would be more efficient but needs different async handling
-            result = await asyncio.get_event_loop().run_in_executor(
-                None,  # Use default executor
-                lambda: MarkerLoader._pool.apply(
-                    MarkerLoader._process_pdf,
-                    (file_path_str, config),  # Pass arguments directly, not as tuple
-                ),
-            )
+            markdown, images = await self.worker.process_pdf.remote(file_path_str)
 
-            if result is None:
-                logger.error("PDF conversion returned None", path=file_path_str)
+            if not markdown:
                 raise RuntimeError(f"Conversion failed for {file_path_str}")
 
-            text: str = result.markdown
-
-            # Process images if needed
             if self.config["loader"]["image_captioning"]:
-                img_dict = result.images
-                logger.info("Captioning images", image_count=len(img_dict))
-                captions_dict = await self._get_captions(img_dict)
+                captions_dict = await self._get_captions(images)
                 for key, desc in captions_dict.items():
                     tag = f"![]({key})"
-                    text = text.replace(tag, desc)
+                    markdown = markdown.replace(tag, desc)
+
             else:
-                logger.info("Image captioning disabled.")
+                logger.debug("Image captioning disabled.")
 
-            # skips any empty string before first page
-            text = text.split(self.page_sep, 1)[1]
-            text = re.sub(r"\{(\d+)\}" + re.escape(self.page_sep), r"[PAGE_\1]", text)
-            text = text.replace("<br>", " <br> ")
-            text = text.strip()
-            # text = text.replace("<br>", " ")
+            markdown = markdown.split(self.page_sep, 1)[1]
+            markdown = re.sub(
+                r"\{(\d+)\}" + re.escape(self.page_sep), r"[PAGE_\1]", markdown
+            )
+            markdown = markdown.replace("<br>", " <br> ").strip()
 
-            doc = Document(page_content=text, metadata=metadata)
+            doc = Document(page_content=markdown, metadata=metadata)
 
             if save_markdown:
                 self.save_document(doc, file_path_str)
 
-            end_time = time.time()
-            logger.info(
-                f"Total time for file {file_path_str}: {end_time - start_time:.2f}s"
-            )
-
-            # Clean up CUDA memory
-            if torch.cuda.is_available():
-                torch.cuda.empty_cache()
-                torch.cuda.ipc_collect()
-
+            duration = time.time() - start
+            logger.info(f"Processed {file_path_str} in {duration:.2f}s")
             return doc
 
         except Exception:
             logger.exception("Error in aload_document", path=file_path_str)
             raise
 
-    async def _get_captions(self, img_dict: dict):
-        """Get captions for images"""
+    async def _get_captions(self, img_dict: dict) -> dict:
         if not img_dict:
-            logger.debug("No images to caption")
             return {}
 
         tasks = []
         keys = []
         for key, picture in img_dict.items():
-            tasks.append(self.get_image_description(picture))
+            tasks.append(self.get_image_description(image=picture))
             keys.append(key)
 
         try:
@@ -217,36 +245,7 @@ class MarkerLoader(BaseLoader):
                 task.cancel()
             raise
         except Exception:
-            logger.exception("Error in _get_captions")
+            logger.exception("Error during image captioning")
             raise
-
         result_dict = dict(zip(keys, results))
         return result_dict
-
-    @classmethod
-    def cleanup_resources(cls):
-        """Manually clean up shared resources - can be called when needed"""
-        with cls._pool_lock:
-            if cls._pool:
-                logger.debug("Cleaning up worker pool")
-                cls._pool.close()
-                cls._pool.join()
-                cls._pool = None
-                cls._model_dict.clear()
-                cls._model_dict = None
-                cls._initialized = False
-                logger.debug("Worker pool cleanup complete")
-
-                # Force garbage collection and CUDA cleanup
-                gc.collect()
-                if torch.cuda.is_available():
-                    torch.cuda.empty_cache()
-                    torch.cuda.ipc_collect()
-                    # Synchronize to ensure cleanup is complete
-                    torch.cuda.synchronize()
-
-    def __del__(self):
-        """Attempt cleanup on garbage collection"""
-        # No cleanup here to avoid issues with multiple instances
-        # Resources should be cleaned up explicitly when the application shuts down
-        pass

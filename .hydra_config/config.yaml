@@ -68,7 +68,7 @@ prompt:
 
 loader:
   image_captioning: true
-  save_markdown: true
+  save_markdown: false
   audio_model: ${oc.env:WHISPER_MODEL, base}
   file_loaders:
     txt: TextLoader
@@ -90,6 +90,10 @@ loader:
     aac: VideoAudioLoader
     md: MarkdownLoader
   marker_max_tasks_per_child: ${oc.decode:${oc.env:MARKER_MAX_TASKS_PER_CHILD, 10}}
+  marker_pool_size: ${oc.decode:${oc.env:MARKER_POOL_SIZE, 1}}
+  marker_max_processes: ${oc.decode:${oc.env:MARKER_MAX_PROCESSES, 5}}
+  marker_min_processes: ${oc.decode:${oc.env:MARKER_MIN_PROCESSES, 1}}
+  marker_num_gpus: ${oc.decode:${oc.env:MARKER_NUM_GPUS, 1}}
 
 ray:
   num_gpus: ${oc.decode:${oc.env:RAY_NUM_GPUS, 0.1}}
