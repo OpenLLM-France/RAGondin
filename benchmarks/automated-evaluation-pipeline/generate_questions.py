@@ -93,25 +93,24 @@ async def question_answer(chunks: list[dict], semaphore=asyncio.Semaphore(10)):
         return {"question": llm_question, "chunks": chunks, "llm_answer": llm_answer}
 
 
-async def get_all_chunks(url: str, semaphore=asyncio.Semaphore(10)) -> dict:
-    async with semaphore:
-        retries = 3
-        for attempt in range(retries):
-            try:
-                async with httpx.AsyncClient(timeout=60) as client:
-                    resp = await client.get(url)
-                    resp.raise_for_status()
-                    all_chunks_list = resp.json()["chunks"]
-                if not all_chunks_list:
-                    raise ValueError("No chunks found.")
-                return all_chunks_list
-            except Exception as e:
-                logger.debug(f"Attempt {attempt + 1} failed: {e}")
-                if attempt < retries - 1:
-                    await asyncio.sleep(1)  # Wait before retrying
-                else:
-                    logger.debug(f"Error fetching chunks after {retries} attempts: {e}")
-                    return None
+async def get_all_chunks(url: str) -> dict:
+    retries = 3
+    for attempt in range(retries):
+        try:
+            async with httpx.AsyncClient(timeout=60) as client:
+                resp = await client.get(url)
+                resp.raise_for_status()
+                all_chunks_list = resp.json()["chunks"]
+            if not all_chunks_list:
+                raise ValueError("No chunks found.")
+            return all_chunks_list
+        except Exception as e:
+            logger.debug(f"Attempt {attempt + 1} failed: {e}")
+            if attempt < retries - 1:
+                await asyncio.sleep(1)  # Wait before retrying
+            else:
+                logger.debug(f"Error fetching chunks after {retries} attempts: {e}")
+                return None
 
 
 async def generate_questions_from_clusters(
@@ -136,7 +135,6 @@ async def main():
     num_host = os.environ["APP_URL"]
     ragondin_api_base_url = f"http://{num_host}:{num_port}"
     partition = "terresunivia"
-
     url = f"{ragondin_api_base_url}/partition/{partition}/chunks"
 
     start = time.time()
