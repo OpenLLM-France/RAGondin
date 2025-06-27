@@ -2,11 +2,8 @@
 
 import httpx
 import argparse
-
-from utils.logger import get_logger
+from loguru import logger
 from pathlib import Path
-
-logger = get_logger()
 
 parser = argparse.ArgumentParser(description="Index documents from local file system")
 parser.add_argument(

@@ -32,7 +32,7 @@ class MarkerWorker:
         self.page_sep = "[PAGE_SEP]"
 
         self._workers = self.config.loader.get("marker_max_processes")
-        self.maxtasksperchild = self.config.loader.get("marker_max_tasks_per_child", 10)
+        self.maxtasksperchild = self.config.loader.get("marker_max_tasks_per_child", 5)
 
         self.converter_config = {
             "output_format": "markdown",

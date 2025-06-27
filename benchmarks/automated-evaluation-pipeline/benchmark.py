@@ -9,7 +9,6 @@ from langchain_openai import ChatOpenAI
 from pydantic import BaseModel, Field
 from dotenv import load_dotenv
 from tqdm.asyncio import tqdm
-from itertools import groupby
 import pandas as pd
 
 load_dotenv()
@@ -87,10 +86,9 @@ class CompletionEvaluationResponse(BaseModel):
         "complet", "presque complet", "partiellement complet", "incomplet"
     ] = Field(
         ...,
-        description=
-        "Le résultat du juge LLM. Il peut être l'un des suivants : "
+        description="Le résultat du juge LLM. Il peut être l'un des suivants : "
         "« complet », « presque complet », « partiellement complet », « incomplet »."
-        "Cela indique dans quelle mesure la réponse générée correspond à la vraie réponse."       
+        "Cela indique dans quelle mesure la réponse générée correspond à la vraie réponse.",
         # "The output of the LLM judge. It can be one of the following: "
         # "'complete', 'mostly_complete', 'partially_complete', 'incomplete'. "
         # "This indicates how well the generated answer matches the true answer.",
@@ -103,10 +101,9 @@ class PrecisionEvaluationResponse(BaseModel):
         "Très précis", "plutôt précis", "faible précision", "imprécis"
     ] = Field(
         ...,
-        description=
-        "Le résultat du juge LLM. Il peut être : "
+        description="Le résultat du juge LLM. Il peut être : "
         "« très précis », « plutôt précis », « faible précision », « imprécis ». "
-        "Cela indique dans quelle mesure la réponse générée correspond à la vraie réponse."
+        "Cela indique dans quelle mesure la réponse générée correspond à la vraie réponse.",
         # "The output of the LLM judge. It can be one of the following: "
         # "'Highly_precise', 'mostly_precise', 'low_precision', 'imprecise'. "
         # "This indicates how well the generated answer matches the true answer.",
