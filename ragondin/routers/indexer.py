@@ -1,4 +1,5 @@
 import json
+from datetime import datetime
 from pathlib import Path
 from typing import Any, Optional
 
@@ -75,6 +76,15 @@ async def validate_metadata(metadata: Optional[Any] = Form(None)):
         )
 
 
+def _human_readable_size(size_bytes: int) -> str:
+    """Convert bytes to a human-readable format (e.g., '2.4 MB')."""
+    for unit in ["B", "KB", "MB", "GB", "TB"]:
+        if size_bytes < 1024:
+            return f"{size_bytes:.2f} {unit}"
+        size_bytes /= 1024
+    return f"{size_bytes:.2f} PB"
+
+
 @router.post("/partition/{partition}/file/{file_id}")
 async def add_file(
     request: Request,
@@ -92,8 +102,6 @@ async def add_file(
             detail=f"File '{file_id}' already exists in partition {partition}",
         )
 
-    metadata["file_id"] = file_id
-
     save_dir = Path(DATA_DIR)
     save_dir.mkdir(parents=True, exist_ok=True)
     file_path = save_dir / Path(file.filename).name
@@ -109,7 +117,12 @@ async def add_file(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to save uploaded file.",
         )
+    file_stat = Path(file_path).stat()
 
+    # Append extra metadata
+    metadata["file_size"] = _human_readable_size(file_stat.st_size)
+    metadata["created_at"] = datetime.fromtimestamp(file_stat.st_ctime).isoformat()
+    metadata["file_id"] = file_id
     try:
         task = indexer.add_file.remote(
             path=file_path, metadata=metadata, partition=partition
@@ -175,7 +188,6 @@ async def put_file(
             detail="Failed to delete existing file.",
         )
 
-    metadata["file_id"] = file_id
     save_dir = Path(DATA_DIR)
     save_dir.mkdir(parents=True, exist_ok=True)
     file_path = save_dir / Path(file.filename).name
@@ -191,7 +203,12 @@ async def put_file(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to save uploaded file.",
         )
+    file_stat = Path(file_path).stat()
 
+    # Append extra metadata
+    metadata["file_size"] = _human_readable_size(file_stat.st_size)
+    metadata["created_at"] = datetime.fromtimestamp(file_stat.st_ctime).isoformat()
+    metadata["file_id"] = file_id
     try:
         task = indexer.add_file.remote(
             path=file_path, metadata=metadata, partition=partition
