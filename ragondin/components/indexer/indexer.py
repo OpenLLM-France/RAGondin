@@ -15,7 +15,7 @@ from .chunker import BaseChunker, ChunkerFactory
 from .vectordb import ConnectorFactory
 
 
-@ray.remote(max_restarts=-1, concurrency_groups={"insertion": 1})
+@ray.remote(max_restarts=-1, max_concurrency=1000, concurrency_groups={"insertion": 1})
 class Indexer:
     def __init__(self):
         from utils.logger import get_logger
@@ -78,9 +78,7 @@ class Indexer:
 
             # Set task details
             user_metadata = {
-                k: v
-                for k, v in metadata.items()
-                if k not in {"file_id", "source", "filename"}
+                k: v for k, v in metadata.items() if k not in {"file_id", "source"}
             }
 
             await self.task_state_manager.set_details.remote(

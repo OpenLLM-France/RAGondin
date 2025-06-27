@@ -10,11 +10,17 @@ from openai import AsyncOpenAI
 from utils.logger import get_logger
 
 from dotenv import load_dotenv
+
 load_dotenv()
 logger = get_logger()
 
 PERSISTENCY = os.environ.get("CHAINLIT_DATALAYER_COMPOSE", "") != ""
 AUTH_TOKEN = os.environ.get("AUTH_TOKEN", "")
+
+# Chainlit authentication
+CHAINLIT_AUTH_SECRET = os.environ.get("CHAINLIT_AUTH_SECRET")
+CHAINLIT_USERNAME = os.environ.get("CHAINLIT_USERNAME", "Ragondin")
+CHAINLIT_PASSWORD = os.environ.get("CHAINLIT_PASSWORD", "Ragondin2025")
 
 headers = {
     "accept": "application/json",
@@ -26,21 +32,24 @@ if AUTH_TOKEN:
 
 if PERSISTENCY:
 
+    @cl.on_chat_resume
+    async def on_chat_resume(thread):
+        pass
+
+
+if CHAINLIT_AUTH_SECRET:
+
     @cl.password_auth_callback
     def auth_callback(username: str, password: str):
         # Fetch the user matching username from your database
         # and compare the hashed password with the value stored in the database
-        if (username, password) == ("admin", "admin"):
+        if (username, password) == (CHAINLIT_USERNAME, CHAINLIT_PASSWORD):
             return cl.User(
-                identifier="admin",
+                identifier=CHAINLIT_USERNAME,
                 metadata={"role": "admin", "provider": "credentials"},
             )
         else:
             return None
-
-    @cl.on_chat_resume
-    async def on_chat_resume(thread):
-        pass
 
 
 def get_base_url():

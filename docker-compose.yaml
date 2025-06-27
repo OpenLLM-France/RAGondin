@@ -13,9 +13,11 @@ x-ragondin: &ragondin_template
     - ${MODEL_WEIGHTS_VOLUME:-~/.cache/huggingface}:/app/model_weights # Model weights for RAG
     - ./ragondin:/app/ragondin # For dev mode
     - ${DB_VOLUME:-./db}:/app/db
+    - /$SHARED_ENV:/ray_mount/.env # Shared environment variables
+    - /ray_mount/logs:/app/logs
   ports:
     - ${APP_PORT:-8080}:${APP_iPORT:-8080}
-    - ${RAY_DASHBOARD_PORT:-8265}:8265 # for ray dashboard
+    - ${RAY_DASHBOARD_PORT:-8265}:8265 # Disable when in cluster mode
   networks:
     default:
       aliases:
@@ -36,7 +38,7 @@ x-vllm: &vllm_template
     - HUGGING_FACE_HUB_TOKEN
   ipc: "host"
   volumes:
-      - ${VLLM_CACHE:-/root/.cache/huggingface}:/root/.cache/huggingface # put ./vllm_cache if you want to have the weights on the vllm_cache folder in your project
+    - ${VLLM_CACHE:-/root/.cache/huggingface}:/root/.cache/huggingface # put ./vllm_cache if you want to have the weights on the vllm_cache folder in your project
   command: >
     --model ${EMBEDDER_MODEL_NAME:-jinaai/jina-embeddings-v3}
     --trust-remote-code

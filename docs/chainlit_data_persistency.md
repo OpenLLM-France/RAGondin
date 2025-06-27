@@ -1,6 +1,6 @@
 # Data Persistency
 
-A data layer can be activated using a git submodule:  
+Chainlit data layer can be activated using a git submodule:  
 https://github.com/OpenLLM-France/chainlit-datalayer/tree/main (forked from https://github.com/Chainlit/chainlit-datalayer).  
 With the fork, we industrialized the repo by dockerizing it.
 
@@ -36,20 +36,22 @@ The `--init --recursive` flags will:
 After adding the submodule, add the following variables to your `.env` file:
 
 ```bash
-# Chainlit data persistency
-## Persistency services (localstack + Fake AWS S3 (Deployed Locally))
-CHAINLIT_DATALAYER_COMPOSE=extern/chainlit-datalayer/compose.yaml # Path to docker compose file of the data layer service.
+# Chainlit UI authentication (Necessary for data persistency). Don't add it if it's already included
+CHAINLIT_AUTH_SECRET=... # has to be generated with with this command: 'uv run chainlit create-secret' but a random value works too.
+CHAINLIT_USERNAME=Ragondin
+CHAINLIT_PASSWORD=Ragondin2025
 
-## Secret key for Chainlit authentication
-CHAINLIT_AUTH_SECRET=... # Generate with: `uv run chainlit create-secret`
+## Chainlit data persistency
+# Persistency services (localstack + AWS (Deployed Locally))
+CHAINLIT_DATALAYER_COMPOSE=extern/chainlit-datalayer/compose.yaml
 
-## The PostgreSQL instance for data storage.
+## To link to the PostgreSQL instance.
 POSTGRES_USER=root
 POSTGRES_PASSWORD=root
 POSTGRES_DB=postgres
 POSTGRES_PORT=5432
 
-DATABASE_URL=postgresql://${POSTGRES_USER:-root}:${POSTGRES_PASSWORD:-root}@postgres:${POSTGRES_PORT:-5432}/${POSTGRES_DB:-postgres} # Used by the chainlit app: `ragondin/chainlit/app_front.py`
+DATABASE_URL=postgresql://${POSTGRES_USER:-root}:${POSTGRES_PASSWORD:-root}@postgres:${POSTGRES_PORT:-5432}/${POSTGRES_DB:-postgres} # for chainlit
 
 ## S3 configuration.
 BUCKET_NAME=my-bucket

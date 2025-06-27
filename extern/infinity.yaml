@@ -33,7 +33,7 @@ services:
     deploy: {}
     command: >
       v2
-      --engine optimum
+      --engine torch
       --model-id ${RERANKER_MODEL:-Alibaba-NLP/gte-multilingual-reranker-base}
       --port ${RERANKER_PORT:-7997}
     profiles:

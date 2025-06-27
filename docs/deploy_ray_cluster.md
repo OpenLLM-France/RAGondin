@@ -81,6 +81,7 @@ docker:
     - -v /ray_mount/data:/app/data
     - -v /ray_mount/db:/app/db
     - -v /ray_mount/.hydra_config:/app/.hydra_config
+    - -v /ray_mount/logs:/app/logs
     - --env-file /ray_mount/.env
 
 auth:
@@ -112,6 +113,8 @@ docker run --rm -d \
   -v /ray_mount/data:/app/data \
   -v /ray_mount/db:/app/db \
   -v /ray_mount/.hydra_config:/app/.hydra_config \
+  -v /ray_mount/logs:/app/logs \
+  --shm-size=10.24g
   --name ray_node_worker \
   ghcr.io/openllm-france/ragondin-ray \
   bash /app/ray-cluster/start_worker.sh
