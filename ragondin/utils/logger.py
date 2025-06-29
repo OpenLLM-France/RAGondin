@@ -5,6 +5,7 @@ from config import load_config
 
 config = load_config()
 
+
 def get_logger():
     def formatter(record):
         level = record["level"].name
@@ -14,7 +15,11 @@ def get_logger():
         message = record["message"]
         context = record["extra"]
         context_str = " | ".join(f"{k}={v}" for k, v in context.items())
-        return f"{level:<8} | {mod}:{func}:{line} - {message}" + (f" [{context_str}]" if context else "") + "\n"
+        return (
+            f"{level:<8} | {mod}:{func}:{line} - {message}"
+            + (f" [{context_str}]" if context else "")
+            + "\n"
+        )
 
     logger.remove()
 

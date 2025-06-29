@@ -58,7 +58,7 @@ class RetrieverPipeline:
         docs = await self.retriever.retrieve(
             partition=partition, query=query, db=self.vectordb
         )
-        self.logger.debug("Documents retreived", document_count=len(docs))
+        logger.debug("Documents retreived", document_count=len(docs))
         if docs:
             # grade and filter out irrelevant docs
             if self.grader_enabled:
@@ -72,6 +72,8 @@ class RetrieverPipeline:
 
             else:
                 docs = docs[: self.reranker_top_k]
+
+        logger.debug("Documents after reranking", document_count=len(docs))
 
         return docs
 
@@ -143,7 +145,7 @@ class RagPipeline:
 
         # 1. get the query
         query = await self.generate_query(messages)
-        self.logger.debug("Prepared query for chat completion", query=query)
+        logger.debug("Prepared query for chat completion", query=query)
 
         # 2. get docs
         docs = await self.retriever_pipeline.retrieve_docs(
@@ -163,7 +165,6 @@ class RagPipeline:
             docs = relevant_docs
 
         else:
-            logger.info("Retrieved documents", document_count=len(docs))
             # 3. Format the retrieved docs
             context = format_context(docs)
 
@@ -221,4 +222,5 @@ class RagPipeline:
             llm_output = self.llm_client.chat_completion(request=payload)
             return llm_output, docs
         except Exception as e:
+            logger.error(f"Error during chat completion: {str(e)}")
             raise e

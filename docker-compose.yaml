@@ -2,6 +2,7 @@ include:
   - vdb/milvus.yaml
   - ${CHAINLIT_DATALAYER_COMPOSE:-extern/dummy.yaml}
   - extern/infinity.yaml
+  - extern/indexer-ui/docker-compose.yaml
 
 x-ragondin: &ragondin_template
   build:
