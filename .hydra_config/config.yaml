@@ -1,6 +1,6 @@
 defaults:
   - _self_  # TODO: Silences the hydra version migration warning (PLEASE REVIEW FOR BREAKING CHANGES)
-  - chunker: recursive_splitter # recursive_splitter, semantic_splitter
+  - chunker: markdown_splitter # recursive_splitter, semantic_splitter
   - retriever: single
   - rag: ChatBotRag
 
@@ -45,14 +45,14 @@ reranker:
   model_name: ${oc.env:RERANKER_MODEL, Alibaba-NLP/gte-multilingual-reranker-base}
   reranker_type: ${oc.decode:${oc.env:RERANKER_MODEL_TYPE, colbert}}
   top_k: ${oc.decode:${oc.env:RERANKER_TOP_K, 4}}
-  base_url: ${oc.env:RERANKER_BASE_URL, http://reranker:7997}
+  base_url: ${oc.env:RERANKER_BASE_URL, http://reranker:${oc.env:RERANKER_PORT, 7997}}
 
 grader:
   enable: false
 
 verbose:
   verbose: true
-  level: INFO
+  level: DEBUG
 
 paths:
   prompts_dir: ${oc.env:PROMPTS_DIR, ../prompts/example3}
