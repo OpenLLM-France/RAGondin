@@ -1,6 +1,8 @@
 import httpx
-import json
 import copy
+from utils.logger import get_logger
+
+logger = get_logger()
 
 
 class LLM:
@@ -49,6 +51,7 @@ class LLM:
                         async for line in response.aiter_lines():
                             yield line
                 except Exception as e:
+                    logger.error(f"Error while streaming chat completion: {str(e)}")
                     raise e
 
             else:  # Handle non-streaming response
