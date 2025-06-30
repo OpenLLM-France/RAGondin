@@ -7,13 +7,15 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Union
 
 import ray
+import os
 import torch
 from config import load_config
 from langchain_core.documents.base import Document
 from langchain_openai import OpenAIEmbeddings
-
 from .chunker import BaseChunker, ChunkerFactory
 from .vectordb import ConnectorFactory
+
+save_uploaded_files = os.environ.get("SAVE_UPLOADED_FILES", "true").lower() == "true"
 
 
 @ray.remote(max_restarts=-1, max_concurrency=1000, concurrency_groups={"insertion": 1})
@@ -126,8 +128,9 @@ class Indexer:
                 torch.cuda.ipc_collect()
             try:
                 # Cleanup input file
-                Path(path).unlink(missing_ok=True)
-                log.debug(f"Deleted input file: {path}")
+                if not save_uploaded_files:
+                    Path(path).unlink(missing_ok=True)
+                    log.debug(f"Deleted input file: {path}")
             except Exception as cleanup_err:
                 log.warning(f"Failed to delete input file {path}: {cleanup_err}")
         return True
