@@ -457,6 +457,13 @@ To solve it, please run:
 uv venv --python=3.12
 uv sync
 ```
+### Error with models' weights downloading
+While executing RAGondin, if you encounter a problem that prevents you from downloading the models' weights locally, then you just need to create the needed folder and authorize it to be written and executed
+
+```bash
+sudo mkdir /app/model_weights
+sudo chmod 775 /app/model_weights
+```
 
 ## 🔧 Contributing
 
