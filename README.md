@@ -5,7 +5,7 @@ RAGondin is a lightweight, modular and extensible Retrieval-Augmented Generation
 > Built by the OpenLLM France community, RAGondin offers a sovereign-by-design alternative to mainstream RAG stacks like LangChain or Haystack.
 
 ## Table of Contents
-- [🦫 RAGondin — The Open RAG Experimentation Playground](#🦫-ragondin--the-open-rag-experimentation-playground)
+- [🦫 RAGondin — The Open RAG Experimentation Playground](#-ragondin--the-open-rag-experimentation-playground)
 - [Table of Contents](#table-of-contents)
 - [Goals](#goals)
 - [Current Features](#current-features)
@@ -14,12 +14,11 @@ RAGondin is a lightweight, modular and extensible Retrieval-Augmented Generation
   - [Indexing](#indexing)
   - [Retriever & Search](#retriever--search)
   - [RAG Type](#rag-type)
-- [🚀 Getting Started](#🚀-getting-started)
+- [🚀 Getting Started](#-getting-started)
   - [Installation](#installation)
   - [Configuration](#configuration)
-- [🏗️ Architecture](#🏗️-architecture)
 - [Troubleshooting](#troubleshooting)
-- [🔧 Contributing](#🔧-contributing)
+- [🔧 Contributing](#-contributing)
 
 
 ## Goals
@@ -419,23 +418,6 @@ To test these endpoint with openai client, you can refer to the the [openai_comp
 
 Simple endpoint to ensure the server is running.
 
----
-
-## 🏗️ Architecture
-
-```
-graph TD
-    A[User Query] --> B[RAGondin Backend]
-    B --> C[Retriever (Milvus)]
-    B --> D[Chunker & Preprocessing]
-    C --> E[Relevant Chunks]
-    E --> F[LLM Completion]
-    F --> G[Final Answer]
-```
-
-🧩 Designed for plug & play: each component can be swapped independently.
-
----
 
 
 ## Troubleshooting
