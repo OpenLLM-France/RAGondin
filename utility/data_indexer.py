@@ -38,7 +38,7 @@ dir_path = Path(args.dir).resolve()
 
 def __check_api(base_url):
     try:
-        response = httpx.get(f"{args.url}/health_check")
+        response = httpx.get(f"{base_url}/health_check", headers=headers)
         if response.status_code == 200:
             logger.info("API is up and running")
 
@@ -50,7 +50,7 @@ def __check_api(base_url):
 def __check_file_exists(base_url, partition, file_name, headers):
     try:
         url = f"{base_url}/partition/check-file/{partition}/file/{file_name}"
-        response = httpx.get(url, headers=headers)
+        response = httpx.get(url, headers=headers, timeout=60)
         if 200 == response.status_code:
             return True
     except Exception as e:
