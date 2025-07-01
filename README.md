@@ -118,6 +118,9 @@ RAGondin is designed to run in a containerized environment under Linux on x86_64
 #### 1. Clone the repository:
 ```bash
 git clone https://github.com/OpenLLM-France/RAGondin.git
+
+# git clone --recurse-submodules https://github.com/OpenLLM-France/RAGondin.git # to clone the repo with the associated submodules
+
 cd RAGondin
 git checkout main # or a given release
 ```
@@ -179,7 +182,6 @@ VLM_SEMAPHORE=10
 
 # App
 APP_PORT=8080 # this is the forwarded port
-APP_HOST=0.0.0.0
 
 # Vector db VDB Milvus
 VDB_HOST=milvus
@@ -199,7 +201,7 @@ EMBEDDER_API_KEY=EMPTY
 RERANKER_ENABLED=false
 RERANKER_MODEL=Alibaba-NLP/gte-multilingual-reranker-base # or jinaai/jina-reranker-v2-base-multilingual or jinaai/jina-colbert-v2 if you want
 RERANKER_MODEL_TYPE=crossencoder # colbert
-RERANKER_TOP_K=5 # Number of documents to return after reranking. upgrade to 8 for better results if your llm has a wider context window
+RERANKER_TOP_K=5 # Number of documents to return after reranking. increment it for better results if your llm has a wider context window
 
 # Prompts
 PROMPTS_DIR=../prompts/example3
@@ -234,6 +236,9 @@ AUTH_TOKEN=super-secret-token
 The default values are well-suited for GPU usage. However, you can adjust them as needed to experiment with different configurations based on your machine’s capabilities.
 
 #### 4.Deployment: Launch the app
+>[!IMPORTANT]
+> Before launching the app, You might want to configure the Indexation UI (). For that, see this [document](./docs/setup_indexerui.md)
+
 The application can be launched in either in GPU or CPU environment, depending on your device's capabilities. Use the following commands:
 
 ```bash
@@ -266,6 +271,8 @@ CHAINLIT_PASSWORD=Ragondin2025
 > Chat history is disabled by default. Chainlit includes built-in data persistence capabilities with an [out-of-the-box data layer schema](https://docs.chainlit.io/data-layers/official) to store all chat interactions: conversations, elements, user feedback, and more. To enable this functionality, follow the dedicated setup guide:
 
 ➡ [Enable Chainlit Data Persistence](./docs/chainlit_data_persistency.md)
+
+
 
 #### 5. Distributed deployment in a Ray cluster
 
