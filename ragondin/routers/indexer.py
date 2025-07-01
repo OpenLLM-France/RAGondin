@@ -1,4 +1,5 @@
 import json
+from datetime import datetime
 from pathlib import Path
 from typing import Any, Optional
 
@@ -15,7 +16,7 @@ from fastapi import (
     status,
 )
 from fastapi.responses import JSONResponse
-from utils.dependencies import Indexer, get_indexer, vectordb
+from utils.dependencies import get_vectordb, get_indexer, get_task_state_manager
 from utils.logger import get_logger
 
 # load logger
@@ -27,9 +28,6 @@ DATA_DIR = config.paths.data_dir
 ACCEPTED_FILE_FORMATS = dict(config.loader["file_loaders"]).keys()
 FORBIDDEN_CHARS_IN_FILE_ID = set("/")  # set('"<>#%{}|\\^`[]')
 LOG_FILE = Path(config.paths.log_dir or "logs") / "app.json"
-
-# Get the TaskStateManager actor
-task_state_manager = ray.get_actor("TaskStateManager", namespace="ragondin")
 
 # Create an APIRouter instance
 router = APIRouter()
@@ -75,6 +73,15 @@ async def validate_metadata(metadata: Optional[Any] = Form(None)):
         )
 
 
+def _human_readable_size(size_bytes: int) -> str:
+    """Convert bytes to a human-readable format (e.g., '2.4 MB')."""
+    for unit in ["B", "KB", "MB", "GB", "TB"]:
+        if size_bytes < 1024:
+            return f"{size_bytes:.2f} {unit}"
+        size_bytes /= 1024
+    return f"{size_bytes:.2f} PB"
+
+
 @router.post("/partition/{partition}/file/{file_id}")
 async def add_file(
     request: Request,
@@ -82,7 +89,8 @@ async def add_file(
     file_id: str = Depends(validate_file_id),
     file: UploadFile = Depends(validate_file_format),
     metadata: dict = Depends(validate_metadata),
-    indexer: Indexer = Depends(get_indexer),
+    vectordb=Depends(get_vectordb),
+    indexer=Depends(get_indexer),
 ):
     log = logger.bind(file_id=file_id, partition=partition, filename=file.filename)
 
@@ -91,8 +99,6 @@ async def add_file(
             status_code=status.HTTP_409_CONFLICT,
             detail=f"File '{file_id}' already exists in partition {partition}",
         )
-
-    metadata["file_id"] = file_id
 
     save_dir = Path(DATA_DIR)
     save_dir.mkdir(parents=True, exist_ok=True)
@@ -109,7 +115,12 @@ async def add_file(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to save uploaded file.",
         )
+    file_stat = Path(file_path).stat()
 
+    # Append extra metadata
+    metadata["file_size"] = _human_readable_size(file_stat.st_size)
+    metadata["created_at"] = datetime.fromtimestamp(file_stat.st_ctime).isoformat()
+    metadata["file_id"] = file_id
     try:
         task = indexer.add_file.remote(
             path=file_path, metadata=metadata, partition=partition
@@ -132,7 +143,7 @@ async def add_file(
 
 @router.delete("/partition/{partition}/file/{file_id}")
 async def delete_file(
-    partition: str, file_id: str, indexer: Indexer = Depends(get_indexer)
+    partition: str, file_id: str, indexer=Depends(get_indexer)
 ):
     try:
         deleted = ray.get(indexer.delete_file.remote(file_id, partition))
@@ -157,7 +168,8 @@ async def put_file(
     file_id: str = Depends(validate_file_id),
     file: UploadFile = Depends(validate_file_format),
     metadata: dict = Depends(validate_metadata),
-    indexer: Indexer = Depends(get_indexer),
+    vectordb=Depends(get_vectordb),
+    indexer=Depends(get_indexer),
 ):
     log = logger.bind(file_id=file_id, partition=partition, filename=file.filename)
 
@@ -175,7 +187,6 @@ async def put_file(
             detail="Failed to delete existing file.",
         )
 
-    metadata["file_id"] = file_id
     save_dir = Path(DATA_DIR)
     save_dir.mkdir(parents=True, exist_ok=True)
     file_path = save_dir / Path(file.filename).name
@@ -191,7 +202,12 @@ async def put_file(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to save uploaded file.",
         )
+    file_stat = Path(file_path).stat()
 
+    # Append extra metadata
+    metadata["file_size"] = _human_readable_size(file_stat.st_size)
+    metadata["created_at"] = datetime.fromtimestamp(file_stat.st_ctime).isoformat()
+    metadata["file_id"] = file_id
     try:
         task = indexer.add_file.remote(
             path=file_path, metadata=metadata, partition=partition
@@ -217,7 +233,8 @@ async def patch_file(
     partition: str,
     file_id: str = Depends(validate_file_id),
     metadata: Optional[Any] = Depends(validate_metadata),
-    indexer: Indexer = Depends(get_indexer),
+    vectordb=Depends(get_vectordb),
+    indexer=Depends(get_indexer),
 ):
     if not vectordb.file_exists(file_id, partition):
         raise HTTPException(
@@ -243,7 +260,7 @@ async def patch_file(
 
 @router.get("/task/{task_id}")
 async def get_task_status(
-    request: Request, task_id: str, indexer: Indexer = Depends(get_indexer)
+    request: Request, task_id: str, indexer=Depends(get_indexer), task_state_manager=Depends(get_task_state_manager)
 ):
     # fetch task state
     state = await indexer.get_task_status.remote(task_id)
@@ -270,7 +287,7 @@ async def get_task_status(
 
 
 @router.get("/task/{task_id}/error")
-async def get_task_error(task_id: str):
+async def get_task_error(task_id: str, task_state_manager=Depends(get_task_state_manager)):
     try:
         error = await task_state_manager.get_error.remote(task_id)
         if error is None:

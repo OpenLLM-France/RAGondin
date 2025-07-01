@@ -41,8 +41,7 @@ class MarkerWorker:
             "pdftext_workers": 1,
             "disable_multiprocessing": True,
         }
-        if "RAY_ADDRESS" not in os.environ:
-            os.environ["RAY_ADDRESS"] = "auto"
+        os.environ["RAY_ADDRESS"] = "auto"
         self.pool = None
         self.init_resources()
 

@@ -17,7 +17,6 @@ from enum import Enum
 from pathlib import Path
 from typing import Optional
 
-import uvicorn
 from components import RagPipeline
 from config import load_config
 from fastapi import Depends, FastAPI, HTTPException, Request, status
@@ -30,14 +29,19 @@ from routers.openai import router as openai_router
 from routers.partition import router as partition_router
 from routers.queue import router as queue_router
 from routers.search import router as search_router
-from utils.dependencies import vectordb
+from utils.dependencies import get_indexer, get_task_state_manager, get_vectordb, get_marker_pool, get_serializer_queue
 from utils.logger import get_logger
 
 logger = get_logger()
 config = load_config()
 DATA_DIR = Path(config.paths.data_dir)
 
-ragPipe = RagPipeline(config=config, vectordb=vectordb, logger=logger)
+task_state_manager = get_task_state_manager()
+# marker_pool = get_marker_pool()
+# serializer_queue = get_serializer_queue()
+# indexer = get_indexer()
+# vectordb = get_vectordb()
+#ragPipe = RagPipeline(config=config, vectordb=vectordb, logger=logger)
 
 
 class Tags(Enum):
@@ -53,8 +57,8 @@ class Tags(Enum):
 class AppState:
     def __init__(self, config):
         self.config = config
-        self.ragpipe = ragPipe
-        self.vectordb = vectordb
+        #self.ragpipe = ragPipe
+        #self.vectordb = vectordb
         self.data_dir = Path(config.paths.data_dir)
 
 
@@ -78,14 +82,6 @@ def verify_token(credentials: HTTPAuthorizationCredentials = Depends(security)):
 dependencies = [Depends(verify_token)] if AUTH_TOKEN else []
 app = FastAPI(dependencies=dependencies)
 
-# Add CORS middleware
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],  # Adjust as needed for production
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
 
 app.state.app_state = AppState(config)
 app.mount(
@@ -97,7 +93,7 @@ from fastapi.middleware.cors import CORSMiddleware
 # Add CORS middleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Adjust as needed for production
+    allow_origins=["http://localhost:5173", "http://localhost:3042"] ,  # Adjust as needed for production
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -143,6 +139,3 @@ if WITH_CHAINLIT_UI:
     app.include_router(
         openai_router, prefix="/v1", tags=[Tags.OPENAI]
     )  # cause chainlit uses openai api endpoints
-
-if __name__ == "__main__":
-    uvicorn.run("api:app", host="0.0.0.0", port=8080, reload=True, proxy_headers=True)

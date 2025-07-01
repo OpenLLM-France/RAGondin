@@ -4,6 +4,7 @@ import inspect
 import traceback
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional, Union
+from pathlib import Path
 
 import ray
 import torch
@@ -123,6 +124,12 @@ class Indexer:
                 gc.collect()
                 torch.cuda.empty_cache()
                 torch.cuda.ipc_collect()
+            try:
+                # Cleanup input file
+                Path(path).unlink(missing_ok=True)
+                log.debug(f"Deleted input file: {path}")
+            except Exception as cleanup_err:
+                log.warning(f"Failed to delete input file {path}: {cleanup_err}")
 
         return True
 

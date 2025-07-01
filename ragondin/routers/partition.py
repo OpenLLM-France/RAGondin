@@ -1,16 +1,15 @@
 import ray
 from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
 from fastapi.responses import JSONResponse
-from utils.dependencies import Indexer, get_indexer, vectordb
+from utils.dependencies import get_vectordb, get_indexer
 from utils.logger import get_logger
 
 logger = get_logger()
 
 router = APIRouter()
 
-
 @router.get("/")
-async def list_existant_partitions(request: Request):
+async def list_existant_partitions(vectordb=Depends(get_vectordb)):
     try:
         partitions = [
             {"partition": p.partition, "created_at": int(p.created_at.timestamp())}
@@ -31,7 +30,7 @@ async def list_existant_partitions(request: Request):
 
 
 @router.delete("/{partition}")
-async def delete_partition(partition: str, indexer: Indexer = Depends(get_indexer)):
+async def delete_partition(partition: str, indexer=Depends(get_indexer)):
     try:
         deleted = ray.get(indexer.delete_partition.remote(partition))
     except Exception:
@@ -56,8 +55,8 @@ async def delete_partition(partition: str, indexer: Indexer = Depends(get_indexe
 async def list_files(
     request: Request,
     partition: str,
-    indexer: Indexer = Depends(get_indexer),
-):
+    vectordb=Depends(get_vectordb),
+    ):
     log = logger.bind(partition=partition)
 
     if not vectordb.partition_exists(partition):
@@ -90,9 +89,9 @@ async def list_files(
 
 @router.get("/check-file/{partition}/file/{file_id}")
 async def check_file_exists_in_partition(
-    request: Request,
     partition: str,
     file_id: str,
+    vectordb=Depends(get_vectordb),
 ):
     log = logger.bind(partition=partition, file_id=file_id)
     exists = vectordb.file_exists(file_id, partition)
@@ -115,6 +114,7 @@ async def get_file(
     request: Request,
     partition: str,
     file_id: str,
+    vectordb=Depends(get_vectordb)
 ):
     if not vectordb.file_exists(file_id, partition):
         raise HTTPException(
@@ -151,7 +151,7 @@ async def get_file(
 
 @router.get("/{partition}/sample")
 async def sample_chunks(
-    request: Request, partition: str, n_ids: int = 200, seed: int | None = None
+    request: Request, partition: str, n_ids: int = 200, seed: int | None = None, vectordb=Depends(get_vectordb)
 ):
     # Check if partition exists
     if not vectordb.partition_exists(partition):
@@ -180,7 +180,7 @@ async def sample_chunks(
 
 @router.get("/{partition}/chunks")
 async def list_all_chunks(
-    request: Request, partition: str, include_embedding: bool = True
+    request: Request, partition: str, include_embedding: bool = True, vectordb=Depends(get_vectordb)
 ):
     # Check if partition exists
     if not vectordb.partition_exists(partition):

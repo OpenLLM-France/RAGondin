@@ -7,7 +7,16 @@ from components.indexer.indexer import Indexer, TaskStateManager
 from components.indexer.loaders.pdf_loaders.marker import MarkerPool
 from components.indexer.loaders.serializer import SerializerQueue
 
-
+def get_or_create_actor(name, cls, namespace="ragondin", **options):
+    from utils.logger import get_logger
+    logger= get_logger()
+    logger.info(f"Getting or creating actor: {name} in namespace: {namespace}")
+    try:
+        return ray.get_actor(name, namespace=namespace)
+    except Exception as e:
+        logger.info(f"Actor {name} not found, creating a new one: {e}")
+        return cls.options(name=name, namespace=namespace, **options).remote()
+    
 class VDBProxy:
     """Class that delegates method calls to the remote vectordb."""
 
@@ -43,28 +52,95 @@ class VDBProxy:
 # load config
 config = load_config()
 
-# Initialize marker if needed
-if config.loader.file_loaders.get("pdf") == "MarkerLoader":
-    marker = MarkerPool.options(name="MarkerPool", namespace="ragondin").remote()
 
-# Create task state manager actor
-task_state_manager = TaskStateManager.options(
-    name="TaskStateManager", lifetime="detached", namespace="ragondin"
-).remote()
+def get_vectordb() -> ABCVectorDB:
+    indexer = ray.get_actor("Indexer", namespace="ragondin")
+    return VDBProxy(indexer_actor=indexer)
 
-# Create document serializer actor
-serializer_queue = SerializerQueue.options(
-    name="SerializerQueue", namespace="ragondin"
-).remote()
-
-# Create global indexer supervisor actor
-indexer = Indexer.options(name="Indexer", namespace="ragondin").remote()
-
-# Create vectordb instance
-vectordb: ABCVectorDB = VDBProxy(
-    indexer_actor=indexer
-)  # vectordb is not of type ABCVectorDB, but it mimics it
-
-
+def get_task_state_manager():
+    return get_or_create_actor("TaskStateManager", TaskStateManager, lifetime="detached")
+def get_serializer_queue():
+    return get_or_create_actor("SerializerQueue", SerializerQueue)
+def get_marker_pool():
+    if config.loader.file_loaders.get("pdf") == "MarkerLoader":
+        return get_or_create_actor("MarkerPool", MarkerPool)
 def get_indexer():
-    return indexer
+    return get_or_create_actor("Indexer", Indexer)
+import asyncio
+from dataclasses import dataclass, field
+from typing import Any, Dict, Optional
+
+@ray.remote
+class Test:
+    def __init__(self):
+        from dataclasses import dataclass, field
+        from typing import Any, Dict, Optional
+        @dataclass
+        class TaskInfo:
+            state: Optional[str] = None
+            error: Optional[str] = None
+            details: Dict[str, Any] = field(default_factory=dict)
+        self.TaskInfo = TaskInfo
+        self.tasks: Dict[str, TaskInfo] = {}
+        self.lock = asyncio.Lock()
+
+    async def _ensure_task(self, task_id: str):
+        """Helper to get-or-create the TaskInfo object under lock."""
+        if task_id not in self.tasks:
+            self.tasks[task_id] = self.TaskInfo()
+        return self.tasks[task_id]
+
+    async def set_state(self, task_id: str, state: str):
+        async with self.lock:
+            info = await self._ensure_task(task_id)
+            info.state = state
+
+    async def set_error(self, task_id: str, tb_str: str):
+        async with self.lock:
+            info = await self._ensure_task(task_id)
+            info.error = tb_str
+
+    async def set_details(
+        self, task_id: str, *, file_id: str, partition: int, metadata: dict
+    ):
+        async with self.lock:
+            info = await self._ensure_task(task_id)
+            info.details = {
+                "file_id": file_id,
+                "partition": partition,
+                "metadata": metadata,
+            }
+
+    async def get_state(self, task_id: str) -> Optional[str]:
+        async with self.lock:
+            info = self.tasks.get(task_id)
+            return info.state if info else None
+
+    async def get_error(self, task_id: str) -> Optional[str]:
+        async with self.lock:
+            info = self.tasks.get(task_id)
+            return info.error if info else None
+
+    async def get_details(self, task_id: str) -> Optional[dict]:
+        async with self.lock:
+            info = self.tasks.get(task_id)
+            return info.details if info else None
+
+    async def get_all_states(self) -> Dict[str, str]:
+        async with self.lock:
+            return {tid: info.state for tid, info in self.tasks.items()}
+
+    async def get_all_info(self) -> Dict[str, dict]:
+        async with self.lock:
+            return {
+                task_id: {
+                    "state": info.state,
+                    "error": info.error,
+                    "details": info.details,
+                }
+                for task_id, info in self.tasks.items()
+            }
+
+test1 = Test.remote()
+test2 = Test.remote()
+test3 = get_or_create_actor("TestActor", Test)

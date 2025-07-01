@@ -2,21 +2,17 @@ from collections import Counter
 
 import ray
 from config.config import load_config
-from fastapi import APIRouter, Request, status
+from fastapi import APIRouter, Request, status, Depends
 from fastapi.responses import JSONResponse
+from utils.dependencies import get_task_state_manager, get_serializer_queue
+from utils.logger import get_logger
 
+logger = get_logger()
 # load config
 config = load_config()
 
 # Create an APIRouter instance
 router = APIRouter()
-
-task_state_manager = ray.get_actor("TaskStateManager", namespace="ragondin")
-
-
-serializer_queue = ray.get_actor("SerializerQueue", namespace="ragondin")
-task_state_manager = ray.get_actor("TaskStateManager", namespace="ragondin")
-
 
 def _format_pool_info(worker_info: dict[str, int]) -> dict[str, int]:
     """
@@ -32,7 +28,7 @@ def _format_pool_info(worker_info: dict[str, int]) -> dict[str, int]:
 
 
 @router.get("/info")
-async def get_queue_info():
+async def get_queue_info(task_state_manager=Depends(get_task_state_manager), serializer_queue=Depends(get_serializer_queue)):
     all_states: dict = await task_state_manager.get_all_states.remote()
     status_counts = Counter(all_states.values())
 
@@ -53,7 +49,7 @@ async def get_queue_info():
 
 
 @router.get("/tasks", name="list_tasks")
-async def list_tasks(request: Request, task_status: str | None = None):
+async def list_tasks(request: Request, task_status: str | None = None, task_state_manager=Depends(get_task_state_manager)):
     """
     - ?task_status=active  → QUEUED | SERIALIZING | CHUNKING | INSERTING
     - ?task_status=<exact> → exact match (case-insensitive)
