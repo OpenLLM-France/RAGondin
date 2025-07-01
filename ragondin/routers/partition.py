@@ -10,12 +10,28 @@ router = APIRouter()
 
 
 @router.get("/")
-async def list_existant_partitions(request: Request):
+async def list_existant_partitions(request: Request, include_files: bool = False):
     try:
-        partitions = [
-            {"partition": p.partition, "created_at": int(p.created_at.timestamp())}
-            for p in vectordb.list_partitions()
-        ]
+        partitions = []
+        for p in vectordb.list_partitions():
+            d = {
+                "partition": p.partition,
+                "created_at": int(p.created_at.timestamp()),
+            }
+            logger.info(f"Files {p.files}")
+            if include_files:
+                files = [
+                    str(
+                        request.url_for(
+                            "get_file", partition=p.partition, file_id=file.file_id
+                        )
+                    )
+                    for file in p.files
+                ]
+                d["files"] = files
+
+            partitions.append(d)
+
         logger.debug(
             "Returned list of existing partitions.", partition_count=len(partitions)
         )
@@ -81,7 +97,9 @@ async def list_files(
         )
 
     files = [
-        {"link": str(request.url_for("get_file", partition=partition, file_id=file))}
+        {
+            "link": str(request.url_for("get_file", partition=partition, file_id=file)),
+        }
         for file in results
     ]
 

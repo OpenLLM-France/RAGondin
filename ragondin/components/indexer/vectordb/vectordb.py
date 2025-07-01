@@ -538,8 +538,8 @@ class MilvusDB(ABCVectorDB):
     def list_partitions(self):
         try:
             return self.partition_file_manager.list_partitions()
-        except Exception:
-            self.logger.exception("Failed to list partitions.")
+        except Exception as e:
+            self.logger.exception(f"Failed to list partitions: {e}")
             raise
 
     def collection_exists(self, collection_name: str):

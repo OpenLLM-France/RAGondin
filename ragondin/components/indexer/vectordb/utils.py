@@ -56,7 +56,9 @@ class File(Base):
     )
 
     def to_pydantic(self):
-        return FileModel(id=self.id, file_id=self.file_id, partition=self.partition)
+        return FileModel(
+            id=self.id, file_id=self.file_id, partition=self.partition_name
+        )
 
     def __repr__(self):
         return f"<File(id={self.id}, file_id='{self.file_id}', partition='{self.partition}')>"
@@ -73,17 +75,12 @@ class Partition(Base):
         "File", back_populates="partition", cascade="all, delete-orphan"
     )
 
-    def to_pydantic(self, exclude_files=True):
-        if exclude_files:
-            return BasePartitionModel(
-                partition=self.partition, created_at=self.created_at
-            )
-        else:
-            return PartitionModel(
-                partition=self.partition,
-                created_at=self.created_at,
-                files=[file.to_pydantic() for file in self.files],
-            )
+    def to_pydantic(self):
+        return PartitionModel(
+            partition=self.partition,
+            created_at=self.created_at,
+            files=[file.to_pydantic() for file in self.files],
+        )
 
     def __repr__(self):
         return f"<Partition(key='{self.partition}', created_at='{self.created_at}', file_count={len(self.files)})>"
@@ -212,9 +209,7 @@ class PartitionFileManager:
         """List all existing partitions"""
         with self.Session() as session:
             partitions = session.query(Partition).all()
-            return [
-                partition.to_pydantic(exclude_files=True) for partition in partitions
-            ]
+            return [partition.to_pydantic() for partition in partitions]
 
     def list_files_in_partition(self, partition: str):
         """List all files in a partition"""
