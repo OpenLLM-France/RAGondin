@@ -56,5 +56,11 @@ volumes/
 volumes/*
 !volumes/.gitkeep # Keep the placeholder
 
-# benchmarking
-evaluation-embedder-reranker
+# services
+services/
+services/*
+!services/.gitkeep # Keep the placeholder
+
+*.json
+*.csv
+*.pkl

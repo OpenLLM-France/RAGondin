@@ -3,9 +3,10 @@ import atexit
 import threading
 from abc import ABCMeta
 from pathlib import Path
+
+import ray
 from config.config import load_config
 from langchain_core.documents.base import Document
-import ray
 
 
 class SingletonMeta(type):
@@ -52,7 +53,7 @@ class LLMSemaphore(metaclass=SingletonMeta):
             self._semaphore.release()
 
 
-@ray.remote
+@ray.remote(max_concurrency=100000)
 class DistributedSemaphoreActor:
     def __init__(self, max_concurrent_ops: int):
         self.semaphore = asyncio.Semaphore(max_concurrent_ops)
@@ -70,14 +71,21 @@ class DistributedSemaphoreActor:
 
 class DistributedSemaphore:
     # https://chat.deepseek.com/a/chat/s/890dbcc0-2d3f-4819-af9d-774b892905bc
-    def __init__(self, name: str = "llmSemaphore", max_concurrent_ops: int = 10):
+    def __init__(
+        self,
+        name: str = "llmSemaphore",
+        namespace="ragondin",
+        max_concurrent_ops: int = 10,
+    ):
         try:
-            actor = ray.get_actor(name)  # reuse existing actor if it exists
+            actor = ray.get_actor(
+                name, namespace=namespace
+            )  # reuse existing actor if it exists
         except ValueError:
             # create new actor if it doesn't exist
-            actor = DistributedSemaphoreActor.options(name=name).remote(
-                max_concurrent_ops
-            )
+            actor = DistributedSemaphoreActor.options(
+                name=name, namespace=namespace
+            ).remote(max_concurrent_ops)
 
         self._actor = actor
 
@@ -99,49 +107,20 @@ def load_sys_template(file_path: Path) -> tuple[str, str]:
 
 
 def format_context(docs: list[Document]) -> str:
-    """
-    Build a context string from a list of documents.
-    Args:
-        docs (list[Document]): A list of Document objects to be formatted.
-    Returns:
-        tuple: A tuple containing:
-            - str: A formatted string representing the context built from the documents.
-            - list: A list of dictionaries, each containing metadata and content of the documents.
-                Each dictionary contains the following keys:
-                - "doc_id" (str): The identifier of the document.
-                - "source" (str): The source of the document.
-                - "sub_url_path" (str): The sub URL path of the document.
-                - "page" (int): The page number of the document.
-                - "content" (str): The content of the document.'
-    """
     if not docs:
-        return "No document found from the database", []
+        return "No document found from the database"
 
-    sources = []
     context = "Extracted documents:\n"
-
     for i, doc in enumerate(docs, start=1):
         doc_id = f"[doc_{i}]"
         document = f"""
         *source*: {doc_id}
         content: \n{doc.page_content.strip()}\n
         """
-
         context += document
         context += "-" * 40 + "\n\n"
 
-        sources.append(
-            {
-                "doc_id": doc_id,
-                "_id": doc.metadata["_id"],
-                "source": doc.metadata["source"],
-                "filename": doc.metadata["filename"],
-                "page": doc.metadata["page"],
-                'partition': doc.metadata['partition'],
-                "content": doc.page_content,
-            }
-        )
-    return context, sources
+    return context
 
 
 # Global variables

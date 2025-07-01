@@ -3,19 +3,27 @@ import base64
 import re
 from abc import ABC, abstractmethod
 from io import BytesIO
+from pathlib import Path
+from typing import Dict, Optional, Union
 
 from langchain_core.documents.base import Document
 from langchain_core.messages import HumanMessage
 from langchain_openai import ChatOpenAI
-from loguru import logger
+from utils.logger import get_logger
 
-from ...utils import vlmSemaphore
+from ...utils import load_config, load_sys_template, vlmSemaphore
 
-IMAGE_DESCRIPTION_PROMPT = """Provide a complete, structured and precise description of this image or figure in the same language (french) as its content. If the image contains tables, render them in markdown."""
+logger = get_logger()
+
+config = load_config()
+prompts_dir = Path(config.paths.prompts_dir)
+img_desc_prompt_path = prompts_dir / config.prompt["image_describer"]
+IMAGE_DESCRIPTION_PROMPT = load_sys_template(img_desc_prompt_path)
 
 
 class BaseLoader(ABC):
     def __init__(self, **kwargs) -> None:
+        self.page_sep = "[PAGE_SEP]"
         self.config = kwargs.get("config")
         vlm_config = self.config.vlm
         model_settings = {
@@ -27,17 +35,22 @@ class BaseLoader(ABC):
         settings.update(model_settings)
 
         self.vlm_endpoint = ChatOpenAI(**settings).with_retry(stop_after_attempt=2)
-        self.min_width_pixels = 100  # minimum width in pixels
-        self.min_height_pixels = 100  # minimum height in pixels
+        self.min_width_pixels = 0  # minimum width in pixels
+        self.min_height_pixels = 0  # minimum height in pixels
 
     @abstractmethod
-    async def aload_document(self, file_path, metadata: dict = None, save_md=False):
+    async def aload_document(
+        file_path: Union[str, Path],
+        metadata: Optional[Dict] = None,
+        save_markdown: bool = False,
+    ):
         pass
 
     def save_document(self, doc: Document, path: str):
         path = re.sub(r"\..*", ".md", path)
         with open(path, "w", encoding="utf-8") as f:
             f.write(doc.page_content)
+        logger.debug(f"Document saved to {path}")
 
     async def get_image_description(
         self, image, semaphore: asyncio.Semaphore = vlmSemaphore
@@ -74,13 +87,9 @@ class BaseLoader(ABC):
                     response = await self.vlm_endpoint.ainvoke([message])
                     image_description = response.content
 
-            except Exception as e:
-                logger.error(f"Error while generating image description: {e}")
+            except Exception:
+                logger.exception("Error while generating image description")
 
             # Convert image path to markdown format and combine with description
-            if image_description:
-                markdown_content = f"\nDescription de l'image:\n{image_description}\n"
-            else:
-                markdown_content = ""
-
-            return markdown_content
+            desc = f"""\n<image_description>\n{image_description}\n</image_description>\n"""
+            return desc

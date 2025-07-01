@@ -1,28 +1,50 @@
 include:
   - vdb/milvus.yaml
+  - ${CHAINLIT_DATALAYER_COMPOSE:-extern/dummy.yaml}
+  - extern/infinity.yaml
+  - ${INDEXERUI_COMPOSE_FILE:-extern/dummy.yaml}
 
 x-ragondin: &ragondin_template
   build:
     context: .
     dockerfile: Dockerfile
   volumes:
-    - ./.hydra_config:/app/.hydra_config
-    - ${MODEL_WEIGTHS:-~/.cache/huggingface}:/app/model_weights
-    - ./data:/app/data
+    - ${CONFIG_VOLUME:-./.hydra_config}:/app/.hydra_config
+    - ${DATA_VOLUME:-./data}:/app/data
+    - ${MODEL_WEIGHTS_VOLUME:-~/.cache/huggingface}:/app/model_weights # Model weights for RAG
     - ./ragondin:/app/ragondin # For dev mode
-    - ${MILVUS_VOLUME_DIRECTORY:-./volumes}:/app/volumes
-
+    - ${DB_VOLUME:-./db}:/app/db
+    - /$SHARED_ENV:/ray_mount/.env # Shared environment variables
+    - /ray_mount/logs:/app/logs
   ports:
-    - "${APP_PORT:-8080}:${APP_iPORT:-8080}"
-    - ${RAY_DASHBOARD_PORT:-8265}:${RAY_DASHBOARD_PORT:-8265} # for ray dashboard
-
+    - ${APP_PORT:-8080}:${APP_iPORT:-8080}
+    - ${RAY_DASHBOARD_PORT:-8265}:8265 # Disable when in cluster mode
+  networks:
+    default:
+      aliases:
+        - ragondin
   env_file:
-    - .env
+    - ${SHARED_ENV:-.env}
   shm_size: 10.24gb
-
   depends_on:
     - milvus
 
+x-vllm: &vllm_template
+  networks:
+    default:
+      aliases:
+        - vllm
+  restart: always
+  environment:
+    - HUGGING_FACE_HUB_TOKEN
+  ipc: "host"
+  volumes:
+    - ${VLLM_CACHE:-/root/.cache/huggingface}:/root/.cache/huggingface # put ./vllm_cache if you want to have the weights on the vllm_cache folder in your project
+  command: >
+    --model ${EMBEDDER_MODEL_NAME:-jinaai/jina-embeddings-v3}
+    --trust-remote-code
+  ports:
+    - ${VLLM_PORT:-8000}:8000
 services:
   # GPU - default 
   ragondin:
@@ -35,12 +57,36 @@ services:
               count: all
               capabilities: [ gpu ]
     profiles:
-      - '' # Empty string gives default behavior (but does not run when cpu requested)
+      - ''
 
-
-  # No GPU (docker compose --profile cpu up --build)
+  # No GPU
   ragondin-cpu:
     <<: *ragondin_template
     deploy: {}
     profiles:
       - 'cpu'
+
+  # vllm-gpu:
+  #   <<: *vllm_template
+  #   image: vllm/vllm-openai:latest
+  #   runtime: nvidia
+  #   deploy:
+  #     resources:
+  #       reservations:
+  #         devices:
+  #           - driver: nvidia
+  #             count: all 
+  #             capabilities: [gpu]
+  #   profiles:
+  #     - '' # Empty string gives default behavior (but does not run when cpu requested)
+
+  # vllm-cpu:
+  #   <<: *vllm_template
+  #   build:
+  #     context: extern/vllm
+  #     dockerfile: Dockerfile.cpu
+  #     target: vllm-openai
+  #   image: ragondin-vllm-openai-cpu
+  #   deploy: {}
+  #   profiles:
+  #     - 'cpu'

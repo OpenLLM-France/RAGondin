@@ -1,6 +1,7 @@
 import asyncio
 from abc import ABC, abstractmethod
 from typing import Dict, List, Optional, Union
+
 from langchain_community.embeddings import HuggingFaceBgeEmbeddings
 from langchain_core.documents.base import Document
 from langchain_huggingface import HuggingFaceEmbeddings
@@ -8,13 +9,16 @@ from langchain_milvus import BM25BuiltInFunction, Milvus
 from langchain_qdrant import FastEmbedSparse, QdrantVectorStore, RetrievalMode
 from pymilvus import MilvusClient
 from qdrant_client import QdrantClient, models
+
 from .utils import PartitionFileManager
+import random
+import numpy as np
 
 INDEX_PARAMS = [
     {
         "metric_type": "BM25",
         "index_type": "SPARSE_INVERTED_INDEX",
-    },  # Fovr sparse vector
+    },  # For sparse vector
     {
         "metric_type": "COSINE",
         "index_type": "HNSW",
@@ -70,6 +74,18 @@ class ABCVectorDB(ABC):
 
     @abstractmethod
     def collection_exists(self, collection_name: str):
+        pass
+
+    @abstractmethod
+    def sample_chunk_ids(
+        self, partition: str, n_ids: int = 100, seed: int | None = None
+    ):
+        pass
+
+    @abstractmethod
+    def list_all_chunk(
+        self, partition: str, include_embedding: bool = True
+    ) -> List[Document]:
         pass
 
 
@@ -146,7 +162,7 @@ class MilvusDB(ABCVectorDB):
         self.vector_store = None
         self.partition_file_manager: PartitionFileManager = None
         self.default_partition = "_default"
-        self.volumes_dir = kwargs.get("volumes_dir", None)
+        self.db_dir = kwargs.get("db_dir", None)
 
         # Set the initial collection name (if provided)
         if collection_name:
@@ -178,14 +194,13 @@ class MilvusDB(ABCVectorDB):
             consistency_level="Strong",
         )
 
-        self.logger.info(f"VOLUME: {self.volumes_dir}")
-
         self.partition_file_manager = PartitionFileManager(
-            database_url=f"sqlite:///{self.volumes_dir}/partitions_for_collection_{name}.db",
+            database_url=f"sqlite:///{self.db_dir}/partitions_for_collection_{name}.db",
             logger=self.logger,
         )
 
-        self.logger.info(f"The Collection named `{name}` loaded.")
+        self.logger = self.logger.bind(collection=name)
+        self.logger.info("Milvus collection loaded.")
 
         if self.default_collection_name is None:
             self.default_collection_name = name
@@ -235,7 +250,7 @@ class MilvusDB(ABCVectorDB):
             {
                 "metric_type": "COSINE",
                 "params": {
-                    "ef": 15,
+                    "ef": 20,
                     "radius": similarity_threshold,
                     "range_filter": 1.0,
                 },
@@ -243,17 +258,18 @@ class MilvusDB(ABCVectorDB):
             {"metric_type": "BM25", "params": {"drop_ratio_build": 0.2}},
         ]
 
+        # "params": {"drop_ratio_build": 0.2, "bm25_k1": 1.2, "bm25_b": 0.75},
+
         if self.hybrid_mode:
             docs_scores = await self.vector_store.asimilarity_search_with_score(
                 query=query,
                 k=top_k,
                 fetch_k=top_k,
                 ranker_type="rrf",
+                ranker_params={"k": 100},
                 expr=expr,
                 param=SEARCH_PARAMS,
             )
-            # self.logger.info(f"Docs: {docs_scores}")
-
         else:
             docs_scores = (
                 await self.vector_store.asimilarity_search_with_relevance_scores(
@@ -264,7 +280,11 @@ class MilvusDB(ABCVectorDB):
                 )
             )
 
+        for doc, score in docs_scores:
+            doc.metadata["score"] = score
+
         docs = [doc for doc, score in docs_scores]
+
         return docs
 
     async def async_multy_query_search(
@@ -301,7 +321,11 @@ class MilvusDB(ABCVectorDB):
             if retrieved:
                 for document in retrieved:
                     retrieved_chunks[document.metadata["_id"]] = document
-        return list(retrieved_chunks.values())
+
+        retrieved_chunks = list(retrieved_chunks.values())
+        retrieved_chunks.sort(key=lambda v: v.metadata["score"], reverse=True)
+
+        return retrieved_chunks
 
     async def async_add_documents(self, chunks: list[Document]) -> None:
         """Asynchronously add documents to the vector store."""
@@ -327,8 +351,6 @@ class MilvusDB(ABCVectorDB):
                 file_id=file_id, partition=partition
             )
 
-        self.logger.info(f"CHUNKS INSERTED")
-
     def get_file_points(self, file_id: str, partition: str, limit: int = 100):
         """
         Retrieve file points from the vector database based on a filter.
@@ -342,7 +364,7 @@ class MilvusDB(ABCVectorDB):
             ValueError: If the filter value type is unsupported.
             Exception: If there is an error during the query process.
         """
-
+        log = self.logger.bind(file_id=file_id, partition=partition)
         try:
             if not self.partition_file_manager.file_exists_in_partition(
                 file_id=file_id, partition=partition
@@ -373,16 +395,17 @@ class MilvusDB(ABCVectorDB):
 
                 if limit == 1:
                     return [response[0]["_id"]] if response else []
+            log.info("Fetched file points.", count=len(results))
+            return results
 
-            return results  # Return list of result IDs
-
-        except Exception as e:
-            self.logger.error(f"Couldn't get file points for file_id {file_id}: {e}")
+        except Exception:
+            log.exception(f"Couldn't fetch file points for file_id {file_id}")
             raise
 
     def get_file_chunks(
         self, file_id: str, partition: str, include_id: bool = False, limit: int = 100
     ):
+        log = self.logger.bind(file_id=file_id, partition=partition)
         try:
             if not self.partition_file_manager.file_exists_in_partition(
                 file_id=file_id, partition=partition
@@ -424,10 +447,11 @@ class MilvusDB(ABCVectorDB):
                 )
                 for res in results
             ]
-            return docs  # Return list of result IDs
+            log.info("Fetched file chunks.", count=len(results))
+            return docs
 
-        except Exception as e:
-            self.logger.error(f"Couldn't get file points for file_id {file_id}: {e}")
+        except Exception:
+            log.exception(f"Couldn't get file chunks for file_id {file_id}")
             raise
 
     def get_chunk_by_id(self, chunk_id: str):
@@ -454,13 +478,14 @@ class MilvusDB(ABCVectorDB):
                     },
                 )
             return None
-        except Exception as e:
-            self.logger.error(f"Couldn't get chunk by ID {chunk_id}: {e}")
+        except Exception:
+            self.logger.exception("Couldn't get chunk by ID", chunk_id=chunk_id)
 
     def delete_file_points(self, points: list, file_id: str, partition: str):
         """
         Delete points from Milvus
         """
+        log = self.logger.bind(file_id=file_id, partition=partition)
         try:
             if not self.partition_file_manager.file_exists_in_partition(
                 file_id=file_id, partition=partition
@@ -473,10 +498,9 @@ class MilvusDB(ABCVectorDB):
             self.partition_file_manager.remove_file_from_partition(
                 file_id=file_id, partition=partition
             )
-
-        except Exception as e:
-            self.logger.error(f"Error in `delete_points`: {e}")
-        pass
+            log.info("File points deleted.")
+        except Exception:
+            log.exception("Error while deleting file points.")
 
     def file_exists(self, file_id: str, partition: str):
         """
@@ -486,8 +510,10 @@ class MilvusDB(ABCVectorDB):
             return self.partition_file_manager.file_exists_in_partition(
                 file_id=file_id, partition=partition
             )
-        except Exception as e:
-            self.logger.error(f"Error in `file_exists` for file_id {file_id}: {e}")
+        except Exception:
+            self.logger.exception(
+                "File existence check failed.", file_id=file_id, partition=partition
+            )
             return False
 
     def list_files(self, partition: str):
@@ -503,15 +529,17 @@ class MilvusDB(ABCVectorDB):
                 )
                 return results
 
-        except Exception as e:
-            self.logger.error(f"Failed to get file_ids in partition '{partition}': {e}")
+        except Exception:
+            self.logger.exception(
+                "Failed to list files in partition.", partition=partition
+            )
             raise
 
     def list_partitions(self):
         try:
             return self.partition_file_manager.list_partitions()
-        except Exception as e:
-            self.logger.error(f"Failed to list partitions : {e}")
+        except Exception:
+            self.logger.exception("Failed to list partitions.")
             raise
 
     def collection_exists(self, collection_name: str):
@@ -521,27 +549,24 @@ class MilvusDB(ABCVectorDB):
         return self.vector_store.client.has_collection(collection_name)
 
     def delete_partition(self, partition: str):
+        log = self.logger.bind(partition=partition)
         if not self.partition_file_manager.partition_exists(partition):
-            self.logger.debug(f"Partition {partition} does not exist.")
+            log.debug(f"Partition {partition} does not exist")
             return False
 
         try:
-            deleted_count = self.client.delete(
+            count = self.client.delete(
                 collection_name=self.collection_name,
                 filter=f"partition == '{partition}'",
             )
 
             self.partition_file_manager.delete_partition(partition)
 
-            self.logger.info(
-                f"Deleted {deleted_count} points from partition '{partition}'."
-            )
+            log.info("Deleted points from partition", count=count.get("delete_count"))
 
             return True
-        except Exception as e:
-            self.logger.error(
-                f"Error in `delete_partition` for partition {partition}: {e}"
-            )
+        except Exception:
+            log.exception("Failed to delete partition")
             return False
 
     def partition_exists(self, partition: str):
@@ -551,11 +576,112 @@ class MilvusDB(ABCVectorDB):
         try:
             return self.partition_file_manager.partition_exists(partition=partition)
 
-        except Exception as e:
-            self.logger.error(
-                f"Error in `partition_exists` for partition {partition}: {e}"
+        except Exception:
+            self.logger.exception(
+                "Partition existence check failed.", partition=partition
             )
             return False
+
+    def sample_chunk_ids(
+        self, partition: str, n_ids: int = 100, seed: int | None = None
+    ):
+        """
+        Sample chunk IDs from a given partition."""
+
+        try:
+            if not self.partition_file_manager.partition_exists(partition):
+                return []
+
+            file_ids = self.partition_file_manager.sample_file_ids(
+                partition=partition, n_file_id=10_000
+            )
+            if not file_ids:
+                return []
+
+            # Create a filter expression for the query
+            filter_expression = f"partition == '{partition}' and file_id in {file_ids}"
+
+            ids = []
+            iterator = self.client.query_iterator(
+                collection_name=self.collection_name,
+                filter=filter_expression,
+                batch_size=16000,
+                output_fields=["_id"],
+            )
+
+            ids = []
+            while True:
+                result = iterator.next()
+                if not result:
+                    iterator.close()
+                    break
+
+                ids.extend([res["_id"] for res in result])
+
+            random.seed(seed)
+            sampled_ids = random.sample(ids, min(n_ids, len(ids)))
+            return sampled_ids
+
+        except Exception as e:
+            self.logger.exception(
+                f"Error in `sample_chunks` for partition {partition}: {e}"
+            )
+            raise e
+
+    def list_all_chunk(self, partition: str, include_embedding: bool = True):
+        """
+        List all chunk from a given partition.
+        """
+        try:
+            if not self.partition_file_manager.partition_exists(partition):
+                return []
+
+            # Create a filter expression for the query
+            filter_expression = f"partition == '{partition}'"
+
+            excluded_keys = ["text"]
+            if not include_embedding:
+                excluded_keys.append("vector")
+
+            def prepare_metadata(res: dict):
+                metadata = {}
+                for k, v in res.items():
+                    if not k in excluded_keys:
+                        if k == "vector":
+                            v = str(np.array(v).flatten().tolist())
+                        metadata[k] = v
+                return metadata
+
+            chunks = []
+            iterator = self.client.query_iterator(
+                collection_name=self.collection_name,
+                filter=filter_expression,
+                batch_size=16000,
+                output_fields=["*"],
+            )
+
+            while True:
+                result = iterator.next()
+                if not result:
+                    iterator.close()
+                    break
+                chunks.extend(
+                    [
+                        Document(
+                            page_content=res["text"],
+                            metadata=prepare_metadata(res),
+                        )
+                        for res in result
+                    ]
+                )
+
+            return chunks
+
+        except Exception as e:
+            self.logger.exception(
+                f"Error in `list_chunk_ids` for partition {partition}: {e}"
+            )
+            raise
 
 
 class QdrantDB(ABCVectorDB):
@@ -890,6 +1016,6 @@ class ConnectorFactory:
 
         dbconfig["embeddings"] = embeddings
         dbconfig["logger"] = logger
-        dbconfig["volumes_dir"] = config.paths.volumes_dir
+        dbconfig["db_dir"] = config.paths.db_dir
 
         return vdb_cls(**dbconfig)

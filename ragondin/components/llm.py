@@ -1,6 +1,8 @@
 import httpx
-import json
 import copy
+from utils.logger import get_logger
+
+logger = get_logger()
 
 
 class LLM:
@@ -17,7 +19,7 @@ class LLM:
         }
 
     async def completions(self, request: dict):
-        ragondin_model = request.pop("model", None)
+        request.pop("model")
         payload = copy.deepcopy(self.default_llm_config)
         payload.update(request)
 
@@ -27,16 +29,13 @@ class LLM:
                 url=f"{self._base_url}completions", headers=self.headers, json=payload
             )
             response.raise_for_status()
-
             data = response.json()
-            data["model"] = ragondin_model
             yield data
 
     async def chat_completion(self, request: dict):
-        ragondin_model = request.pop("model", None)
+        request.pop("model")
         payload = copy.deepcopy(self.default_llm_config)
         payload.update(request)
-
         stream = request["stream"]
 
         timeout = httpx.Timeout(4 * 60)
@@ -50,20 +49,9 @@ class LLM:
                         json=payload,
                     ) as response:
                         async for line in response.aiter_lines():
-                            if line.startswith("data:"):
-                                if "[DONE]" in line:
-                                    yield f"{line}\n\n"
-                                else:
-                                    try:
-                                        data_str = line[len("data: ") :]
-                                        data = json.loads(data_str)
-                                        data["model"] = ragondin_model
-                                        new_line = f"data: {json.dumps(data)}\n\n"
-                                        yield new_line
-                                    except json.JSONDecodeError as e:
-                                        raise e
-
+                            yield line
                 except Exception as e:
+                    logger.error(f"Error while streaming chat completion: {str(e)}")
                     raise e
 
             else:  # Handle non-streaming response
@@ -74,9 +62,7 @@ class LLM:
                         json=payload,
                     )
                     response.raise_for_status()
-
                     data = response.json()  # Modify the fields here
-                    data["model"] = ragondin_model
                     yield data
                 except Exception as e:
                     raise ValueError(f"Invalid JSON in API response: {str(e)}")

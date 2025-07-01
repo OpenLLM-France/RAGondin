@@ -35,6 +35,13 @@ dependencies = [
     "torch>=2.4.1",
     "robotframework>=7.2.2",
     "robotframework-requests>=0.9.7",
+    "infinity-client>=0.0.76",
+    "asyncpg>=0.30.0",
+    "boto3>=1.38.33",
+    "hdbscan>=0.8.40",
+    "umap-learn>=0.5.7",
+    "eml-parser>=2.0.0",
+    "psutil>=7.0.0",
 ]
 
 [dependency-groups]

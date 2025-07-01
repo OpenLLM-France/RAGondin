@@ -1,22 +1,29 @@
 import copy
+import os
 from enum import Enum
-import sys
 from pathlib import Path
+
 from langchain_core.documents.base import Document
 from openai import AsyncOpenAI
-from loguru import logger
+from utils.logger import get_logger
 
 from .grader import Grader
 from .indexer import ABCVectorDB
 from .llm import LLM
+from .map_reduce import RAGMapReduce
 from .reranker import Reranker
 from .retriever import ABCRetriever, RetrieverFactory
 from .utils import format_context, load_sys_template
+
+logger = get_logger()
 
 
 class RAGMODE(Enum):
     SIMPLERAG = "SimpleRag"
     CHATBOTRAG = "ChatBotRag"
+
+
+RAG_MAP_REDUCE = os.environ.get("RAG_MAP_REDUCE", "false").lower() == "true"
 
 
 class RetrieverPipeline:
@@ -36,8 +43,9 @@ class RetrieverPipeline:
         self.reranker = None
         self.reranker_enabled = config.reranker["enable"]
         self.reranker_top_k = int(config.reranker["top_k"])
+
         if self.reranker_enabled:
-            self.logger.debug(f"Reranker enabled: {self.reranker_enabled}")
+            self.logger.debug("Reranker enabled", reranker=self.reranker_enabled)
             self.reranker = Reranker(self.logger, config)
 
         # grader
@@ -50,8 +58,7 @@ class RetrieverPipeline:
         docs = await self.retriever.retrieve(
             partition=partition, query=query, db=self.vectordb
         )
-        self.logger.debug(f"{len(docs)} Documents retreived")
-
+        logger.debug("Documents retreived", document_count=len(docs))
         if docs:
             # grade and filter out irrelevant docs
             if self.grader_enabled:
@@ -66,13 +73,15 @@ class RetrieverPipeline:
             else:
                 docs = docs[: self.reranker_top_k]
 
+        logger.debug("Documents after reranking", document_count=len(docs))
+
         return docs
 
 
 class RagPipeline:
     def __init__(self, config, vectordb: ABCVectorDB, logger=None) -> None:
         self.config = config
-        self.logger = self.set_logger(config) if logger is None else logger
+        self.logger = logger
 
         # retriever pipeline
         self.retriever_pipeline = RetrieverPipeline(
@@ -98,6 +107,8 @@ class RagPipeline:
         self.contextualizer = AsyncOpenAI(
             base_url=config.vlm["base_url"], api_key=config.vlm["api_key"]
         )
+
+        self.map_reduce: RAGMapReduce = RAGMapReduce(config=config)
 
     async def generate_query(self, messages: list[dict]) -> str:
         match RAGMODE(self.rag_mode):
@@ -125,28 +136,37 @@ class RagPipeline:
                     ],
                     **params,
                 )
-
                 contextualized_query = response.choices[0].message.content
                 return contextualized_query
 
     async def _prepare_for_chat_completion(self, partition: list[str], payload: dict):
         messages = payload["messages"]
-        self.logger.info(f"Chat Length before {len(messages)}")
         messages = messages[-self.chat_history_depth :]  # limit history depth
-        self.logger.info(f"Chat Length After {len(messages)}")
 
         # 1. get the query
         query = await self.generate_query(messages)
-        self.logger.debug(f"Query: {query}")
+        logger.debug("Prepared query for chat completion", query=query)
 
         # 2. get docs
         docs = await self.retriever_pipeline.retrieve_docs(
             partition=partition, query=query
         )
-        logger.info(f"{len(docs)} Documents retrieved")
 
-        # 3. Format the retrieved docs
-        context, sources = format_context(docs)
+        if RAG_MAP_REDUCE:
+            context = "Extracted documents:\n"
+            relevant_docs = []
+            res = await self.map_reduce.map(query=query, chunks=docs)
+            for synthesis, doc in res:
+                context += synthesis + "\n"
+                context += "-" * 40 + "\n"
+                relevant_docs.append(doc)
+
+            logger.debug(context)
+            docs = relevant_docs
+
+        else:
+            # 3. Format the retrieved docs
+            context = format_context(docs)
 
         # 4. prepare the output
         messages: list = copy.deepcopy(messages)
@@ -162,7 +182,7 @@ class RagPipeline:
         # messages.append({"role": "tool", "name": "retriever", "content": f"Here are the retrieved documents: {context}"})
 
         payload["messages"] = messages
-        return payload, context, sources
+        return payload, docs
 
     async def _prepare_for_completions(self, partition: list[str], payload: dict):
         prompt = payload["prompt"]
@@ -171,15 +191,13 @@ class RagPipeline:
         query = await self.generate_query(
             messages=[{"role": "user", "content": prompt}]
         )
-        self.logger.debug(f"Query: {query}")
-
         # 2. get docs
         docs = await self.retriever_pipeline.retrieve_docs(
             partition=partition, query=query
         )
 
         # 3. Format the retrieved docs
-        context, sources = format_context(docs)
+        context = format_context(docs)
 
         # 4. prepare the output
         prompt = (
@@ -187,33 +205,22 @@ class RagPipeline:
         ) + f"Complete the following prompt: {prompt}"
         payload["prompt"] = prompt
 
-        return payload, context, sources
+        return payload, docs
 
     async def completions(self, partition: list[str], payload: dict):
-        payload, context, sources = await self._prepare_for_completions(
+        payload, docs = await self._prepare_for_completions(
             partition=partition, payload=payload
         )
         llm_output = self.llm_client.completions(request=payload)
-        return llm_output, context, sources
+        return llm_output, docs
 
     async def chat_completion(self, partition: list[str], payload: dict):
         try:
-            payload, context, sources = await self._prepare_for_chat_completion(
+            payload, docs = await self._prepare_for_chat_completion(
                 partition=partition, payload=payload
             )
-
             llm_output = self.llm_client.chat_completion(request=payload)
-            return llm_output, context, sources
+            return llm_output, docs
         except Exception as e:
+            logger.error(f"Error during chat completion: {str(e)}")
             raise e
-
-    @staticmethod
-    def set_logger(config):
-        verbose = config.verbose
-        if bool(verbose["verbose"]):
-            level = verbose["level"]
-        else:
-            level = "ERROR"
-        logger.remove()
-        logger.add(sys.stderr, level=level)
-        return logger

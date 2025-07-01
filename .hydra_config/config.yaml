@@ -1,7 +1,7 @@
 defaults:
   - _self_  # TODO: Silences the hydra version migration warning (PLEASE REVIEW FOR BREAKING CHANGES)
-  - chunker: recursive_splitter #semantic_splitter
-  - retriever: multiQuery
+  - chunker: markdown_splitter # recursive_splitter, semantic_splitter
+  - retriever: single
   - rag: ChatBotRag
 
 llm_params: &llm_params
@@ -29,6 +29,8 @@ semaphore:
 embedder:
   type: huggingface
   model_name: ${oc.env:EMBEDDER_MODEL_NAME, jinaai/jina-embeddings-v3}
+  base_url: ${oc.env:EMBEDDER_BASE_URL, http://vllm:8000/v1}
+  api_key: ${oc.env:EMBEDDER_API_KEY, None}
   
 vectordb:
   host: ${oc.env:VDB_HOST, milvus}
@@ -40,36 +42,45 @@ vectordb:
 
 reranker:
   enable: ${oc.decode:${oc.env:RERANKER_ENABLED, true}}
-  model_name: ${oc.env:RERANKER_MODEL, jinaai/jina-colbert-v2}
+  model_name: ${oc.env:RERANKER_MODEL, Alibaba-NLP/gte-multilingual-reranker-base}
   reranker_type: ${oc.decode:${oc.env:RERANKER_MODEL_TYPE, colbert}}
   top_k: ${oc.decode:${oc.env:RERANKER_TOP_K, 4}}
+  base_url: ${oc.env:RERANKER_BASE_URL, http://reranker:${oc.env:RERANKER_PORT, 7997}}
 
 grader:
   enable: false
 
 verbose:
   verbose: true
-  level: INFO
+  level: DEBUG
 
 paths:
-  prompts_dir: ${oc.env:PROMPTS_DIR, ../prompts}
+  prompts_dir: ${oc.env:PROMPTS_DIR, ../prompts/example3}
   data_dir: ${oc.env:DATA_DIR, ../data}
-  volumes_dir: /app/volumes
-
+  db_dir: ${oc.env:DB_DIR, /app/db}
+  log_dir: ${oc.env:LOG_DIR, /app/logs}
 
 prompt:
   rag_sys_pmpt: rag_sys_prompt_template.txt # rag_sys_pmpt_tmpl_ifa.txt
   contextualizer_pmpt: contextualizer_pmpt.txt
+  chunk_contextualizer_pmpt: chunk_contextualizer_tmpl.txt
+  image_describer: image_captioning.txt
 
 loader:
   image_captioning: true
+  save_markdown: false
   audio_model: ${oc.env:WHISPER_MODEL, base}
   file_loaders:
-    docx: MarkItDownLoader
-    pdf: ${oc.env:PDFLoader, DoclingLoader}  # DoclingLoader # MarkerLoader # CustomPyMuPDFLoader # Custompymupdf4llm
-    doc: DocLoader
-    pptx: PPTXLoader
     txt: TextLoader
+    pdf: ${oc.env:PDFLoader, DoclingLoader}  # DoclingLoader # MarkerLoader # PyMuPDFLoader # Custompymupdf4llm
+    eml: EmlLoader
+    docx: MarkItDownLoader
+    pptx: PPTXLoader
+    doc: DocLoader
+    png: ImageLoader
+    jpeg: ImageLoader
+    jpg: ImageLoader
+    svg: ImageLoader
     wav: VideoAudioLoader
     mp3: VideoAudioLoader
     mp4: VideoAudioLoader
@@ -77,10 +88,14 @@ loader:
     flv: VideoAudioLoader
     wma: VideoAudioLoader
     aac: VideoAudioLoader
-    # odt: CustomDocLoader
+    md: MarkdownLoader
+  marker_max_tasks_per_child: ${oc.decode:${oc.env:MARKER_MAX_TASKS_PER_CHILD, 10}}
+  marker_pool_size: ${oc.decode:${oc.env:MARKER_POOL_SIZE, 1}}
+  marker_max_processes: ${oc.decode:${oc.env:MARKER_MAX_PROCESSES, 2}}
+  marker_min_processes: ${oc.decode:${oc.env:MARKER_MIN_PROCESSES, 1}}
+  marker_num_gpus: ${oc.decode:${oc.env:MARKER_NUM_GPUS, 0.01}}
 
 ray:
-  num_cpus: ${oc.decode:${oc.env:RAY_NUM_CPUS, 4}}
-  num_gpus: ${oc.decode:${oc.env:RAY_NUM_GPUS, 1}}
-  local_deployment: ${oc.decode:${oc.env:LOCAL_DEPLOYMENT, true}} # set false for cluster deployment
-  n_parallel_indexation: ${oc.decode:${oc.env:N_PARALLEL_INDEXATION, 2}}
+  num_gpus: ${oc.decode:${oc.env:RAY_NUM_GPUS, 0.1}}
+  pool_size: ${oc.decode:${oc.env:RAY_POOL_SIZE, 1}}
+  max_tasks_per_worker: ${oc.decode:${oc.env:RAY_MAX_TASKS_PER_WORKER, 5}}

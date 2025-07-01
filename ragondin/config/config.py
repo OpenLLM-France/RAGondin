@@ -3,7 +3,6 @@ from pathlib import Path
 
 from dotenv import load_dotenv
 from hydra import compose, initialize_config_dir
-from loguru import logger
 from omegaconf import OmegaConf
 
 CONFIG_PATH = os.environ.get("CONFIG_PATH", "/app/.hydra_config")
@@ -11,10 +10,8 @@ CONFIG_PATH = os.environ.get("CONFIG_PATH", "/app/.hydra_config")
 
 def load_config(config_path=CONFIG_PATH, overrides=None) -> OmegaConf:
     load_dotenv()
-    if overrides:
-        logger.info(f"Config overrides: {overrides}")
 
-        # TODO: I set the version base to 1.1 to silence the warning message, review how we want to handle versioning
+    # TODO: I set the version base to 1.1 to silence the warning message, review how we want to handle versioning
     with initialize_config_dir(
         config_dir=config_path, job_name="config_loader", version_base="1.1"
     ):

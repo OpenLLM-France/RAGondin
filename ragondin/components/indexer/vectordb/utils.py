@@ -1,25 +1,24 @@
-from sqlalchemy.orm import (
-    declarative_base,
-    sessionmaker,
-    relationship,
-)
+from datetime import datetime
+from typing import List
 
-
+from pydantic import BaseModel
 from sqlalchemy import (
-    create_engine,
     Column,
+    DateTime,
+    ForeignKey,
     Integer,
     String,
-    ForeignKey,
-    DateTime,
     UniqueConstraint,
+    create_engine,
 )
+from sqlalchemy.orm import (
+    declarative_base,
+    relationship,
+    sessionmaker,
+)
+from utils.logger import get_logger
 
-from datetime import datetime
-from pydantic import BaseModel
-from typing import List
-from loguru import logger
-
+logger = get_logger()
 
 Base = declarative_base()
 
@@ -99,13 +98,14 @@ class PartitionFileManager:
 
     def get_partition(self, partition: str):
         """Retrieve a partition by its key"""
+        log = self.logger.bind(partition=partition)
         with self.Session() as session:
-            self.logger.debug(f"Fetching partition with key: {partition}")
+            log.debug("Fetching partition")
             partition = session.query(Partition).filter_by(partition=partition).first()
             if partition:
-                self.logger.info(f"Partition found: {partition}")
+                log.info("Partition found")
             else:
-                self.logger.warning(f"No partition found with key: {partition}")
+                log.warning("No partition found")
             return partition
 
     # def create_partition(self, partition: str):
@@ -127,6 +127,7 @@ class PartitionFileManager:
 
     def add_file_to_partition(self, file_id: str, partition: str):
         """Add a file to a partition"""
+        log = self.logger.bind(file_id=file_id, partition=partition)
         with self.Session() as session:
             try:
                 # Check if file already exists in this partition
@@ -137,9 +138,7 @@ class PartitionFileManager:
                     .first()
                 )
                 if existing_file:
-                    self.logger.warning(
-                        f"File {file_id} already exists in partition {partition}"
-                    )
+                    log.warning("File already exists")
                     return False
 
                 # Ensure partition exists
@@ -149,21 +148,22 @@ class PartitionFileManager:
                 if not partition_obj:
                     partition_obj = Partition(partition=partition)
                     session.add(partition_obj)
-                    self.logger.info(f"Created new partition with key: {partition}")
+                    log.info("Created new partition")
 
                 # Add file to partition
                 file = File(file_id=file_id, partition_name=partition_obj.partition)
                 session.add(file)
                 session.commit()
-                self.logger.info(f"Added file {file_id} to partition {partition}")
+                log.info("Added file successfully")
                 return True
-            except Exception as e:
+            except Exception:
                 session.rollback()
-                self.logger.error(f"Error adding file to partition: {e}")
-                raise e
+                log.exception("Error adding file to partition")
+                raise
 
     def remove_file_from_partition(self, file_id: str, partition: str):
         """Remove a file from its partition"""
+        log = self.logger.bind(file_id=file_id, partition=partition)
         with self.Session() as session:
             try:
                 # Find the file using a join with proper filtering
@@ -176,9 +176,7 @@ class PartitionFileManager:
                 if file:
                     session.delete(file)
                     session.commit()
-                    self.logger.info(
-                        f"Removed file {file_id} from partition {partition}"
-                    )
+                    log.info(f"Removed file {file_id} from partition {partition}")
 
                     # Check if partition is now empty
                     partition_obj = (
@@ -187,16 +185,14 @@ class PartitionFileManager:
                     if partition_obj and len(partition_obj.files) == 0:
                         session.delete(partition_obj)
                         session.commit()
-                        self.logger.info(f"Deleted empty partition {partition}")
+                        log.info("Deleted empty partition")
 
                     return True
-                self.logger.warning(
-                    f"File {file_id} not found in partition {partition}"
-                )
+                log.warning("File not found in partition")
                 return False
             except Exception as e:
                 session.rollback()
-                self.logger.error(f"Error removing file: {e}")
+                log.error(f"Error removing file: {e}")
                 raise e
 
     def delete_partition(self, partition: str):
@@ -206,10 +202,10 @@ class PartitionFileManager:
             if partition:
                 session.delete(partition)  # Will delete all files due to cascade
                 session.commit()
-                self.logger.info(f"Deleted partition with key: {partition}")
+                self.logger.info("Deleted partition", partition=partition)
                 return True
             else:
-                self.logger.info(f"There is no partition named `{partition}`")
+                self.logger.info("Partition does not exist", partition=partition)
             return False
 
     def list_partitions(self):
