@@ -423,7 +423,7 @@ Simple endpoint to ensure the server is running.
 
 ## 🏗️ Architecture
 
-```mermaid
+```
 graph TD
     A[User Query] --> B[RAGondin Backend]
     B --> C[Retriever (Milvus)]
