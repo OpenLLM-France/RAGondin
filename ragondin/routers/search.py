@@ -69,7 +69,11 @@ async def search_one_partition(
         )
 
     documents = [
-        {"link": str(request.url_for("get_extract", extract_id=doc.metadata["_id"]))}
+        {
+            "link": str(request.url_for("get_extract", extract_id=doc.metadata["_id"])),
+            "metadata": doc.metadata,
+            "content": doc.page_content
+        }
         for doc in results
     ]
 

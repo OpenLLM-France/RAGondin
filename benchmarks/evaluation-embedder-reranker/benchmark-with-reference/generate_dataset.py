@@ -76,7 +76,7 @@ async def main():
     semaphore = asyncio.Semaphore(10)
 
     num_port = os.environ.get("APP_PORT")
-    num_host = "163.114.159.68"  # "localhost"
+    num_host = "localhost"
     ragondin_api_base_url = f"http://{num_host}:{num_port}"
 
     # load files

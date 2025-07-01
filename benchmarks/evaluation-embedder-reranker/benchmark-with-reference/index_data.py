@@ -148,7 +148,7 @@ async def main(pages, base_url, partition_name, n_semaphore=10):
 # Usage example
 if __name__ == "__main__":
     num_port = os.environ.get("APP_PORT")
-    num_host = "163.114.159.68"  # "localhost"
+    num_host = "localhost"
     base_url = f"http://{num_host}:{num_port}/"
 
     # Get data
