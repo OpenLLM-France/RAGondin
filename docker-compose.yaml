@@ -2,7 +2,7 @@ include:
   - vdb/milvus.yaml
   - ${CHAINLIT_DATALAYER_COMPOSE:-extern/dummy.yaml}
   - extern/infinity.yaml
-  - extern/indexer-ui/docker-compose.yaml
+  - ${INDEXERUI_COMPOSE_FILE:-extern/dummy.yaml}
 
 x-ragondin: &ragondin_template
   build:
@@ -45,7 +45,6 @@ x-vllm: &vllm_template
     --trust-remote-code
   ports:
     - ${VLLM_PORT:-8000}:8000
-
 services:
   # GPU - default 
   ragondin:
@@ -67,27 +66,27 @@ services:
     profiles:
       - 'cpu'
 
-  vllm-gpu:
-    <<: *vllm_template
-    image: vllm/vllm-openai:latest
-    runtime: nvidia
-    deploy:
-      resources:
-        reservations:
-          devices:
-            - driver: nvidia
-              count: all 
-              capabilities: [gpu]
-    profiles:
-      - '' # Empty string gives default behavior (but does not run when cpu requested)
+  # vllm-gpu:
+  #   <<: *vllm_template
+  #   image: vllm/vllm-openai:latest
+  #   runtime: nvidia
+  #   deploy:
+  #     resources:
+  #       reservations:
+  #         devices:
+  #           - driver: nvidia
+  #             count: all 
+  #             capabilities: [gpu]
+  #   profiles:
+  #     - '' # Empty string gives default behavior (but does not run when cpu requested)
 
-  vllm-cpu:
-    <<: *vllm_template
-    build:
-      context: extern/vllm
-      dockerfile: Dockerfile.cpu
-      target: vllm-openai
-    image: ragondin-vllm-openai-cpu
-    deploy: {}
-    profiles:
-      - 'cpu'
+  # vllm-cpu:
+  #   <<: *vllm_template
+  #   build:
+  #     context: extern/vllm
+  #     dockerfile: Dockerfile.cpu
+  #     target: vllm-openai
+  #   image: ragondin-vllm-openai-cpu
+  #   deploy: {}
+  #   profiles:
+  #     - 'cpu'
