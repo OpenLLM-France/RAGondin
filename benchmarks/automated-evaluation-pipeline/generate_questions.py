@@ -85,7 +85,7 @@ async def question_answer(chunks: list[dict], semaphore=asyncio.Semaphore(10)):
             {"role": "system", "content": question_tmpl},
             {
                 "role": "user",
-                "content": f"Voici les documents:\n{chunks_str}. Créez maintenant une question cohérente, pertinente et naturelle que un être humain peut poser. Cette question ne doit pas dépasser 25 mots de longuer.",
+                "content": f"Voici les documents:\n{chunks_str}. Créez maintenant une question cohérente, pertinente. Cette question ne doit pas dépasser 25 mots de longueur.",
             },
         ]
         output = await llm.ainvoke(messages)
@@ -191,15 +191,13 @@ async def main():
     for label, items in clusters.items():
         logger.info(f"Cluster {label}: {[item['id'] for item in items]}")
 
-    # save data
-    os.makedirs("./data", exist_ok=True)
-    pickle.dump(
-        clusters, open("./data/chunks_cluster.pkl", "wb"), protocol=pickle.HIGHEST_PROTOCOL
-    )
+    # # save data
+    # os.makedirs("./data", exist_ok=True)
+    # pickle.dump(
+    #     clusters, open("./data/chunks_cluster.pkl", "wb"), protocol=pickle.HIGHEST_PROTOCOL
+    # )
     questions = await generate_questions_from_clusters(clusters, n_questions_per_cluster=1)
 
-    # limited_clusters = {k: clusters[k] for k in list(clusters.keys())}
-    # questions = await generate_questions_from_clusters(limited_clusters)
     logger.info(f"Questions generated time: ({time.time() - pause}) seconds")
 
     with open("./dataset.json", "w", encoding="utf-8") as f:
