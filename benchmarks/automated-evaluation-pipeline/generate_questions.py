@@ -13,6 +13,7 @@ from langchain_openai import ChatOpenAI
 from tqdm.asyncio import tqdm
 import umap.umap_ as umap
 import hdbscan
+import pickle
 
 load_dotenv()  # Charge les variables du .env
 
@@ -27,17 +28,16 @@ settings = {
     "base_url": BASE_URL,
     "model": MODEL,
     "api_key": API_KEY,
-    "max_tokens": 4000,
+    "max_tokens": 2048,
 }
 
 llm = ChatOpenAI(**settings).with_retry(stop_after_attempt=2)
 
 
-# question_tmpl = """You are an expert in generating questions based on Documents.
-# Given a set of text documents, your task is to generate a relevant question that requires all of the provided documents to be answered.
+# question_tmpl = """You are a question generation assistant. I will give you multiple related paragraphs.
+# Your task is to generate a **single meaningful question** that reflects the **combined information and logical flow** of all the paragraphs.
 
-# You should generate a question that is clear, concise, and directly related to the content of the documents.
-# The output only that question, without any additional text or explanation.
+# Make sure not to focus only on one paragraph. Capture the connection between them.
 # """
 
 # answer_tmpl = """You are an expert in answering questions based on given documents.
@@ -45,21 +45,32 @@ llm = ChatOpenAI(**settings).with_retry(stop_after_attempt=2)
 # The answer should be clear, and directly address the question using the information from the documents.
 # The output should only be the answer, without any additional text or explanation."""
 
-question_tmpl = """Vous êtes expert en génération de questions basées sur des documents.
-À partir d'un ensemble de documents texte, votre tâche consiste à générer une question pertinente nécessitant une réponse à tous les documents fournis.
+question_tmpl = """Vous êtes un assistant de génération de questions. Je vous fournirai plusieurs paragraphes liés.
+Votre tâche consiste à générer une **question unique et pertinente** reflétant **l'ensemble des informations et le flux logique** de tous les paragraphes.
 
-Vous devez générer une question claire, concise et directement liée au contenu des documents.
-Ne générez que cette question, sans texte ni explication supplémentaire."""
+Veillez à ne pas vous concentrer sur un seul paragraphe. Saisissez le lien entre eux."""
 
 answer_tmpl = """Vous êtes expert dans la réponse aux questions basées sur des documents.
 À partir d'une question et d'un ensemble de documents, votre tâche consiste à fournir une réponse complète en utilisant tous les documents fournis.
 La réponse doit être claire et répondre directement à la question en utilisant les informations des documents.
 Le résultat doit être la réponse seule, sans texte ni explication supplémentaire."""
 
+async def summarize(chunk: str, semaphore: asyncio.Semaphore = asyncio.Semaphore(10)) -> str:
+    async with semaphore:
+        message = [
+            {
+                "role": "user",
+                "content": f"Voici le document:\n{chunk}. Donnez-moi un résumé qui précise quel type d'informations et de contenu contient le passage, mais sans entrer dans des détails trop précis"
+            }
+        ]
 
-def format_chunks(chunks: list[str]):
+        output = await llm.ainvoke(message)
+        return output.content.strip()
+    
+async def format_chunks(chunks: list[str]):
     chunks_str = ""
     for i, chunk in enumerate(chunks, start=1):
+        # chunk = await summarize(chunk)
         chunks_str += f"Document {i}:\n{chunk}\n"
         chunks_str += "-" * 40 + "\n"
     return chunks_str.strip()  # Remove trailing newline and spaces
@@ -67,14 +78,14 @@ def format_chunks(chunks: list[str]):
 
 async def question_answer(chunks: list[dict], semaphore=asyncio.Semaphore(10)):
     async with semaphore:
-        chunks_str = format_chunks([c["text"] for c in chunks])
+        chunks_str = await format_chunks([c["text"] for c in chunks])
 
         # generate a question based on the chunks
         messages = [
             {"role": "system", "content": question_tmpl},
             {
                 "role": "user",
-                "content": f"Here are the documentss:\n{chunks_str}. Generate the question in the same language as the documents.",
+                "content": f"Voici les documents:\n{chunks_str}. Créez maintenant une question cohérente, pertinente et naturelle que un être humain peut poser. Cette question ne doit pas dépasser 25 mots de longuer.",
             },
         ]
         output = await llm.ainvoke(messages)
@@ -85,7 +96,7 @@ async def question_answer(chunks: list[dict], semaphore=asyncio.Semaphore(10)):
             {"role": "system", "content": answer_tmpl},
             {
                 "role": "user",
-                "content": f"Here are the documents:\n{chunks_str}\n\nQuestion: {llm_question}.\n Generate the answer in the same language as the documents.",
+                "content": f"Voici les documents:\n{chunks_str}\n\nQuestion: {llm_question}.\n Générez la réponse dans la même langue que les documents.",
             },
         ]
         output = await llm.ainvoke(messages)
@@ -114,7 +125,7 @@ async def get_all_chunks(url: str) -> dict:
 
 
 async def generate_questions_from_clusters(
-    clusters: dict, n_min=1, n_max=3, n_questions_per_cluster=10
+    clusters: dict, n_min=1, n_max=2, n_questions_per_cluster=10
 ):
     tasks = []
     for cluster_label, chunks in clusters.items():  # cluster loop
@@ -180,7 +191,12 @@ async def main():
     for label, items in clusters.items():
         logger.info(f"Cluster {label}: {[item['id'] for item in items]}")
 
-    questions = await generate_questions_from_clusters(clusters)
+    # save data
+    os.makedirs("./data", exist_ok=True)
+    pickle.dump(
+        clusters, open("./data/chunks_cluster.pkl", "wb"), protocol=pickle.HIGHEST_PROTOCOL
+    )
+    questions = await generate_questions_from_clusters(clusters, n_questions_per_cluster=1)
 
     # limited_clusters = {k: clusters[k] for k in list(clusters.keys())}
     # questions = await generate_questions_from_clusters(limited_clusters)
