@@ -4,6 +4,23 @@ RAGondin is a lightweight, modular and extensible Retrieval-Augmented Generation
 
 > Built by the OpenLLM France community, RAGondin offers a sovereign-by-design alternative to mainstream RAG stacks like LangChain or Haystack.
 
+## Table of Contents
+- [🦫 RAGondin — The Open RAG Experimentation Playground](#🦫-ragondin--the-open-rag-experimentation-playground)
+- [Table of Contents](#table-of-contents)
+- [Goals](#goals)
+- [Current Features](#current-features)
+  - [Supported File Formats](#supported-file-formats)
+  - [Chunking](#chunking)
+  - [Indexing](#indexing)
+  - [Retriever & Search](#retriever--search)
+  - [RAG Type](#rag-type)
+- [🚀 Getting Started](#🚀-getting-started)
+  - [Installation](#installation)
+  - [Configuration](#configuration)
+- [🏗️ Architecture](#🏗️-architecture)
+- [🔧 Contributing](#🔧-contributing)
+
+
 ## Goals
 - Experiment with advanced RAG techniques
 - Develop evaluation metrics for RAG applications
@@ -89,14 +106,23 @@ Reranking models support multiple deployment formats:
 
 ## 🚀 Getting Started
 
-### 1. Clone the repository:
+### Prerequisites
+- **Python 3.12** or higher recommended
+- **Docker** and **Docker Compose**
+- pFor GPU capable machines, ensure you have the NVIDIA Container Toolkit installed. Refer to the [NVIDIA documentation](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/install-guide.html) for installation instructions.
+
+RAGondin is designed to run in a containerized environment under Linux on x86_64 architecture. ARM processors are not supported, this is subject to change in the future.
+
+### Installation and Configuration
+
+#### 1. Clone the repository:
 ```bash
 git clone https://github.com/OpenLLM-France/RAGondin.git
 cd RAGondin
 git checkout main # or a given release
 ```
 
-### 2. Create uv environment and install dependencies:
+#### 2. Create uv environment and install dependencies:
 >[!IMPORTANT] 
 > Ensure you have Python 3.12 installed along with `uv`. For detailed installation instructions for uv, refer to the [uv official documentation](https://docs.astral.sh/uv/getting-started/installation/#pypi). You can either use `uv` or `pip` (if already available) or `curl`. Additional installation methods are outlined in the [documentation](https://docs.astral.sh/uv/getting-started/installation/#pypi).
 
@@ -114,7 +140,7 @@ cd RAGondin/
 uv sync
 ```
 
-### 3. Create a `.env` File
+#### 3. Create a `.env` File
 
 Create a `.env` file at the root of the project, mirroring the structure of `.env.example`, to configure your environment.
 
@@ -207,7 +233,7 @@ AUTH_TOKEN=super-secret-token
 * **Running on GPU**:
 The default values are well-suited for GPU usage. However, you can adjust them as needed to experiment with different configurations based on your machine’s capabilities.
 
-### 4.Deployment: Launch the app
+#### 4.Deployment: Launch the app
 The application can be launched in either in GPU or CPU environment, depending on your device's capabilities. Use the following commands:
 
 ```bash
@@ -241,13 +267,13 @@ CHAINLIT_PASSWORD=Ragondin2025
 
 ➡ [Enable Chainlit Data Persistence](./docs/chainlit_data_persistency.md)
 
-### 5. Distributed deployment in a Ray cluster
+#### 5. Distributed deployment in a Ray cluster
 
 To scale **RAGondin** in a distributed environment using **Ray**, follow the dedicated guide:
 
 ➡ [Deploy RAGondin in a Ray cluster](docs/deploy_ray_cluster.md)
 
-### 6. 🧠 API Overview
+#### 6. 🧠 API Overview
 
 This FastAPI-powered backend offers capabilities for document-based question answering (RAG), semantic search, and document indexing across multiple partitions. It exposes endpoints for interacting with a vector database and managing document ingestion, processing, and querying.
 
@@ -406,15 +432,3 @@ graph TD
 ## 🔧 Contributing
 
 We ❤️ contributions!
-
-```bash
-error: Distribution `ray==2.43.0 @ registry+https://pypi.org/simple` can't be installed because it doesn't have a source distribution or wheel for the current platform
-
-Read our [CONTRIBUTING.md](CONTRIBUTING.md) for coding standards, test setup, and more.
-
----
-
-## 📄 License
-
-## TODO
-[] Better manage logs
