@@ -101,7 +101,7 @@ class BaseChunker(ABC):
             )
 
             # Format contextualized chunks
-            chunk_format = """Context: \n{chunk_context}\n ==> Chunk: \n{chunk}"""
+            chunk_format = """Context: {chunk_context}\n\nChunk: {chunk}"""
             contexts = [
                 chunk_format.format(
                     chunk=chunk, chunk_context=context, source=Path(source).name
@@ -310,18 +310,12 @@ class MarkDownSplitter(BaseChunker):
                 current_chunk = splits[i]  # next chunk
 
                 # 1 token = 0.75 words on average
-                overlap_in_words = int(20 * 0.75)
-
+                overlap_in_words = int(self.overlap * 0.75)
                 previous_chunk_content = previous_chunk.page_content
-                overlap = previous_chunk_content.split()[(len(previous_chunk_content.split()) - overlap_in_words):]
-                overlap = " ".join(overlap)  # convert to string
+                overlap = previous_chunk_content.split()[-overlap_in_words:]
+                overlap = " ".join(overlap)  # convert back to string
 
-                # We add the previous header to the head of the current string for context
-                new_head = list(previous_chunk.metadata.items())[-1]
-                
-                current_chunk.page_content = (
-                    f"Previous header: {new_head[1]}\n{overlap}\n{current_chunk.page_content}"
-                )
+                current_chunk.page_content = f"{overlap}\n{current_chunk.page_content}"
                 splits[i] = current_chunk
 
         # split large chunks

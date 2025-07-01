@@ -1,6 +1,6 @@
 defaults:
   - _self_  # TODO: Silences the hydra version migration warning (PLEASE REVIEW FOR BREAKING CHANGES)
-  - chunker: recursive_splitter # recursive_splitter, semantic_splitter
+  - chunker: markdown_splitter # recursive_splitter, semantic_splitter
   - retriever: single
   - rag: ChatBotRag
 
@@ -34,7 +34,7 @@ embedder:
   
 vectordb:
   host: ${oc.env:VDB_HOST, milvus}
-  port: ${oc.env:VDB_PORT, 19530}
+  port: ${oc.env:VDB_iPORT, 19530}
   connector_name: ${oc.env:VDB_CONNECTOR_NAME, milvus}
   collection_name: vdb_test 
   hybrid_mode: true
@@ -93,7 +93,7 @@ loader:
   marker_pool_size: ${oc.decode:${oc.env:MARKER_POOL_SIZE, 1}}
   marker_max_processes: ${oc.decode:${oc.env:MARKER_MAX_PROCESSES, 2}}
   marker_min_processes: ${oc.decode:${oc.env:MARKER_MIN_PROCESSES, 1}}
-  marker_num_gpus: ${oc.decode:${oc.env:MARKER_NUM_GPUS, 0.05}}
+  marker_num_gpus: ${oc.decode:${oc.env:MARKER_NUM_GPUS, 0.01}}
 
 ray:
   num_gpus: ${oc.decode:${oc.env:RAY_NUM_GPUS, 0.1}}
