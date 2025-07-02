@@ -60,6 +60,11 @@ class AppState:
 
 # Read the token from env (or None if not set)
 AUTH_TOKEN: Optional[str] = os.getenv("AUTH_TOKEN")
+
+INDEXERUI_URL: Optional[str] = os.getenv("INDEXERUI_URL", None)
+INDEXERUI_COMPOSE_FILE = os.getenv("INDEXERUI_COMPOSE_FILE", None)
+
+
 security = HTTPBearer()
 
 
@@ -79,9 +84,15 @@ dependencies = [Depends(verify_token)] if AUTH_TOKEN else []
 app = FastAPI(dependencies=dependencies)
 
 # Add CORS middleware
+if INDEXERUI_URL and INDEXERUI_COMPOSE_FILE:
+    allow_origins = [INDEXERUI_URL]
+else:
+    allow_origins = ["*"]
+
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Adjust as needed for production
+    allow_origins=allow_origins,  # Adjust as needed for production
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

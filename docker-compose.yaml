@@ -2,7 +2,7 @@ include:
   - vdb/milvus.yaml
   - ${CHAINLIT_DATALAYER_COMPOSE:-extern/dummy.yaml}
   - extern/infinity.yaml
-  - extern/indexer-ui/docker-compose.yaml
+  - ${INDEXERUI_COMPOSE_FILE:-extern/dummy.yaml}
 
 x-ragondin: &ragondin_template
   build:
@@ -45,7 +45,6 @@ x-vllm: &vllm_template
     --trust-remote-code
   ports:
     - ${VLLM_PORT:-8000}:8000
-
 services:
   # GPU - default 
   ragondin:

@@ -4,6 +4,23 @@ RAGondin is a lightweight, modular and extensible Retrieval-Augmented Generation
 
 > Built by the OpenLLM France community, RAGondin offers a sovereign-by-design alternative to mainstream RAG stacks like LangChain or Haystack.
 
+## Table of Contents
+- [🦫 RAGondin — The Open RAG Experimentation Playground](#-ragondin--the-open-rag-experimentation-playground)
+- [Table of Contents](#table-of-contents)
+- [Goals](#goals)
+- [Current Features](#current-features)
+  - [Supported File Formats](#supported-file-formats)
+  - [Chunking](#chunking)
+  - [Indexing](#indexing)
+  - [Retriever & Search](#retriever--search)
+  - [RAG Type](#rag-type)
+- [🚀 Getting Started](#-getting-started)
+  - [Installation](#installation)
+  - [Configuration](#configuration)
+- [Troubleshooting](#troubleshooting)
+- [🔧 Contributing](#-contributing)
+
+
 ## Goals
 - Experiment with advanced RAG techniques
 - Develop evaluation metrics for RAG applications
@@ -89,14 +106,26 @@ Reranking models support multiple deployment formats:
 
 ## 🚀 Getting Started
 
-### 1. Clone the repository:
+### Prerequisites
+- **Python 3.12** or higher recommended
+- **Docker** and **Docker Compose**
+- pFor GPU capable machines, ensure you have the NVIDIA Container Toolkit installed. Refer to the [NVIDIA documentation](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/install-guide.html) for installation instructions.
+
+RAGondin is designed to run in a containerized environment under Linux on x86_64 architecture. ARM processors are not supported, this is subject to change in the future.
+
+### Installation and Configuration
+
+#### 1. Clone the repository:
 ```bash
 git clone https://github.com/OpenLLM-France/RAGondin.git
+
+# git clone --recurse-submodules https://github.com/OpenLLM-France/RAGondin.git # to clone the repo with the associated submodules
+
 cd RAGondin
 git checkout main # or a given release
 ```
 
-### 2. Create uv environment and install dependencies:
+#### 2. Create uv environment and install dependencies:
 >[!IMPORTANT] 
 > Ensure you have Python 3.12 installed along with `uv`. For detailed installation instructions for uv, refer to the [uv official documentation](https://docs.astral.sh/uv/getting-started/installation/#pypi). You can either use `uv` or `pip` (if already available) or `curl`. Additional installation methods are outlined in the [documentation](https://docs.astral.sh/uv/getting-started/installation/#pypi).
 
@@ -114,7 +143,7 @@ cd RAGondin/
 uv sync
 ```
 
-### 3. Create a `.env` File
+#### 3. Create a `.env` File
 
 Create a `.env` file at the root of the project, mirroring the structure of `.env.example`, to configure your environment.
 
@@ -153,7 +182,6 @@ VLM_SEMAPHORE=10
 
 # App
 APP_PORT=8080 # this is the forwarded port
-APP_HOST=0.0.0.0
 
 # Vector db VDB Milvus
 VDB_HOST=milvus
@@ -173,7 +201,7 @@ EMBEDDER_API_KEY=EMPTY
 RERANKER_ENABLED=false
 RERANKER_MODEL=Alibaba-NLP/gte-multilingual-reranker-base # or jinaai/jina-reranker-v2-base-multilingual or jinaai/jina-colbert-v2 if you want
 RERANKER_MODEL_TYPE=crossencoder # colbert
-RERANKER_TOP_K=5 # Number of documents to return after reranking. upgrade to 8 for better results if your llm has a wider context window
+RERANKER_TOP_K=5 # Number of documents to return after reranking. increment it for better results if your llm has a wider context window
 
 # Prompts
 PROMPTS_DIR=../prompts/example3
@@ -207,7 +235,10 @@ AUTH_TOKEN=super-secret-token
 * **Running on GPU**:
 The default values are well-suited for GPU usage. However, you can adjust them as needed to experiment with different configurations based on your machine’s capabilities.
 
-### 4.Deployment: Launch the app
+#### 4.Deployment: Launch the app
+>[!IMPORTANT]
+> Before launching the app, You might want to configure **`Indexer UI` (A Web interface for intuitive document ingestion, indexing, and management.)**. For that, see this [document](./docs/setup_indexerui.md)
+
 The application can be launched in either in GPU or CPU environment, depending on your device's capabilities. Use the following commands:
 
 ```bash
@@ -241,13 +272,15 @@ CHAINLIT_PASSWORD=Ragondin2025
 
 ➡ [Enable Chainlit Data Persistence](./docs/chainlit_data_persistency.md)
 
-### 5. Distributed deployment in a Ray cluster
+
+
+#### 5. Distributed deployment in a Ray cluster
 
 To scale **RAGondin** in a distributed environment using **Ray**, follow the dedicated guide:
 
 ➡ [Deploy RAGondin in a Ray cluster](docs/deploy_ray_cluster.md)
 
-### 6. 🧠 API Overview
+#### 6. 🧠 API Overview
 
 This FastAPI-powered backend offers capabilities for document-based question answering (RAG), semantic search, and document indexing across multiple partitions. It exposes endpoints for interacting with a vector database and managing document ingestion, processing, and querying.
 
@@ -385,36 +418,35 @@ To test these endpoint with openai client, you can refer to the the [openai_comp
 
 Simple endpoint to ensure the server is running.
 
----
 
-## 🏗️ Architecture
 
-```mermaid
-graph TD
-    A[User Query] --> B[RAGondin Backend]
-    B --> C[Retriever (Milvus)]
-    B --> D[Chunker & Preprocessing]
-    C --> E[Relevant Chunks]
-    E --> F[LLM Completion]
-    F --> G[Final Answer]
+## Troubleshooting
+
+### Error on dependencies installation
+
+After running `uv sync`, if you have this error:
+
+```
+error: Distribution `ray==2.43.0 @ registry+https://pypi.org/simple` can't be installed because it doesn't have a source distribution or wheel for the current platform
+
+hint: You're using CPython 3.13 (`cp313`), but `ray` (v2.43.0) only has wheels with the following Python ABI tag: `cp312`
 ```
 
-🧩 Designed for plug & play: each component can be swapped independently.
+This means your uv installation relies on cpython 3.13 while you are using python 3.12.
 
----
+To solve it, please run:
+```bash
+uv venv --python=3.12
+uv sync
+```
+### Error with models' weights downloading
+While executing RAGondin, if you encounter a problem that prevents you from downloading the models' weights locally, then you just need to create the needed folder and authorize it to be written and executed
+
+```bash
+sudo mkdir /app/model_weights
+sudo chmod 775 /app/model_weights
+```
 
 ## 🔧 Contributing
 
 We ❤️ contributions!
-
-```bash
-error: Distribution `ray==2.43.0 @ registry+https://pypi.org/simple` can't be installed because it doesn't have a source distribution or wheel for the current platform
-
-Read our [CONTRIBUTING.md](CONTRIBUTING.md) for coding standards, test setup, and more.
-
----
-
-## 📄 License
-
-## TODO
-[] Better manage logs
