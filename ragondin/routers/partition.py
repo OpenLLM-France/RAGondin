@@ -1,16 +1,18 @@
 import ray
-from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
+from fastapi import APIRouter, HTTPException, Request, Response, status
 from fastapi.responses import JSONResponse
-from utils.dependencies import Indexer, get_indexer, vectordb
+from utils.dependencies import get_indexer, vectordb
 from utils.logger import get_logger
 
 logger = get_logger()
 
 router = APIRouter()
 
+indexer = get_indexer()
+
 
 @router.get("/")
-async def list_existant_partitions(request: Request):
+async def list_existant_partitions():
     try:
         partitions = [
             {"partition": p.partition, "created_at": int(p.created_at.timestamp())}
@@ -31,7 +33,7 @@ async def list_existant_partitions(request: Request):
 
 
 @router.delete("/{partition}")
-async def delete_partition(partition: str, indexer: Indexer = Depends(get_indexer)):
+async def delete_partition(partition: str):
     try:
         deleted = ray.get(indexer.delete_partition.remote(partition))
     except Exception:
@@ -56,7 +58,6 @@ async def delete_partition(partition: str, indexer: Indexer = Depends(get_indexe
 async def list_files(
     request: Request,
     partition: str,
-    indexer: Indexer = Depends(get_indexer),
 ):
     log = logger.bind(partition=partition)
 
@@ -90,7 +91,6 @@ async def list_files(
 
 @router.get("/check-file/{partition}/file/{file_id}")
 async def check_file_exists_in_partition(
-    request: Request,
     partition: str,
     file_id: str,
 ):

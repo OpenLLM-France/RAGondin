@@ -8,6 +8,18 @@ from components.indexer.loaders.pdf_loaders.marker import MarkerPool
 from components.indexer.loaders.serializer import SerializerQueue
 
 
+def get_or_create_actor(name, cls, namespace="ragondin", **options):
+    from utils.logger import get_logger
+
+    logger = get_logger()
+    logger.info(f"Getting or creating actor: {name} in namespace: {namespace}")
+    try:
+        return ray.get_actor(name, namespace=namespace)
+    except Exception as e:
+        logger.info(f"Actor {name} not found, creating a new one: {e}")
+        return cls.options(name=name, namespace=namespace, **options).remote()
+
+
 class VDBProxy:
     """Class that delegates method calls to the remote vectordb."""
 
@@ -43,28 +55,29 @@ class VDBProxy:
 # load config
 config = load_config()
 
-# Initialize marker if needed
-if config.loader.file_loaders.get("pdf") == "MarkerLoader":
-    marker = MarkerPool.options(name="MarkerPool", namespace="ragondin").remote()
 
-# Create task state manager actor
-task_state_manager = TaskStateManager.options(
-    name="TaskStateManager", lifetime="detached", namespace="ragondin"
-).remote()
+def get_task_state_manager():
+    return get_or_create_actor(
+        "TaskStateManager", TaskStateManager, lifetime="detached"
+    )
 
-# Create document serializer actor
-serializer_queue = SerializerQueue.options(
-    name="SerializerQueue", namespace="ragondin"
-).remote()
 
-# Create global indexer supervisor actor
-indexer = Indexer.options(name="Indexer", namespace="ragondin").remote()
+def get_serializer_queue():
+    return get_or_create_actor("SerializerQueue", SerializerQueue)
 
-# Create vectordb instance
-vectordb: ABCVectorDB = VDBProxy(
-    indexer_actor=indexer
-)  # vectordb is not of type ABCVectorDB, but it mimics it
+
+def get_marker_pool():
+    if config.loader.file_loaders.get("pdf") == "MarkerLoader":
+        return get_or_create_actor("MarkerPool", MarkerPool)
 
 
 def get_indexer():
-    return indexer
+    return get_or_create_actor("Indexer", Indexer)
+
+
+def get_vectordb() -> ABCVectorDB:
+    indexer = get_indexer()
+    return VDBProxy(indexer_actor=indexer)
+
+
+vectordb = get_vectordb()

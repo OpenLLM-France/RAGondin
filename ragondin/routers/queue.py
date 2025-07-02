@@ -1,9 +1,9 @@
 from collections import Counter
 
-import ray
 from config.config import load_config
 from fastapi import APIRouter, Request, status
 from fastapi.responses import JSONResponse
+from utils.dependencies import get_serializer_queue, get_task_state_manager
 
 # load config
 config = load_config()
@@ -11,11 +11,8 @@ config = load_config()
 # Create an APIRouter instance
 router = APIRouter()
 
-task_state_manager = ray.get_actor("TaskStateManager", namespace="ragondin")
-
-
-serializer_queue = ray.get_actor("SerializerQueue", namespace="ragondin")
-task_state_manager = ray.get_actor("TaskStateManager", namespace="ragondin")
+serializer_queue = get_serializer_queue()
+task_state_manager = get_task_state_manager()
 
 
 def _format_pool_info(worker_info: dict[str, int]) -> dict[str, int]:
@@ -83,16 +80,16 @@ async def list_tasks(request: Request, task_status: str | None = None):
     tasks = []
     for task_id, info in filtered:
         item = {
-            "task_id":   task_id,
-            "state":     info["state"],
-            "details":   info["details"],
+            "task_id": task_id,
+            "state": info["state"],
+            "details": info["details"],
             # include an error URL if applicable
             **(
                 {"error_url": str(request.url_for("get_task_error", task_id=task_id))}
                 if info["state"] == "FAILED"
                 else {}
             ),
-            "url":       str(request.url_for("get_task_status", task_id=task_id)),
+            "url": str(request.url_for("get_task_status", task_id=task_id)),
         }
         tasks.append(item)
 

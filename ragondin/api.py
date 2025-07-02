@@ -18,7 +18,6 @@ from pathlib import Path
 from typing import Optional
 
 import uvicorn
-from components import RagPipeline
 from config import load_config
 from fastapi import Depends, FastAPI, HTTPException, Request, status
 from fastapi.middleware.cors import CORSMiddleware
@@ -32,6 +31,8 @@ from routers.queue import router as queue_router
 from routers.search import router as search_router
 from utils.dependencies import vectordb
 from utils.logger import get_logger
+
+from components import RagPipeline
 
 logger = get_logger()
 config = load_config()

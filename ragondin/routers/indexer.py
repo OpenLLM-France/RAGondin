@@ -16,7 +16,7 @@ from fastapi import (
     status,
 )
 from fastapi.responses import JSONResponse
-from utils.dependencies import Indexer, get_indexer, vectordb
+from utils.dependencies import get_indexer, get_task_state_manager, vectordb
 from utils.logger import get_logger
 
 # load logger
@@ -30,7 +30,8 @@ FORBIDDEN_CHARS_IN_FILE_ID = set("/")  # set('"<>#%{}|\\^`[]')
 LOG_FILE = Path(config.paths.log_dir or "logs") / "app.json"
 
 # Get the TaskStateManager actor
-task_state_manager = ray.get_actor("TaskStateManager", namespace="ragondin")
+task_state_manager = get_task_state_manager()
+indexer = get_indexer()
 
 # Create an APIRouter instance
 router = APIRouter()
@@ -92,7 +93,6 @@ async def add_file(
     file_id: str = Depends(validate_file_id),
     file: UploadFile = Depends(validate_file_format),
     metadata: dict = Depends(validate_metadata),
-    indexer: Indexer = Depends(get_indexer),
 ):
     log = logger.bind(file_id=file_id, partition=partition, filename=file.filename)
 
@@ -144,9 +144,7 @@ async def add_file(
 
 
 @router.delete("/partition/{partition}/file/{file_id}")
-async def delete_file(
-    partition: str, file_id: str, indexer: Indexer = Depends(get_indexer)
-):
+async def delete_file(partition: str, file_id: str):
     try:
         deleted = ray.get(indexer.delete_file.remote(file_id, partition))
         if not deleted:
@@ -170,7 +168,6 @@ async def put_file(
     file_id: str = Depends(validate_file_id),
     file: UploadFile = Depends(validate_file_format),
     metadata: dict = Depends(validate_metadata),
-    indexer: Indexer = Depends(get_indexer),
 ):
     log = logger.bind(file_id=file_id, partition=partition, filename=file.filename)
 
@@ -234,7 +231,6 @@ async def patch_file(
     partition: str,
     file_id: str = Depends(validate_file_id),
     metadata: Optional[Any] = Depends(validate_metadata),
-    indexer: Indexer = Depends(get_indexer),
 ):
     if not vectordb.file_exists(file_id, partition):
         raise HTTPException(
@@ -260,7 +256,8 @@ async def patch_file(
 
 @router.get("/task/{task_id}")
 async def get_task_status(
-    request: Request, task_id: str, indexer: Indexer = Depends(get_indexer)
+    request: Request,
+    task_id: str,
 ):
     # fetch task state
     state = await indexer.get_task_status.remote(task_id)
