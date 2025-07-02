@@ -7,6 +7,11 @@
 cd <project-name> # ragondin project
 git submodule update --init --recursive
 ```
+> [!IMPORTANT]
+> To get the newest version of indexer ui, run the following command
+```bash
+git submodule foreach 'git checkout main && git pull'
+```
 
 > [!Note]
 > The `--init --recursive` flags will:
