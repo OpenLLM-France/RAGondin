@@ -84,11 +84,10 @@ def _human_readable_size(size_bytes: int) -> str:
         size_bytes /= 1024
     return f"{size_bytes:.2f} PB"
 
-@router.get("/allowed_extension")
-async def get_allowed_extensions():
+@router.get("/supported/types")
+async def get_supported_types():
     list_extensions = list(ACCEPTED_FILE_FORMATS)
-
-    return JSONResponse(content={"All allowed extensions for RAGondin": list_extensions})
+    return JSONResponse(content={"supported_types": list_extensions})
 
 
 @router.post("/partition/{partition}/file/{file_id}")
