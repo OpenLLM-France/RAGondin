@@ -25,6 +25,12 @@ cd <project-name>
 git submodule update --init --recursive
 ```
 
+> [!IMPORTANT]
+> To get the newest version of chainlit datalayer, run the following command
+```bash
+git submodule foreach 'git checkout main && git pull'
+```
+
 [!NOTE]  
 The `--init --recursive` flags will:
 - Initialize the submodules based on the existing `.gitmodules` file
