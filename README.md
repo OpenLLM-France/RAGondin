@@ -237,7 +237,7 @@ The default values are well-suited for GPU usage. However, you can adjust them a
 
 #### 4.Deployment: Launch the app
 >[!IMPORTANT]
-> Before launching the app, You might want to configure the Indexation UI (). For that, see this [document](./docs/setup_indexerui.md)
+> Before launching the app, You might want to configure **`Indexer UI` (A Web interface for intuitive document ingestion, indexing, and management.)**. For that, see this [document](./docs/setup_indexerui.md)
 
 The application can be launched in either in GPU or CPU environment, depending on your device's capabilities. Use the following commands:
 
