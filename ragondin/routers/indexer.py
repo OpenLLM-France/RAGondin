@@ -149,15 +149,15 @@ async def delete_file(
 ):
     try:
         deleted = ray.get(indexer.delete_file.remote(file_id, partition))
-        if not deleted:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail=f"File '{file_id}' not found in partition '{partition}'.",
-            )
     except Exception:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to delete file.",
+        )
+    if not deleted:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"File '{file_id}' not found in partition '{partition}'.",
         )
 
     return Response(status_code=status.HTTP_204_NO_CONTENT)
